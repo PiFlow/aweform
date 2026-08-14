@@ -4,6 +4,8 @@ Aweform is an open research project exploring the development of an electronic a
 
 The project does **not** begin with a chatbot, LLM, human-like psychology, or a claim of machine consciousness. It starts with the smallest viable developmental problem: an electronic organism with an inside and an outside, finite energy, limited sensing, simple action, and a need to remain within viable energetic bounds.
 
+Here, **electronic cell** is a developmental analogy for that minimal inside/outside viability problem. V0.1 does not claim to reproduce biological cells or biological metabolism.
+
 ## Current stage: V0.1 — Electronic Cell
 
 V0.1 is intentionally minimal. Its first experiment asks whether access to an organism's own internal energetic state can causally reorganize its behaviour in ways that improve viability.
@@ -23,6 +25,7 @@ Read:
 - [`docs/north-star.md`](docs/north-star.md) — what Aweform is trying to become
 - [`docs/developmental-principles.md`](docs/developmental-principles.md) — evolution-inspired development, play, curiosity, and awe
 - [`docs/adr/0001-v0.1-electronic-cell.md`](docs/adr/0001-v0.1-electronic-cell.md) — the V0.1 scope decision
+- [`docs/reproducibility.md`](docs/reproducibility.md) — seed separation and confirmatory-run discipline
 - [`docs/safety-boundary.md`](docs/safety-boundary.md) — V0.1 experimental boundary
 - [`experiments/EXP-000-interoception-viability.md`](experiments/EXP-000-interoception-viability.md) — first experiment specification
 
