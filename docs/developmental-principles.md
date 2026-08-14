@@ -6,13 +6,17 @@ Aweform studies problems that living systems have faced — maintaining viabilit
 
 The project should not treat biological evolution as a linear ladder, and it should not assume that electronic cognition must reproduce human or vertebrate brain organisation.
 
+The developmental sequence is a research scaffold, not a claim that biological evolution followed the same sequence and not evidence that Darwinian evolution is already occurring in Aweform. Reproduction, heredity, mutation, selection, and evolutionary optimisation are separate mechanisms that require explicit later experiments if they are introduced.
+
 ## Homeostasis first
 
 Before intelligence, Aweform needs conditions that make continued existence non-trivial.
 
 An internal variable such as energy should matter because actions and environmental conditions change it, and because leaving viable bounds has consequences for the simulated organism.
 
-The first developmental question is therefore not "Can it solve a task?" but "Can its internal condition reorganize behaviour in ways that help it remain viable?"
+In V0.1 this energy state is deliberately an engineered accounting variable. It is not biological metabolism and should not be described as such. Its scientific value comes from being causally coupled to sensing, action, resource uptake, and episode viability rather than serving as a decorative score.
+
+The first developmental question is therefore not "Can it solve a task?" but "Does informative access to its internal condition alter behaviour in ways that improve viability?"
 
 ## Development through consequences
 
@@ -21,6 +25,8 @@ Later cognition should be grounded in repeated interaction between:
 internal state → perception → action → consequence → memory/model update
 
 Capabilities should be added only when an experiment creates a genuine need for them.
+
+Designed mechanisms, learned mechanisms, and behaviours that emerge from their interaction must be reported separately. A trajectory can be unexpected even when the underlying drives or safety gates were designed.
 
 ## Play
 
@@ -52,6 +58,8 @@ Awe-like behaviour may then involve:
 - assigning unusually high memory significance;
 - permitting unusually substantial model updating.
 
+"Meaningfully structured" is intentionally not operationalised yet. When awe becomes an active experiment, the project must define measurable alternatives and controls rather than retrofitting the term to impressive-looking behaviour.
+
 No object or event should be hard-coded as intrinsically awe-worthy. A central later research question is what an electronic organism itself treats as sufficiently significant to enter such a state.
 
 ## Social development and care
@@ -61,6 +69,8 @@ Social behaviour should be introduced because other agents create new developmen
 Future experiments may involve recognising individuals, remembering interaction histories, signalling, coordinating, sharing resources, responding to vulnerability, and learning consequences of harm or cooperation.
 
 Care should not be reduced to a single command such as "love others." Any care-like behaviour should be grounded in bounded priors plus learned social dynamics that can be inspected and tested.
+
+Cooperation and care must not be assumed to emerge automatically from social interaction or evolutionary pressure. Competition, avoidance, exploitation, and indifference are also possible outcomes. Future social experiments should distinguish designed value priors from behaviours acquired through experience.
 
 ## Individuality
 
