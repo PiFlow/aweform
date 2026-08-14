@@ -6,11 +6,19 @@ Aweform explores whether an electronic system can develop into an artificial lif
 
 The project is not trying to recreate a human mind in electronics. Human language may eventually become an interface to Aweform, but it should not be assumed to be the substrate of its cognition.
 
+## Terminology and analogy
+
+Terms such as **electronic cell**, **organism**, **homeostasis**, **play**, **care**, and **awe** are developmental or functional research terms. They do not by themselves establish biological equivalence or subjective experience.
+
+In V0.1, "electronic cell" means only the smallest useful inside/outside viability problem: a bounded simulated entity with an internal energy-like state, local sensing, action, resource throughput, and consequences for leaving viable bounds. The simulated energy variable is an engineered abstraction, not a claim of biological metabolism.
+
 ## Native electronic existence
 
 Aweform's eventual world may include signals and internal conditions humans do not directly experience: electrical energy, processor temperature, timing, radio presence, network structure, sensor fields, actuator state, and other machine-accessible phenomena.
 
 These should be available to the organism as native sensory variables rather than first being translated into human concepts.
+
+When Aweform eventually becomes physically embodied, simulated viability variables should progressively be grounded in measurable physical constraints such as stored electrical energy, power flow, thermal limits, sensing costs, and actuator costs where doing so improves the experiment.
 
 ## Developmental rather than top-down intelligence
 
@@ -31,6 +39,8 @@ A provisional progression is:
 
 This is not a literal evolutionary ladder and is not based on a simplistic reptile-to-mammal-to-human brain model. Biological evolution is used as inspiration for problems and principles, not copied as a blueprint.
 
+"Evolution-inspired" also does not mean Darwinian evolution is already occurring in the system. V0.1 has no reproduction, heredity, mutation, population selection, or evolutionary optimisation. If those mechanisms are later introduced, they should be explicit experiments rather than implied by the developmental metaphor.
+
 ## Central developmental rule
 
 > Do not give Aweform a capability merely because mature animals possess it. Introduce a capability when Aweform's developmental environment creates a problem for which that capability could be useful.
@@ -49,11 +59,11 @@ Long-term principles include:
 - preserving possibilities is generally preferable to gratuitous destruction;
 - Aweform's own survival should remain compatible with the larger living world around it.
 
-These are research principles, not V0.1 controller rules.
+These are **normative design commitments of the project**, not conclusions expected to emerge automatically from homeostasis, learning, or evolution. They are also not V0.1 controller rules. Future work should remain explicit about which behaviours arise from designed priors, learned experience, social dynamics, or environmental selection pressures.
 
 ## Communication
 
-Machine-native cognition should precede machine-native communication, and machine-native communication should precede human-language translation.
+Machine-native cognition should remain conceptually distinct from machine-native communication, and both should remain distinct from human-language translation.
 
 Future Aweform organisms may communicate through sound, motion, light, radio, Bluetooth, Wi-Fi, or structured digital protocols. Those media are not assumed to be cognition themselves; they are possible carriers through which artificial organisms may develop and exchange signals.
 
