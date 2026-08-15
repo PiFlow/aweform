@@ -254,17 +254,38 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--masked-energy", type=float, required=True)
     parser.add_argument("--resource-count", type=int, default=1)
+    parser.add_argument(
+        "--episode-horizon",
+        type=_episode_horizon_argument,
+        default=100,
+        help="episode horizon in steps (1-1000; default: 100)",
+    )
     parser.add_argument("--git-sha", required=True)
     args = parser.parse_args(argv)
     result = run_development_batch(
         seeds=[args.seed],
-        env_config=AweformEnvConfig(resource_count=args.resource_count),
+        env_config=AweformEnvConfig(
+            resource_count=args.resource_count,
+            episode_horizon=args.episode_horizon,
+        ),
         homeostatic_config=HomeostaticConfig(),
         masked_energy=args.masked_energy,
         git_sha=args.git_sha,
     )
     show_development_visualization(result, args.seed)
     return 0
+
+
+def _episode_horizon_argument(value: str) -> int:
+    try:
+        episode_horizon = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(
+            "episode horizon must be an integer"
+        ) from error
+    if not 1 <= episode_horizon <= 1000:
+        raise argparse.ArgumentTypeError("episode horizon must be between 1 and 1000")
+    return episode_horizon
 
 
 def _record_frames(

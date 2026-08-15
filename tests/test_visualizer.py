@@ -7,6 +7,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pytest
 
+import aweform.visualizer as visualizer
 from aweform import (
     AweformEnvConfig,
     Condition,
@@ -133,3 +134,67 @@ def test_figure_has_three_condition_panels() -> None:
     animation._init_draw()
     animation.event_source.stop()
     plt.close(figure)
+
+
+@pytest.mark.parametrize(
+    ("episode_horizon_argument", "expected_horizon"),
+    [(None, 100), ("500", 500), ("1000", 1000)],
+)
+def test_main_passes_requested_episode_horizon_without_opening_gui(
+    monkeypatch: pytest.MonkeyPatch,
+    episode_horizon_argument: str | None,
+    expected_horizon: int,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run_development_batch(**kwargs: object) -> object:
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(visualizer, "run_development_batch", fake_run_development_batch)
+    monkeypatch.setattr(visualizer, "show_development_visualization", lambda *_: None)
+    argv = [
+        "--seed",
+        "701",
+        "--masked-energy",
+        "0.2",
+        "--resource-count",
+        "3",
+        "--git-sha",
+        "test-sha",
+    ]
+    if episode_horizon_argument is not None:
+        argv.extend(["--episode-horizon", episode_horizon_argument])
+
+    assert visualizer.main(argv) == 0
+    env_config = captured["env_config"]
+    assert isinstance(env_config, AweformEnvConfig)
+    assert env_config.episode_horizon == expected_horizon
+    assert env_config.resource_count == 3
+
+
+@pytest.mark.parametrize(
+    ("episode_horizon_argument", "error_message"),
+    [("0", "between 1 and 1000"), ("1001", "between 1 and 1000")],
+)
+def test_main_rejects_episode_horizon_outside_visualizer_bounds(
+    episode_horizon_argument: str,
+    error_message: str,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit) as error:
+        visualizer.main(
+            [
+                "--seed",
+                "701",
+                "--masked-energy",
+                "0.2",
+                "--git-sha",
+                "test-sha",
+                "--episode-horizon",
+                episode_horizon_argument,
+            ]
+        )
+
+    assert error.value.code == 2
+    assert error_message in capsys.readouterr().err
