@@ -13,6 +13,13 @@ for persistent exploration, homeostatic, and energy-blind conditions. The
 visualizer does not modify the environment, controller observations, actions,
 reward, or seed semantics.
 
+The evaluator-side visualizer may display controller-visible resource signals,
+the recorded chosen action, and the actual versus masked mode-energy input.
+Privileged evaluator position and resource information remains visually
+distinct from those controller-visible diagnostics. This display does not alter
+controller observations, recompute actions, or constitute scientific evidence
+by itself.
+
 No confirmatory execution, scientific interpretation, statistical analysis, or
 outcome definition is added. Visual appearance is for inspection and
 debugging, not proof of a scientific claim.

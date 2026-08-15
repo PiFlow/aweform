@@ -89,6 +89,75 @@ def test_frame_zero_uses_pre_action_controller_mode() -> None:
     assert data.frames[2][1].mode is ControllerMode.SEEK_RESOURCE
 
 
+def test_diagnostics_align_each_state_with_its_next_transition() -> None:
+    result = _result(702)
+    data = build_visualization_frames(result, seed=702)
+    record = result.episodes[0]
+
+    for frame_index in (0, 1):
+        frame = data.frames[0][frame_index]
+        transition = record.trajectory.transitions[frame_index]
+        assert (
+            frame.left_resource,
+            frame.forward_resource,
+            frame.right_resource,
+        ) == transition.observation[1:]
+        assert frame.next_action is transition.action
+
+    final_frame = data.frames[0][len(record.trajectory.transitions)]
+    assert final_frame.next_action is None
+    assert final_frame.left_resource is None
+    assert final_frame.forward_resource is None
+    assert final_frame.right_resource is None
+    assert final_frame.decision_mode is None
+    assert final_frame.mode_energy_signal is None
+    assert final_frame.mode_energy_source is None
+
+
+def test_mode_energy_diagnostic_distinguishes_actual_and_masked_interoception() -> None:
+    result = _result(702)
+    data = build_visualization_frames(result, seed=702)
+    actual_energy = result.episodes[1].trajectory.transitions[0].observation[0]
+
+    a_frame = data.frames[0][0]
+    b_frame = data.frames[1][0]
+    c_frame = data.frames[2][0]
+
+    assert a_frame.mode_energy_signal is None
+    assert a_frame.mode_energy_source == "n/a"
+    assert b_frame.mode_energy_signal == actual_energy
+    assert b_frame.mode_energy_source == "ACTUAL"
+    assert c_frame.mode_energy_signal == result.manifest.energy_blind_masked_energy
+    assert c_frame.mode_energy_source == "MASKED"
+    assert c_frame.mode_energy_signal != c_frame.normalized_energy
+
+
+def test_terminal_padding_does_not_repeat_decision_diagnostics() -> None:
+    result = _result(702)
+    first_episode = result.episodes[0]
+    terminal_transition = replace(
+        first_episode.trajectory.transitions[0],
+        terminated=True,
+        truncated=False,
+    )
+    short_trajectory = replace(
+        first_episode.trajectory,
+        transitions=(terminal_transition,),
+    )
+    short_episode = replace(first_episode, trajectory=short_trajectory)
+    result = replace(result, episodes=(short_episode, *result.episodes[1:]))
+
+    data = build_visualization_frames(result, seed=702)
+
+    assert len(data.frames[0]) == 5
+    for frame in data.frames[0][1:]:
+        assert frame.terminal_status == "terminated"
+        assert frame.next_action is None
+        assert frame.left_resource is None
+        assert frame.forward_resource is None
+        assert frame.right_resource is None
+
+
 def test_visualizer_reads_privileged_trajectory_state_separately_from_observation() -> (
     None
 ):
@@ -131,6 +200,23 @@ def test_figure_has_three_condition_panels() -> None:
         condition.value in axis.get_title()
         for condition, axis in zip(Condition, figure.axes)
     )
+    animation._init_draw()
+    animation.event_source.stop()
+    plt.close(figure)
+
+
+def test_figure_contains_perception_action_diagnostics_without_opening_gui() -> None:
+    result = _result(702)
+
+    figure, animation = build_visualization_figure(result, seed=702)
+
+    diagnostic_texts = [axis.texts[-1].get_text() for axis in figure.axes]
+    assert all("sense L/F/R:" in text for text in diagnostic_texts)
+    assert all("next:" in text for text in diagnostic_texts)
+    assert "mode energy: n/a" in diagnostic_texts[0]
+    assert "mode energy:" in diagnostic_texts[1]
+    assert "ACTUAL" in diagnostic_texts[1]
+    assert "mode energy: 0.200 MASKED" in diagnostic_texts[2]
     animation._init_draw()
     animation.event_source.stop()
     plt.close(figure)
