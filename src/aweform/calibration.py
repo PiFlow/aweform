@@ -208,8 +208,11 @@ class CalibrationSummary:
                 selection,
                 "",
                 "Environment selection does not use B-versus-C effect size.",
-                "B outcomes are diagnostics only; no scientific claim is made from "
-                "calibration results.",
+                "B recovery count is used only as the preregistered mechanism-"
+                "exercise qualification gate. B lifespan, B−C effect size, B "
+                "performance advantage, and visual appearance do not rank or "
+                "select among qualifying candidates.",
+                "No scientific claim is made from calibration results.",
                 "",
             ]
         )
@@ -236,6 +239,20 @@ def summarize_calibration_artifacts(
     artifacts = tuple(_load_artifact(Path(path)) for path in artifact_paths)
     _validate_artifact_set(artifacts)
     candidates = tuple(_summarize_candidate(artifact) for artifact in artifacts)
+    divergent_candidates = tuple(
+        candidate for candidate in candidates if candidate.a_c_divergent_seed_count > 0
+    )
+    if divergent_candidates:
+        details = ", ".join(
+            f"{candidate.resource_length_scale:.2f} "
+            f"({candidate.a_c_divergent_seed_count} divergent matched seeds)"
+            for candidate in divergent_candidates
+        )
+        raise CalibrationValidationError(
+            "A/C structural sanity check failed: matched trajectories diverged "
+            f"for {details}. No calibration candidate may be selected or "
+            "interpreted; investigate the cause before confirmatory execution."
+        )
     acceptable = [candidate for candidate in candidates if candidate.acceptable]
     selected = (
         min(

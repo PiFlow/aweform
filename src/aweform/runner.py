@@ -30,6 +30,8 @@ from .env import Action, AweformEnv, AweformEnvConfig, TransitionTelemetry
 
 ARTIFACT_SCHEMA_VERSION = "exp-000-development-v2"
 MANIFEST_SCHEMA_VERSION = "exp-000-development-manifest-v2"
+ACCEPTANCE_SEED_MIN = 10001
+ACCEPTANCE_SEED_MAX = 10100
 
 
 class Condition(Enum):
@@ -483,7 +485,12 @@ def _validate_seeds(seeds: Sequence[int]) -> tuple[int, ...]:
     for seed in supplied_seeds:
         if isinstance(seed, bool) or not isinstance(seed, Integral) or seed < 0:
             raise ValueError("seeds must contain only non-negative integer values")
-        validated.append(int(seed))
+        validated_seed = int(seed)
+        if ACCEPTANCE_SEED_MIN <= validated_seed <= ACCEPTANCE_SEED_MAX:
+            raise ValueError(
+                f"development runner refuses reserved acceptance seed {validated_seed}"
+            )
+        validated.append(validated_seed)
     return tuple(validated)
 
 

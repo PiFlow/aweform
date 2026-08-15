@@ -174,7 +174,9 @@ transition from `SEEK_RESOURCE` to `EXPLORE`.
 For A/C it reports matched-seed trajectory identity and divergence counts. The
 identity comparison includes action, position, heading, energy, termination /
 truncation, and harvested-energy sequences. A/C divergence is visibly flagged
-for investigation. Visual appearance is not a calibration outcome.
+as a failed structural sanity check that blocks candidate selection and requires
+investigation before confirmatory execution. Visual appearance is not a
+calibration outcome.
 
 ## Planned confirmatory outcome
 

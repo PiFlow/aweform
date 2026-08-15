@@ -205,6 +205,16 @@ def test_accepts_valid_set_and_computes_frozen_diagnostics(
     assert candidate.a_c_identical_seed_count == 30
     assert candidate.a_c_divergent_seed_count == 0
     assert candidate.c_distance_from_midpoint == pytest.approx(0.0)
+    markdown = summary.to_markdown()
+    assert (
+        "B recovery count is used only as the preregistered mechanism-"
+        "exercise qualification gate." in markdown
+    )
+    assert (
+        "B lifespan, B−C effect size, B performance advantage, and visual "
+        "appearance do not rank or select among qualifying candidates." in markdown
+    )
+    assert "B outcomes are diagnostics only" not in markdown
 
 
 @pytest.mark.parametrize(
@@ -269,18 +279,21 @@ def test_rejects_invalid_calibration_artifacts(
         summarize_calibration_artifacts(_write_artifacts(tmp_path, payloads))
 
 
-def test_rejects_a_c_divergence_and_reports_it_when_valid(
+def test_a_c_divergence_blocks_calibration_selection(
     tmp_path: Path, valid_payloads: list[dict[str, object]]
 ) -> None:
     payloads = copy.deepcopy(valid_payloads)
     trajectory = payloads[0]["raw_trajectories"][0]
     trajectory["transitions"][0]["action"] = 1
-    summary = summarize_calibration_artifacts(_write_artifacts(tmp_path, payloads))
-
-    candidate = summary.candidates[0]
-    assert candidate.a_c_identical_seed_count == 29
-    assert candidate.a_c_divergent_seed_count == 1
-    assert "Protocol-selected candidate" in summary.to_markdown()
+    with pytest.raises(
+        CalibrationValidationError,
+        match=(
+            "A/C structural sanity check failed.*"
+            "No calibration candidate may be selected or interpreted.*"
+            "before confirmatory execution"
+        ),
+    ):
+        summarize_calibration_artifacts(_write_artifacts(tmp_path, payloads))
 
 
 def test_selection_uses_c_difficulty_and_smaller_scale_tie_break_only(

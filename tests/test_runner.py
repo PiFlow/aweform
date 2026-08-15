@@ -222,6 +222,51 @@ def test_runner_rejects_empty_or_malformed_seeds(seeds: object) -> None:
         )
 
 
+def test_development_runner_seed_guard_respects_acceptance_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executed: list[int] = []
+
+    def fake_run_episode(**kwargs: object) -> object:
+        executed.append(int(kwargs["environment_seed"]))
+        return object()
+
+    monkeypatch.setattr(runner_module, "_run_episode", fake_run_episode)
+
+    for seed in (10000, 10101):
+        run_development_batch(
+            seeds=[seed],
+            env_config=AweformEnvConfig(episode_horizon=1),
+            homeostatic_config=HomeostaticConfig(),
+            masked_energy=0.5,
+            git_sha="test-sha",
+        )
+
+    assert executed == [10000, 10000, 10000, 10101, 10101, 10101]
+
+    for seed in (10001, 10100):
+        executed.clear()
+        with pytest.raises(ValueError, match="reserved acceptance seed"):
+            run_development_batch(
+                seeds=[seed],
+                env_config=AweformEnvConfig(episode_horizon=1),
+                homeostatic_config=HomeostaticConfig(),
+                masked_energy=0.5,
+                git_sha="test-sha",
+            )
+        assert executed == []
+
+    with pytest.raises(ValueError, match="reserved acceptance seed"):
+        run_development_batch(
+            seeds=[10000, 10001, 10101],
+            env_config=AweformEnvConfig(episode_horizon=1),
+            homeostatic_config=HomeostaticConfig(),
+            masked_energy=0.5,
+            git_sha="test-sha",
+        )
+    assert executed == []
+
+
 def test_development_cli_uses_existing_environment_defaults_when_options_omitted(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
