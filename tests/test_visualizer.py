@@ -10,6 +10,7 @@ import pytest
 from aweform import (
     AweformEnvConfig,
     Condition,
+    ControllerMode,
     HomeostaticConfig,
     build_visualization_figure,
     build_visualization_frames,
@@ -73,6 +74,15 @@ def test_frames_include_initial_state_and_pad_shorter_episodes() -> None:
     assert data.frames[0][2] == data.frames[0][1]
     assert len(data.frames[1][2].path) == 3
     assert data.frames[1][2].step_index == 2
+
+
+def test_frame_zero_uses_pre_action_controller_mode() -> None:
+    data = build_visualization_frames(_result(701), seed=701)
+
+    assert data.frames[0][0].mode is None
+    assert data.frames[1][0].mode is ControllerMode.EXPLORE
+    assert data.frames[2][0].mode is ControllerMode.EXPLORE
+    assert data.frames[2][1].mode is ControllerMode.SEEK_RESOURCE
 
 
 def test_visualizer_reads_privileged_trajectory_state_separately_from_observation() -> (

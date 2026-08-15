@@ -281,7 +281,11 @@ def _record_frames(
 ) -> tuple[VisualizationFrame, ...]:
     energy_range = maximum_energy - failure_boundary
     initial = trajectory.initial_state
-    initial_mode = trajectory.transitions[0].mode if trajectory.transitions else None
+    initial_mode = (
+        None
+        if trajectory.condition is Condition.A_PERSISTENT
+        else ControllerMode.EXPLORE
+    )
     frames = [
         VisualizationFrame(
             step_index=0,
