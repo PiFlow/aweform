@@ -220,3 +220,103 @@ def test_runner_rejects_empty_or_malformed_seeds(seeds: object) -> None:
             0.2,
             "test-sha",
         )
+
+
+def test_development_cli_uses_existing_environment_defaults_when_options_omitted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run(**kwargs: object) -> object:
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(runner_module, "run_development_batch", fake_run)
+    monkeypatch.setattr(runner_module, "write_development_json", lambda *_args: None)
+
+    assert (
+        runner_module.main(
+            [
+                "--seed",
+                "701",
+                "--masked-energy",
+                "0.2",
+                "--git-sha",
+                "test-sha",
+                "--output",
+                "ignored.json",
+            ]
+        )
+        == 0
+    )
+
+    environment_config = captured["env_config"]
+    assert isinstance(environment_config, AweformEnvConfig)
+    defaults = AweformEnvConfig()
+    assert environment_config.episode_horizon == defaults.episode_horizon
+    assert environment_config.resource_length_scale == defaults.resource_length_scale
+    assert environment_config.resource_count == 1
+    assert captured["masked_energy"] == 0.2
+
+
+@pytest.mark.parametrize("length_scale", ["0.15", "0.20", "0.25"])
+def test_development_cli_passes_explicit_environment_options(
+    monkeypatch: pytest.MonkeyPatch, length_scale: str
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run(**kwargs: object) -> object:
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(runner_module, "run_development_batch", fake_run)
+    monkeypatch.setattr(runner_module, "write_development_json", lambda *_args: None)
+
+    runner_module.main(
+        [
+            "--seed",
+            "701",
+            "--masked-energy",
+            "0.2",
+            "--resource-count",
+            "3",
+            "--episode-horizon",
+            "500",
+            "--resource-length-scale",
+            length_scale,
+            "--git-sha",
+            "test-sha",
+            "--output",
+            "ignored.json",
+        ]
+    )
+
+    environment_config = captured["env_config"]
+    assert isinstance(environment_config, AweformEnvConfig)
+    assert environment_config.episode_horizon == 500
+    assert environment_config.resource_length_scale == float(length_scale)
+    assert environment_config.resource_count == 3
+    assert captured["masked_energy"] == 0.2
+
+
+@pytest.mark.parametrize("option", ["--episode-horizon", "--resource-length-scale"])
+@pytest.mark.parametrize("value", ["0", "-1", "nan", "inf", "-inf"])
+def test_development_cli_rejects_invalid_new_environment_options(
+    option: str, value: str
+) -> None:
+    with pytest.raises(SystemExit) as error:
+        runner_module.main(
+            [
+                "--seed",
+                "701",
+                "--masked-energy",
+                "0.2",
+                option,
+                value,
+                "--git-sha",
+                "test-sha",
+                "--output",
+                "ignored.json",
+            ]
+        )
+    assert error.value.code == 2
