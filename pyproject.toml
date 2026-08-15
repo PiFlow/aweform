@@ -13,6 +13,9 @@ dependencies = [
     "numpy>=2.3,<3",
 ]
 
+[project.scripts]
+aweform-development = "aweform.runner:main"
+
 [dependency-groups]
 dev = [
     "mypy>=1.17,<2",
