@@ -9,6 +9,7 @@ description = "Minimal deterministic substrate for Aweform V0.1"
 readme = "README.md"
 requires-python = "==3.14.7"
 dependencies = [
+    "gymnasium>=1.2,<2",
     "numpy>=2.3,<3",
 ]
 
