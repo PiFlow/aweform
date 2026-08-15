@@ -1,6 +1,13 @@
 """Minimal deterministic energetic substrate for Aweform V0.1."""
 
 from .body import Body
+from .controllers import (
+    ControllerMode,
+    EnergyBlindController,
+    HomeostaticConfig,
+    HomeostaticController,
+    PersistentExplorationController,
+)
 from .energy import EnergyConfig, EnergyState, advance_energy
 from .env import Action, AweformEnv, AweformEnvConfig
 from .resource import ResourceField
@@ -12,9 +19,14 @@ __all__ = [
     "AweformEnv",
     "AweformEnvConfig",
     "Body",
+    "ControllerMode",
     "DirectionalSignals",
+    "EnergyBlindController",
     "EnergyConfig",
     "EnergyState",
+    "HomeostaticConfig",
+    "HomeostaticController",
+    "PersistentExplorationController",
     "RandomStreams",
     "ResourceField",
     "advance_energy",
