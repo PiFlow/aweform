@@ -89,6 +89,12 @@ def _summary(
             "seek_resource_steps": 1 if recovery else 0,
             "mode_transitions": 1 if recovery else 0,
         }
+    elif condition is Condition.C_ENERGY_BLIND:
+        mode_fields = {
+            "explore_steps": lifespan,
+            "seek_resource_steps": 0,
+            "mode_transitions": 0,
+        }
     else:
         mode_fields = {
             "explore_steps": None,
@@ -182,7 +188,7 @@ def valid_payloads() -> list[dict[str, object]]:
     ]
 
 
-def test_accepts_valid_set_and_computes_frozen_diagnostics(
+def test_accepts_valid_set_with_numeric_c_mode_counts_and_computes_diagnostics(
     tmp_path: Path, valid_payloads: list[dict[str, object]]
 ) -> None:
     summary = summarize_calibration_artifacts(
@@ -215,6 +221,87 @@ def test_accepts_valid_set_and_computes_frozen_diagnostics(
         "appearance do not rank or select among qualifying candidates." in markdown
     )
     assert "B outcomes are diagnostics only" not in markdown
+
+
+@pytest.mark.parametrize(
+    "condition, mode_mutation, message",
+    [
+        (
+            Condition.A_PERSISTENT,
+            lambda summary: summary.update(
+                {
+                    "explore_steps": 1,
+                    "seek_resource_steps": 0,
+                    "mode_transitions": 0,
+                }
+            ),
+            "A mode counts must be null",
+        ),
+        (
+            Condition.B_HOMEOSTATIC,
+            lambda summary: [
+                summary.pop(field)
+                for field in (
+                    "explore_steps",
+                    "seek_resource_steps",
+                    "mode_transitions",
+                )
+            ],
+            "finite number",
+        ),
+        (
+            Condition.B_HOMEOSTATIC,
+            lambda summary: summary.update(
+                {
+                    "explore_steps": "invalid",
+                    "seek_resource_steps": "invalid",
+                    "mode_transitions": "invalid",
+                }
+            ),
+            "finite number",
+        ),
+        (
+            Condition.C_ENERGY_BLIND,
+            lambda summary: [
+                summary.pop(field)
+                for field in (
+                    "explore_steps",
+                    "seek_resource_steps",
+                    "mode_transitions",
+                )
+            ],
+            "finite number",
+        ),
+        (
+            Condition.C_ENERGY_BLIND,
+            lambda summary: summary.update(
+                {
+                    "explore_steps": "invalid",
+                    "seek_resource_steps": "invalid",
+                    "mode_transitions": "invalid",
+                }
+            ),
+            "finite number",
+        ),
+    ],
+)
+def test_validates_mode_counts_per_runner_contract(
+    tmp_path: Path,
+    valid_payloads: list[dict[str, object]],
+    condition: Condition,
+    mode_mutation: object,
+    message: str,
+) -> None:
+    payloads = copy.deepcopy(valid_payloads)
+    summary = next(
+        summary
+        for summary in payloads[0]["episode_summaries"]
+        if summary["condition"] == condition.value
+    )
+    mode_mutation(summary)  # type: ignore[operator]
+
+    with pytest.raises(CalibrationValidationError, match=message):
+        summarize_calibration_artifacts(_write_artifacts(tmp_path, payloads))
 
 
 @pytest.mark.parametrize(

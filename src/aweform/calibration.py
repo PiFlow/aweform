@@ -610,16 +610,18 @@ def _validate_summary(
         raise CalibrationValidationError(
             f"{path}: termination flags must be boolean for {key}"
         )
-    if key[0] == Condition.B_HOMEOSTATIC.value:
-        for field in ("seek_resource_steps", "explore_steps", "mode_transitions"):
-            _finite_number(summary.get(field), f"{path}: summary {key} {field}")
-    elif any(
-        summary.get(field) is not None
-        for field in ("seek_resource_steps", "explore_steps", "mode_transitions")
+    mode_fields = ("seek_resource_steps", "explore_steps", "mode_transitions")
+    if key[0] == Condition.A_PERSISTENT.value:
+        if any(summary.get(field) is not None for field in mode_fields):
+            raise CalibrationValidationError(
+                f"{path}: A mode counts must be null for {key}"
+            )
+    elif key[0] in (
+        Condition.B_HOMEOSTATIC.value,
+        Condition.C_ENERGY_BLIND.value,
     ):
-        raise CalibrationValidationError(
-            f"{path}: A/C mode counts must be null for {key}"
-        )
+        for field in mode_fields:
+            _finite_number(summary.get(field), f"{path}: summary {key} {field}")
 
 
 def _validate_trajectory(
