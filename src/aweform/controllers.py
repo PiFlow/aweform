@@ -26,7 +26,7 @@ class HomeostaticConfig:
     """Development parameters for the shared homeostatic controller core."""
 
     enter_seek: float = 0.35
-    recover: float = 0.65
+    recover: float = 0.85
     exploration_steps: int = 8
 
     def __post_init__(self) -> None:
@@ -145,8 +145,10 @@ class EnergyBlindController:
 
 
 def _seek_resource_action(observation: Observation) -> Action:
-    """Steer using local signals; ties for strongest signal favor forward."""
+    """Steer using local signals; all-equal readings turn left to resample."""
     left_resource, forward_resource, right_resource = observation[1:]
+    if left_resource == forward_resource == right_resource:
+        return Action.TURN_LEFT
     if forward_resource >= left_resource and forward_resource >= right_resource:
         return Action.MOVE_FORWARD
     if left_resource > right_resource:
