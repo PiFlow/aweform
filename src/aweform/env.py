@@ -28,6 +28,26 @@ class Action(IntEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class TransitionTelemetry:
+    """Evaluator-only quantities from one completed environment transition.
+
+    This record is deliberately not returned by :meth:`AweformEnv.step`.
+    Controllers continue to receive only the four-value observation and
+    Gymnasium ``info`` remains empty.
+    """
+
+    step_index: int
+    action: Action
+    energy_before: float
+    harvested_energy: float
+    basal_cost: float
+    action_cost: float
+    energy_after: float
+    terminated: bool
+    truncated: bool
+
+
+@dataclass(frozen=True, slots=True)
 class AweformEnvConfig:
     """Configurable development parameters for :class:`AweformEnv`."""
 
@@ -104,6 +124,7 @@ class AweformEnv(gym.Env[np.ndarray, int]):
         self.random_streams: RandomStreams | None = None
         self._step_count = 0
         self._episode_done = True
+        self.last_transition: TransitionTelemetry | None = None
 
     def reset(
         self,
@@ -140,6 +161,7 @@ class AweformEnv(gym.Env[np.ndarray, int]):
         )
         self._step_count = 0
         self._episode_done = False
+        self.last_transition = None
         return self._observation(), {}
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
@@ -152,6 +174,7 @@ class AweformEnv(gym.Env[np.ndarray, int]):
             raise RuntimeError("environment must be reset before step()")
 
         selected_action = Action(int(action))
+        energy_before = self.body.energy
         if selected_action is Action.TURN_LEFT:
             self.body.turn(self.config.turn_angle)
             action_cost = self.config.turn_cost
@@ -183,6 +206,17 @@ class AweformEnv(gym.Env[np.ndarray, int]):
         terminated = not next_energy.viable
         truncated = not terminated and self._step_count >= self.config.episode_horizon
         self._episode_done = terminated or truncated
+        self.last_transition = TransitionTelemetry(
+            step_index=self._step_count,
+            action=selected_action,
+            energy_before=energy_before,
+            harvested_energy=harvested_energy,
+            basal_cost=self.config.energy.basal_cost,
+            action_cost=action_cost,
+            energy_after=next_energy.energy,
+            terminated=terminated,
+            truncated=truncated,
+        )
         return self._observation(), 0.0, terminated, truncated, {}
 
     def _observation(self) -> np.ndarray:
