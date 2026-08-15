@@ -34,16 +34,18 @@ def _result(
 
 
 def test_conditions_have_matched_initial_evaluator_state() -> None:
-    result = _result()
+    result = _result(env_config=AweformEnvConfig(episode_horizon=4, resource_count=3))
 
     assert [episode.summary.condition for episode in result.episodes] == list(Condition)
     starts = [episode.trajectory.initial_state for episode in result.episodes]
     assert starts[0] == starts[1] == starts[2]
+    assert len(starts[0].source_positions) == 3
 
 
 def test_same_seed_and_configuration_replay_identically() -> None:
-    first = _result()
-    second = _result()
+    config = AweformEnvConfig(episode_horizon=4, resource_count=3)
+    first = _result(env_config=config)
+    second = _result(env_config=config)
 
     assert first.episodes == second.episodes
     first_manifest = first.to_dict()["manifest"]
@@ -79,11 +81,11 @@ def test_conditions_use_isolated_environment_instances_and_reset_controllers(
 
 
 def test_runner_keeps_observation_boundary() -> None:
-    result = _result()
+    result = _result(env_config=AweformEnvConfig(episode_horizon=4, resource_count=3))
 
     for episode in result.episodes:
         initial_state = episode.trajectory.initial_state
-        assert len(initial_state.source_position) == 2
+        assert len(initial_state.source_positions) == 3
         for transition in episode.trajectory.transitions:
             assert len(transition.observation) == 4
             assert transition.observation != (
@@ -177,19 +179,30 @@ def test_homeostatic_modes_are_counted_deterministically() -> None:
 
 
 def test_artifact_is_readable_complete_and_non_overwriting(tmp_path) -> None:
-    result = _result()
+    result = _result(env_config=AweformEnvConfig(episode_horizon=4, resource_count=3))
     output_path = tmp_path / "development-run.json"
 
     assert write_development_json(result, output_path) == output_path
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["schema_version"] == "exp-000-development-v1"
+    assert payload["schema_version"] == "exp-000-development-v2"
+    assert payload["manifest"]["schema_version"] == ("exp-000-development-manifest-v2")
     assert payload["manifest"]["purpose"] == "development"
     assert payload["manifest"]["git_commit_sha"] == "test-sha"
     assert payload["manifest"]["environment_seeds"] == [TEST_SEED]
     assert payload["manifest"]["environment_config"]["episode_horizon"] == 4
+    assert payload["manifest"]["environment_config"]["resource_count"] == 3
     assert payload["manifest"]["homeostatic_config"]["enter_seek"] == 0.35
     assert len(payload["episode_summaries"]) == 3
     assert len(payload["raw_trajectories"]) == 3
+    assert all(
+        len(trajectory["initial_state"]["source_positions"]) == 3
+        for trajectory in payload["raw_trajectories"]
+    )
+    assert all(
+        "source_positions" not in transition
+        for trajectory in payload["raw_trajectories"]
+        for transition in trajectory["transitions"]
+    )
 
     original = output_path.read_text(encoding="utf-8")
     with pytest.raises(FileExistsError, match="refusing to overwrite"):

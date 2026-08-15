@@ -10,7 +10,7 @@ def test_source_ahead_is_stronger_than_side_signals() -> None:
     field = ResourceField(
         world_min=(0.0, 0.0),
         world_max=(1.0, 1.0),
-        source_position=(0.4, 0.5),
+        source_positions=((0.4, 0.5),),
         length_scale=0.08,
     )
 
@@ -30,7 +30,7 @@ def test_left_and_right_orientation_is_relative_to_heading() -> None:
     field = ResourceField(
         world_min=(0.0, 0.0),
         world_max=(1.0, 1.0),
-        source_position=(0.4, 0.5),
+        source_positions=((0.4, 0.5),),
         length_scale=0.08,
     )
 
@@ -46,7 +46,7 @@ def test_left_and_right_orientation_is_relative_to_heading() -> None:
 
 def test_out_of_bounds_probes_return_zero() -> None:
     body = Body(x=0.02, y=0.5, heading=math.pi, energy=1.0)
-    field = ResourceField(source_position=(0.0, 0.5), length_scale=0.1)
+    field = ResourceField(source_positions=((0.0, 0.5),), length_scale=0.1)
 
     signals = sample_directional_resources(
         body,
@@ -70,3 +70,22 @@ def test_directional_signals_do_not_contain_coordinates() -> None:
     assert signals.as_tuple() == pytest.approx(
         (signals.left, signals.forward, signals.right)
     )
+
+
+def test_directional_sensing_uses_multi_source_max_field() -> None:
+    body = Body(x=0.5, y=0.5, heading=0.0, energy=1.0)
+    field = ResourceField(
+        source_positions=((0.5, 0.7), (0.7, 0.5)),
+        length_scale=0.05,
+    )
+
+    signals = sample_directional_resources(
+        body,
+        field,
+        probe_distance=0.2,
+        sensor_angle=math.pi / 2,
+    )
+
+    assert signals.left == pytest.approx(1.0)
+    assert signals.forward == pytest.approx(1.0)
+    assert signals.right < signals.left

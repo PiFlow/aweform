@@ -42,7 +42,7 @@ def test_harvest_offsets_cost_and_basal_energy_loss() -> None:
     env.resource_field = type(env.resource_field)(
         world_min=config.world_min,
         world_max=config.world_max,
-        source_position=env.body.position,
+        source_positions=(env.body.position,),
         peak_intensity=1.0,
         length_scale=0.1,
     )
@@ -115,22 +115,71 @@ def test_different_seeds_change_generated_world_or_body_start() -> None:
     assert first.resource_field is not None
     assert second.resource_field is not None
     assert (
-        first.resource_field.source_position != second.resource_field.source_position
+        first.resource_field.source_positions != second.resource_field.source_positions
         or first.body.position != second.body.position
         or first.body.heading != second.body.heading
     )
 
 
 def test_environment_dynamics_do_not_consume_policy_stream() -> None:
-    env = AweformEnv()
+    config = AweformEnvConfig(resource_count=3)
+    env = AweformEnv(config)
     env.reset(seed=16)
     assert env.random_streams is not None
     expected = env.random_streams.policy.random(8)
 
-    other = AweformEnv()
+    other = AweformEnv(config)
     other.reset(seed=16)
     assert other.random_streams is not None
     other.step(Action.MOVE_FORWARD)
     actual = other.random_streams.policy.random(8)
 
     np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("resource_count", [True, 0, -1, 1.5, "3"])
+def test_invalid_environment_resource_count_is_rejected(
+    resource_count: object,
+) -> None:
+    with pytest.raises(ValueError):
+        AweformEnvConfig(resource_count=resource_count)  # type: ignore[arg-type]
+
+
+def test_resource_count_preserves_primary_source_and_body_start() -> None:
+    single = AweformEnv(AweformEnvConfig(resource_count=1))
+    multiple = AweformEnv(AweformEnvConfig(resource_count=3))
+
+    single.reset(seed=701)
+    multiple.reset(seed=701)
+
+    assert single.body is not None
+    assert multiple.body is not None
+    assert single.resource_field is not None
+    assert multiple.resource_field is not None
+    assert (
+        multiple.resource_field.source_positions[0]
+        == (single.resource_field.source_positions[0])
+    )
+    assert multiple.resource_field.source_positions[1:]
+    assert (multiple.body.x, multiple.body.y, multiple.body.heading) == (
+        single.body.x,
+        single.body.y,
+        single.body.heading,
+    )
+    assert multiple.body.energy == single.body.energy
+
+
+def test_repeated_multi_source_reset_reproduces_full_world_and_body_start() -> None:
+    env = AweformEnv(AweformEnvConfig(resource_count=3))
+
+    env.reset(seed=702)
+    assert env.body is not None
+    assert env.resource_field is not None
+    first_sources = env.resource_field.source_positions
+    first_body = (env.body.x, env.body.y, env.body.heading, env.body.energy)
+
+    env.reset(seed=702)
+    assert env.body is not None
+    assert env.resource_field is not None
+    assert env.resource_field.source_positions == first_sources
+    assert (env.body.x, env.body.y, env.body.heading, env.body.energy) == first_body

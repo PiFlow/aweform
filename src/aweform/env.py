@@ -68,6 +68,7 @@ class AweformEnvConfig:
     episode_horizon: int = 100
     resource_peak_intensity: float = 1.0
     resource_length_scale: float = 0.25
+    resource_count: int = 1
 
     def __post_init__(self) -> None:
         _validate_bounds(self.world_min, self.world_max)
@@ -99,6 +100,12 @@ class AweformEnvConfig:
             or self.episode_horizon <= 0
         ):
             raise ValueError("episode_horizon must be a positive integer")
+        if (
+            isinstance(self.resource_count, bool)
+            or not isinstance(self.resource_count, int)
+            or self.resource_count <= 0
+        ):
+            raise ValueError("resource_count must be a positive integer")
 
 
 class AweformEnv(gym.Env[np.ndarray, int]):
@@ -142,10 +149,11 @@ class AweformEnv(gym.Env[np.ndarray, int]):
         )
         self.random_streams = RandomStreams.from_seed(environment_seed)
         environment_rng = self.random_streams.environment
-        self.resource_field = ResourceField.from_rng(
+        primary_resource_field = ResourceField.from_rng(
             environment_rng,
             world_min=self.config.world_min,
             world_max=self.config.world_max,
+            resource_count=1,
             peak_intensity=self.config.resource_peak_intensity,
             length_scale=self.config.resource_length_scale,
         )
@@ -159,6 +167,29 @@ class AweformEnv(gym.Env[np.ndarray, int]):
             heading=float(environment_rng.uniform(0.0, math.tau)),
             energy=self.config.initial_energy,
         )
+        # Preserve the existing primary-source, body-position, and heading
+        # draws. Additional sources are sampled only after the body start.
+        if self.config.resource_count == 1:
+            self.resource_field = primary_resource_field
+        else:
+            additional_resource_field = ResourceField.from_rng(
+                environment_rng,
+                world_min=self.config.world_min,
+                world_max=self.config.world_max,
+                resource_count=self.config.resource_count - 1,
+                peak_intensity=self.config.resource_peak_intensity,
+                length_scale=self.config.resource_length_scale,
+            )
+            self.resource_field = ResourceField(
+                world_min=self.config.world_min,
+                world_max=self.config.world_max,
+                source_positions=(
+                    *primary_resource_field.source_positions,
+                    *additional_resource_field.source_positions,
+                ),
+                peak_intensity=self.config.resource_peak_intensity,
+                length_scale=self.config.resource_length_scale,
+            )
         self._step_count = 0
         self._episode_done = False
         self.last_transition = None
