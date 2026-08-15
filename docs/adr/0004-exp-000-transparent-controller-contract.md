@@ -10,7 +10,9 @@
   It uses hysteresis to switch between `EXPLORE` and `SEEK_RESOURCE`.
 - `EXPLORE` uses the same persistent pattern as Condition A.
 - `SEEK_RESOURCE` uses only the local left, forward, and right resource
-  signals. Forward wins ties for the strongest signal.
+  signals. When all three signals are exactly equal, the controller turns
+  left to resample from a new orientation; otherwise forward wins ties for
+  the strongest signal.
 - B receives actual normalized energy from the four-value observation.
 - C substitutes an explicitly configured fixed, non-informative normalized
   energy signal for mode switching.
@@ -18,7 +20,8 @@
   heading, resource coordinates, or evaluator telemetry.
 - These controllers are programmed controllers, not learned controllers.
 
-Threshold values, persistent cadence, and the exact fixed masked-energy value
-remain development parameters until the confirmatory EXP-000 protocol is
-frozen. Changing to shuffled, delayed, or noisy masking would be a distinct
-experimental condition and must not silently replace the fixed-mask condition.
+Threshold values, including the recovery threshold, persistent cadence, and
+the exact fixed masked-energy value remain development parameters until the
+confirmatory EXP-000 protocol is frozen. Changing to shuffled, delayed, or
+noisy masking would be a distinct experimental condition and must not silently
+replace the fixed-mask condition.

@@ -61,9 +61,12 @@ def test_persistent_exploration_ignores_valid_observation_contents() -> None:
     assert first_actions == second_actions
 
 
-def test_hysteresis_starts_exploring_and_prevents_rapid_switching() -> None:
-    controller = HomeostaticController(HomeostaticConfig(exploration_steps=2))
+def test_hysteresis_uses_development_recovery_threshold() -> None:
+    config = HomeostaticConfig(exploration_steps=2)
+    controller = HomeostaticController(config)
 
+    assert config.enter_seek == 0.35
+    assert HomeostaticConfig().recover == 0.85
     assert controller.mode is ControllerMode.EXPLORE
     controller.act(_observation(energy=0.5))
     assert controller.mode is ControllerMode.EXPLORE
@@ -71,10 +74,13 @@ def test_hysteresis_starts_exploring_and_prevents_rapid_switching() -> None:
     controller.act(_observation(energy=0.34, left=1.0))
     assert controller.mode is ControllerMode.SEEK_RESOURCE
 
-    controller.act(_observation(energy=0.5, right=1.0))
+    controller.act(_observation(energy=0.80, right=1.0))
     assert controller.mode is ControllerMode.SEEK_RESOURCE
 
-    controller.act(_observation(energy=0.66))
+    controller.act(_observation(energy=0.85))
+    assert controller.mode is ControllerMode.SEEK_RESOURCE
+
+    controller.act(_observation(energy=0.86))
     assert controller.mode is ControllerMode.EXPLORE
 
 
@@ -82,7 +88,7 @@ def test_hysteresis_reset_restores_mode_and_exploration_phase() -> None:
     controller = HomeostaticController(HomeostaticConfig(exploration_steps=2))
     controller.act(_observation(energy=0.5))
     controller.act(_observation(energy=0.34))
-    controller.act(_observation(energy=0.66))
+    controller.act(_observation(energy=0.86))
 
     controller.reset()
 
@@ -94,9 +100,10 @@ def test_hysteresis_reset_restores_mode_and_exploration_phase() -> None:
     ("left", "forward", "right", "expected"),
     [
         (0.2, 0.9, 0.4, Action.MOVE_FORWARD),
+        (0.7, 0.7, 0.2, Action.MOVE_FORWARD),
+        (0.2, 0.7, 0.7, Action.MOVE_FORWARD),
         (0.9, 0.2, 0.4, Action.TURN_LEFT),
         (0.2, 0.4, 0.9, Action.TURN_RIGHT),
-        (0.7, 0.7, 0.2, Action.MOVE_FORWARD),
     ],
 )
 def test_resource_seeking_uses_local_signals_and_forward_tie_breaking(
@@ -113,6 +120,29 @@ def test_resource_seeking_uses_local_signals_and_forward_tie_breaking(
 
     assert controller.mode is ControllerMode.SEEK_RESOURCE
     assert action is expected
+
+
+@pytest.mark.parametrize("signal", [0.0, 0.2])
+def test_resource_seeking_turns_left_for_all_equal_signals(signal: float) -> None:
+    controller = HomeostaticController()
+
+    action = controller.act(
+        _observation(energy=0.1, left=signal, forward=signal, right=signal)
+    )
+
+    assert controller.mode is ControllerMode.SEEK_RESOURCE
+    assert action is Action.TURN_LEFT
+
+
+def test_homeostatic_and_energy_blind_share_resource_steering() -> None:
+    observation = _observation(energy=0.1, left=0.2, forward=0.2, right=0.2)
+    informative = HomeostaticController()
+    energy_blind = EnergyBlindController(masked_energy=0.2)
+
+    assert informative.act(observation) is Action.TURN_LEFT
+    assert energy_blind.act(observation) is Action.TURN_LEFT
+    assert informative.mode is ControllerMode.SEEK_RESOURCE
+    assert energy_blind.mode is ControllerMode.SEEK_RESOURCE
 
 
 def test_energy_blind_controller_uses_fixed_mask_for_identical_external_input() -> None:
