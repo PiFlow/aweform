@@ -28,8 +28,8 @@ from .controllers import (
 )
 from .env import Action, AweformEnv, AweformEnvConfig, TransitionTelemetry
 
-ARTIFACT_SCHEMA_VERSION = "exp-000-development-v1"
-MANIFEST_SCHEMA_VERSION = "exp-000-development-manifest-v1"
+ARTIFACT_SCHEMA_VERSION = "exp-000-development-v2"
+MANIFEST_SCHEMA_VERSION = "exp-000-development-manifest-v2"
 
 
 class Condition(Enum):
@@ -48,7 +48,7 @@ class EvaluatorInitialState:
     y: float
     heading: float
     energy: float
-    source_position: tuple[float, float]
+    source_positions: tuple[tuple[float, float], ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -365,7 +365,7 @@ def _initial_state(env: AweformEnv) -> EvaluatorInitialState:
         y=env.body.y,
         heading=env.body.heading,
         energy=env.body.energy,
-        source_position=env.resource_field.source_position,
+        source_positions=env.resource_field.source_positions,
     )
 
 
@@ -518,12 +518,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--seed", nargs="+", type=int, required=True)
     parser.add_argument("--masked-energy", type=float, required=True)
+    parser.add_argument("--resource-count", type=int, default=1)
     parser.add_argument("--git-sha", required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     result = run_development_batch(
         seeds=args.seed,
-        env_config=AweformEnvConfig(),
+        env_config=AweformEnvConfig(resource_count=args.resource_count),
         homeostatic_config=HomeostaticConfig(),
         masked_energy=args.masked_energy,
         git_sha=args.git_sha,

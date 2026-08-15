@@ -45,7 +45,7 @@ class VisualizationData:
     seed: int
     world_min: tuple[float, float]
     world_max: tuple[float, float]
-    source_position: tuple[float, float]
+    source_positions: tuple[tuple[float, float], ...]
     frames: tuple[tuple[VisualizationFrame, ...], ...]
 
 
@@ -110,12 +110,12 @@ def build_visualization_frames(
         result.manifest.environment_config
     )
 
-    source_position = records[0].trajectory.initial_state.source_position
+    source_positions = records[0].trajectory.initial_state.source_positions
     if any(
-        record.trajectory.initial_state.source_position != source_position
+        record.trajectory.initial_state.source_positions != source_positions
         for record in records[1:]
     ):
-        raise ValueError("matched conditions do not share one resource source position")
+        raise ValueError("matched conditions do not share resource source positions")
 
     condition_frames = tuple(
         _record_frames(
@@ -134,7 +134,7 @@ def build_visualization_frames(
         seed=records[0].trajectory.environment_seed,
         world_min=world_min,
         world_max=world_max,
-        source_position=source_position,
+        source_positions=source_positions,
         frames=aligned,
     )
 
@@ -171,19 +171,12 @@ def build_visualization_figure(
             )
         )
         axis.plot(
-            [data.source_position[0]],
-            [data.source_position[1]],
+            [position[0] for position in data.source_positions],
+            [position[1] for position in data.source_positions],
             marker="*",
             markersize=10,
             color="black",
             linestyle="None",
-        )
-        axis.text(
-            data.source_position[0],
-            data.source_position[1],
-            " resource",
-            fontsize=8,
-            va="bottom",
         )
         path_line, *_ = axis.plot([], [], color="tab:blue", alpha=0.45)
         position_marker, *_ = axis.plot(
@@ -260,11 +253,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--masked-energy", type=float, required=True)
+    parser.add_argument("--resource-count", type=int, default=1)
     parser.add_argument("--git-sha", required=True)
     args = parser.parse_args(argv)
     result = run_development_batch(
         seeds=[args.seed],
-        env_config=AweformEnvConfig(),
+        env_config=AweformEnvConfig(resource_count=args.resource_count),
         homeostatic_config=HomeostaticConfig(),
         masked_energy=args.masked_energy,
         git_sha=args.git_sha,

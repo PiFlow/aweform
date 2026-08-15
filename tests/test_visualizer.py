@@ -19,10 +19,13 @@ from aweform import (
 )
 
 
-def _result(*seeds: int):
+def _result(*seeds: int, resource_count: int = 1):
     return run_development_batch(
         seeds=seeds,
-        env_config=AweformEnvConfig(episode_horizon=4),
+        env_config=AweformEnvConfig(
+            episode_horizon=4,
+            resource_count=resource_count,
+        ),
         homeostatic_config=HomeostaticConfig(),
         masked_energy=0.2,
         git_sha="test-sha",
@@ -97,7 +100,24 @@ def test_visualizer_reads_privileged_trajectory_state_separately_from_observatio
         record.trajectory.initial_state.x,
         record.trajectory.initial_state.y,
     )
-    assert data.source_position == record.trajectory.initial_state.source_position
+    assert data.source_positions == record.trajectory.initial_state.source_positions
+
+
+def test_multi_source_visualizer_data_and_markers_are_shared_across_panels() -> None:
+    result = _result(701, resource_count=3)
+    data = build_visualization_frames(result, seed=701)
+
+    assert len(data.source_positions) == 3
+    figure, animation = build_visualization_figure(result, seed=701)
+    for axis in figure.axes:
+        source_lines = [line for line in axis.lines if line.get_marker() == "*"]
+        assert len(source_lines) == 1
+        assert tuple(zip(source_lines[0].get_xdata(), source_lines[0].get_ydata())) == (
+            data.source_positions
+        )
+    animation._init_draw()
+    animation.event_source.stop()
+    plt.close(figure)
 
 
 def test_figure_has_three_condition_panels() -> None:
