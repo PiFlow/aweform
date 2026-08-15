@@ -25,6 +25,14 @@ from .runner import (
     write_development_json,
 )
 from .sensing import DirectionalSignals, sample_directional_resources
+from .visualizer import (
+    VisualizationData,
+    VisualizationFrame,
+    build_visualization_figure,
+    build_visualization_frames,
+    select_seed_records,
+    show_development_visualization,
+)
 
 __all__ = [
     "Action",
@@ -54,4 +62,10 @@ __all__ = [
     "run_development_batch",
     "sample_directional_resources",
     "write_development_json",
+    "VisualizationData",
+    "VisualizationFrame",
+    "build_visualization_figure",
+    "build_visualization_frames",
+    "select_seed_records",
+    "show_development_visualization",
 ]
