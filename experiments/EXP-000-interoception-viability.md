@@ -94,6 +94,12 @@ Use a two-stage process:
 1. **Calibration/development:** choose minimal world and controller parameters using designated development seeds. Failed and trivial configurations may be changed here, with changes recorded.
 2. **Confirmatory evaluation:** run the frozen protocol on untouched acceptance seeds. Do not inspect or tune against these seeds beforehand.
 
+The current formal calibration grid, reserved development and acceptance seed
+roles, environment-selection rule, and planned confirmatory endpoint are
+defined in [`EXP-000-calibration-protocol.md`](EXP-000-calibration-protocol.md).
+That document is a calibration protocol, not a claim that EXP-000 has been
+confirmed.
+
 Before the first confirmatory run, record at minimum:
 
 - environment dimensions and resource parameters;

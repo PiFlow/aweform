@@ -30,6 +30,8 @@ from .env import Action, AweformEnv, AweformEnvConfig, TransitionTelemetry
 
 ARTIFACT_SCHEMA_VERSION = "exp-000-development-v2"
 MANIFEST_SCHEMA_VERSION = "exp-000-development-manifest-v2"
+ACCEPTANCE_SEED_MIN = 10001
+ACCEPTANCE_SEED_MAX = 10100
 
 
 class Condition(Enum):
@@ -483,7 +485,12 @@ def _validate_seeds(seeds: Sequence[int]) -> tuple[int, ...]:
     for seed in supplied_seeds:
         if isinstance(seed, bool) or not isinstance(seed, Integral) or seed < 0:
             raise ValueError("seeds must contain only non-negative integer values")
-        validated.append(int(seed))
+        validated_seed = int(seed)
+        if ACCEPTANCE_SEED_MIN <= validated_seed <= ACCEPTANCE_SEED_MAX:
+            raise ValueError(
+                f"development runner refuses reserved acceptance seed {validated_seed}"
+            )
+        validated.append(validated_seed)
     return tuple(validated)
 
 
@@ -513,24 +520,59 @@ def _to_json_value(value: Any) -> Any:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the intentionally small development artifact CLI."""
+    default_environment_config = AweformEnvConfig()
     parser = argparse.ArgumentParser(
         description="Generate an EXP-000 development run artifact."
     )
     parser.add_argument("--seed", nargs="+", type=int, required=True)
     parser.add_argument("--masked-energy", type=float, required=True)
     parser.add_argument("--resource-count", type=int, default=1)
+    parser.add_argument(
+        "--episode-horizon",
+        type=_positive_int_argument,
+        default=default_environment_config.episode_horizon,
+    )
+    parser.add_argument(
+        "--resource-length-scale",
+        type=_positive_finite_float_argument,
+        default=default_environment_config.resource_length_scale,
+    )
     parser.add_argument("--git-sha", required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     result = run_development_batch(
         seeds=args.seed,
-        env_config=AweformEnvConfig(resource_count=args.resource_count),
+        env_config=AweformEnvConfig(
+            resource_count=args.resource_count,
+            episode_horizon=args.episode_horizon,
+            resource_length_scale=args.resource_length_scale,
+        ),
         homeostatic_config=HomeostaticConfig(),
         masked_energy=args.masked_energy,
         git_sha=args.git_sha,
     )
     write_development_json(result, args.output)
     return 0
+
+
+def _positive_int_argument(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be a positive integer") from error
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
+
+
+def _positive_finite_float_argument(value: str) -> float:
+    try:
+        parsed = float(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be a positive finite float") from error
+    if not math.isfinite(parsed) or parsed <= 0.0:
+        raise argparse.ArgumentTypeError("must be a positive finite float")
+    return parsed
 
 
 if __name__ == "__main__":
