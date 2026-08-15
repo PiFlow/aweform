@@ -14,7 +14,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 
 from .controllers import ControllerMode, HomeostaticConfig
-from .env import AweformEnvConfig
+from .env import Action, AweformEnvConfig
 from .runner import (
     Condition,
     DevelopmentBatchResult,
@@ -35,6 +35,13 @@ class VisualizationFrame:
     normalized_energy: float
     path: tuple[tuple[float, float], ...]
     mode: ControllerMode | None
+    left_resource: float | None
+    forward_resource: float | None
+    right_resource: float | None
+    next_action: Action | None
+    decision_mode: ControllerMode | None
+    mode_energy_signal: float | None
+    mode_energy_source: str | None
     terminal_status: str
 
 
@@ -122,6 +129,7 @@ def build_visualization_frames(
             record.trajectory,
             failure_boundary=failure_boundary,
             maximum_energy=maximum_energy,
+            masked_energy=result.manifest.energy_blind_masked_energy,
         )
         for record in records
     )
@@ -136,6 +144,46 @@ def build_visualization_frames(
         world_max=world_max,
         source_positions=source_positions,
         frames=aligned,
+    )
+
+
+def format_diagnostic_text(frame: VisualizationFrame) -> str:
+    """Format the compact perception/action diagnostic for one frame."""
+    if frame.next_action is None:
+        sense_text = "— / — / —"
+        next_action_text = "—"
+        decision_mode_text = "—"
+        mode_energy_text = "—"
+    else:
+        assert frame.left_resource is not None
+        assert frame.forward_resource is not None
+        assert frame.right_resource is not None
+        sense_text = (
+            f"{frame.left_resource:.3f} / "
+            f"{frame.forward_resource:.3f} / "
+            f"{frame.right_resource:.3f}"
+        )
+        next_action_text = frame.next_action.name
+        decision_mode_text = (
+            "n/a" if frame.decision_mode is None else frame.decision_mode.value
+        )
+        if frame.mode_energy_signal is None:
+            mode_energy_text = "n/a"
+        else:
+            assert frame.mode_energy_source is not None
+            mode_energy_text = (
+                f"{frame.mode_energy_signal:.3f} {frame.mode_energy_source}"
+            )
+    mode_text = "n/a" if frame.mode is None else frame.mode.value
+    return (
+        f"step: {frame.step_index}\n"
+        f"energy: {frame.normalized_energy:.3f}\n"
+        f"mode: {mode_text}\n"
+        f"sense L/F/R: {sense_text}\n"
+        f"next: {next_action_text}\n"
+        f"decision mode: {decision_mode_text}\n"
+        f"mode energy: {mode_energy_text}\n"
+        f"status: {frame.terminal_status}"
     )
 
 
@@ -210,13 +258,7 @@ def build_visualization_figure(
                 np.asarray([math.cos(frame.heading)]),
                 np.asarray([math.sin(frame.heading)]),
             )
-            mode_text = "" if frame.mode is None else f"\nmode: {frame.mode.value}"
-            summary_text.set_text(
-                f"step: {frame.step_index}\n"
-                f"energy: {frame.normalized_energy:.3f}"
-                f"{mode_text}\n"
-                f"status: {frame.terminal_status}"
-            )
+            summary_text.set_text(format_diagnostic_text(frame))
             updated.extend(artist_group)
         return tuple(updated)
 
@@ -293,6 +335,7 @@ def _record_frames(
     *,
     failure_boundary: float,
     maximum_energy: float,
+    masked_energy: float,
 ) -> tuple[VisualizationFrame, ...]:
     energy_range = maximum_energy - failure_boundary
     initial = trajectory.initial_state
@@ -310,6 +353,13 @@ def _record_frames(
             normalized_energy=(initial.energy - failure_boundary) / energy_range,
             path=((initial.x, initial.y),),
             mode=initial_mode,
+            left_resource=None,
+            forward_resource=None,
+            right_resource=None,
+            next_action=None,
+            decision_mode=None,
+            mode_energy_signal=None,
+            mode_energy_source=None,
             terminal_status="running",
         )
     ]
@@ -339,10 +389,52 @@ def _record_frames(
                 normalized_energy=(transition.energy - failure_boundary) / energy_range,
                 path=tuple(path),
                 mode=transition.mode,
+                left_resource=None,
+                forward_resource=None,
+                right_resource=None,
+                next_action=None,
+                decision_mode=None,
+                mode_energy_signal=None,
+                mode_energy_source=None,
                 terminal_status=status,
             )
         )
-    return tuple(frames)
+    aligned_frames: list[VisualizationFrame] = []
+    for frame_index, frame in enumerate(frames):
+        if frame_index >= len(trajectory.transitions):
+            aligned_frames.append(frame)
+            continue
+        decision = trajectory.transitions[frame_index]
+        left_resource, forward_resource, right_resource = decision.observation[1:]
+        if trajectory.condition is Condition.A_PERSISTENT:
+            mode_energy_signal = None
+            mode_energy_source = "n/a"
+        elif trajectory.condition is Condition.B_HOMEOSTATIC:
+            mode_energy_signal = decision.observation[0]
+            mode_energy_source = "ACTUAL"
+        else:
+            mode_energy_signal = masked_energy
+            mode_energy_source = "MASKED"
+        aligned_frames.append(
+            VisualizationFrame(
+                step_index=frame.step_index,
+                x=frame.x,
+                y=frame.y,
+                heading=frame.heading,
+                normalized_energy=frame.normalized_energy,
+                path=frame.path,
+                mode=frame.mode,
+                left_resource=left_resource,
+                forward_resource=forward_resource,
+                right_resource=right_resource,
+                next_action=decision.action,
+                decision_mode=decision.mode,
+                mode_energy_signal=mode_energy_signal,
+                mode_energy_source=mode_energy_source,
+                terminal_status=frame.terminal_status,
+            )
+        )
+    return tuple(aligned_frames)
 
 
 def _coordinate_from_config(
