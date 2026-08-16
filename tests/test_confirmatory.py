@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 import pytest
 
+import aweform
 import aweform.confirmatory as confirmatory
 import aweform.runner as runner
 from aweform import Condition
@@ -177,8 +178,7 @@ def test_matched_initial_environment_state_is_required(tmp_path: Path) -> None:
     "field, value, message",
     [
         ("terminated_viability_failure", "false", "must be boolean"),
-        ("truncated_at_horizon", True, "cannot be both"),
-        ("horizon_survival", False, "inconsistent|cannot be both"),
+        ("horizon_survival", False, "inconsistent"),
         ("explore_steps", -1, "non-negative integer"),
         ("seek_resource_steps", 1.5, "non-negative integer"),
     ],
@@ -187,10 +187,9 @@ def test_summary_integrity_fields_are_strictly_validated(
     tmp_path: Path, field: str, value: object, message: str
 ) -> None:
     altered = _payload()
-    if field == "truncated_at_horizon":
-        altered["episode_summaries"][0]["terminated_viability_failure"] = True
     if field == "horizon_survival":
         altered["episode_summaries"][0]["steps_executed"] = 500
+        altered["episode_summaries"][0]["terminated_viability_failure"] = False
         altered["episode_summaries"][0]["truncated_at_horizon"] = True
         altered["raw_trajectories"][0]["transitions"] = [{} for _ in range(500)]
     altered["episode_summaries"][0][field] = value
@@ -198,6 +197,61 @@ def test_summary_integrity_fields_are_strictly_validated(
         confirmatory.analyze_confirmatory_artifact(
             _write_payload(tmp_path, altered)
         )
+
+
+def test_both_termination_flags_false_are_rejected(tmp_path: Path) -> None:
+    altered = _payload()
+    altered["episode_summaries"][0]["terminated_viability_failure"] = False
+    with pytest.raises(
+        confirmatory.ConfirmatoryValidationError,
+        match="exactly one termination flag",
+    ):
+        confirmatory.analyze_confirmatory_artifact(_write_payload(tmp_path, altered))
+
+
+def test_both_termination_flags_true_are_rejected(tmp_path: Path) -> None:
+    altered = _payload()
+    altered["episode_summaries"][0]["truncated_at_horizon"] = True
+    with pytest.raises(
+        confirmatory.ConfirmatoryValidationError,
+        match="exactly one termination flag",
+    ):
+        confirmatory.analyze_confirmatory_artifact(_write_payload(tmp_path, altered))
+
+
+def test_truncation_before_horizon_is_rejected(tmp_path: Path) -> None:
+    altered = _payload()
+    altered["episode_summaries"][0]["terminated_viability_failure"] = False
+    altered["episode_summaries"][0]["truncated_at_horizon"] = True
+    altered["episode_summaries"][0]["horizon_survival"] = True
+    with pytest.raises(
+        confirmatory.ConfirmatoryValidationError,
+        match="truncated episode must reach",
+    ):
+        confirmatory.analyze_confirmatory_artifact(_write_payload(tmp_path, altered))
+
+
+def test_valid_viability_termination_before_horizon_is_accepted(tmp_path: Path) -> None:
+    confirmatory.analyze_confirmatory_artifact(_write_payload(tmp_path, _payload()))
+
+
+def test_valid_truncation_at_horizon_is_accepted(tmp_path: Path) -> None:
+    payload = _payload(b_lifespans=[500] * 100, c_lifespans=[500] * 100)
+    confirmatory.analyze_confirmatory_artifact(_write_payload(tmp_path, payload))
+
+
+def test_valid_viability_termination_at_horizon_is_accepted(tmp_path: Path) -> None:
+    payload = _payload(b_lifespans=[500] * 100, c_lifespans=[500] * 100)
+    summary = payload["episode_summaries"][0]
+    summary["terminated_viability_failure"] = True
+    summary["truncated_at_horizon"] = False
+    summary["horizon_survival"] = False
+    confirmatory.analyze_confirmatory_artifact(_write_payload(tmp_path, payload))
+
+
+def test_package_does_not_expose_unreserved_confirmatory_execution() -> None:
+    assert not hasattr(aweform, "run_confirmatory_batch")
+    assert not hasattr(aweform, "run_confirmatory_batch_from_git")
 
 
 def test_primary_differences_and_frozen_bootstrap_are_deterministic(
@@ -330,7 +384,7 @@ def test_confirmatory_runner_hardcodes_exact_matched_b_c_path(
         return object()
 
     monkeypatch.setattr(confirmatory, "_run_episode", fake_run_episode)
-    result = confirmatory.run_confirmatory_batch(GIT_SHA)
+    result = confirmatory._run_confirmatory_batch(GIT_SHA)
 
     assert len(result.episodes) == 200
     assert [call[0] for call in calls[::2]] == list(confirmatory.ACCEPTANCE_SEEDS)
@@ -410,7 +464,7 @@ def test_interrupted_execution_preserves_reservation(
     def fail_run(_git_sha: str) -> object:
         raise RuntimeError("synthetic interruption")
 
-    monkeypatch.setattr(confirmatory, "run_confirmatory_batch", fail_run)
+    monkeypatch.setattr(confirmatory, "_run_confirmatory_batch", fail_run)
     with pytest.raises(RuntimeError, match="synthetic interruption"):
         confirmatory.execute_confirmatory_to_path(output)
     assert Path(f"{output}.in-progress").exists()
@@ -422,7 +476,7 @@ def test_resolved_head_is_recorded_without_cli_override(
     monkeypatch.setattr(confirmatory, "resolve_git_provenance", lambda: GIT_SHA)
     monkeypatch.setattr(confirmatory, "_run_episode", lambda **_kwargs: object())
 
-    result = confirmatory.run_confirmatory_batch_from_git()
+    result = confirmatory._run_confirmatory_batch(confirmatory.resolve_git_provenance())
 
     assert result.manifest.git_commit_sha == GIT_SHA
 

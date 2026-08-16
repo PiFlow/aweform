@@ -6,7 +6,6 @@ from .confirmatory import (
     ConfirmatoryBatchResult,
     ConfirmatoryValidationError,
     analyze_confirmatory_artifact,
-    run_confirmatory_batch,
     write_confirmatory_json,
 )
 from .controllers import (
@@ -72,7 +71,6 @@ __all__ = [
     "advance_energy",
     "analyze_confirmatory_artifact",
     "run_development_batch",
-    "run_confirmatory_batch",
     "sample_directional_resources",
     "write_development_json",
     "write_confirmatory_json",

@@ -257,7 +257,7 @@ class ConfirmatoryAnalysis:
         return "\n".join(lines)
 
 
-def run_confirmatory_batch(git_sha: str) -> ConfirmatoryBatchResult:
+def _run_confirmatory_batch(git_sha: str) -> ConfirmatoryBatchResult:
     """Run the deliberate frozen B/C path on the hardcoded acceptance seeds."""
     _validate_git_sha(git_sha)
     started_at = datetime.now(timezone.utc).isoformat()
@@ -300,11 +300,6 @@ def run_confirmatory_batch(git_sha: str) -> ConfirmatoryBatchResult:
     return ConfirmatoryBatchResult(manifest=manifest, episodes=tuple(episodes))
 
 
-def run_confirmatory_batch_from_git() -> ConfirmatoryBatchResult:
-    """Run the frozen batch using the clean checkout's actual HEAD SHA."""
-    return run_confirmatory_batch(resolve_git_provenance())
-
-
 def execute_confirmatory_to_path(output_path: str | os.PathLike[str]) -> Path:
     """Reserve an output, execute once, and publish without overwriting.
 
@@ -316,7 +311,7 @@ def execute_confirmatory_to_path(output_path: str | os.PathLike[str]) -> Path:
     path = Path(output_path)
     git_sha = resolve_git_provenance()
     reservation = acquire_confirmatory_reservation(path)
-    result = run_confirmatory_batch(git_sha)
+    result = _run_confirmatory_batch(git_sha)
     write_confirmatory_json(result, path)
     reservation.release()
     return path
@@ -660,11 +655,16 @@ def _validate_records(value: Any, label: str) -> tuple[Mapping[str, Any], ...]:
             terminated = record["terminated_viability_failure"]
             truncated = record["truncated_at_horizon"]
             horizon_survival = record["horizon_survival"]
-            if terminated and truncated:
+            if terminated == truncated:
                 raise ConfirmatoryValidationError(
-                    f"{label}[{index}] cannot be both terminated and truncated"
+                    f"{label}[{index}] exactly one termination flag must be true"
                 )
-            if horizon_survival != (truncated and not terminated and steps == 500):
+            if truncated and steps != CONFIRMATORY_EPISODE_HORIZON:
+                raise ConfirmatoryValidationError(
+                    f"{label}[{index}] truncated episode must reach the "
+                    f"{CONFIRMATORY_EPISODE_HORIZON}-step horizon"
+                )
+            if horizon_survival != truncated:
                 raise ConfirmatoryValidationError(
                     f"{label}[{index}] has inconsistent horizon-survival flags"
                 )
