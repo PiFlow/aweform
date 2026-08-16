@@ -42,6 +42,15 @@ from .exp001_runner import (
     exp001_controller_observation,
     run_exp001_development_batch,
 )
+from .exp001_visualizer import (
+    EXP001VisualizationData,
+    EXP001VisualizationFrame,
+    build_exp001_visualization_figure,
+    build_exp001_visualization_frames,
+    format_exp001_diagnostic_text,
+    select_exp001_seed_records,
+    show_exp001_development_visualization,
+)
 from .resource import ResourceField
 from .rng import RandomStreams
 from .runner import (
@@ -95,6 +104,8 @@ __all__ = [
     "EXP001EvaluatorStep",
     "EXP001Mode",
     "EXP001TransitionRecord",
+    "EXP001VisualizationData",
+    "EXP001VisualizationFrame",
     "EpisodeRecord",
     "EpisodeSummary",
     "EpisodeTrajectory",
@@ -113,8 +124,12 @@ __all__ = [
     "analyze_confirmatory_artifact",
     "has_resource_contact",
     "exp001_controller_observation",
+    "build_exp001_visualization_figure",
+    "build_exp001_visualization_frames",
+    "format_exp001_diagnostic_text",
     "policy_rng_from_seed",
     "run_exp001_development_batch",
+    "select_exp001_seed_records",
     "run_development_batch",
     "sample_directional_resources",
     "seek_resource_action",
@@ -126,4 +141,5 @@ __all__ = [
     "build_visualization_frames",
     "select_seed_records",
     "show_development_visualization",
+    "show_exp001_development_visualization",
 ]
