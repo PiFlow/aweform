@@ -17,6 +17,19 @@ from .controllers import (
 )
 from .energy import EnergyConfig, EnergyState, advance_energy
 from .env import Action, AweformEnv, AweformEnvConfig, TransitionTelemetry
+from .exp001 import (
+    EXP001AController,
+    EXP001BController,
+    EXP001CController,
+    EXP001DevelopmentConfig,
+    EXP001Mode,
+    ExternalObservation,
+    InteroceptiveObservation,
+    StochasticPersistentExplorer,
+    has_resource_contact,
+    policy_rng_from_seed,
+    seek_resource_action,
+)
 from .resource import ResourceField
 from .rng import RandomStreams
 from .runner import (
@@ -57,21 +70,32 @@ __all__ = [
     "EnergyBlindController",
     "EnergyConfig",
     "EnergyState",
+    "EXP001AController",
+    "EXP001BController",
+    "EXP001CController",
+    "EXP001DevelopmentConfig",
+    "EXP001Mode",
     "EpisodeRecord",
     "EpisodeSummary",
     "EpisodeTrajectory",
     "EvaluatorInitialState",
     "HomeostaticConfig",
     "HomeostaticController",
+    "ExternalObservation",
+    "InteroceptiveObservation",
     "PersistentExplorationController",
     "RandomStreams",
     "ResourceField",
+    "StochasticPersistentExplorer",
     "TransitionRecord",
     "TransitionTelemetry",
     "advance_energy",
     "analyze_confirmatory_artifact",
+    "has_resource_contact",
+    "policy_rng_from_seed",
     "run_development_batch",
     "sample_directional_resources",
+    "seek_resource_action",
     "write_development_json",
     "write_confirmatory_json",
     "VisualizationData",
