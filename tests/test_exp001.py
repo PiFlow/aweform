@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from aweform import (
+    EXP001_EXPLORER_HAZARD,
     Action,
     EXP001AController,
     EXP001BController,
@@ -28,7 +29,7 @@ class FakePolicyRNG:
         self.random_values = iter(random_values)
 
     def geometric(self, probability: float) -> int:
-        assert probability == pytest.approx(1.0 / 8.0)
+        assert probability == EXP001_EXPLORER_HAZARD
         return next(self.runs)
 
     def random(self) -> float:
@@ -206,8 +207,28 @@ def test_each_condition_uses_shared_explorer_configuration() -> None:
         for controller in controllers
     )
     assert [controller.explorer.hazard for controller in controllers] == [
-        config.explorer_hazard
+        EXP001_EXPLORER_HAZARD
     ] * 3
+
+
+def test_explorer_hazard_is_structurally_fixed() -> None:
+    config_field_names = {field.name for field in fields(EXP001DevelopmentConfig)}
+    assert "explorer_hazard" not in config_field_names
+    assert "hazard" not in inspect.signature(
+        StochasticPersistentExplorer
+    ).parameters
+    with pytest.raises(TypeError):
+        EXP001DevelopmentConfig(
+            resource_contact_threshold=0.5,
+            blind_explore_duration=1,
+            blind_charge_duration=1,
+            explorer_hazard=0.2,  # type: ignore[call-arg]
+        )
+    with pytest.raises(TypeError):
+        StochasticPersistentExplorer(
+            policy_rng_from_seed(109),
+            hazard=0.2,  # type: ignore[call-arg]
+        )
 
 
 def test_b_and_c_share_external_steering_contact_and_wait_charge_action() -> None:
@@ -300,12 +321,6 @@ def test_timer_and_contact_parameters_have_no_production_defaults() -> None:
             "resource_contact_threshold": 0.5,
             "blind_explore_duration": 1,
             "blind_charge_duration": 0,
-        },
-        {
-            "resource_contact_threshold": 0.5,
-            "blind_explore_duration": 1,
-            "blind_charge_duration": 1,
-            "explorer_hazard": 0.0,
         },
         {
             "resource_contact_threshold": 0.5,

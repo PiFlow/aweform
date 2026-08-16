@@ -104,6 +104,10 @@ reseed the explorer. Re-entering `EXPLORE` starts a new stochastic run from
 the next values of the existing policy stream rather than resuming a partial
 run or restarting the seed.
 
+The hazard `p = 1/8` is a fixed part of this EXP-001 mechanism, not a
+development configuration parameter. Changing it requires an explicit
+scientific-design change.
+
 ## True sensory boundary
 
 The controller-facing boundary is explicit:
@@ -115,6 +119,23 @@ Environment and evaluator code may retain actual energy for viability,
 termination, and scientific telemetry. That privileged state is not a C
 contact sensor and does not enter A or C actions.
 
+## Resource-contact semantics
+
+The current development resource-contact criterion is exactly:
+
+`max(left_resource, forward_resource, right_resource) >= resource_contact_threshold`
+
+It is derived only from B/C's external L/F/R directional resource signals. It
+receives no energy, evaluator telemetry, body coordinates, source coordinates,
+harvested-energy value, or hidden resource truth. Because directional probes
+can be spatially displaced from the body, this is an externally detectable
+resource-contact/proximity proxy, not a claim of literal physical body
+contact.
+
+The numerical threshold remains an unfrozen development parameter. Its meaning
+and the final contact semantics must be reviewed before calibration or protocol
+freezing. This foundation does not add a privileged contact sensor.
+
 ## Programmed mechanism
 
 The A/B/C policies, the shared stochastic explorer, local resource steering,
@@ -124,11 +145,12 @@ must not be presented as experimental evidence.
 
 ## Development parameters
 
-The following remain explicit, changeable development parameters: explorer
-hazard, external resource-contact threshold, blind exploration duration, blind
-charging duration, inherited B energy thresholds, and environment/body/resource
-values. The numeric contact threshold and blind timer values are intentionally
-required configuration inputs rather than frozen production protocol defaults.
+The following remain explicit, changeable development parameters: external
+resource-contact threshold, blind exploration duration, blind charging
+duration, inherited B energy thresholds, and environment/body/resource values.
+The numeric contact threshold and blind timer values are intentionally required
+configuration inputs rather than frozen production protocol defaults. Explorer
+hazard is not in this list: `p = 1/8` is structurally fixed by the mechanism.
 
 ## Calibration and confirmatory inference
 

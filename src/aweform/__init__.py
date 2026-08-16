@@ -18,6 +18,7 @@ from .controllers import (
 from .energy import EnergyConfig, EnergyState, advance_energy
 from .env import Action, AweformEnv, AweformEnvConfig, TransitionTelemetry
 from .exp001 import (
+    EXP001_EXPLORER_HAZARD,
     EXP001AController,
     EXP001BController,
     EXP001CController,
@@ -74,6 +75,7 @@ __all__ = [
     "EXP001BController",
     "EXP001CController",
     "EXP001DevelopmentConfig",
+    "EXP001_EXPLORER_HAZARD",
     "EXP001Mode",
     "EpisodeRecord",
     "EpisodeSummary",

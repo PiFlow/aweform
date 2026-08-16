@@ -10,11 +10,14 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import Enum
+from typing import Final
 
 import numpy as np
 
 from .env import Action
 from .rng import RandomStreams
+
+EXP001_EXPLORER_HAZARD: Final[float] = 1.0 / 8.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,7 +62,6 @@ class EXP001DevelopmentConfig:
     resource_contact_threshold: float
     blind_explore_duration: int
     blind_charge_duration: int
-    explorer_hazard: float = 1.0 / 8.0
     enter_seek: float = 0.35
     recover: float = 0.85
 
@@ -67,7 +69,6 @@ class EXP001DevelopmentConfig:
         _validate_normalized_value(
             "resource_contact_threshold", self.resource_contact_threshold
         )
-        _validate_probability("explorer_hazard", self.explorer_hazard)
         _validate_normalized_value("enter_seek", self.enter_seek)
         _validate_normalized_value("recover", self.recover)
         if not self.enter_seek < self.recover:
@@ -103,15 +104,16 @@ class StochasticPersistentExplorer:
     def __init__(
         self,
         policy_rng: np.random.Generator,
-        *,
-        hazard: float = 1.0 / 8.0,
     ) -> None:
-        _validate_probability("hazard", hazard)
         self.policy_rng = policy_rng
-        self.hazard = hazard
         self._forward_actions_remaining = 0
         self._turn_action: Action | None = None
         self._turn_actions_remaining = 0
+
+    @property
+    def hazard(self) -> float:
+        """Return the fixed EXP-001 geometric hazard."""
+        return EXP001_EXPLORER_HAZARD
 
     def act(self, observation: ExternalObservation) -> Action:
         """Return the next exploration action; resource signals are ignored."""
@@ -144,7 +146,7 @@ class StochasticPersistentExplorer:
     reset = begin_segment
 
     def _sample_run_length(self) -> int:
-        run_length = int(self.policy_rng.geometric(self.hazard))
+        run_length = int(self.policy_rng.geometric(EXP001_EXPLORER_HAZARD))
         if run_length < 1:
             raise RuntimeError("policy RNG returned an invalid run length")
         return run_length
@@ -194,7 +196,6 @@ class EXP001AController:
     ) -> None:
         self.explorer = StochasticPersistentExplorer(
             policy_rng,
-            hazard=config.explorer_hazard,
         )
 
     @property
@@ -219,7 +220,6 @@ class EXP001BController:
         self.config = config
         self.explorer = StochasticPersistentExplorer(
             policy_rng,
-            hazard=config.explorer_hazard,
         )
         self._mode = EXP001Mode.EXPLORE
 
@@ -271,7 +271,6 @@ class EXP001CController:
         self.config = config
         self.explorer = StochasticPersistentExplorer(
             policy_rng,
-            hazard=config.explorer_hazard,
         )
         self._mode = EXP001Mode.EXPLORE
         self._mode_actions = 0
@@ -332,13 +331,6 @@ def _validate_normalized_value(name: str, value: float) -> float:
         raise ValueError(f"{name} must be finite") from error
     if not is_finite or not 0.0 <= value <= 1.0:
         raise ValueError(f"{name} must be finite and within [0, 1]")
-    return value
-
-
-def _validate_probability(name: str, value: float) -> float:
-    _validate_normalized_value(name, value)
-    if value == 0.0:
-        raise ValueError(f"{name} must be greater than zero")
     return value
 
 
