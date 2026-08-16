@@ -1,6 +1,13 @@
 """Minimal deterministic energetic substrate for Aweform V0.1."""
 
 from .body import Body
+from .confirmatory import (
+    ConfirmatoryAnalysis,
+    ConfirmatoryBatchResult,
+    ConfirmatoryValidationError,
+    analyze_confirmatory_artifact,
+    write_confirmatory_json,
+)
 from .controllers import (
     ControllerMode,
     EnergyBlindController,
@@ -40,6 +47,9 @@ __all__ = [
     "AweformEnvConfig",
     "Body",
     "ControllerMode",
+    "ConfirmatoryAnalysis",
+    "ConfirmatoryBatchResult",
+    "ConfirmatoryValidationError",
     "Condition",
     "DevelopmentBatchResult",
     "DevelopmentManifest",
@@ -59,9 +69,11 @@ __all__ = [
     "TransitionRecord",
     "TransitionTelemetry",
     "advance_energy",
+    "analyze_confirmatory_artifact",
     "run_development_batch",
     "sample_directional_resources",
     "write_development_json",
+    "write_confirmatory_json",
     "VisualizationData",
     "VisualizationFrame",
     "build_visualization_figure",
