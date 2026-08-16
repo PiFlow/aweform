@@ -17,6 +17,7 @@ dependencies = [
 [project.scripts]
 aweform-development = "aweform.runner:main"
 aweform-visualize-development = "aweform.visualizer:main"
+aweform-visualize-exp001 = "aweform.exp001_visualizer:main"
 aweform-summarize-calibration = "aweform.calibration:main"
 aweform-confirmatory = "aweform.confirmatory:main"
 aweform-analyze-confirmatory = "aweform.confirmatory:analysis_main"
