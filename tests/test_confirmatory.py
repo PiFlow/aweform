@@ -38,7 +38,13 @@ def _payload(
                 {
                     "condition": condition,
                     "environment_seed": seed,
-                    "initial_state": {},
+                    "initial_state": {
+                        "x": 0.1,
+                        "y": 0.2,
+                        "heading": 0.3,
+                        "energy": 5.0,
+                        "source_positions": [[0.4, 0.5]],
+                    },
                     "transitions": [{} for _ in range(lifespan)],
                 }
             )
@@ -143,6 +149,55 @@ def test_duplicate_and_missing_pairs_are_rejected(tmp_path: Path) -> None:
     missing["episode_summaries"].pop()
     with pytest.raises(confirmatory.ConfirmatoryValidationError, match="exactly 200"):
         confirmatory.analyze_confirmatory_artifact(_write_payload(tmp_path, missing))
+
+
+def test_matched_initial_environment_state_is_required(tmp_path: Path) -> None:
+    payload = _payload()
+    path = _write_payload(tmp_path, payload)
+    confirmatory.analyze_confirmatory_artifact(path)
+
+    for field, value in (
+        ("x", 0.11),
+        ("y", 0.21),
+        ("heading", 0.31),
+        ("source_positions", [[0.41, 0.5]]),
+    ):
+        altered = _payload()
+        altered["raw_trajectories"][1]["initial_state"][field] = value
+        with pytest.raises(
+            confirmatory.ConfirmatoryValidationError,
+            match="initial state diverges",
+        ):
+            confirmatory.analyze_confirmatory_artifact(
+                _write_payload(tmp_path, altered)
+            )
+
+
+@pytest.mark.parametrize(
+    "field, value, message",
+    [
+        ("terminated_viability_failure", "false", "must be boolean"),
+        ("truncated_at_horizon", True, "cannot be both"),
+        ("horizon_survival", False, "inconsistent|cannot be both"),
+        ("explore_steps", -1, "non-negative integer"),
+        ("seek_resource_steps", 1.5, "non-negative integer"),
+    ],
+)
+def test_summary_integrity_fields_are_strictly_validated(
+    tmp_path: Path, field: str, value: object, message: str
+) -> None:
+    altered = _payload()
+    if field == "truncated_at_horizon":
+        altered["episode_summaries"][0]["terminated_viability_failure"] = True
+    if field == "horizon_survival":
+        altered["episode_summaries"][0]["steps_executed"] = 500
+        altered["episode_summaries"][0]["truncated_at_horizon"] = True
+        altered["raw_trajectories"][0]["transitions"] = [{} for _ in range(500)]
+    altered["episode_summaries"][0][field] = value
+    with pytest.raises(confirmatory.ConfirmatoryValidationError, match=message):
+        confirmatory.analyze_confirmatory_artifact(
+            _write_payload(tmp_path, altered)
+        )
 
 
 def test_primary_differences_and_frozen_bootstrap_are_deterministic(
@@ -318,6 +373,92 @@ def test_confirmatory_writer_never_overwrites(tmp_path: Path) -> None:
     with pytest.raises(FileExistsError, match="refusing to overwrite"):
         confirmatory.write_confirmatory_json(monkeypatched_result, output)
     assert output.read_text(encoding="utf-8") == original
+
+
+def test_existing_output_or_reservation_fails_before_any_episode(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[int] = []
+
+    def fake_run_episode(**kwargs: Any) -> object:
+        calls.append(int(kwargs["environment_seed"]))
+        return object()
+
+    monkeypatch.setattr(confirmatory, "_run_episode", fake_run_episode)
+    monkeypatch.setattr(confirmatory, "resolve_git_provenance", lambda: GIT_SHA)
+
+    output = tmp_path / "existing.json"
+    output.write_text("already complete", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        confirmatory.main(["--output", str(output)])
+    assert calls == []
+
+    reserved_output = tmp_path / "reserved.json"
+    reservation = Path(f"{reserved_output}.in-progress")
+    reservation.write_text("EXP-000 CONFIRMATORY EXECUTION IN PROGRESS\n")
+    with pytest.raises(SystemExit):
+        confirmatory.main(["--output", str(reserved_output)])
+    assert calls == []
+
+
+def test_interrupted_execution_preserves_reservation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "interrupted.json"
+    monkeypatch.setattr(confirmatory, "resolve_git_provenance", lambda: GIT_SHA)
+
+    def fail_run(_git_sha: str) -> object:
+        raise RuntimeError("synthetic interruption")
+
+    monkeypatch.setattr(confirmatory, "run_confirmatory_batch", fail_run)
+    with pytest.raises(RuntimeError, match="synthetic interruption"):
+        confirmatory.execute_confirmatory_to_path(output)
+    assert Path(f"{output}.in-progress").exists()
+
+
+def test_resolved_head_is_recorded_without_cli_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(confirmatory, "resolve_git_provenance", lambda: GIT_SHA)
+    monkeypatch.setattr(confirmatory, "_run_episode", lambda **_kwargs: object())
+
+    result = confirmatory.run_confirmatory_batch_from_git()
+
+    assert result.manifest.git_commit_sha == GIT_SHA
+
+
+def test_dirty_or_invalid_git_provenance_aborts_before_any_episode(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[int] = []
+
+    def fake_run_episode(**kwargs: Any) -> object:
+        calls.append(int(kwargs["environment_seed"]))
+        return object()
+
+    monkeypatch.setattr(confirmatory, "_run_episode", fake_run_episode)
+    for error in (
+        "tracked working tree is not clean",
+        "git HEAD is not a full 40-hex SHA",
+    ):
+        monkeypatch.setattr(
+            confirmatory,
+            "resolve_git_provenance",
+            lambda error=error: (_ for _ in ()).throw(
+                confirmatory.GitProvenanceError(error)
+            ),
+        )
+        with pytest.raises(SystemExit):
+            confirmatory.main(["--output", str(tmp_path / f"{error[:4]}.json")])
+        assert calls == []
+
+
+def test_confirmatory_cli_has_no_git_sha_option(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit):
+        confirmatory.main(["--help"])
+    assert "--git-sha" not in capsys.readouterr().out
 
 
 def test_development_runner_still_rejects_acceptance_seeds() -> None:

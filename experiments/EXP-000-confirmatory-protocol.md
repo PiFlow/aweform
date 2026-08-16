@@ -24,6 +24,13 @@ consciousness, emotion, biological metabolism, genuine life, or evolution.
 - Once acceptance begins, there is no visualization, tuning using acceptance
   results, or additional calibration.
 
+The confirmatory runner acquires an exclusive `<output>.in-progress`
+reservation before the first acceptance episode. It refuses an existing final
+artifact or reservation and never provides a force, overwrite, retry, or seed
+replacement option. If confirmatory execution is interrupted after acceptance
+begins, do not rerun automatically. Preserve the in-progress marker and stop
+for protocol review before deciding any recovery action.
+
 The complete environment configuration is: world bounds `(0.0, 0.0)` to
 `(1.0, 1.0)`; maximum energy `10.0`; failure boundary `0.0`; initial energy
 `5.0`; basal cost `0.1`; movement distance `0.05`; movement cost `0.1`;

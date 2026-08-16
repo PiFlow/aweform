@@ -9,6 +9,7 @@ import os
 import platform
 import re
 import statistics
+import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -93,10 +94,37 @@ _SUMMARY_FIELDS = (
     "seek_resource_steps",
     "mode_transitions",
 )
+_SUMMARY_BOOLEAN_FIELDS = {
+    "terminated_viability_failure",
+    "truncated_at_horizon",
+    "horizon_survival",
+}
+_SUMMARY_MODE_COUNT_FIELDS = {
+    "explore_steps",
+    "seek_resource_steps",
+    "mode_transitions",
+}
+_INITIAL_STATE_FIELDS = {"x", "y", "heading", "energy", "source_positions"}
 
 
 class ConfirmatoryValidationError(ValueError):
     """Raised when a confirmatory artifact violates the frozen contract."""
+
+
+class GitProvenanceError(ValueError):
+    """Raised when the confirmatory CLI cannot establish clean Git provenance."""
+
+
+@dataclass(frozen=True, slots=True)
+class ConfirmatoryExecutionReservation:
+    """Exclusive marker preventing an automatic confirmatory rerun."""
+
+    output_path: Path
+    reservation_path: Path
+
+    def release(self) -> None:
+        """Remove the reservation only after the final artifact is complete."""
+        self.reservation_path.unlink()
 
 
 @dataclass(frozen=True, slots=True)
@@ -272,6 +300,68 @@ def run_confirmatory_batch(git_sha: str) -> ConfirmatoryBatchResult:
     return ConfirmatoryBatchResult(manifest=manifest, episodes=tuple(episodes))
 
 
+def run_confirmatory_batch_from_git() -> ConfirmatoryBatchResult:
+    """Run the frozen batch using the clean checkout's actual HEAD SHA."""
+    return run_confirmatory_batch(resolve_git_provenance())
+
+
+def execute_confirmatory_to_path(output_path: str | os.PathLike[str]) -> Path:
+    """Reserve an output, execute once, and publish without overwriting.
+
+    The reservation intentionally remains when execution or final writing
+    fails. If confirmatory execution is interrupted after acceptance begins,
+    do not rerun automatically; preserve the marker and stop for protocol
+    review before deciding any recovery action.
+    """
+    path = Path(output_path)
+    git_sha = resolve_git_provenance()
+    reservation = acquire_confirmatory_reservation(path)
+    result = run_confirmatory_batch(git_sha)
+    write_confirmatory_json(result, path)
+    reservation.release()
+    return path
+
+
+def acquire_confirmatory_reservation(
+    output_path: str | os.PathLike[str],
+) -> ConfirmatoryExecutionReservation:
+    """Acquire an exclusive in-progress marker before any episode starts."""
+    path = Path(output_path)
+    reservation_path = Path(f"{path}.in-progress")
+    try:
+        descriptor = os.open(
+            reservation_path,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+            0o644,
+        )
+    except FileExistsError as error:
+        raise FileExistsError(
+            f"refusing to run: confirmatory reservation exists at "
+            f"{reservation_path}"
+        ) from error
+
+    try:
+        if path.exists():
+            raise FileExistsError(
+                f"refusing to run: confirmatory artifact already exists at {path}"
+            )
+        file = os.fdopen(descriptor, "w", encoding="utf-8")
+        descriptor = -1
+        with file:
+            file.write(
+                "EXP-000 CONFIRMATORY EXECUTION IN PROGRESS\n"
+                f"output={path}\n"
+                f"pid={os.getpid()}\n"
+                f"started_at_utc={datetime.now(timezone.utc).isoformat()}\n"
+            )
+    except BaseException:
+        if descriptor >= 0:
+            os.close(descriptor)
+        reservation_path.unlink(missing_ok=True)
+        raise
+    return ConfirmatoryExecutionReservation(path, reservation_path)
+
+
 def write_confirmatory_json(
     result: ConfirmatoryBatchResult,
     output_path: str | os.PathLike[str],
@@ -340,6 +430,18 @@ def analyze_confirmatory_artifact(
             or trajectory.get("environment_seed") != summary["environment_seed"]
         ):
             raise ConfirmatoryValidationError(f"summary/trajectory mismatch for {key}")
+    for seed in ACCEPTANCE_SEEDS:
+        b_initial = trajectory_map[(Condition.B_HOMEOSTATIC.value, seed)][
+            "initial_state"
+        ]
+        c_initial = trajectory_map[(Condition.C_ENERGY_BLIND.value, seed)][
+            "initial_state"
+        ]
+        for field in _INITIAL_STATE_FIELDS:
+            if b_initial[field] != c_initial[field]:
+                raise ConfirmatoryValidationError(
+                    f"matched B/C initial state diverges for seed {seed}: {field}"
+                )
 
     by_condition = {
         condition.value: tuple(
@@ -391,11 +493,56 @@ def analyze_confirmatory_artifact(
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the frozen confirmatory simulation path."""
     parser = argparse.ArgumentParser(description="Run frozen EXP-000 confirmation.")
-    parser.add_argument("--git-sha", required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
-    write_confirmatory_json(run_confirmatory_batch(args.git_sha), args.output)
+    try:
+        execute_confirmatory_to_path(args.output)
+    except (FileExistsError, GitProvenanceError, OSError) as error:
+        parser.exit(2, f"confirmatory execution error: {error}\n")
     return 0
+
+
+def resolve_git_provenance(repository_path: Path | None = None) -> str:
+    """Resolve a full HEAD SHA and require a clean tracked checkout."""
+    working_directory = repository_path or Path.cwd()
+    repository_root = Path(
+        _git_stdout(["rev-parse", "--show-toplevel"], working_directory)
+    )
+    git_sha = _git_stdout(["rev-parse", "HEAD"], repository_root)
+    _validate_git_sha(git_sha)
+    for diff_args in (
+        ["diff", "--quiet", "--no-ext-diff"],
+        ["diff", "--cached", "--quiet"],
+    ):
+        result = subprocess.run(
+            ["git", *diff_args],
+            cwd=repository_root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            raise GitProvenanceError(
+                "tracked working tree is not clean; confirmatory execution aborted"
+            )
+    return git_sha
+
+
+def _git_stdout(arguments: Sequence[str], working_directory: Path) -> str:
+    result = subprocess.run(
+        ["git", *arguments],
+        cwd=working_directory,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.strip() or "git command failed"
+        raise GitProvenanceError(detail)
+    output = result.stdout.strip()
+    if not output:
+        raise GitProvenanceError("git command returned no output")
+    return output
 
 
 def analysis_main(argv: Sequence[str] | None = None) -> int:
@@ -505,12 +652,36 @@ def _validate_records(value: Any, label: str) -> tuple[Mapping[str, Any], ...]:
                 raise ConfirmatoryValidationError(
                     f"{label}[{index}] has invalid capped lifespan"
                 )
+            for field in _SUMMARY_BOOLEAN_FIELDS:
+                if not isinstance(record[field], bool):
+                    raise ConfirmatoryValidationError(
+                        f"{label}[{index}] {field} must be boolean"
+                    )
+            terminated = record["terminated_viability_failure"]
+            truncated = record["truncated_at_horizon"]
+            horizon_survival = record["horizon_survival"]
+            if terminated and truncated:
+                raise ConfirmatoryValidationError(
+                    f"{label}[{index}] cannot be both terminated and truncated"
+                )
+            if horizon_survival != (truncated and not terminated and steps == 500):
+                raise ConfirmatoryValidationError(
+                    f"{label}[{index}] has inconsistent horizon-survival flags"
+                )
+            for field in _SUMMARY_MODE_COUNT_FIELDS:
+                value = record[field]
+                if (
+                    not isinstance(value, int)
+                    or isinstance(value, bool)
+                    or value < 0
+                ):
+                    raise ConfirmatoryValidationError(
+                        f"{label}[{index}] {field} must be a non-negative integer"
+                    )
             for field in _SUMMARY_FIELDS[3:]:
-                if field in {
-                    "explore_steps",
-                    "seek_resource_steps",
-                    "mode_transitions",
-                }:
+                if field in _SUMMARY_BOOLEAN_FIELDS or (
+                    field in _SUMMARY_MODE_COUNT_FIELDS
+                ):
                     continue
                 if not isinstance(record[field], (int, float)) or not math.isfinite(
                     float(record[field])
@@ -535,8 +706,53 @@ def _validate_records(value: Any, label: str) -> tuple[Mapping[str, Any], ...]:
                 raise ConfirmatoryValidationError(
                     f"{label}[{index}] transitions must be a list"
                 )
+            _validate_initial_state(record, label, index)
         records.append(record)
     return tuple(records)
+
+
+def _validate_initial_state(
+    record: Mapping[str, Any], label: str, index: int
+) -> None:
+    initial_state = _mapping(
+        record.get("initial_state"), f"{label}[{index}].initial_state"
+    )
+    if set(initial_state) != _INITIAL_STATE_FIELDS:
+        raise ConfirmatoryValidationError(
+            f"{label}[{index}] initial_state has an invalid structure"
+        )
+    for field in ("x", "y", "heading", "energy"):
+        value = initial_state[field]
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise ConfirmatoryValidationError(
+                f"{label}[{index}] initial_state {field} must be numeric"
+            )
+        if not math.isfinite(float(value)):
+            raise ConfirmatoryValidationError(
+                f"{label}[{index}] initial_state {field} must be finite"
+            )
+    source_positions = initial_state["source_positions"]
+    if (
+        not isinstance(source_positions, list)
+        or len(source_positions) != CONFIRMATORY_RESOURCE_COUNT
+    ):
+        raise ConfirmatoryValidationError(
+            f"{label}[{index}] initial_state source_positions are invalid"
+        )
+    for position in source_positions:
+        if (
+            not isinstance(position, list)
+            or len(position) != 2
+            or any(
+                not isinstance(value, (int, float))
+                or isinstance(value, bool)
+                or not math.isfinite(float(value))
+                for value in position
+            )
+        ):
+            raise ConfirmatoryValidationError(
+                f"{label}[{index}] initial_state source position is invalid"
+            )
 
 
 def _record_map(
