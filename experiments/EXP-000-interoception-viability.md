@@ -1,6 +1,12 @@
 # EXP-000 — Interoception and Viability
 
-**Status:** Proposed first experiment
+**Status:** Completed — confirmatory support obtained
+
+## Final status
+
+The frozen confirmatory run on 100 untouched matched acceptance seeds obtained
+confirmatory support for the preregistered B-versus-C capped-lifespan
+endpoint. See the [EXP-000 final result record](EXP-000-final-result-record.md).
 
 ## Question
 
