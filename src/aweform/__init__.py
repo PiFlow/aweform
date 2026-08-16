@@ -31,6 +31,17 @@ from .exp001 import (
     policy_rng_from_seed,
     seek_resource_action,
 )
+from .exp001_runner import (
+    EXP001Condition,
+    EXP001ControllerStep,
+    EXP001DevelopmentBatchResult,
+    EXP001EpisodeRecord,
+    EXP001EvaluatorInitialState,
+    EXP001EvaluatorStep,
+    EXP001TransitionRecord,
+    exp001_controller_observation,
+    run_exp001_development_batch,
+)
 from .resource import ResourceField
 from .rng import RandomStreams
 from .runner import (
@@ -74,9 +85,16 @@ __all__ = [
     "EXP001AController",
     "EXP001BController",
     "EXP001CController",
+    "EXP001Condition",
+    "EXP001ControllerStep",
+    "EXP001DevelopmentBatchResult",
     "EXP001DevelopmentConfig",
     "EXP001_EXPLORER_HAZARD",
+    "EXP001EpisodeRecord",
+    "EXP001EvaluatorInitialState",
+    "EXP001EvaluatorStep",
     "EXP001Mode",
+    "EXP001TransitionRecord",
     "EpisodeRecord",
     "EpisodeSummary",
     "EpisodeTrajectory",
@@ -94,7 +112,9 @@ __all__ = [
     "advance_energy",
     "analyze_confirmatory_artifact",
     "has_resource_contact",
+    "exp001_controller_observation",
     "policy_rng_from_seed",
+    "run_exp001_development_batch",
     "run_development_batch",
     "sample_directional_resources",
     "seek_resource_action",
