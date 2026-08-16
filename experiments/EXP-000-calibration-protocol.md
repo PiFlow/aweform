@@ -1,7 +1,7 @@
 # EXP-000 Calibration Protocol
 
-**Status:** Formal calibration protocol for EXP-000; calibration data have not
-been collected by this protocol revision.
+**Status:** Formal calibration protocol for EXP-000; formal calibration
+artifacts have been generated and are retained in the research record.
 
 This document freezes the calibration contract before the designated
 development data are viewed. It is not a confirmatory result. It distinguishes
@@ -23,6 +23,20 @@ persistent-exploration behavioural reference.
 This protocol does not broaden the question to intelligence, learning,
 consciousness, subjective motivation, biological life, emotion, curiosity,
 play, memory, planning, or evolution.
+
+## Research-record note
+
+- The three formal calibration artifacts were generated under SHA
+  `b9c3188ce2ba6f151b242537d008ed5ed164671f`.
+- The initial artifact-only summarization stopped on a validator/schema-
+  semantics mismatch before candidate diagnostics or selection were displayed
+  or interpreted.
+- This correction aligns the validator with the already-existing runner
+  artifact contract.
+- No experimental parameters, controller/environment behaviour, calibration
+  artifacts, selection rule, or acceptance seeds were changed.
+- The original calibration artifacts are retained and will be summarized after
+  this correction rather than regenerated.
 
 ## Programmed mechanism held provisionally fixed
 
