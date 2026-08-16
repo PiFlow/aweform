@@ -1,12 +1,13 @@
 # EXP-000 Calibration Protocol
 
-**Status:** Formal calibration protocol for EXP-000; formal calibration
-artifacts have been generated and are retained in the research record.
+**Status:** Formal calibration protocol revision for EXP-000; Round 1 is
+complete with no qualifying candidate, and Round 2 is defined below but has
+not been executed.
 
-This document freezes the calibration contract before the designated
-development data are viewed. It is not a confirmatory result. It distinguishes
-the programmed mechanism, calibration choices, the later confirmatory test,
-evaluator diagnostics, and the limits of scientific interpretation.
+This document defines the calibration contract for the current development
+round. It is not a confirmatory result. It distinguishes the programmed
+mechanism, calibration choices, the later confirmatory test, evaluator
+diagnostics, and the limits of scientific interpretation.
 
 ## Scientific question
 
@@ -23,6 +24,24 @@ persistent-exploration behavioural reference.
 This protocol does not broaden the question to intelligence, learning,
 consciousness, subjective motivation, biological life, emotion, curiosity,
 play, memory, planning, or evolution.
+
+## Calibration rounds
+
+Calibration rounds are explicit protocol revisions. The artifact-only
+summarizer recognizes exactly one complete round at a time and rejects mixed
+or incomplete candidate sets.
+
+- **Round 1:** resource length scales `0.15`, `0.20`, and `0.25`. Its immutable
+  result record is in
+  `experiments/EXP-000-calibration-round-1-record.md`.
+- **Round 2 (current):** resource length scales `0.35`, `0.40`, and `0.45`.
+  Round 2 increases only the spatial spread of the existing single
+  Gaussian-like resource field because Round 1 established that C baseline
+  difficulty was too high across its candidate grid. No B−C advantage is used
+  to motivate or select this revision.
+
+Round 2 changes no organism, controller, environment, sensing, energy, or
+resource parameter other than `resource_length_scale`.
 
 ## Research-record note
 
@@ -119,15 +138,16 @@ are unchanged; the experiment runner supplies the value explicitly.
 The calibration episode horizon is **500 steps**, supplied explicitly by the
 runner. The generic `AweformEnvConfig.episode_horizon` default is not changed.
 
-The only environment parameter varied in this round is
-`resource_length_scale`, with candidates:
+The only environment parameter varied in Round 2 is `resource_length_scale`,
+with candidates:
 
-`0.15`, `0.20`, and `0.25`
+`0.35`, `0.40`, and `0.45`
 
 This parameter controls how spatially local the smooth resource field is and
 therefore affects sensing and harvest opportunity. It must not be chosen by
 maximizing a B-versus-C advantage; calibration selects non-degenerate task
-difficulty.
+difficulty. Round 2 is motivated solely by the Round-1 C baseline difficulty
+and known resource-field geometry.
 
 ### Reserved seeds
 
@@ -229,10 +249,10 @@ reviewed and merged**. They are intentionally not run by this PR. Use the
 same reviewed Git SHA in all three commands:
 
 ```sh
-uv run aweform-development --seed 1001 1002 1003 1004 1005 1006 1007 1008 1009 1010 1011 1012 1013 1014 1015 1016 1017 1018 1019 1020 1021 1022 1023 1024 1025 1026 1027 1028 1029 1030 --masked-energy 0.5 --resource-count 1 --episode-horizon 500 --resource-length-scale 0.15 --git-sha <REVIEWED_GIT_SHA> --output exp-000-calibration-015.json
-uv run aweform-development --seed 1001 1002 1003 1004 1005 1006 1007 1008 1009 1010 1011 1012 1013 1014 1015 1016 1017 1018 1019 1020 1021 1022 1023 1024 1025 1026 1027 1028 1029 1030 --masked-energy 0.5 --resource-count 1 --episode-horizon 500 --resource-length-scale 0.20 --git-sha <REVIEWED_GIT_SHA> --output exp-000-calibration-020.json
-uv run aweform-development --seed 1001 1002 1003 1004 1005 1006 1007 1008 1009 1010 1011 1012 1013 1014 1015 1016 1017 1018 1019 1020 1021 1022 1023 1024 1025 1026 1027 1028 1029 1030 --masked-energy 0.5 --resource-count 1 --episode-horizon 500 --resource-length-scale 0.25 --git-sha <REVIEWED_GIT_SHA> --output exp-000-calibration-025.json
-uv run aweform-summarize-calibration exp-000-calibration-015.json exp-000-calibration-020.json exp-000-calibration-025.json --output exp-000-calibration-summary.md
+uv run aweform-development --seed 1001 1002 1003 1004 1005 1006 1007 1008 1009 1010 1011 1012 1013 1014 1015 1016 1017 1018 1019 1020 1021 1022 1023 1024 1025 1026 1027 1028 1029 1030 --masked-energy 0.5 --resource-count 1 --episode-horizon 500 --resource-length-scale 0.35 --git-sha <REVIEWED_GIT_SHA> --output exp-000-calibration-r2-035.json
+uv run aweform-development --seed 1001 1002 1003 1004 1005 1006 1007 1008 1009 1010 1011 1012 1013 1014 1015 1016 1017 1018 1019 1020 1021 1022 1023 1024 1025 1026 1027 1028 1029 1030 --masked-energy 0.5 --resource-count 1 --episode-horizon 500 --resource-length-scale 0.40 --git-sha <REVIEWED_GIT_SHA> --output exp-000-calibration-r2-040.json
+uv run aweform-development --seed 1001 1002 1003 1004 1005 1006 1007 1008 1009 1010 1011 1012 1013 1014 1015 1016 1017 1018 1019 1020 1021 1022 1023 1024 1025 1026 1027 1028 1029 1030 --masked-energy 0.5 --resource-count 1 --episode-horizon 500 --resource-length-scale 0.45 --git-sha <REVIEWED_GIT_SHA> --output exp-000-calibration-r2-045.json
+uv run aweform-summarize-calibration exp-000-calibration-r2-035.json exp-000-calibration-r2-040.json exp-000-calibration-r2-045.json --output exp-000-calibration-r2-summary.md
 ```
 
 Do **not** run acceptance seeds `10001–10100` until protocol freeze. No

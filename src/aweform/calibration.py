@@ -16,7 +16,16 @@ from .env import AweformEnvConfig
 from .runner import ARTIFACT_SCHEMA_VERSION, MANIFEST_SCHEMA_VERSION, Condition
 
 CALIBRATION_SEEDS = tuple(range(1001, 1031))
-CALIBRATION_LENGTH_SCALES = (0.15, 0.20, 0.25)
+CALIBRATION_ROUND_1 = "Round 1"
+CALIBRATION_ROUND_2 = "Round 2"
+CALIBRATION_ROUNDS = {
+    CALIBRATION_ROUND_1: (0.15, 0.20, 0.25),
+    CALIBRATION_ROUND_2: (0.35, 0.40, 0.45),
+}
+CALIBRATION_LENGTH_SCALES = tuple(
+    scale for round_scales in CALIBRATION_ROUNDS.values() for scale in round_scales
+)
+CALIBRATION_ARTIFACT_COUNT = 3
 CALIBRATION_HORIZON = 500
 CALIBRATION_MASKED_ENERGY = 0.5
 CALIBRATION_RESOURCE_COUNT = 1
@@ -70,8 +79,9 @@ class CandidateDiagnostics:
 
 @dataclass(frozen=True, slots=True)
 class CalibrationSummary:
-    """Pure summary of exactly three validated calibration artifacts."""
+    """Pure summary of exactly one complete calibration round."""
 
+    calibration_round: str
     git_commit_sha: str
     candidates: tuple[CandidateDiagnostics, ...]
     selected_candidate: CandidateDiagnostics | None
@@ -83,6 +93,7 @@ class CalibrationSummary:
             "",
             "This is a development/calibration diagnostic, not a confirmatory result.",
             "",
+            f"- Calibration round: `{self.calibration_round}`",
             f"- Calibration Git SHA: `{self.git_commit_sha}`",
             f"- Calibration seeds: `{CALIBRATION_SEEDS[0]}–{CALIBRATION_SEEDS[-1]}` "
             f"({len(CALIBRATION_SEEDS)} matched seeds)",
@@ -231,13 +242,13 @@ class _Artifact:
 def summarize_calibration_artifacts(
     artifact_paths: Sequence[str | Path],
 ) -> CalibrationSummary:
-    """Validate and summarize exactly three formal calibration artifacts."""
-    if len(artifact_paths) != len(CALIBRATION_LENGTH_SCALES):
+    """Validate and summarize exactly one complete calibration round."""
+    if len(artifact_paths) != CALIBRATION_ARTIFACT_COUNT:
         raise CalibrationValidationError(
             "exactly three calibration artifacts are required"
         )
     artifacts = tuple(_load_artifact(Path(path)) for path in artifact_paths)
-    _validate_artifact_set(artifacts)
+    calibration_round = _validate_artifact_set(artifacts)
     candidates = tuple(_summarize_candidate(artifact) for artifact in artifacts)
     divergent_candidates = tuple(
         candidate for candidate in candidates if candidate.a_c_divergent_seed_count > 0
@@ -267,6 +278,7 @@ def summarize_calibration_artifacts(
     )
     git_sha = str(artifacts[0].manifest["git_commit_sha"])
     return CalibrationSummary(
+        calibration_round=calibration_round,
         git_commit_sha=git_sha,
         candidates=candidates,
         selected_candidate=selected,
@@ -276,7 +288,10 @@ def summarize_calibration_artifacts(
 def main(argv: Sequence[str] | None = None) -> int:
     """Summarize existing calibration artifacts without executing the model."""
     parser = argparse.ArgumentParser(
-        description="Summarize three validated EXP-000 calibration artifacts."
+        description=(
+            "Summarize three validated EXP-000 artifacts from one recognized "
+            "calibration round."
+        )
     )
     parser.add_argument("artifacts", nargs=3, type=Path)
     parser.add_argument("--output", type=Path)
@@ -419,7 +434,7 @@ def _load_artifact(path: Path) -> _Artifact:
     )
 
 
-def _validate_artifact_set(artifacts: Sequence[_Artifact]) -> None:
+def _validate_artifact_set(artifacts: Sequence[_Artifact]) -> str:
     for index, artifact in enumerate(artifacts):
         if any(
             _same_float(artifact.length_scale, other.length_scale)
@@ -428,12 +443,18 @@ def _validate_artifact_set(artifacts: Sequence[_Artifact]) -> None:
             raise CalibrationValidationError(
                 f"duplicate resource_length_scale in {artifact.path}"
             )
-    if {_candidate_scale(artifact.length_scale) for artifact in artifacts} != set(
-        CALIBRATION_LENGTH_SCALES
-    ):
+    artifact_scales = {
+        _candidate_scale(artifact.length_scale) for artifact in artifacts
+    }
+    matching_rounds = [
+        round_name
+        for round_name, round_scales in CALIBRATION_ROUNDS.items()
+        if artifact_scales == set(round_scales)
+    ]
+    if len(matching_rounds) != 1:
         raise CalibrationValidationError(
-            "artifacts must contain exactly one candidate for each length scale "
-            "0.15, 0.20, and 0.25"
+            "artifacts must contain exactly one complete recognized calibration "
+            "round; mixed or incomplete round candidates are not allowed"
         )
     first = artifacts[0]
     first_fingerprint = _configuration_fingerprint(first.manifest)
@@ -448,6 +469,7 @@ def _validate_artifact_set(artifacts: Sequence[_Artifact]) -> None:
             raise CalibrationValidationError(
                 "artifacts have mismatched software-relevant configurations"
             )
+    return matching_rounds[0]
 
 
 def _summarize_candidate(artifact: _Artifact) -> CandidateDiagnostics:
