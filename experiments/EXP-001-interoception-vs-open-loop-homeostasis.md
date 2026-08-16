@@ -119,6 +119,31 @@ Environment and evaluator code may retain actual energy for viability,
 termination, and scientific telemetry. That privileged state is not a C
 contact sensor and does not enter A or C actions.
 
+## Development execution boundary
+
+The development runner is separate from the historical EXP-000 runner. For
+each caller-supplied development seed it constructs and resets a fresh
+environment for A, B, and C with the same environment configuration and seed.
+It derives a fresh policy generator for each condition from that same master
+seed through the existing policy stream derivation; the generators are never
+shared or reseeded during an episode. EXP-001 execution rejects any
+environment configuration whose turn angle is not exactly `π / 4`.
+
+The runner owns one explicit adapter from the generic simulator observation
+`[normalized_energy, left_resource, forward_resource, right_resource]` to the
+typed controller boundary. It constructs `ExternalObservation(left, forward,
+right)` for A and C, and constructs
+`InteroceptiveObservation(actual_normalized_energy, external)` for B. The raw
+four-value array and privileged evaluator state are not passed to controllers.
+Episode records keep controller-visible observations separate from privileged
+evaluator telemetry such as position, actual energy, harvested energy, action
+costs, and termination state.
+
+This runner is a deterministic development instrument only. It adds no
+acceptance seeds, confirmatory execution, calibration procedure, statistical
+analysis, success criterion, or scientific claim. Development observations
+are not scientific evidence.
+
 ## Resource-contact semantics
 
 The current development resource-contact criterion is exactly:
