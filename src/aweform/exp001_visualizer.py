@@ -151,12 +151,12 @@ def format_exp001_diagnostic_text(
 ) -> str:
     """Format controller/evaluator diagnostics for one panel."""
 
-    energy_access_label = (
-        "CONTROLLER + EVALUATOR"
-        if condition is EXP001Condition.B
-        and frame.controller_visible_energy is not None
-        else "EVALUATOR ONLY"
-    )
+    if condition is EXP001Condition.B and frame.next_action is None:
+        energy_access_label = "EVALUATOR ONLY — no next controller observation"
+    elif condition is EXP001Condition.B:
+        energy_access_label = "CONTROLLER + EVALUATOR"
+    else:
+        energy_access_label = "EVALUATOR ONLY"
     energy_text = (
         f"actual normalized energy: {frame.actual_normalized_energy:.3f} "
         f"[{energy_access_label}]"
@@ -397,7 +397,7 @@ def _record_frames(
         - environment_config.energy.failure_boundary
     )
     initial = record.initial_state
-    current_mode = EXP001Mode.EXPLORE
+    final_mode = EXP001Mode.EXPLORE
     frames: list[EXP001VisualizationFrame] = []
     path = [initial.position]
 
@@ -413,7 +413,7 @@ def _record_frames(
             record,
             transition_index,
             path,
-            current_mode,
+            transition.privileged_evaluator.controller_mode,
             failure_boundary,
             energy_range,
         )
@@ -424,7 +424,7 @@ def _record_frames(
             )
         )
         path.append(transition.privileged_evaluator.position)
-        current_mode = transition.privileged_evaluator.controller_mode
+        final_mode = transition.privileged_evaluator.controller_mode
 
     final_position = path[-1]
     final_energy = (
@@ -453,7 +453,7 @@ def _record_frames(
             )
             / energy_range,
             path=tuple(path),
-            mode=current_mode,
+            mode=final_mode,
             next_action=None,
             left_resource=None,
             forward_resource=None,

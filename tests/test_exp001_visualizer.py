@@ -69,12 +69,14 @@ def test_frames_preserve_position_path_heading_and_recorded_decisions() -> None:
     data = build_exp001_visualization_frames(result, seed=701)
     record = select_exp001_seed_records(result, seed=701)[0]
     first_transition = record.transitions[0].privileged_evaluator
+    second_transition = record.transitions[1].privileged_evaluator
 
     initial = data.frames[0][0]
     after_first = data.frames[0][1]
     assert (initial.x, initial.y) == record.initial_state.position
     assert initial.heading == record.initial_state.heading
     assert initial.path == (record.initial_state.position,)
+    assert initial.mode is first_transition.controller_mode
     assert initial.next_action is first_transition.action
     assert (after_first.x, after_first.y) == first_transition.position
     assert after_first.heading == first_transition.heading
@@ -82,8 +84,8 @@ def test_frames_preserve_position_path_heading_and_recorded_decisions() -> None:
         record.initial_state.position,
         first_transition.position,
     )
-    assert after_first.mode is first_transition.controller_mode
-    assert after_first.next_action is record.transitions[1].privileged_evaluator.action
+    assert after_first.mode is second_transition.controller_mode
+    assert after_first.next_action is second_transition.action
 
 
 def test_energy_diagnostics_keep_a_c_blind_and_b_interoceptive() -> None:
@@ -109,6 +111,10 @@ def test_energy_diagnostics_keep_a_c_blind_and_b_interoceptive() -> None:
     assert "CONTROLLER + EVALUATOR" in format_exp001_diagnostic_text(
         b_frame, EXP001Condition.B
     )
+    b_final_text = format_exp001_diagnostic_text(
+        data.frames[1][-1], EXP001Condition.B
+    )
+    assert "EVALUATOR ONLY — no next controller observation" in b_final_text
     assert "MASKED" not in format_exp001_diagnostic_text(
         c_frame, EXP001Condition.C
     )
@@ -232,4 +238,70 @@ def test_exp001_modes_are_used_not_exp000_modes() -> None:
             ExternalObservation,
         )
         for record in (result.episodes[0], result.episodes[2])
+    )
+
+
+def test_mode_changing_decisions_align_mode_and_action_from_same_record() -> None:
+    result = run_exp001_development_batch(
+        seeds=[42],
+        env_config=AweformEnvConfig(episode_horizon=100),
+        development_config=EXP001DevelopmentConfig(
+            resource_contact_threshold=0.8,
+            blind_explore_duration=20,
+            blind_charge_duration=10,
+        ),
+    )
+    data = build_exp001_visualization_frames(result, seed=42)
+    records = select_exp001_seed_records(result, seed=42)
+
+    for panel_frames, record in zip(data.frames, records):
+        for index, transition in enumerate(record.transitions):
+            evaluator = transition.privileged_evaluator
+            assert panel_frames[index].mode is evaluator.controller_mode
+            assert panel_frames[index].next_action is evaluator.action
+        assert panel_frames[-1].mode is (
+            record.transitions[-1].privileged_evaluator.controller_mode
+        )
+
+    b_record = records[1]
+    b_frames = data.frames[1]
+    seek_index = next(
+        index
+        for index, transition in enumerate(b_record.transitions)
+        if transition.privileged_evaluator.controller_mode
+        is EXP001Mode.SEEK_RESOURCE
+    )
+    assert b_frames[seek_index].mode is (
+        b_record.transitions[seek_index].privileged_evaluator.controller_mode
+    )
+    assert b_frames[seek_index].next_action is (
+        b_record.transitions[seek_index].privileged_evaluator.action
+    )
+
+    recover_index = next(
+        index
+        for index, transition in enumerate(b_record.transitions)
+        if index > 0
+        and b_record.transitions[index - 1].privileged_evaluator.controller_mode
+        is EXP001Mode.CHARGE
+        and transition.privileged_evaluator.controller_mode is EXP001Mode.EXPLORE
+    )
+    assert b_frames[recover_index].mode is EXP001Mode.EXPLORE
+    assert b_frames[recover_index].next_action is (
+        b_record.transitions[recover_index].privileged_evaluator.action
+    )
+
+    c_record = records[2]
+    c_frames = data.frames[2]
+    c_seek_index = next(
+        index
+        for index, transition in enumerate(c_record.transitions)
+        if transition.privileged_evaluator.controller_mode
+        is EXP001Mode.SEEK_RESOURCE
+    )
+    assert c_frames[c_seek_index].mode is (
+        c_record.transitions[c_seek_index].privileged_evaluator.controller_mode
+    )
+    assert c_frames[c_seek_index].next_action is (
+        c_record.transitions[c_seek_index].privileged_evaluator.action
     )
