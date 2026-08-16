@@ -18,6 +18,8 @@ dependencies = [
 aweform-development = "aweform.runner:main"
 aweform-visualize-development = "aweform.visualizer:main"
 aweform-summarize-calibration = "aweform.calibration:main"
+aweform-confirmatory = "aweform.confirmatory:main"
+aweform-analyze-confirmatory = "aweform.confirmatory:analysis_main"
 
 [dependency-groups]
 dev = [
