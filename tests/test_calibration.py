@@ -8,6 +8,8 @@ import pytest
 from aweform import AweformEnvConfig, HomeostaticConfig
 from aweform.calibration import (
     ARTIFACT_SCHEMA_VERSION,
+    CALIBRATION_ROUND_1,
+    CALIBRATION_ROUND_2,
     CALIBRATION_SEEDS,
     CalibrationValidationError,
     summarize_calibration_artifacts,
@@ -188,6 +190,15 @@ def valid_payloads() -> list[dict[str, object]]:
     ]
 
 
+@pytest.fixture(scope="module")
+def valid_round2_payloads() -> list[dict[str, object]]:
+    return [
+        _artifact_payload(0.35, c_lifespan=200),
+        _artifact_payload(0.40, c_lifespan=250),
+        _artifact_payload(0.45, c_lifespan=300),
+    ]
+
+
 def test_accepts_valid_set_with_numeric_c_mode_counts_and_computes_diagnostics(
     tmp_path: Path, valid_payloads: list[dict[str, object]]
 ) -> None:
@@ -196,6 +207,7 @@ def test_accepts_valid_set_with_numeric_c_mode_counts_and_computes_diagnostics(
     )
 
     assert summary.selected_candidate is not None
+    assert summary.calibration_round == CALIBRATION_ROUND_1
     assert summary.selected_candidate.resource_length_scale == pytest.approx(0.20)
     candidate = summary.candidates[1]
     c = candidate.by_condition[Condition.C_ENERGY_BLIND.value]
@@ -221,6 +233,33 @@ def test_accepts_valid_set_with_numeric_c_mode_counts_and_computes_diagnostics(
         "appearance do not rank or select among qualifying candidates." in markdown
     )
     assert "B outcomes are diagnostics only" not in markdown
+
+
+def test_accepts_round2_and_applies_the_same_selection_rule(
+    tmp_path: Path, valid_round2_payloads: list[dict[str, object]]
+) -> None:
+    summary = summarize_calibration_artifacts(
+        _write_artifacts(tmp_path, copy.deepcopy(valid_round2_payloads))
+    )
+
+    assert summary.calibration_round == CALIBRATION_ROUND_2
+    assert summary.selected_candidate is not None
+    assert summary.selected_candidate.resource_length_scale == pytest.approx(0.40)
+    assert "Calibration round: `Round 2`" in summary.to_markdown()
+
+
+def test_rejects_mixed_calibration_rounds(
+    tmp_path: Path, valid_payloads: list[dict[str, object]]
+) -> None:
+    payloads = copy.deepcopy(valid_payloads)
+    payloads[1]["manifest"]["environment_config"]["resource_length_scale"] = 0.40
+    payloads[2]["manifest"]["environment_config"]["resource_length_scale"] = 0.45
+
+    with pytest.raises(
+        CalibrationValidationError,
+        match="one complete recognized calibration round",
+    ):
+        summarize_calibration_artifacts(_write_artifacts(tmp_path, payloads))
 
 
 @pytest.mark.parametrize(
