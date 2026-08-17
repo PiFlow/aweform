@@ -32,11 +32,9 @@ from .exp001 import (
     seek_resource_action,
 )
 from .exp001_calibration import (
-    CONFIRMATORY_SEEDS,
     EXP001_CALIBRATION_ARTIFACT_SCHEMA_VERSION,
     EXP001_CALIBRATION_HORIZON,
     EXP001_PROTOCOL_REVISION,
-    FORMAL_CALIBRATION_SEEDS,
     FORMAL_CANDIDATES,
     FORMAL_EXECUTION_AUTHORIZATION,
     FROZEN_EXP001_CALIBRATION_ENV_CONFIG,
@@ -63,8 +61,12 @@ from .exp001_runner import (
     EXP001EvaluatorStep,
     EXP001TransitionRecord,
     exp001_controller_observation,
-    run_exp001_c_episode,
     run_exp001_development_batch,
+)
+from .exp001_seed_policy import (
+    CONFIRMATORY_SEEDS,
+    FORMAL_CALIBRATION_SEEDS,
+    validate_exp001_development_seeds,
 )
 from .exp001_visualizer import (
     EXP001VisualizationData,
@@ -167,12 +169,12 @@ __all__ = [
     "format_exp001_diagnostic_text",
     "policy_rng_from_seed",
     "run_exp001_development_batch",
-    "run_exp001_c_episode",
     "run_exp001_c_debug_calibration",
     "run_exp001_formal_calibration",
     "select_exp001_candidate",
     "summarize_exp001_c_episode",
     "validate_debug_seeds",
+    "validate_exp001_development_seeds",
     "frozen_exp001_calibration_environment_config",
     "write_exp001_calibration_json",
     "select_exp001_seed_records",

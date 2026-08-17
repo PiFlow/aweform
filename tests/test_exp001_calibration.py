@@ -35,7 +35,6 @@ from aweform import (
     ExternalObservation,
     frozen_exp001_calibration_environment_config,
     run_exp001_c_debug_calibration,
-    run_exp001_c_episode,
     run_exp001_formal_calibration,
     select_exp001_candidate,
     summarize_exp001_c_episode,
@@ -226,7 +225,7 @@ def test_debug_reserved_seed_guard_rejects_before_environment_construction(
         raise AssertionError("reserved seed reached environment construction")
 
     monkeypatch.setattr(runner_module, "AweformEnv", forbidden)
-    with pytest.raises(ValueError, match="reserved EXP-001 seed ranges"):
+    with pytest.raises(ValueError, match="reserved"):
         run_exp001_c_debug_calibration([reserved_seed])
 
 
@@ -258,7 +257,7 @@ def test_lowest_calibration_layer_rejects_reserved_or_noncanonical_requests(
 
 def test_same_debug_seed_has_matched_initial_environment_state() -> None:
     records = [
-        run_exp001_c_episode(
+        runner_module._run_exp001_c_episode(
             environment_seed=DEBUG_SEEDS[2],
             env_config=FROZEN_EXP001_CALIBRATION_ENV_CONFIG,
             development_config=_candidate_config(candidate.candidate),
@@ -460,6 +459,45 @@ def test_formal_wrapper_routes_only_fixed_formal_request(
         "seeds": FORMAL_CALIBRATION_SEEDS,
         "purpose": "calibration",
     }
+
+
+def test_formal_calibration_reaches_private_c_executor_when_fully_mocked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[int, int, int]] = []
+
+    def forbidden_environment(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError(
+            "mocked formal calibration must not construct an environment"
+        )
+
+    def fake_executor(
+        *,
+        environment_seed: int,
+        env_config: object,
+        development_config: EXP001DevelopmentConfig,
+    ) -> EXP001EpisodeRecord:
+        del env_config
+        calls.append(
+            (
+                environment_seed,
+                development_config.blind_explore_duration,
+                development_config.blind_charge_duration,
+            )
+        )
+        return _synthetic_episode([EXP001Mode.EXPLORE])
+
+    monkeypatch.setattr(calibration_module, "_run_exp001_c_episode", fake_executor)
+    monkeypatch.setattr(calibration_module, "_current_git_sha", lambda: "a" * 40)
+    monkeypatch.setattr(runner_module, "AweformEnv", forbidden_environment)
+
+    result = run_exp001_formal_calibration(EXP001_PROTOCOL_REVISION)
+
+    assert len(calls) == len(FORMAL_CALIBRATION_SEEDS) * len(FORMAL_CANDIDATES)
+    assert calls[0][0] == FORMAL_CALIBRATION_SEEDS[0]
+    assert calls[-1][0] == FORMAL_CALIBRATION_SEEDS[-1]
+    assert {call[1:] for call in calls} == {(10, 5), (20, 10), (30, 15)}
+    assert result.executed_seed_count == len(FORMAL_CALIBRATION_SEEDS)
 
 
 def test_formal_git_provenance_uses_source_checkout_and_ignores_untracked_files(

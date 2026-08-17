@@ -11,6 +11,8 @@ import pytest
 
 import aweform.exp001_visualizer as visualizer
 from aweform import (
+    CONFIRMATORY_SEEDS,
+    FORMAL_CALIBRATION_SEEDS,
     Action,
     AweformEnvConfig,
     EXP001Condition,
@@ -220,6 +222,44 @@ def test_cli_requires_explicit_unfrozen_demo_values(
     assert captured["development_config"].blind_charge_duration == 10  # type: ignore[union-attr]
     assert captured["development_config"].enter_seek == 0.35  # type: ignore[union-attr]
     assert captured["development_config"].recover == 0.85  # type: ignore[union-attr]
+
+
+@pytest.mark.parametrize(
+    ("seed", "message"),
+    [
+        (FORMAL_CALIBRATION_SEEDS[0], "formal EXP-001 calibration"),
+        (CONFIRMATORY_SEEDS[0], "untouched EXP-001 confirmation"),
+    ],
+)
+def test_cli_rejects_reserved_seed_before_runner_or_visualization(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    seed: int,
+    message: str,
+) -> None:
+    def forbidden(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("reserved seed reached development tooling")
+
+    monkeypatch.setattr(visualizer, "run_exp001_development_batch", forbidden)
+    monkeypatch.setattr(visualizer, "show_exp001_development_visualization", forbidden)
+
+    with pytest.raises(SystemExit):
+        visualizer.main(
+            [
+                "--seed",
+                str(seed),
+                "--resource-contact-threshold",
+                "0.8",
+                "--blind-explore-duration",
+                "20",
+                "--blind-charge-duration",
+                "10",
+                "--episode-horizon",
+                "100",
+            ]
+        )
+
+    assert message in capsys.readouterr().err
 
 
 def test_exp001_modes_are_used_not_exp000_modes() -> None:

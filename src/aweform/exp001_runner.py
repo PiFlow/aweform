@@ -10,7 +10,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import Enum
-from numbers import Integral
 from typing import Sequence
 
 import numpy as np
@@ -25,6 +24,10 @@ from .exp001 import (
     ExternalObservation,
     InteroceptiveObservation,
     policy_rng_from_seed,
+)
+from .exp001_seed_policy import (
+    _validate_exp001_seed_sequence,
+    validate_exp001_development_seeds,
 )
 
 
@@ -139,7 +142,7 @@ def run_exp001_development_batch(
     inferential analysis, or scientific decision rule.
     """
 
-    validated_seeds = _validate_seeds(seeds)
+    validated_seeds = validate_exp001_development_seeds(seeds)
     _validate_exp001_inputs(env_config, development_config)
 
     episodes: list[EXP001EpisodeRecord] = []
@@ -161,18 +164,18 @@ def run_exp001_development_batch(
     )
 
 
-def run_exp001_c_episode(
+def _run_exp001_c_episode(
     environment_seed: int,
     env_config: AweformEnvConfig,
     development_config: EXP001DevelopmentConfig,
 ) -> EXP001EpisodeRecord:
-    """Execute exactly one fresh, energy-blind C episode.
+    """Execute exactly one fresh, energy-blind C episode for calibration.
 
-    This narrow wrapper exists for EXP-001 calibration.  It delegates to the
-    same episode machinery as the development runner while making condition C
-    the only possible execution path.
+    This internal helper delegates to the same episode machinery as the
+    development runner while making condition C the only possible execution
+    path. Calibration owns the formal seed authorization before calling it.
     """
-    validated_seed = _validate_seeds((environment_seed,))[0]
+    validated_seed = _validate_exp001_seed_sequence((environment_seed,))[0]
     _validate_exp001_inputs(env_config, development_config)
     return _run_episode(
         condition=EXP001Condition.C,
@@ -351,22 +354,3 @@ def _validate_exp001_inputs(
         raise ValueError(
             "EXP-001 requires env_config.turn_angle == math.pi / 4"
         )
-
-
-def _validate_seeds(seeds: Sequence[int]) -> tuple[int, ...]:
-    if isinstance(seeds, (str, bytes)):
-        raise ValueError("seeds must be a non-empty sequence of non-negative integers")
-    try:
-        supplied_seeds = tuple(seeds)
-    except TypeError as error:
-        raise ValueError(
-            "seeds must be a non-empty sequence of non-negative integers"
-        ) from error
-    if not supplied_seeds:
-        raise ValueError("seeds must not be empty")
-    validated: list[int] = []
-    for seed in supplied_seeds:
-        if isinstance(seed, bool) or not isinstance(seed, Integral) or seed < 0:
-            raise ValueError("seeds must contain only non-negative integer values")
-        validated.append(int(seed))
-    return tuple(validated)
