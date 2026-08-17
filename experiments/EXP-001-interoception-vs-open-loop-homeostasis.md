@@ -1,17 +1,19 @@
 # EXP-001 — Interoception versus Open-Loop Homeostasis
 
-**Status:** Development — not preregistered
+**Status:** Pre-calibration design — not preregistered
+
+The formal pre-calibration design is recorded in
+[`EXP-001-precalibration-protocol.md`](EXP-001-precalibration-protocol.md).
+That protocol contains no calibration or confirmatory results.
 
 ## Provisional scientific question
 
-> In a matched energetic environment, does direct access to actual internal
-> energy improve viability and adaptive resource use relative to a competent
-> energy-blind controller using a conservative fixed recharge/exploration
-> schedule?
+> Does closed-loop regulation using actual internal energy improve viability
+> relative to a competent energy-blind controller using a calibrated fixed
+> temporal regulation schedule?
 
-EXP-001 is a development investigation, not yet a preregistered causal claim.
-No confirmatory protocol, acceptance seeds, calibration grid, inferential
-procedure, success threshold, or frozen timer/contact value has been selected.
+EXP-001 is a pre-calibration design, not yet a preregistered causal claim.
+Calibration and confirmatory execution remain pending independent review.
 
 ## Difference from EXP-000
 
@@ -26,10 +28,9 @@ four-value observation and promising not to inspect index `0`.
 
 C may nevertheless behave competently using external left/forward/right
 resource sensing and fixed temporal rules. EXP-001 therefore compares
-energy-aware closed-loop homeostasis with conservative energy-blind open-loop
-homeostasis. Because the policies differ in their transition trigger, EXP-001
-must not be overstated as isolating information alone unless the final design
-justifies that interpretation.
+energy-aware closed-loop homeostasis with energy-blind open-loop homeostasis.
+Because the policies differ specifically in how homeostatic mode timing is
+regulated, EXP-001 must not be described as isolating “information alone”.
 
 EXP-000 remains historical scientific work. Its controllers, records, result
 record, calibration records, and frozen confirmatory protocol are not changed
@@ -50,15 +51,14 @@ B receives actual normalized internal energy plus the exact same external
 left/forward/right resource signals as C. It starts in `EXPLORE` and uses the
 following programmed modes:
 
-- `EXPLORE` → `SEEK_RESOURCE` when actual energy falls below the inherited
-  development threshold;
+- `EXPLORE` → `SEEK_RESOURCE` when actual energy falls below `0.35`;
 - `SEEK_RESOURCE` → `CHARGE` on a configurable external resource-contact
   criterion, using the shared local resource steering logic otherwise;
-- `CHARGE` uses `WAIT` until actual energy rises above the inherited recovery
-  threshold, then returns to `EXPLORE` with a new stochastic run.
+- `CHARGE` uses `WAIT` until actual energy rises above `0.85`, then returns to
+  `EXPLORE` with a new stochastic run.
 
-The initial development values `0.35` and `0.85` are inherited EXP-000
-development thresholds, not frozen EXP-001 protocol values.
+The pre-calibration protocol holds `enter_seek = 0.35` and `recover = 0.85`.
+These values are not tuned from C calibration outcomes.
 
 ### C — genuinely energy-blind conservative homeostasis
 
@@ -139,10 +139,10 @@ Episode records keep controller-visible observations separate from privileged
 evaluator telemetry such as position, actual energy, harvested energy, action
 costs, and termination state.
 
-This runner is a deterministic development instrument only. It adds no
-acceptance seeds, confirmatory execution, calibration procedure, statistical
-analysis, success criterion, or scientific claim. Development observations
-are not scientific evidence.
+This runner is a deterministic development instrument only. It does not
+execute formal calibration or confirmatory seeds, perform statistical
+analysis, or make a scientific claim. Development observations are not
+scientific evidence.
 
 ## Resource-contact semantics
 
@@ -157,9 +157,10 @@ can be spatially displaced from the body, this is an externally detectable
 resource-contact/proximity proxy, not a claim of literal physical body
 contact.
 
-The numerical threshold remains an unfrozen development parameter. Its meaning
-and the final contact semantics must be reviewed before calibration or protocol
-freezing. This foundation does not add a privileged contact sensor.
+The pre-calibration protocol holds the numerical threshold at `0.8`. Its
+meaning remains an externally detectable contact/proximity proxy rather than a
+claim of literal physical docking or body contact. This foundation does not
+add a privileged contact sensor.
 
 ## Programmed mechanism
 
@@ -170,19 +171,23 @@ must not be presented as experimental evidence.
 
 ## Development parameters
 
-The following remain explicit, changeable development parameters: external
-resource-contact threshold, blind exploration duration, blind charging
-duration, inherited B energy thresholds, and environment/body/resource values.
-The numeric contact threshold and blind timer values are intentionally required
-configuration inputs rather than frozen production protocol defaults. Explorer
-hazard is not in this list: `p = 1/8` is structurally fixed by the mechanism.
+The development implementation keeps the external resource-contact threshold,
+blind exploration duration, blind charging duration, B energy thresholds, and
+environment/body/resource values as explicit configuration inputs. The
+pre-calibration protocol freezes the EXP-001 values and candidate grid used for
+formal design; it does not add production defaults to the development API.
+Explorer hazard is not in this list: `p = 1/8` is structurally fixed by the
+mechanism.
 
 ## Calibration and confirmatory inference
 
-Calibration is not yet designed. Confirmatory inference is not yet designed.
-No acceptance seeds are created or executed in this development slice. No
-formal EXP-001 success threshold, horizon, primary endpoint, effect-size rule,
-or statistical analysis is defined here.
+Calibration and confirmatory inference are specified at the pre-calibration
+design level in the linked protocol. The exact calibration seeds are
+`20001–20200` inclusive and the untouched confirmatory seeds are
+`30001–31000` inclusive. Neither set has been executed in this slice. The
+formal episode horizon is 1000 transitions, the C selection rule is C-only,
+and the planned primary confirmatory endpoint is paired capped lifespan; no
+confirmatory analysis or scientific claim has been made.
 
 ## Scientific claim
 
