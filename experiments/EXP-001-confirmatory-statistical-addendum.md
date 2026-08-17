@@ -31,23 +31,49 @@ observed capped lifespan of 1000, but its possible survival beyond 1000 is
 unknown. EXP-001 therefore makes no claim about expected lifetime beyond the
 frozen horizon.
 
+One matched master seed is the simulation sampling unit. The 1000 confirmatory
+seeds represent realizations from the frozen simulator's seed-driven
+stochastic process. The paired bootstrap interval quantifies finite-simulation
+uncertainty for the mean B−C capped-lifespan difference under that frozen
+simulated generative process. It does not quantify uncertainty about
+biological organisms, a physical Aweform, other environments, other horizons,
+or real-world deployment. Claims remain restricted to the frozen
+1000-transition EXP-001 environment.
+
 ## Paired bootstrap convention
 
 The resampling unit is the matched seed pair, represented by one paired
 difference `D_i`. B and C episodes must never be resampled independently.
 
+The bootstrap generator is
+`numpy.random.Generator(numpy.random.PCG64(91001))`. It is initialized once
+for the entire bootstrap and continuously advances across all `50_000`
+replicates. EXP-001 must not rely on an unnamed implementation default such as
+`numpy.random.default_rng(91001)` without naming its `BitGenerator`.
+
 The fixed procedure is:
 
 - number of confirmatory pairs: `1000`;
 - bootstrap replicates: `50_000`;
-- deterministic bootstrap RNG seed: `91001`;
-- for each replicate, sample `1000` indices with replacement from the `1000`
-  paired `D_i` values;
-- calculate the replicate mean paired difference;
+- deterministic bootstrap RNG seed: `91001`, using the generator specified
+  above;
+- for each replicate, using that one continuously advancing generator, draw
+  exactly `1000` integer indices uniformly from `[0, 1000)` with replacement
+  (equivalently, `rng.integers(0, 1000, size=1000)`);
+- use the sampled indices to select the `1000` paired `D_i` values;
+- calculate that replicate's arithmetic mean paired difference;
 - use a `95%` confidence level; and
 - use an ordinary two-sided **percentile bootstrap** interval, with the lower
-  bound equal to the empirical 2.5th percentile and the upper bound equal to
-  the empirical 97.5th percentile.
+  bound computed as
+  `numpy.percentile(bootstrap_means, 2.5, method="linear")` and the upper
+  bound computed as
+  `numpy.percentile(bootstrap_means, 97.5, method="linear")`.
+
+Exactly equivalent `numpy.quantile` calls with `method="linear"` are also
+permitted. No other percentile or quantile interpolation method may be
+selected after confirmatory data are observed. These two computed bounds are
+the formal interval used for the already-frozen above-zero, below-zero, and
+includes-zero interpretation.
 
 EXP-001 does not use BCa, studentized bootstrap, one-sided intervals, or
 adaptive resampling. The interval convention must not be selected after
