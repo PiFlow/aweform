@@ -240,16 +240,12 @@ For matched seed `i`, define the primary per-seed endpoint:
 `D_i = capped_lifespan_B_i - capped_lifespan_C_i`
 
 The planned aggregate is the mean paired `D_i` across all 1000 confirmatory
-seeds. A paired uncertainty interval is planned, preferably using a
-prespecified paired bootstrap over the 1000 paired `D_i` values, consistent
-with the transparent EXP-000 analysis approach.
-
-The exact bootstrap interval convention and broader confirmatory statistical
-interpretation require independent statistical-design review and are not
-finalized by this slice. Formal calibration execution must not be authorized
-until the remaining confirmatory statistical-design convention has received
-independent review and has been frozen in a subsequent protocol revision or
-addendum. No confirmatory analysis is executed or finalized here.
+seeds. The prespecified paired percentile-bootstrap interval and confirmatory
+interpretation are frozen in
+[`EXP-001-confirmatory-statistical-addendum.md`](EXP-001-confirmatory-statistical-addendum.md).
+Formal calibration execution must not be authorized until that addendum has
+received independent review and has been merged. No confirmatory analysis is
+executed or finalized here.
 
 Possible post-confirmation descriptive diagnostics are limited to B>C / B=C /
 B<C counts, survival fractions, final and minimum energy, harvested energy,
