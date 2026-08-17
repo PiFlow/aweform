@@ -6,6 +6,7 @@ import json
 import math
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -15,9 +16,11 @@ import aweform.exp001_runner as runner_module
 from aweform import (
     CONFIRMATORY_SEEDS,
     EXP001_CALIBRATION_HORIZON,
+    EXP001_PROTOCOL_REVISION,
     FORMAL_CALIBRATION_SEEDS,
     FORMAL_CANDIDATES,
     FROZEN_EXP001_CALIBRATION_ENV_CONFIG,
+    FROZEN_EXP001_SHARED_CONTROLLER_CONFIG,
     Action,
     EXP001CalibrationResult,
     EXP001CandidateSummary,
@@ -227,6 +230,32 @@ def test_debug_reserved_seed_guard_rejects_before_environment_construction(
         run_exp001_c_debug_calibration([reserved_seed])
 
 
+@pytest.mark.parametrize(
+    "seeds,purpose",
+    [
+        ((FORMAL_CALIBRATION_SEEDS[0],), "debug"),
+        ((CONFIRMATORY_SEEDS[0],), "debug"),
+        (CONFIRMATORY_SEEDS, "calibration"),
+        (FORMAL_CALIBRATION_SEEDS[:-1], "calibration"),
+        (FORMAL_CALIBRATION_SEEDS[::-1], "calibration"),
+        (FORMAL_CALIBRATION_SEEDS + (FORMAL_CALIBRATION_SEEDS[-1],), "calibration"),
+    ],
+)
+def test_lowest_calibration_layer_rejects_reserved_or_noncanonical_requests(
+    monkeypatch: pytest.MonkeyPatch,
+    seeds: tuple[int, ...],
+    purpose: str,
+) -> None:
+    def forbidden(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError(
+            "invalid calibration request reached environment construction"
+        )
+
+    monkeypatch.setattr(runner_module, "AweformEnv", forbidden)
+    with pytest.raises(ValueError):
+        calibration_module._run_c_calibration(seeds=seeds, purpose=purpose)
+
+
 def test_same_debug_seed_has_matched_initial_environment_state() -> None:
     records = [
         run_exp001_c_episode(
@@ -368,6 +397,17 @@ def test_result_schema_contains_aggregate_rows_only() -> None:
     assert isinstance(result, EXP001CalibrationResult)
     assert payload["schema_version"] == "exp-001-calibration-v1"
     assert payload["manifest"]["experiment"] == "EXP-001"
+    assert payload["manifest"]["shared_controller_config"] == {
+        "resource_contact_threshold": 0.8,
+        "enter_seek": 0.35,
+        "recover": 0.85,
+    }
+    assert payload["manifest"]["shared_controller_config"] == dataclasses.asdict(
+        FROZEN_EXP001_SHARED_CONTROLLER_CONFIG
+    )
+    assert "unused by C's energy-blind policy" in payload["manifest"][
+        "c_energy_blind_config_note"
+    ]
     assert payload["manifest"]["result_classification"].endswith(
         "not confirmatory evidence"
     )
@@ -401,6 +441,81 @@ def test_formal_execution_requires_exact_authorization_before_running(
     monkeypatch.setattr(calibration_module, "_run_c_calibration", forbidden)
     with pytest.raises(PermissionError, match="requires authorization"):
         run_exp001_formal_calibration("not-authorized")
+
+
+def test_formal_wrapper_routes_only_fixed_formal_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_executor(*, seeds: tuple[int, ...], purpose: str) -> object:
+        captured["seeds"] = seeds
+        captured["purpose"] = purpose
+        return object()
+
+    monkeypatch.setattr(calibration_module, "_run_c_calibration", fake_executor)
+    monkeypatch.setattr(calibration_module, "_current_git_sha", lambda: "a" * 40)
+    run_exp001_formal_calibration(EXP001_PROTOCOL_REVISION)
+    assert captured == {
+        "seeds": FORMAL_CALIBRATION_SEEDS,
+        "purpose": "calibration",
+    }
+
+
+def test_formal_git_provenance_uses_source_checkout_and_ignores_untracked_files(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = Path("/aweform/source-checkout")
+    calls: list[tuple[list[str], Path]] = []
+
+    def fake_run(args: list[str], **kwargs: object) -> SimpleNamespace:
+        calls.append((args, kwargs["cwd"]))  # type: ignore[arg-type]
+        if args[1] == "rev-parse":
+            return SimpleNamespace(stdout="a" * 40 + "\n")
+        return SimpleNamespace(stdout="")
+
+    monkeypatch.setattr(
+        calibration_module,
+        "_resolve_aweform_checkout",
+        lambda: repository,
+    )
+    monkeypatch.setattr(calibration_module.subprocess, "run", fake_run)
+    assert calibration_module._current_git_sha() == "a" * 40
+    assert calls == [
+        (["git", "rev-parse", "HEAD"], repository),
+        (["git", "status", "--porcelain", "--untracked-files=no"], repository),
+    ]
+
+
+def test_formal_git_provenance_rejects_tracked_dirty_checkout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = Path("/aweform/source-checkout")
+
+    def fake_run(args: list[str], **_kwargs: object) -> SimpleNamespace:
+        if args[1] == "rev-parse":
+            return SimpleNamespace(stdout="b" * 40 + "\n")
+        return SimpleNamespace(stdout=" M src/aweform/exp001.py\n")
+
+    monkeypatch.setattr(
+        calibration_module,
+        "_resolve_aweform_checkout",
+        lambda: repository,
+    )
+    monkeypatch.setattr(calibration_module.subprocess, "run", fake_run)
+    with pytest.raises(RuntimeError, match="tracked Aweform source checkout is dirty"):
+        calibration_module._current_git_sha()
+
+
+def test_formal_git_provenance_fails_closed_without_source_checkout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def no_checkout() -> Path:
+        raise RuntimeError("no checkout")
+
+    monkeypatch.setattr(calibration_module, "_resolve_aweform_checkout", no_checkout)
+    with pytest.raises(RuntimeError, match="no checkout"):
+        calibration_module._current_git_sha()
 
 
 def test_selection_rule_covers_all_frozen_tie_cases() -> None:

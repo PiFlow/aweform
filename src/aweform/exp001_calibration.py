@@ -83,6 +83,45 @@ _TIE_PRIORITY = {"LONG": 0, "SHORT": 1, "CURRENT": 2}
 
 
 @dataclass(frozen=True, slots=True)
+class EXP001SharedControllerConfig:
+    """Shared frozen controller values passed to every C candidate.
+
+    C receives only external resource observations.  ``enter_seek`` and
+    ``recover`` remain structurally frozen because they are part of the shared
+    development configuration, but C's energy-blind policy does not read
+    either field.
+    """
+
+    resource_contact_threshold: float
+    enter_seek: float
+    recover: float
+
+    def for_candidate(
+        self,
+        candidate: EXP001CandidateDefinition,
+    ) -> EXP001DevelopmentConfig:
+        """Build the complete immutable development config for one candidate."""
+        return EXP001DevelopmentConfig(
+            resource_contact_threshold=self.resource_contact_threshold,
+            blind_explore_duration=candidate.explore_duration,
+            blind_charge_duration=candidate.charge_duration,
+            enter_seek=self.enter_seek,
+            recover=self.recover,
+        )
+
+
+FROZEN_EXP001_SHARED_CONTROLLER_CONFIG = EXP001SharedControllerConfig(
+    resource_contact_threshold=0.8,
+    enter_seek=0.35,
+    recover=0.85,
+)
+EXP001_C_ENERGY_BLIND_CONFIG_NOTE = (
+    "C receives only ExternalObservation(L/F/R); enter_seek and recover are "
+    "frozen structural fields and are unused by C's energy-blind policy."
+)
+
+
+@dataclass(frozen=True, slots=True)
 class EXP001CEpisodeDiagnostics:
     """Evaluator-only diagnostics derived from one C episode."""
 
@@ -133,6 +172,7 @@ class EXP001CalibrationResult:
     numpy_version: str
     horizon: int
     environment_config: AweformEnvConfig
+    shared_controller_config: EXP001SharedControllerConfig
     candidate_definitions: tuple[EXP001CandidateDefinition, ...]
     formal_calibration_seed_start: int
     formal_calibration_seed_end: int
@@ -160,6 +200,8 @@ class EXP001CalibrationResult:
                 "numpy_version": self.numpy_version,
                 "horizon": self.horizon,
                 "environment_config": _json_value(asdict(self.environment_config)),
+                "shared_controller_config": asdict(self.shared_controller_config),
+                "c_energy_blind_config_note": EXP001_C_ENERGY_BLIND_CONFIG_NOTE,
                 "candidate_definitions": [
                     asdict(candidate) for candidate in self.candidate_definitions
                 ],
@@ -224,7 +266,6 @@ def run_exp001_c_debug_calibration(
     return _run_c_calibration(
         seeds=validated_seeds,
         purpose="debug",
-        git_commit_sha=None,
     )
 
 
@@ -244,7 +285,6 @@ def run_exp001_formal_calibration(
     return _run_c_calibration(
         seeds=FORMAL_CALIBRATION_SEEDS,
         purpose="calibration",
-        git_commit_sha=_current_git_sha(),
     )
 
 
@@ -357,17 +397,14 @@ def _run_c_calibration(
     *,
     seeds: Sequence[int],
     purpose: str,
-    git_commit_sha: str | None,
 ) -> EXP001CalibrationResult:
+    validated_seeds = _validate_calibration_execution_request(seeds, purpose)
+    git_commit_sha = _current_git_sha() if purpose == "calibration" else None
     environment_config = frozen_exp001_calibration_environment_config()
     summaries: list[EXP001CandidateSummary] = []
     for candidate in FORMAL_CANDIDATES:
-        development_config = EXP001DevelopmentConfig(
-            resource_contact_threshold=0.8,
-            blind_explore_duration=candidate.explore_duration,
-            blind_charge_duration=candidate.charge_duration,
-            enter_seek=0.35,
-            recover=0.85,
+        development_config = FROZEN_EXP001_SHARED_CONTROLLER_CONFIG.for_candidate(
+            candidate
         )
         episodes = tuple(
             run_exp001_c_episode(
@@ -375,7 +412,7 @@ def _run_c_calibration(
                 env_config=environment_config,
                 development_config=development_config,
             )
-            for seed in seeds
+            for seed in validated_seeds
         )
         summaries.append(_summarize_candidate(candidate, episodes))
 
@@ -390,11 +427,12 @@ def _run_c_calibration(
         numpy_version=np.__version__,
         horizon=EXP001_CALIBRATION_HORIZON,
         environment_config=environment_config,
+        shared_controller_config=FROZEN_EXP001_SHARED_CONTROLLER_CONFIG,
         candidate_definitions=FORMAL_CANDIDATES,
         formal_calibration_seed_start=FORMAL_CALIBRATION_SEEDS[0],
         formal_calibration_seed_end=FORMAL_CALIBRATION_SEEDS[-1],
         formal_calibration_seed_count=len(FORMAL_CALIBRATION_SEEDS),
-        executed_seed_count=len(seeds),
+        executed_seed_count=len(validated_seeds),
         candidate_summaries=immutable_summaries,
         selected_candidate=select_exp001_candidate(immutable_summaries),
         selection_rule_identifier=EXP001_SELECTION_RULE_IDENTIFIER,
@@ -526,17 +564,76 @@ def _validate_seed_sequence(seeds: Sequence[int]) -> tuple[int, ...]:
     return tuple(validated)
 
 
+def _validate_calibration_execution_request(
+    seeds: Sequence[int],
+    purpose: str,
+) -> tuple[int, ...]:
+    """Enforce seed reservations at the lowest calibration execution layer."""
+    if purpose not in {"debug", "calibration"}:
+        raise ValueError("calibration purpose must be 'debug' or 'calibration'")
+    validated = _validate_seed_sequence(seeds)
+    supplied = set(validated)
+    formal = set(FORMAL_CALIBRATION_SEEDS)
+    confirmatory = set(CONFIRMATORY_SEEDS)
+    if purpose == "debug":
+        overlap = supplied & (formal | confirmatory)
+        if overlap:
+            raise ValueError(
+                "debug calibration seeds overlap reserved EXP-001 seed ranges: "
+                + ", ".join(str(seed) for seed in sorted(overlap))
+            )
+        return validated
+    if validated != FORMAL_CALIBRATION_SEEDS:
+        raise ValueError(
+            "formal calibration requires exactly FORMAL_CALIBRATION_SEEDS in "
+            "canonical order"
+        )
+    if supplied & confirmatory:
+        raise ValueError("formal calibration cannot accept confirmatory seeds")
+    return validated
+
+
 def _current_git_sha() -> str:
-    completed = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    sha = completed.stdout.strip()
-    if not sha:
-        raise RuntimeError("could not determine Git commit SHA")
+    repository = _resolve_aweform_checkout()
+    try:
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repository,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        status = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            cwd=repository,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise RuntimeError(
+            "could not establish clean Git provenance for the Aweform source checkout"
+        ) from error
+    if status.stdout.strip():
+        raise RuntimeError(
+            "refusing formal calibration: tracked Aweform source checkout is dirty"
+        )
+    sha = head.stdout.strip()
+    if len(sha) != 40 or any(character not in "0123456789abcdef" for character in sha):
+        raise RuntimeError("Aweform source checkout returned an invalid Git HEAD SHA")
     return sha
+
+
+def _resolve_aweform_checkout() -> Path:
+    """Resolve the source checkout containing this running implementation."""
+    module_path = Path(__file__).resolve()
+    for parent in (module_path.parent, *module_path.parents):
+        git_marker = parent / ".git"
+        if (parent / "pyproject.toml").is_file() and git_marker.exists():
+            return parent
+    raise RuntimeError(
+        "could not resolve an Aweform source checkout for formal Git provenance"
+    )
 
 
 def _json_value(value: object) -> Any:
