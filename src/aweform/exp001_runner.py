@@ -161,6 +161,27 @@ def run_exp001_development_batch(
     )
 
 
+def run_exp001_c_episode(
+    environment_seed: int,
+    env_config: AweformEnvConfig,
+    development_config: EXP001DevelopmentConfig,
+) -> EXP001EpisodeRecord:
+    """Execute exactly one fresh, energy-blind C episode.
+
+    This narrow wrapper exists for EXP-001 calibration.  It delegates to the
+    same episode machinery as the development runner while making condition C
+    the only possible execution path.
+    """
+    validated_seed = _validate_seeds((environment_seed,))[0]
+    _validate_exp001_inputs(env_config, development_config)
+    return _run_episode(
+        condition=EXP001Condition.C,
+        environment_seed=validated_seed,
+        env_config=env_config,
+        development_config=development_config,
+    )
+
+
 def _run_episode(
     *,
     condition: EXP001Condition,
