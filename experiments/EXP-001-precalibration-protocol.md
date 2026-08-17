@@ -2,7 +2,7 @@
 
 **Design status:** pre-calibration design; not preregistered
 
-**Design revision:** `EXP-001-precalibration-002`
+**Design revision:** `EXP-001-precalibration-003`
 
 **Formal calibration status:** not executed
 
@@ -158,12 +158,28 @@ Calibration exists only to select a competent C open-loop baseline. Selection
 must use C outcomes exclusively.
 
 For each candidate, calculate mean capped lifespan over the 200 calibration
-seeds. The frozen deterministic selection key is applied in this order:
+seeds. The frozen deterministic selection rule is applied in this order:
 
-1. highest C mean capped lifespan;
-2. then higher C horizon-survival count;
-3. then higher C mean minimum normalized energy;
-4. if still exactly tied, select `CURRENT` (`20/10`).
+1. retain candidate(s) with the highest C mean capped lifespan;
+2. among those still tied, retain candidate(s) with the higher C
+   horizon-survival count;
+3. among those still tied, retain candidate(s) with the higher C mean minimum
+   normalized energy;
+4. if more than one candidate is still exactly tied after criteria 1–3, use
+   the fixed canonical tie priority `CURRENT` > `SHORT` > `LONG` and select
+   the highest-priority remaining candidate.
+
+The final priority applies only among candidates still tied after criteria 1–3.
+For example:
+
+- `CURRENT` and `SHORT` tied after criteria 1–3 → select `CURRENT`;
+- `CURRENT` and `LONG` tied → select `CURRENT`;
+- `SHORT` and `LONG` tied, with `CURRENT` already eliminated → select `SHORT`;
+- all three exactly tied → select `CURRENT`.
+
+This final priority is a deterministic bookkeeping convention only. It does
+not express a scientific claim that one timer schedule is intrinsically
+preferable.
 
 If the calibration run is technically valid, this rule always selects exactly
 one of the three predeclared candidates. The result must not be rejected
