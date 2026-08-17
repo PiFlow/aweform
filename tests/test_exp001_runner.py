@@ -8,6 +8,8 @@ import pytest
 
 import aweform.exp001_runner as runner_module
 from aweform import (
+    CONFIRMATORY_SEEDS,
+    FORMAL_CALIBRATION_SEEDS,
     Action,
     AweformEnv,
     AweformEnvConfig,
@@ -319,6 +321,95 @@ def test_runner_rejects_malformed_development_seeds(seeds: object) -> None:
             env_config=_environment_config(),
             development_config=_development_config(),
         )
+
+
+@pytest.mark.parametrize(
+    ("seeds", "message"),
+    [
+        ([FORMAL_CALIBRATION_SEEDS[0]], "formal EXP-001 calibration"),
+        ([FORMAL_CALIBRATION_SEEDS[-1]], "formal EXP-001 calibration"),
+        ([CONFIRMATORY_SEEDS[0]], "untouched EXP-001 confirmation"),
+        ([CONFIRMATORY_SEEDS[-1]], "untouched EXP-001 confirmation"),
+    ],
+)
+def test_runner_rejects_reserved_seed_before_environment_or_rng_construction(
+    monkeypatch: pytest.MonkeyPatch,
+    seeds: list[int],
+    message: str,
+) -> None:
+    environment_constructions = 0
+    policy_rng_constructions = 0
+    real_environment = runner_module.AweformEnv
+    real_policy_rng = runner_module.policy_rng_from_seed
+
+    class SpyEnvironment(real_environment):
+        def __init__(self, config: AweformEnvConfig) -> None:
+            nonlocal environment_constructions
+            environment_constructions += 1
+            super().__init__(config)
+
+    def spy_policy_rng(seed: int) -> np.random.Generator:
+        nonlocal policy_rng_constructions
+        policy_rng_constructions += 1
+        return real_policy_rng(seed)
+
+    monkeypatch.setattr(runner_module, "AweformEnv", SpyEnvironment)
+    monkeypatch.setattr(runner_module, "policy_rng_from_seed", spy_policy_rng)
+
+    with pytest.raises(ValueError, match=message):
+        run_exp001_development_batch(
+            seeds=seeds,
+            env_config=_environment_config(),
+            development_config=_development_config(),
+        )
+
+    assert environment_constructions == 0
+    assert policy_rng_constructions == 0
+
+
+@pytest.mark.parametrize(
+    "seeds",
+    [
+        [18001, FORMAL_CALIBRATION_SEEDS[0]],
+        [18001, CONFIRMATORY_SEEDS[0]],
+    ],
+)
+def test_runner_rejects_mixed_seed_batch_atomically(
+    monkeypatch: pytest.MonkeyPatch,
+    seeds: list[int],
+) -> None:
+    environment_constructions = 0
+    real_environment = runner_module.AweformEnv
+
+    class SpyEnvironment(real_environment):
+        def __init__(self, config: AweformEnvConfig) -> None:
+            nonlocal environment_constructions
+            environment_constructions += 1
+            super().__init__(config)
+
+    monkeypatch.setattr(runner_module, "AweformEnv", SpyEnvironment)
+
+    with pytest.raises(ValueError, match="reserved"):
+        run_exp001_development_batch(
+            seeds=seeds,
+            env_config=_environment_config(),
+            development_config=_development_config(),
+        )
+
+    assert environment_constructions == 0
+
+
+def test_runner_still_executes_an_ordinary_non_reserved_debug_seed() -> None:
+    result = run_exp001_development_batch(
+        seeds=[18001],
+        env_config=_environment_config(episode_horizon=1),
+        development_config=_development_config(),
+    )
+
+    assert result.environment_seeds == (18001,)
+    assert [episode.condition for episode in result.episodes] == list(
+        EXP001Condition
+    )
 
 
 def test_records_keep_privileged_telemetry_out_of_controller_observation() -> None:

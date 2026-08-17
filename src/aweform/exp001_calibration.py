@@ -10,7 +10,6 @@ import statistics
 import subprocess
 from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
-from numbers import Integral
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -22,12 +21,16 @@ from .exp001 import EXP001DevelopmentConfig, EXP001Mode
 from .exp001_runner import (
     EXP001Condition,
     EXP001EpisodeRecord,
-    run_exp001_c_episode,
+    _run_exp001_c_episode,
+)
+from .exp001_seed_policy import (
+    CONFIRMATORY_SEEDS,
+    FORMAL_CALIBRATION_SEEDS,
+    _validate_exp001_seed_sequence,
+    validate_exp001_development_seeds,
 )
 
 EXP001_PROTOCOL_REVISION = "EXP-001-precalibration-003"
-FORMAL_CALIBRATION_SEEDS = tuple(range(20001, 20201))
-CONFIRMATORY_SEEDS = tuple(range(30001, 31001))
 EXP001_CALIBRATION_HORIZON = 1000
 FORMAL_EXECUTION_AUTHORIZATION = EXP001_PROTOCOL_REVISION
 EXP001_CALIBRATION_ARTIFACT_SCHEMA_VERSION = "exp-001-calibration-v1"
@@ -247,15 +250,7 @@ def frozen_exp001_calibration_environment_config() -> AweformEnvConfig:
 
 def validate_debug_seeds(seeds: Sequence[int]) -> tuple[int, ...]:
     """Validate non-reserved debug seeds before any environment is created."""
-    validated = _validate_seed_sequence(seeds)
-    reserved = set(FORMAL_CALIBRATION_SEEDS) | set(CONFIRMATORY_SEEDS)
-    overlap = tuple(seed for seed in validated if seed in reserved)
-    if overlap:
-        raise ValueError(
-            "debug seeds overlap reserved EXP-001 seed ranges: "
-            + ", ".join(str(seed) for seed in sorted(set(overlap)))
-        )
-    return validated
+    return validate_exp001_development_seeds(seeds)
 
 
 def run_exp001_c_debug_calibration(
@@ -407,7 +402,7 @@ def _run_c_calibration(
             candidate
         )
         episodes = tuple(
-            run_exp001_c_episode(
+            _run_exp001_c_episode(
                 environment_seed=seed,
                 env_config=environment_config,
                 development_config=development_config,
@@ -545,25 +540,6 @@ def _validate_candidate_summaries(
                 raise ValueError("candidate summary values must be finite")
 
 
-def _validate_seed_sequence(seeds: Sequence[int]) -> tuple[int, ...]:
-    if isinstance(seeds, (str, bytes)):
-        raise ValueError("seeds must be a non-empty sequence of non-negative integers")
-    try:
-        supplied = tuple(seeds)
-    except TypeError as error:
-        raise ValueError(
-            "seeds must be a non-empty sequence of non-negative integers"
-        ) from error
-    if not supplied:
-        raise ValueError("seeds must not be empty")
-    validated: list[int] = []
-    for seed in supplied:
-        if isinstance(seed, bool) or not isinstance(seed, Integral) or seed < 0:
-            raise ValueError("seeds must contain only non-negative integer values")
-        validated.append(int(seed))
-    return tuple(validated)
-
-
 def _validate_calibration_execution_request(
     seeds: Sequence[int],
     purpose: str,
@@ -571,7 +547,7 @@ def _validate_calibration_execution_request(
     """Enforce seed reservations at the lowest calibration execution layer."""
     if purpose not in {"debug", "calibration"}:
         raise ValueError("calibration purpose must be 'debug' or 'calibration'")
-    validated = _validate_seed_sequence(seeds)
+    validated = _validate_exp001_seed_sequence(seeds)
     supplied = set(validated)
     formal = set(FORMAL_CALIBRATION_SEEDS)
     confirmatory = set(CONFIRMATORY_SEEDS)

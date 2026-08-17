@@ -32,6 +32,7 @@ from .exp001_runner import (
     EXP001TransitionRecord,
     run_exp001_development_batch,
 )
+from .exp001_seed_policy import validate_exp001_development_seeds
 
 
 @dataclass(frozen=True, slots=True)
@@ -370,6 +371,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="inherited EXP-001 development threshold (demo default: 0.85)",
     )
     args = parser.parse_args(argv)
+    try:
+        validated_seed = validate_exp001_development_seeds((args.seed,))[0]
+    except ValueError as error:
+        parser.error(str(error))
     environment_config = AweformEnvConfig(episode_horizon=args.episode_horizon)
     development_config = EXP001DevelopmentConfig(
         resource_contact_threshold=args.resource_contact_threshold,
@@ -379,11 +384,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         recover=args.recover,
     )
     result = run_exp001_development_batch(
-        seeds=[args.seed],
+        seeds=[validated_seed],
         env_config=environment_config,
         development_config=development_config,
     )
-    show_exp001_development_visualization(result, args.seed)
+    show_exp001_development_visualization(result, validated_seed)
     return 0
 
 
