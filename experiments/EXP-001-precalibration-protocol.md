@@ -2,7 +2,7 @@
 
 **Design status:** pre-calibration design; not preregistered
 
-**Design revision:** `EXP-001-precalibration-001`
+**Design revision:** `EXP-001-precalibration-002`
 
 **Formal calibration status:** not executed
 
@@ -158,17 +158,23 @@ Calibration exists only to select a competent C open-loop baseline. Selection
 must use C outcomes exclusively.
 
 For each candidate, calculate mean capped lifespan over the 200 calibration
-seeds. Select the candidate with the highest C mean capped lifespan.
+seeds. The frozen deterministic selection key is applied in this order:
 
-Frozen tie-breaking is applied in this order:
+1. highest C mean capped lifespan;
+2. then higher C horizon-survival count;
+3. then higher C mean minimum normalized energy;
+4. if still exactly tied, select `CURRENT` (`20/10`).
 
-1. higher C horizon-survival count;
-2. higher C mean minimum normalized energy;
-3. if still exactly tied, select `CURRENT` (`20/10`).
+If the calibration run is technically valid, this rule always selects exactly
+one of the three predeclared candidates. The result must not be rejected
+because the candidates appear close, weak, surprising, or inconvenient.
 
-If the candidates are judged close or all are unsatisfactory, do not invent a
-fourth candidate or expand the grid. Stop for protocol review. No numerical
-closeness or adequacy threshold is being introduced in this slice.
+A calibration run may be rejected only for a genuine technical-validity
+failure, such as a wrong seed set, wrong configuration or protocol revision,
+incomplete execution, determinism or replay failure, corrupted or malformed
+artifacts, or an implementation mismatch with this frozen protocol. Scientific
+dissatisfaction with candidate performance is not a technical-validity
+failure.
 
 The selection artifact/process must not use, persist, summarize, or display as
 selection inputs:
@@ -185,6 +191,20 @@ The preferred calibration artifact exposes only one row per C candidate and
 the C diagnostics defined below. If implementation reuse executes A or B
 internally, their outcomes must remain transient and must not be persisted,
 summarized, displayed, or passed into selection.
+
+## Calibration-seed retirement after protocol revision
+
+If any formal calibration result from seeds `20001–20200` has been inspected
+and the scientific protocol is subsequently revised, those seeds become
+retired development/calibration data. They must not be reused to select
+parameters for the revised protocol.
+
+Any revised design requiring new calibration must declare a new
+experiment/protocol revision and reserve a new, previously unexecuted
+calibration seed set before execution. The existing confirmatory seeds
+`30001–31000` remain untouched unless an independent protocol revision
+explicitly replaces them before any of them have ever been executed. No
+replacement calibration range is reserved by this document.
 
 ## Permitted C calibration diagnostics
 
@@ -226,8 +246,10 @@ with the transparent EXP-000 analysis approach.
 
 The exact bootstrap interval convention and broader confirmatory statistical
 interpretation require independent statistical-design review and are not
-finalized by this slice. No confirmatory analysis is executed or finalized
-here.
+finalized by this slice. Formal calibration execution must not be authorized
+until the remaining confirmatory statistical-design convention has received
+independent review and has been frozen in a subsequent protocol revision or
+addendum. No confirmatory analysis is executed or finalized here.
 
 Possible post-confirmation descriptive diagnostics are limited to B>C / B=C /
 B<C counts, survival fractions, final and minimum energy, harvested energy,
