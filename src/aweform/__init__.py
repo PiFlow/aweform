@@ -32,6 +32,8 @@ from .exp001 import (
     seek_resource_action,
 )
 from .exp001_calibration import (
+    CALIBRATED_C,
+    CALIBRATED_C_NAME,
     EXP001_CALIBRATION_ARTIFACT_SCHEMA_VERSION,
     EXP001_CALIBRATION_HORIZON,
     EXP001_PROTOCOL_REVISION,
@@ -106,6 +108,8 @@ __all__ = [
     "AweformEnv",
     "AweformEnvConfig",
     "Body",
+    "CALIBRATED_C",
+    "CALIBRATED_C_NAME",
     "ControllerMode",
     "ConfirmatoryAnalysis",
     "ConfirmatoryBatchResult",

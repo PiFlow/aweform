@@ -14,6 +14,8 @@ import pytest
 import aweform.exp001_calibration as calibration_module
 import aweform.exp001_runner as runner_module
 from aweform import (
+    CALIBRATED_C,
+    CALIBRATED_C_NAME,
     CONFIRMATORY_SEEDS,
     EXP001_CALIBRATION_HORIZON,
     EXP001_PROTOCOL_REVISION,
@@ -182,6 +184,28 @@ def test_frozen_formal_configuration_is_exact() -> None:
     assert config.resource_peak_intensity == 1.0
     assert config.resource_length_scale == 0.25
     assert config.resource_count == 1
+    assert FROZEN_EXP001_SHARED_CONTROLLER_CONFIG.resource_contact_threshold == 0.8
+    assert FROZEN_EXP001_SHARED_CONTROLLER_CONFIG.enter_seek == 0.35
+    assert FROZEN_EXP001_SHARED_CONTROLLER_CONFIG.recover == 0.85
+
+
+def test_calibrated_c_matches_the_committed_formal_artifact() -> None:
+    artifact_path = (
+        Path(__file__).parents[1]
+        / "artifacts/EXP-001-formal-calibration-precalibration-003.json"
+    )
+    artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
+    definition = next(
+        candidate
+        for candidate in artifact["manifest"]["candidate_definitions"]
+        if candidate["candidate"] == artifact["selected_candidate"]
+    )
+
+    assert CALIBRATED_C_NAME == "SHORT"
+    assert artifact["selected_candidate"] == CALIBRATED_C_NAME
+    assert CALIBRATED_C.candidate == definition["candidate"]
+    assert CALIBRATED_C.explore_duration == definition["explore_duration"] == 10
+    assert CALIBRATED_C.charge_duration == definition["charge_duration"] == 5
 
 
 def test_calibration_path_instantiates_and_executes_only_c(

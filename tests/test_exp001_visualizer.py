@@ -11,8 +11,11 @@ import pytest
 
 import aweform.exp001_visualizer as visualizer
 from aweform import (
+    CALIBRATED_C,
     CONFIRMATORY_SEEDS,
     FORMAL_CALIBRATION_SEEDS,
+    FROZEN_EXP001_CALIBRATION_ENV_CONFIG,
+    FROZEN_EXP001_SHARED_CONTROLLER_CONFIG,
     Action,
     AweformEnvConfig,
     EXP001Condition,
@@ -175,17 +178,21 @@ def test_figure_has_three_exp001_panels_and_boundary_note() -> None:
     figure, animation = build_exp001_visualization_figure(result, seed=701)
 
     assert len(figure.axes) == 3
-    assert "A — stochastic exploration" in figure.axes[0].get_title()
+    assert "A — stochastic explorer" in figure.axes[0].get_title()
     assert "B — interoceptive closed-loop" in figure.axes[1].get_title()
-    assert "C — fixed-timer open-loop" in figure.axes[2].get_title()
-    assert "EVALUATOR VIEW" in figure._suptitle.get_text()
+    assert "C — calibrated energy-blind open-loop" in figure.axes[2].get_title()
+    assert "SHORT: EXPLORE 10 / CHARGE 5" in figure.axes[2].get_title()
+    assert "EXP-001 calibrated development visualization" in (
+        figure._suptitle.get_text()
+    )
+    assert "NOT CONFIRMATORY EVIDENCE" in figure._suptitle.get_text()
     assert "not available to those controllers" in figure._suptitle.get_text()
     animation._init_draw()
     animation.event_source.stop()
     plt.close(figure)
 
 
-def test_cli_requires_explicit_unfrozen_demo_values(
+def test_cli_uses_frozen_calibrated_configuration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, object] = {}
@@ -201,27 +208,18 @@ def test_cli_requires_explicit_unfrozen_demo_values(
         lambda *_args: None,
     )
 
-    assert visualizer.main(
-        [
-            "--seed",
-            "42",
-            "--resource-contact-threshold",
-            "0.8",
-            "--blind-explore-duration",
-            "20",
-            "--blind-charge-duration",
-            "10",
-            "--episode-horizon",
-            "100",
-        ]
-    ) == 0
-    assert captured["seeds"] == [42]
-    assert captured["env_config"].episode_horizon == 100  # type: ignore[union-attr]
-    assert captured["development_config"].resource_contact_threshold == 0.8  # type: ignore[union-attr]
-    assert captured["development_config"].blind_explore_duration == 20  # type: ignore[union-attr]
-    assert captured["development_config"].blind_charge_duration == 10  # type: ignore[union-attr]
-    assert captured["development_config"].enter_seek == 0.35  # type: ignore[union-attr]
-    assert captured["development_config"].recover == 0.85  # type: ignore[union-attr]
+    assert visualizer.main(["--seed", "39"]) == 0
+    assert captured["seeds"] == [39]
+    assert captured["env_config"] == FROZEN_EXP001_CALIBRATION_ENV_CONFIG
+    development_config = captured["development_config"]
+    assert development_config.resource_contact_threshold == 0.8  # type: ignore[union-attr]
+    assert development_config.blind_explore_duration == CALIBRATED_C.explore_duration  # type: ignore[union-attr]
+    assert development_config.blind_charge_duration == CALIBRATED_C.charge_duration  # type: ignore[union-attr]
+    assert development_config.enter_seek == 0.35  # type: ignore[union-attr]
+    assert development_config.recover == 0.85  # type: ignore[union-attr]
+    assert development_config == (
+        FROZEN_EXP001_SHARED_CONTROLLER_CONFIG.for_candidate(CALIBRATED_C)
+    )
 
 
 @pytest.mark.parametrize(
@@ -245,18 +243,7 @@ def test_cli_rejects_reserved_seed_before_runner_or_visualization(
 
     with pytest.raises(SystemExit):
         visualizer.main(
-            [
-                "--seed",
-                str(seed),
-                "--resource-contact-threshold",
-                "0.8",
-                "--blind-explore-duration",
-                "20",
-                "--blind-charge-duration",
-                "10",
-                "--episode-horizon",
-                "100",
-            ]
+            ["--seed", str(seed)]
         )
 
     assert message in capsys.readouterr().err
@@ -279,6 +266,24 @@ def test_exp001_modes_are_used_not_exp000_modes() -> None:
         )
         for record in (result.episodes[0], result.episodes[2])
     )
+
+
+def test_ordinary_calibrated_seed_is_reproducible() -> None:
+    development_config = FROZEN_EXP001_SHARED_CONTROLLER_CONFIG.for_candidate(
+        CALIBRATED_C
+    )
+    first = run_exp001_development_batch(
+        seeds=[39],
+        env_config=FROZEN_EXP001_CALIBRATION_ENV_CONFIG,
+        development_config=development_config,
+    )
+    second = run_exp001_development_batch(
+        seeds=[39],
+        env_config=FROZEN_EXP001_CALIBRATION_ENV_CONFIG,
+        development_config=development_config,
+    )
+
+    assert first == second
 
 
 def test_mode_changing_decisions_align_mode_and_action_from_same_record() -> None:
