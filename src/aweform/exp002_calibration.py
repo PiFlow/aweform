@@ -29,6 +29,8 @@ from .exp001_calibration import FROZEN_EXP001_CALIBRATION_ENV_CONFIG
 from .exp001_runner import EXP001Condition
 from .exp002_protocol import (
     EXP002_B_CANDIDATES,
+    EXP002_CALIBRATION_MINIMUM_SURVIVAL_COUNT,
+    EXP002_CALIBRATION_MINIMUM_SURVIVAL_FRACTION,
     EXP002_CALIBRATION_SEEDS,
     EXP002_CONFIRMATORY_SEEDS,
     EXP002_COVERAGE_GRID_HEIGHT,
@@ -38,6 +40,7 @@ from .exp002_protocol import (
     EXP002_PROTOCOL_REVISION,
     EXP002_SELECTION_RULE,
     EXP002_SELECTION_RULE_IDENTIFIER,
+    EXP002_SHARED_CONTROLLER_VALUES,
     EXP002BCandidate,
 )
 from .exp002_runner import (
@@ -50,6 +53,9 @@ FORMAL_EXECUTION_AUTHORIZATION: Final = "EXP-002-calibration-execution-001"
 EXP002_CALIBRATION_ARTIFACT_SCHEMA_VERSION: Final = "exp-002-formal-calibration-v1"
 EXP002_CALIBRATION_EPISODE_COUNT: Final = 4 * 200
 EXP002_CALIBRATION_EPISODES_PER_CANDIDATE: Final = 200
+EXP002_SCIENTIFIC_CONTRACT_SHA256: Final = (
+    "cc982be0da525aafdab478442d753a3132bf6b006ee524e40e9f740a720637c6"
+)
 EXP002_CALIBRATION_ARTIFACT_FILENAME: Final = (
     "EXP-002-formal-calibration-precalibration-001.json"
 )
@@ -144,6 +150,7 @@ class EXP002FormalCalibrationResult:
                     {"candidate": candidate.value, "enter_seek": candidate.enter_seek}
                     for candidate in EXP002_B_CANDIDATES
                 ],
+                "shared_controller_values": asdict(EXP002_SHARED_CONTROLLER_VALUES),
                 "environment_config": _json_value(
                     asdict(FROZEN_EXP001_CALIBRATION_ENV_CONFIG)
                 ),
@@ -157,6 +164,7 @@ class EXP002FormalCalibrationResult:
                     "canonical_quantity": "visited_cell_count",
                 },
                 "raw_trajectories_persisted": False,
+                "scientific_contract_sha256": EXP002_SCIENTIFIC_CONTRACT_SHA256,
             },
             "candidate_summaries": [
                 asdict(summary) for summary in self.candidate_summaries
@@ -205,6 +213,47 @@ def validate_exp002_formal_seeds(seeds: Sequence[int]) -> tuple[int, ...]:
     return supplied
 
 
+def exp002_scientific_contract_payload() -> dict[str, Any]:
+    """Return the canonical machine-readable frozen scientific contract."""
+    return {
+        "environment_config": _json_value(
+            asdict(FROZEN_EXP001_CALIBRATION_ENV_CONFIG)
+        ),
+        "candidate_registry": [
+            {"candidate": candidate.value, "enter_seek": candidate.enter_seek}
+            for candidate in EXP002_B_CANDIDATES
+        ],
+        "shared_controller_values": asdict(EXP002_SHARED_CONTROLLER_VALUES),
+        "horizon": EXP002_HORIZON,
+        "coverage_grid": {
+            "width": EXP002_COVERAGE_GRID_WIDTH,
+            "height": EXP002_COVERAGE_GRID_HEIGHT,
+        },
+        "calibration_seeds": list(EXP002_CALIBRATION_SEEDS),
+        "confirmatory_seeds": list(EXP002_CONFIRMATORY_SEEDS),
+        "viability_eligibility": {
+            "horizon_survival_count": EXP002_CALIBRATION_MINIMUM_SURVIVAL_COUNT,
+            "episode_count": EXP002_CALIBRATION_EPISODES_PER_CANDIDATE,
+            "fraction": EXP002_CALIBRATION_MINIMUM_SURVIVAL_FRACTION,
+        },
+        "candidate_count": len(EXP002_B_CANDIDATES),
+        "formal_episode_count": EXP002_CALIBRATION_EPISODE_COUNT,
+        "selection_rule_identifier": EXP002_SELECTION_RULE_IDENTIFIER,
+    }
+
+
+def exp002_scientific_contract_sha256() -> str:
+    """Hash the canonical frozen scientific contract deterministically."""
+    serialized = json.dumps(
+        exp002_scientific_contract_payload(),
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(serialized).hexdigest()
+
+
 def select_exp002_candidate(
     summaries: Sequence[EXP002CandidateSummary],
 ) -> EXP002Selection:
@@ -214,7 +263,10 @@ def select_exp002_candidate(
     eligible = tuple(
         summary
         for summary in candidates
-        if summary.horizon_survival_count >= 180
+        if (
+            summary.horizon_survival_count
+            >= EXP002_CALIBRATION_MINIMUM_SURVIVAL_COUNT
+        )
     )
     if eligible:
         selected = max(
@@ -309,6 +361,12 @@ def _formal_preflight(started_at: str) -> str:
         raise RuntimeError("EXP-002 protocol revision is not the frozen revision")
     if _sha256_file(protocol_path) != EXP002_PROTOCOL_FILE_SHA256:
         raise RuntimeError("EXP-002 frozen protocol file identity does not match")
+    current_contract_sha256 = exp002_scientific_contract_sha256()
+    if current_contract_sha256 != EXP002_SCIENTIFIC_CONTRACT_SHA256:
+        raise RuntimeError(
+            "EXP-002 scientific contract fingerprint does not match the frozen "
+            "formal calibration contract"
+        )
     if tuple(EXP002_B_CANDIDATES) != (
         EXP002BCandidate.B35,
         EXP002BCandidate.B40,

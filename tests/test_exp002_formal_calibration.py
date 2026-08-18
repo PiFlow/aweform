@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import asdict, replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -20,6 +21,7 @@ from aweform.exp002_protocol import (
     EXP002_CALIBRATION_SEEDS,
     EXP002_CONFIRMATORY_SEEDS,
     EXP002_HORIZON,
+    EXP002_PROTOCOL_FILE_SHA256,
     EXP002BCandidate,
 )
 from aweform.exp002_runner import (
@@ -100,6 +102,24 @@ def _minimal_diagnostic() -> EXP002EpisodeDiagnostics:
 def test_exact_formal_seed_tuple_is_accepted_without_simulation() -> None:
     assert calibration.validate_exp002_formal_seeds(tuple(range(40001, 40201))) == (
         tuple(range(40001, 40201))
+    )
+
+
+def test_scientific_contract_and_protocol_fingerprints_are_frozen() -> None:
+    assert (
+        calibration.exp002_scientific_contract_sha256()
+        == calibration.EXP002_SCIENTIFIC_CONTRACT_SHA256
+        == "cc982be0da525aafdab478442d753a3132bf6b006ee524e40e9f740a720637c6"
+    )
+    protocol_path = (
+        calibration._repository_root()
+        / "experiments"
+        / "EXP-002-interoceptive-seek-threshold.md"
+    )
+    assert calibration._sha256_file(protocol_path) == EXP002_PROTOCOL_FILE_SHA256
+    assert (
+        calibration._sha256_file(protocol_path)
+        == "18875e9e97221db0dcb7acb1ee50d9dc6546dd619d9f871430801335455f77d1"
     )
 
 
@@ -263,6 +283,13 @@ def test_artifact_is_aggregate_only_and_selection_is_recomputable() -> None:
     assert payload["schema_version"] == "exp-002-formal-calibration-v1"
     assert payload["identity"]["episode_count"] == 800
     assert payload["identity"]["raw_trajectories_persisted"] is False
+    assert (
+        payload["identity"]["scientific_contract_sha256"]
+        == calibration.EXP002_SCIENTIFIC_CONTRACT_SHA256
+    )
+    assert payload["identity"]["shared_controller_values"] == asdict(
+        calibration.EXP002_SHARED_CONTROLLER_VALUES
+    )
     assert "transitions" not in json.dumps(payload)
     persisted_summaries = tuple(
         calibration.EXP002CandidateSummary(**row)
@@ -349,6 +376,85 @@ def test_existing_artifact_and_reservation_block_before_simulation(
         calibration.run_exp002_formal_calibration(
             calibration.FORMAL_EXECUTION_AUTHORIZATION
         )
+
+
+@pytest.mark.parametrize(
+    "drift",
+    [
+        pytest.param(
+            lambda module: setattr(
+                module,
+                "FROZEN_EXP001_CALIBRATION_ENV_CONFIG",
+                replace(
+                    module.FROZEN_EXP001_CALIBRATION_ENV_CONFIG,
+                    resource_length_scale=0.20,
+                ),
+            ),
+            id="environment-parameter",
+        ),
+        pytest.param(
+            lambda module: setattr(
+                module,
+                "EXP002_SHARED_CONTROLLER_VALUES",
+                replace(module.EXP002_SHARED_CONTROLLER_VALUES, recover=0.84),
+            ),
+            id="shared-controller-value",
+        ),
+        pytest.param(
+            lambda module: setattr(
+                module,
+                "EXP002_B_CANDIDATES",
+                tuple(
+                    SimpleNamespace(
+                        value=candidate.value,
+                        enter_seek=(
+                            0.36
+                            if candidate is EXP002BCandidate.B35
+                            else candidate.enter_seek
+                        ),
+                    )
+                    for candidate in module.EXP002_B_CANDIDATES
+                ),
+            ),
+            id="candidate-threshold",
+        ),
+        pytest.param(
+            lambda module: setattr(
+                module,
+                "EXP002_CALIBRATION_SEEDS",
+                tuple(range(40002, 40202)),
+            ),
+            id="calibration-seed-reservation",
+        ),
+        pytest.param(
+            lambda module: setattr(module, "EXP002_COVERAGE_GRID_WIDTH", 31),
+            id="coverage-dimension",
+        ),
+    ],
+)
+def test_scientific_contract_drift_is_rejected_before_simulator_construction(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    drift: object,
+) -> None:
+    artifact_path = tmp_path / "result.json"
+    reservation_path = Path(f"{artifact_path}.reservation")
+    monkeypatch.setattr(calibration, "FORMAL_ARTIFACT_PATH", artifact_path)
+    monkeypatch.setattr(calibration, "_resolve_clean_git_sha", lambda _: "1" * 40)
+    monkeypatch.setattr(
+        calibration,
+        "_run_episode",
+        lambda **_: pytest.fail("scientific-contract drift reached simulator"),
+    )
+    assert callable(drift)
+    drift(calibration)
+
+    with pytest.raises(RuntimeError, match="scientific contract fingerprint"):
+        calibration.run_exp002_formal_calibration(
+            calibration.FORMAL_EXECUTION_AUTHORIZATION
+        )
+    assert not artifact_path.exists()
+    assert not reservation_path.exists()
 
 
 def test_failure_after_reservation_retains_marker_and_blocks_rerun(
