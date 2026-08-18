@@ -32,6 +32,8 @@ from .exp001_runner import (
 from .exp002_coverage import CoverageGrid
 from .exp002_protocol import (
     EXP002_B_CANDIDATES,
+    EXP002_COVERAGE_GRID_HEIGHT,
+    EXP002_COVERAGE_GRID_WIDTH,
     EXP002_HORIZON,
     EXP002BCandidate,
     EXP002SharedControllerValues,
@@ -136,6 +138,40 @@ class EXP002DevelopmentBatchResult:
     diagnostics: tuple[EXP002EpisodeDiagnostics, ...]
 
 
+def exp002_coverage_grid_for_episode(
+    episode: EXP002EpisodeRecord,
+) -> CoverageGrid:
+    """Replay one episode's evaluator-only coverage into its canonical grid."""
+    states = exp002_coverage_grid_states(episode)
+    return states[-1]
+
+
+def exp002_coverage_grid_states(
+    episode: EXP002EpisodeRecord,
+) -> tuple[CoverageGrid, ...]:
+    """Return canonical coverage-grid snapshots before and after each action."""
+    environment_config = FROZEN_EXP001_CALIBRATION_ENV_CONFIG
+    coverage = CoverageGrid(
+        width=EXP002_COVERAGE_GRID_WIDTH,
+        height=EXP002_COVERAGE_GRID_HEIGHT,
+        world_min=environment_config.world_min,
+        world_max=environment_config.world_max,
+    )
+    coverage.mark_position(episode.initial_state.position)
+    states = [coverage.copy()]
+    for transition in episode.transitions:
+        evaluator = transition.privileged_evaluator
+        if evaluator.action is Action.MOVE_FORWARD:
+            coverage.mark_movement(
+                evaluator.position_before,
+                evaluator.position_after,
+            )
+        else:
+            coverage.mark_position(evaluator.position_after)
+        states.append(coverage.copy())
+    return tuple(states)
+
+
 def run_exp002_development_batch(
     seeds: Sequence[int],
     env_config: AweformEnvConfig,
@@ -178,9 +214,8 @@ def summarize_exp002_episode(
     if not episode.transitions:
         raise ValueError("episode must contain at least one transition")
 
-    coverage = CoverageGrid()
+    coverage = exp002_coverage_grid_for_episode(episode)
     explore_coverage = CoverageGrid()
-    coverage.mark_position(episode.initial_state.position)
     explore_coverage.mark_position(episode.initial_state.position)
 
     explore_action_count = 0
@@ -192,11 +227,6 @@ def summarize_exp002_episode(
     for transition in episode.transitions:
         evaluator = transition.privileged_evaluator
         mode = evaluator.controller_mode
-        if evaluator.action is Action.MOVE_FORWARD:
-            coverage.mark_movement(evaluator.position_before, evaluator.position_after)
-        else:
-            coverage.mark_position(evaluator.position_after)
-
         if mode is EXP001Mode.EXPLORE:
             explore_action_count += 1
             if evaluator.action is Action.MOVE_FORWARD:
