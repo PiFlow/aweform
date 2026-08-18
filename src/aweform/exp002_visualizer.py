@@ -203,10 +203,7 @@ def format_exp002_diagnostic_text(
 ) -> str:
     """Format controller-visible and evaluator-only panel diagnostics."""
 
-    if condition is EXP001Condition.B:
-        energy_access_label = "CONTROLLER + EVALUATOR"
-    else:
-        energy_access_label = "EVALUATOR-ONLY"
+    energy_access_label = exp002_energy_visibility_label(frame, condition)
     energy_text = (
         f"actual normalized energy: {frame.actual_normalized_energy:.3f} "
         f"[{energy_access_label}]"
@@ -268,6 +265,17 @@ def format_exp002_diagnostic_text(
         )
     lines.append(f"status: {frame.terminal_status}{held_text}")
     return "\n".join(lines)
+
+
+def exp002_energy_visibility_label(
+    frame: EXP002VisualizationFrame,
+    condition: EXP001Condition,
+) -> str:
+    """Return the canonical renderer energy-visibility label for one frame."""
+
+    if condition is EXP001Condition.B and frame.controller_visible_energy is not None:
+        return "CTRL + EVAL"
+    return "EVAL ONLY"
 
 
 def build_exp002_visualization_figure(
@@ -515,9 +523,7 @@ def build_exp002_visualization_figure(
             energy_bar.set_height(
                 0.18 * _clamp_normalized(frame.actual_normalized_energy)
             )
-            energy_label.set_text(
-                "CTRL + EVAL" if condition is EXP001Condition.B else "EVAL ONLY"
-            )
+            energy_label.set_text(exp002_energy_visibility_label(frame, condition))
             summary_text.set_text(
                 format_exp002_diagnostic_text(frame, condition, data.candidate)
             )

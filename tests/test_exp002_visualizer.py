@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from dataclasses import replace
 
 import matplotlib
 
@@ -19,6 +20,7 @@ from aweform.exp002_runner import (
     exp002_coverage_grid_for_episode,
     exp002_coverage_grid_states,
     run_exp002_development_batch,
+    summarize_exp002_episode,
 )
 
 
@@ -153,7 +155,125 @@ def test_b_source_distance_is_evaluator_only_and_a_c_energy_is_labeled(
             tuple(EXP001Condition)[condition_index],
             EXP002BCandidate.B45,
         )
-        assert "[EVALUATOR-ONLY]" in text
+        assert "[EVAL ONLY]" in text
+
+
+def test_energy_visibility_rule_covers_live_final_padded_and_a_c_frames(
+    result: object,
+) -> None:
+    data = visualizer.build_exp002_visualization_frames(  # type: ignore[arg-type]
+        result,
+        seed=18011,
+    )
+    records = visualizer.select_exp002_seed_records(  # type: ignore[arg-type]
+        result,
+        seed=18011,
+    )
+    b_record = records[1]
+    live_b = data.frames[1][0]
+    final_b = data.frames[1][len(b_record.transitions)]
+
+    assert live_b.controller_visible_energy is not None
+    assert visualizer.exp002_energy_visibility_label(
+        live_b,
+        EXP001Condition.B,
+    ) == "CTRL + EVAL"
+    assert "[CTRL + EVAL]" in visualizer.format_exp002_diagnostic_text(
+        live_b,
+        EXP001Condition.B,
+        EXP002BCandidate.B45,
+    )
+
+    assert final_b.controller_visible_energy is None
+    assert visualizer.exp002_energy_visibility_label(
+        final_b,
+        EXP001Condition.B,
+    ) == "EVAL ONLY"
+    assert "[EVAL ONLY]" in visualizer.format_exp002_diagnostic_text(
+        final_b,
+        EXP001Condition.B,
+        EXP002BCandidate.B45,
+    )
+
+    episodes = list(result.episodes)  # type: ignore[union-attr]
+    diagnostics = list(result.diagnostics)  # type: ignore[union-attr]
+    first_b_transition = b_record.transitions[0]
+    terminal_evaluator = replace(
+        first_b_transition.privileged_evaluator,
+        terminated=True,
+        truncated=False,
+    )
+    short_b = replace(
+        b_record,
+        transitions=(
+            replace(
+                first_b_transition,
+                privileged_evaluator=terminal_evaluator,
+            ),
+        ),
+    )
+    episodes[1] = short_b
+    diagnostics[1] = summarize_exp002_episode(short_b)
+    padded_result = replace(
+        result,  # type: ignore[arg-type]
+        episodes=tuple(episodes),
+        diagnostics=tuple(diagnostics),
+    )
+    padded_data = visualizer.build_exp002_visualization_frames(
+        padded_result,
+        seed=18011,
+    )
+    padded_b = padded_data.frames[1][-1]
+    assert padded_b.is_padded
+    assert padded_b.controller_visible_energy is None
+    assert visualizer.exp002_energy_visibility_label(
+        padded_b,
+        EXP001Condition.B,
+    ) == "EVAL ONLY"
+
+    assert visualizer.exp002_energy_visibility_label(
+        data.frames[0][0],
+        EXP001Condition.A,
+    ) == "EVAL ONLY"
+    assert visualizer.exp002_energy_visibility_label(
+        data.frames[2][0],
+        EXP001Condition.C,
+    ) == "EVAL ONLY"
+
+
+def test_energy_bar_uses_the_same_visibility_rule_as_text(
+    result: object,
+) -> None:
+    data = visualizer.build_exp002_visualization_frames(  # type: ignore[arg-type]
+        result,
+        seed=18011,
+    )
+    records = visualizer.select_exp002_seed_records(  # type: ignore[arg-type]
+        result,
+        seed=18011,
+    )
+    figure, animation = visualizer.build_exp002_visualization_figure(  # type: ignore[arg-type]
+        result,
+        seed=18011,
+    )
+    b_energy_label = next(
+        text for text in figure.axes[1].texts if text.get_rotation() == 90
+    )
+    live_b = data.frames[1][0]
+    assert b_energy_label.get_text() == visualizer.exp002_energy_visibility_label(
+        live_b,
+        EXP001Condition.B,
+    )
+    final_index = len(records[1].transitions)
+    animation._func(final_index)
+    assert b_energy_label.get_text() == visualizer.exp002_energy_visibility_label(
+        data.frames[1][final_index],
+        EXP001Condition.B,
+    )
+    assert b_energy_label.get_text() == "EVAL ONLY"
+    animation._init_draw()
+    animation.event_source.stop()
+    plt.close(figure)
 
 
 def test_figure_is_structural_three_panel_sanity_check(result: object) -> None:
