@@ -20,10 +20,14 @@ from matplotlib.patches import Rectangle
 
 from .env import Action, AweformEnvConfig
 from .exp001 import (
-    EXP001DevelopmentConfig,
     EXP001Mode,
     ExternalObservation,
     InteroceptiveObservation,
+)
+from .exp001_calibration import (
+    CALIBRATED_C,
+    FROZEN_EXP001_CALIBRATION_ENV_CONFIG,
+    FROZEN_EXP001_SHARED_CONTROLLER_CONFIG,
 )
 from .exp001_runner import (
     EXP001Condition,
@@ -202,16 +206,16 @@ def build_exp001_visualization_figure(
     artists: list[tuple[Any, Any, Any, Any]] = []
     labels = {
         EXP001Condition.A: (
-            "A — stochastic exploration",
-            "No energy sensor",
+            "A — stochastic explorer",
+            "External sensing only; no energy sensor",
         ),
         EXP001Condition.B: (
             "B — interoceptive closed-loop",
-            "Mode timing uses actual internal energy",
+            "Actual internal energy controls seek/recharge timing",
         ),
         EXP001Condition.C: (
-            "C — fixed-timer open-loop",
-            "No energy sensor — mode timing uses fixed timers",
+            "C — calibrated energy-blind open-loop",
+            "SHORT: EXPLORE 10 / CHARGE 5; no energy sensor",
         ),
     }
 
@@ -301,9 +305,10 @@ def build_exp001_visualization_figure(
         blit=False,
     )
     figure.suptitle(
-        "EXP-001 development visualizer "
+        "EXP-001 calibrated development visualization "
         f"— seed {data.seed}\n"
-        "DEVELOPMENT EVALUATOR VIEW — displayed information is not necessarily "
+        "DESCRIPTIVE / DEVELOPMENT VIEW — NOT CONFIRMATORY EVIDENCE\n"
+        "Displayed information is not necessarily "
         "controller-visible\n"
         "Energy shown for A and C is privileged evaluator information and is not "
         "available to those controllers."
@@ -325,7 +330,7 @@ def show_exp001_development_visualization(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run one explicit development batch, then open the visualizer."""
+    """Run one calibrated EXP-001 development batch, then open the visualizer."""
 
     parser = argparse.ArgumentParser(
         description=(
@@ -334,59 +339,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     )
     parser.add_argument("--seed", type=_non_negative_int, required=True)
-    parser.add_argument(
-        "--resource-contact-threshold",
-        type=float,
-        required=True,
-        help="development-only external contact threshold; not a protocol value",
-    )
-    parser.add_argument(
-        "--blind-explore-duration",
-        type=_positive_int,
-        required=True,
-        help="development-only C EXPLORE timer in actions; not a protocol value",
-    )
-    parser.add_argument(
-        "--blind-charge-duration",
-        type=_positive_int,
-        required=True,
-        help="development-only C CHARGE timer in actions; not a protocol value",
-    )
-    parser.add_argument(
-        "--episode-horizon",
-        type=_episode_horizon_argument,
-        required=True,
-        help="development-only episode horizon in steps",
-    )
-    parser.add_argument(
-        "--enter-seek",
-        type=float,
-        default=0.35,
-        help="inherited EXP-001 development threshold (demo default: 0.35)",
-    )
-    parser.add_argument(
-        "--recover",
-        type=float,
-        default=0.85,
-        help="inherited EXP-001 development threshold (demo default: 0.85)",
-    )
     args = parser.parse_args(argv)
     try:
         validated_seed = validate_exp001_development_seeds((args.seed,))[0]
     except ValueError as error:
         parser.error(str(error))
-    environment_config = AweformEnvConfig(episode_horizon=args.episode_horizon)
-    development_config = EXP001DevelopmentConfig(
-        resource_contact_threshold=args.resource_contact_threshold,
-        blind_explore_duration=args.blind_explore_duration,
-        blind_charge_duration=args.blind_charge_duration,
-        enter_seek=args.enter_seek,
-        recover=args.recover,
-    )
     result = run_exp001_development_batch(
         seeds=[validated_seed],
-        env_config=environment_config,
-        development_config=development_config,
+        env_config=FROZEN_EXP001_CALIBRATION_ENV_CONFIG,
+        development_config=FROZEN_EXP001_SHARED_CONTROLLER_CONFIG.for_candidate(
+            CALIBRATED_C
+        ),
     )
     show_exp001_development_visualization(result, validated_seed)
     return 0
@@ -570,30 +533,6 @@ def _non_negative_int(value: str) -> int:
     if parsed < 0:
         raise argparse.ArgumentTypeError("must be non-negative")
     return parsed
-
-
-def _positive_int(value: str) -> int:
-    try:
-        parsed = int(value)
-    except ValueError as error:
-        raise argparse.ArgumentTypeError("must be an integer") from error
-    if parsed <= 0:
-        raise argparse.ArgumentTypeError("must be positive")
-    return parsed
-
-
-def _episode_horizon_argument(value: str) -> int:
-    try:
-        horizon = int(value)
-    except ValueError as error:
-        raise argparse.ArgumentTypeError(
-            "episode horizon must be an integer"
-        ) from error
-    if not 1 <= horizon <= 1000:
-        raise argparse.ArgumentTypeError(
-            "episode horizon must be between 1 and 1000"
-        )
-    return horizon
 
 
 if __name__ == "__main__":

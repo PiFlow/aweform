@@ -11,7 +11,7 @@ import subprocess
 from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Final, Sequence
 
 import numpy as np
 
@@ -81,6 +81,26 @@ FORMAL_CANDIDATES = (
     EXP001CandidateDefinition("CURRENT", 20, 10),
     EXP001CandidateDefinition("LONG", 30, 15),
 )
+CALIBRATED_C_NAME: Final = "SHORT"
+
+
+def _resolve_candidate_definition(
+    candidate_name: str,
+) -> EXP001CandidateDefinition:
+    matches = tuple(
+        candidate
+        for candidate in FORMAL_CANDIDATES
+        if candidate.candidate == candidate_name
+    )
+    if len(matches) != 1:
+        raise RuntimeError(
+            "calibrated EXP-001 candidate must resolve to exactly one frozen "
+            f"definition: {candidate_name!r}"
+        )
+    return matches[0]
+
+
+CALIBRATED_C: Final = _resolve_candidate_definition(CALIBRATED_C_NAME)
 _CANDIDATE_NAMES = frozenset(candidate.candidate for candidate in FORMAL_CANDIDATES)
 _TIE_PRIORITY = {"LONG": 0, "SHORT": 1, "CURRENT": 2}
 
