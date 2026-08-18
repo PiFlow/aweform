@@ -71,8 +71,10 @@ from .exp001_seed_policy import (
     validate_exp001_development_seeds,
 )
 from .exp001_visualizer import (
+    EXP001ResourceFieldVisualization,
     EXP001VisualizationData,
     EXP001VisualizationFrame,
+    build_exp001_resource_field_visualization,
     build_exp001_visualization_figure,
     build_exp001_visualization_frames,
     format_exp001_diagnostic_text,
@@ -150,6 +152,7 @@ __all__ = [
     "FROZEN_EXP001_SHARED_CONTROLLER_CONFIG",
     "EXP001VisualizationData",
     "EXP001VisualizationFrame",
+    "EXP001ResourceFieldVisualization",
     "EpisodeRecord",
     "EpisodeSummary",
     "EpisodeTrajectory",
@@ -170,6 +173,7 @@ __all__ = [
     "exp001_controller_observation",
     "build_exp001_visualization_figure",
     "build_exp001_visualization_frames",
+    "build_exp001_resource_field_visualization",
     "format_exp001_diagnostic_text",
     "policy_rng_from_seed",
     "run_exp001_development_batch",
