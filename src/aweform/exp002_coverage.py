@@ -59,6 +59,18 @@ class CoverageGrid:
             if visited
         )
 
+    def copy(self) -> CoverageGrid:
+        """Return a deterministic copy without consulting any random source."""
+        copied = CoverageGrid(
+            width=self.width,
+            height=self.height,
+            world_min=self.world_min,
+            world_max=self.world_max,
+        )
+        copied._visited = self._visited.copy()
+        copied._visited_count = self._visited_count
+        return copied
+
     def mark_position(self, position: Coordinate) -> None:
         """Mark the cell containing one evaluator-side body position."""
         self._mark_index(self.cell_index(position))
