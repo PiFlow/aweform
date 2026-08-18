@@ -239,6 +239,8 @@ class EXP001ConfirmatoryAnalysis:
 
     source_artifact_sha256: str
     git_commit_sha: str
+    source_execution_numpy_version: str
+    analysis_numpy_version: str
     seeds: tuple[int, ...]
     differences: tuple[float, ...]
     mean_difference: float
@@ -256,6 +258,8 @@ class EXP001ConfirmatoryAnalysis:
             "experiment": "EXP-001",
             "protocol_revision": EXP001_PROTOCOL_REVISION,
             "git_commit_sha": self.git_commit_sha,
+            "source_execution_numpy_version": self.source_execution_numpy_version,
+            "analysis_numpy_version": self.analysis_numpy_version,
             "primary": {
                 "estimand_identifier": PRIMARY_ESTIMAND_IDENTIFIER,
                 "mean_paired_difference": self.mean_difference,
@@ -294,6 +298,8 @@ class EXP001ConfirmatoryAnalysis:
             "",
             f"- Source artifact SHA-256: `{self.source_artifact_sha256}`",
             f"- Git SHA recorded in artifact: `{self.git_commit_sha}`",
+            f"- Source execution NumPy: `{self.source_execution_numpy_version}`",
+            f"- Analysis/bootstrap NumPy: `{self.analysis_numpy_version}`",
             f"- Matched pairs: `n = {len(self.seeds)}`",
             "- A status: descriptive reference only; excluded from the primary "
             "difference, bootstrap, and interpretation",
@@ -540,14 +546,24 @@ def _execute_exp001_confirmatory_for_repository(
     artifact_path = repository / EXP001_CONFIRMATORY_ARTIFACT_RELATIVE_PATH
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     reservation = _acquire_exp001_reservation(artifact_path, git_sha)
+    run_started_at_utc = _utc_timestamp()
+    _mark_exp001_reservation_started(reservation, git_sha, run_started_at_utc)
     try:
         summaries = _run_formal_exp001_episodes(CONFIRMATORY_SEEDS)
-        manifest = _build_manifest(git_sha, tracked_provenance)
+        manifest = _build_manifest(
+            git_sha,
+            tracked_provenance,
+            run_started_at_utc=run_started_at_utc,
+        )
         artifact = EXP001ConfirmatoryArtifact(manifest, summaries)
         artifact_sha = _write_exp001_artifact_atomically(
             artifact_path, artifact.to_json()
         )
-        _mark_exp001_reservation_completed(reservation, artifact_sha)
+        _mark_exp001_reservation_completed(
+            reservation,
+            artifact_sha,
+            run_started_at_utc,
+        )
     except BaseException:
         # The marker is intentionally retained for independent review.
         raise
@@ -581,8 +597,7 @@ def _acquire_exp001_reservation(
                 "{\n"
                 '  "status": "reserved",\n'
                 f'  "git_commit_sha": "{git_sha}",\n'
-                f'  "pid": {os.getpid()},\n'
-                f'  "started_at_utc": "{datetime.now(timezone.utc).isoformat()}"\n'
+                f'  "pid": {os.getpid()}\n'
                 "}\n"
             )
     except FileExistsError as error:
@@ -599,9 +614,30 @@ def _acquire_exp001_reservation(
 def _mark_exp001_reservation_completed(
     reservation: EXP001ExecutionReservation,
     artifact_sha256: str,
+    started_at_utc: str,
 ) -> None:
     payload = (
-        f'{{\n  "status": "completed",\n  "artifact_sha256": "{artifact_sha256}"\n}}\n'
+        "{\n"
+        '  "status": "completed",\n'
+        f'  "artifact_sha256": "{artifact_sha256}",\n'
+        f'  "started_at_utc": "{started_at_utc}"\n'
+        "}\n"
+    )
+    _write_text_atomically(reservation.reservation_path, payload, replace=True)
+
+
+def _mark_exp001_reservation_started(
+    reservation: EXP001ExecutionReservation,
+    git_sha: str,
+    started_at_utc: str,
+) -> None:
+    payload = (
+        "{\n"
+        '  "status": "reserved",\n'
+        f'  "git_commit_sha": "{git_sha}",\n'
+        f'  "pid": {os.getpid()},\n'
+        f'  "started_at_utc": "{started_at_utc}"\n'
+        "}\n"
     )
     _write_text_atomically(reservation.reservation_path, payload, replace=True)
 
@@ -609,6 +645,8 @@ def _mark_exp001_reservation_completed(
 def _build_manifest(
     git_sha: str,
     tracked_provenance: Mapping[str, Any],
+    *,
+    run_started_at_utc: str,
 ) -> EXP001ConfirmatoryManifest:
     return EXP001ConfirmatoryManifest(
         schema_version=EXP001_CONFIRMATORY_MANIFEST_SCHEMA_VERSION,
@@ -645,7 +683,7 @@ def _build_manifest(
         },
         episode_count=EXP001_CONFIRMATORY_EPISODE_COUNT,
         raw_trajectories_persisted=False,
-        run_started_at_utc=datetime.now(timezone.utc).isoformat(),
+        run_started_at_utc=run_started_at_utc,
     )
 
 
@@ -700,6 +738,10 @@ def analyze_exp001_confirmatory_artifact(
             "artifact must contain only schema_version, manifest, and "
             "episode_summaries; raw trajectories are forbidden"
         )
+    if root["schema_version"] != EXP001_CONFIRMATORY_ARTIFACT_SCHEMA_VERSION:
+        raise EXP001ConfirmatoryValidationError(
+            "artifact has an unsupported top-level schema version"
+        )
     manifest = _validate_manifest(root["manifest"], path)
     rows = _validate_summary_rows(root["episode_summaries"], path)
     row_map = _summary_map(rows)
@@ -732,6 +774,8 @@ def analyze_exp001_confirmatory_artifact(
     return EXP001ConfirmatoryAnalysis(
         source_artifact_sha256=_sha256_file(path),
         git_commit_sha=str(manifest["git_commit_sha"]),
+        source_execution_numpy_version=str(manifest["numpy_version"]),
+        analysis_numpy_version=np.__version__,
         seeds=CONFIRMATORY_SEEDS,
         differences=tuple(float(value) for value in differences),
         mean_difference=float(np.mean(differences)),
@@ -1195,6 +1239,10 @@ def _write_text_no_overwrite(path: Path, content: str) -> None:
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
     with os.fdopen(descriptor, "w", encoding="utf-8") as file:
         file.write(content)
+
+
+def _utc_timestamp() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 if __name__ == "__main__":

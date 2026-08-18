@@ -102,6 +102,7 @@ def _synthetic_formal_artifact(tmp_path: Path) -> tuple[Path, dict[str, object]]
             "untracked_files_present": False,
             "untracked_file_count": 0,
         },
+        run_started_at_utc="2026-08-18T08:00:00+00:00",
     ).to_dict()
     payload: dict[str, object] = {
         "schema_version": confirmatory.EXP001_CONFIRMATORY_ARTIFACT_SCHEMA_VERSION,
@@ -111,6 +112,30 @@ def _synthetic_formal_artifact(tmp_path: Path) -> tuple[Path, dict[str, object]]
     path = tmp_path / "confirmatory.json"
     path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
     return path, payload
+
+
+def _synthetic_summary(
+    condition: EXP001Condition,
+    seed: int,
+) -> confirmatory.EXP001EpisodeSummary:
+    return confirmatory.EXP001EpisodeSummary(
+        condition=condition.value,
+        environment_seed=seed,
+        capped_lifespan=1,
+        completed_transitions=1,
+        terminated_viability_failure=True,
+        horizon_survival=False,
+        final_normalized_energy=0.4,
+        minimum_normalized_energy=0.4,
+        total_harvested_energy=0.0,
+        total_basal_energy_cost=0.1,
+        total_action_energy_cost=0.0,
+        total_distance_travelled=0.0,
+        explore_action_count=1,
+        seek_resource_action_count=0,
+        charge_action_count=0,
+        complete_recharge_cycle_count=0,
+    )
 
 
 def test_formal_gate_and_exact_seed_tuple_fail_before_execution(
@@ -238,6 +263,7 @@ def test_confirmatory_artifact_has_compact_rows_and_no_trajectories() -> None:
                 "untracked_files_present": False,
                 "untracked_file_count": 0,
             },
+            run_started_at_utc="2026-08-18T08:00:00+00:00",
         ),
         episode_summaries=(
             confirmatory.summarize_exp001_confirmatory_episode(
@@ -271,6 +297,38 @@ def test_artifact_validation_rejects_duplicate_missing_and_malformed_pairs(
         with pytest.raises(confirmatory.EXP001ConfirmatoryValidationError):
             confirmatory.analyze_exp001_confirmatory_artifact(malformed_path)
     assert path.exists()
+
+
+def test_artifact_validation_rejects_wrong_top_level_schema_version(
+    tmp_path: Path,
+) -> None:
+    _path, payload = _synthetic_formal_artifact(tmp_path)
+    payload["schema_version"] = "exp-001-confirmatory-invalid"
+    mutated_path = tmp_path / "wrong-schema.json"
+    mutated_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(confirmatory.EXP001ConfirmatoryValidationError):
+        confirmatory.analyze_exp001_confirmatory_artifact(mutated_path)
+
+
+def test_analysis_records_distinct_execution_and_analysis_numpy_versions(
+    tmp_path: Path,
+) -> None:
+    path, payload = _synthetic_formal_artifact(tmp_path)
+    manifest = payload["manifest"]
+    assert isinstance(manifest, dict)
+    manifest["numpy_version"] = "2.5.2-source-execution"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    analysis = confirmatory.analyze_exp001_confirmatory_artifact(path)
+    output = analysis.to_dict()
+    assert analysis.source_execution_numpy_version == "2.5.2-source-execution"
+    assert analysis.analysis_numpy_version == np.__version__
+    assert output["source_execution_numpy_version"] == "2.5.2-source-execution"
+    assert output["analysis_numpy_version"] == np.__version__
+    report = analysis.to_markdown()
+    assert "Source execution NumPy: `2.5.2-source-execution`" in report
+    assert f"Analysis/bootstrap NumPy: `{np.__version__}`" in report
 
 
 def test_analysis_is_paired_b_minus_c_a_is_descriptive_only_and_has_no_p_value(
@@ -359,6 +417,61 @@ def test_reservation_precedes_formal_episode_bridge_and_is_retained_on_failure(
     assert seen == [True]
     assert (tmp_path / "artifacts").exists()
     assert Path(f"{artifact_path}.reservation").exists()
+
+
+def test_formal_start_timestamp_is_captured_before_bridge_and_reused(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    artifact_path = tmp_path / "artifacts" / "EXP-001-confirmatory.json"
+    started_at = "2026-08-18T08:30:00+00:00"
+    bridge_start: dict[str, str] = {}
+
+    monkeypatch.setattr(
+        confirmatory,
+        "resolve_exp001_git_provenance",
+        lambda _path: (
+            tmp_path,
+            "a" * 40,
+            {
+                "tracked_worktree_clean": True,
+                "untracked_files_present": False,
+                "untracked_file_count": 0,
+            },
+        ),
+    )
+    monkeypatch.setattr(
+        confirmatory, "validate_calibrated_c_against_artifact", lambda _: None
+    )
+    monkeypatch.setattr(confirmatory, "_utc_timestamp", lambda: started_at)
+
+    def fake_bridge(seeds: object) -> tuple[confirmatory.EXP001EpisodeSummary, ...]:
+        assert seeds == CONFIRMATORY_SEEDS
+        reservation = Path(f"{artifact_path}.reservation")
+        reservation_payload = json.loads(reservation.read_text(encoding="utf-8"))
+        bridge_start["timestamp"] = reservation_payload["started_at_utc"]
+        assert reservation_payload["status"] == "reserved"
+        return tuple(
+            _synthetic_summary(condition, seed)
+            for seed in CONFIRMATORY_SEEDS
+            for condition in (
+                EXP001Condition.A,
+                EXP001Condition.B,
+                EXP001Condition.C,
+            )
+        )
+
+    monkeypatch.setattr(confirmatory, "_run_formal_exp001_episodes", fake_bridge)
+    receipt = confirmatory._execute_exp001_confirmatory_for_repository(tmp_path)
+
+    manifest = json.loads(receipt.artifact_path.read_text(encoding="utf-8"))["manifest"]
+    reservation = json.loads(
+        Path(f"{artifact_path}.reservation").read_text(encoding="utf-8")
+    )
+    assert bridge_start["timestamp"] == started_at
+    assert manifest["run_started_at_utc"] == started_at
+    assert reservation["started_at_utc"] == started_at
+    assert reservation["status"] == "completed"
 
 
 def test_existing_artifact_or_reservation_blocks_before_episode_bridge(
