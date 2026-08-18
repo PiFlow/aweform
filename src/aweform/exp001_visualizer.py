@@ -37,6 +37,9 @@ from .exp001_runner import (
     run_exp001_development_batch,
 )
 from .exp001_seed_policy import validate_exp001_development_seeds
+from .resource import ResourceField
+
+RESOURCE_FIELD_GRID_SIZE = 80
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +50,12 @@ class EXP001VisualizationFrame:
     x: float
     y: float
     heading: float
+    heading_vector: tuple[float, float]
+    probe_endpoints: tuple[
+        tuple[float, float],
+        tuple[float, float],
+        tuple[float, float],
+    ]
     actual_normalized_energy: float
     path: tuple[tuple[float, float], ...]
     mode: EXP001Mode
@@ -60,6 +69,16 @@ class EXP001VisualizationFrame:
 
 
 @dataclass(frozen=True, slots=True)
+class EXP001ResourceFieldVisualization:
+    """Evaluator-side samples of the environment's renewable resource field."""
+
+    x_coordinates: tuple[float, ...]
+    y_coordinates: tuple[float, ...]
+    intensities: tuple[tuple[float, ...], ...]
+    peak_intensity: float
+
+
+@dataclass(frozen=True, slots=True)
 class EXP001VisualizationData:
     """All data needed to construct the aligned three-panel view."""
 
@@ -67,6 +86,7 @@ class EXP001VisualizationData:
     world_min: tuple[float, float]
     world_max: tuple[float, float]
     source_positions: tuple[tuple[float, float], ...]
+    resource_field: EXP001ResourceFieldVisualization
     frames: tuple[tuple[EXP001VisualizationFrame, ...], ...]
 
 
@@ -146,7 +166,63 @@ def build_exp001_visualization_frames(
         world_min=environment_config.world_min,
         world_max=environment_config.world_max,
         source_positions=source_positions,
+        resource_field=build_exp001_resource_field_visualization(
+            environment_config,
+            source_positions,
+        ),
         frames=aligned,
+    )
+
+
+def build_exp001_resource_field_visualization(
+    environment_config: AweformEnvConfig,
+    source_positions: tuple[tuple[float, float], ...],
+    *,
+    grid_size: int = RESOURCE_FIELD_GRID_SIZE,
+) -> EXP001ResourceFieldVisualization:
+    """Sample the actual resource field for an evaluator-only heatmap.
+
+    The visualizer deliberately delegates each sample to :class:`ResourceField`
+    so the display uses the same max-of-sources Gaussian field as the
+    environment.  This function has no effect on simulation state.
+    """
+
+    if isinstance(grid_size, bool) or not isinstance(grid_size, int):
+        raise ValueError("grid_size must be a positive integer")
+    if grid_size <= 0:
+        raise ValueError("grid_size must be a positive integer")
+    field = ResourceField(
+        world_min=environment_config.world_min,
+        world_max=environment_config.world_max,
+        source_positions=source_positions,
+        peak_intensity=environment_config.resource_peak_intensity,
+        length_scale=environment_config.resource_length_scale,
+    )
+    x_coordinates = tuple(
+        float(value)
+        for value in np.linspace(
+            environment_config.world_min[0],
+            environment_config.world_max[0],
+            grid_size,
+        )
+    )
+    y_coordinates = tuple(
+        float(value)
+        for value in np.linspace(
+            environment_config.world_min[1],
+            environment_config.world_max[1],
+            grid_size,
+        )
+    )
+    intensities = tuple(
+        tuple(field.intensity((x, y)) for x in x_coordinates)
+        for y in y_coordinates
+    )
+    return EXP001ResourceFieldVisualization(
+        x_coordinates=x_coordinates,
+        y_coordinates=y_coordinates,
+        intensities=intensities,
+        peak_intensity=field.peak_intensity,
     )
 
 
@@ -158,7 +234,7 @@ def format_exp001_diagnostic_text(
 
     if condition is EXP001Condition.B and frame.next_action is None:
         energy_access_label = "EVALUATOR ONLY — no next controller observation"
-    elif condition is EXP001Condition.B:
+    elif _controller_can_see_energy(frame, condition):
         energy_access_label = "CONTROLLER + EVALUATOR"
     else:
         energy_access_label = "EVALUATOR ONLY"
@@ -190,6 +266,17 @@ def format_exp001_diagnostic_text(
     )
 
 
+def format_exp001_energy_visibility_label(
+    frame: EXP001VisualizationFrame,
+    condition: EXP001Condition,
+) -> str:
+    """Return the concise evaluator-side label for the graphical energy bar."""
+
+    return (
+        "CTRL + EVAL" if _controller_can_see_energy(frame, condition) else "EVAL ONLY"
+    )
+
+
 def build_exp001_visualization_figure(
     result: EXP001DevelopmentBatchResult,
     seed: int | None = None,
@@ -200,10 +287,10 @@ def build_exp001_visualization_figure(
     figure, axes = plt.subplots(
         1,
         len(EXP001Condition),
-        figsize=(14, 5.3),
+        figsize=(16, 6.8),
         squeeze=False,
     )
-    artists: list[tuple[Any, Any, Any, Any]] = []
+    artists: list[dict[str, Any]] = []
     labels = {
         EXP001Condition.A: (
             "A — stochastic explorer",
@@ -227,6 +314,23 @@ def build_exp001_visualization_figure(
         axis.set_ylabel("y (evaluator view)")
         title, mechanism_note = labels[condition]
         axis.set_title(f"{title}\n{mechanism_note}")
+        resource_field = data.resource_field
+        axis.imshow(
+            np.asarray(resource_field.intensities),
+            extent=(
+                data.world_min[0],
+                data.world_max[0],
+                data.world_min[1],
+                data.world_max[1],
+            ),
+            origin="lower",
+            interpolation="bilinear",
+            cmap="Greys",
+            vmin=0.0,
+            vmax=resource_field.peak_intensity,
+            alpha=0.28,
+            zorder=0,
+        )
         axis.add_patch(
             Rectangle(
                 data.world_min,
@@ -235,6 +339,7 @@ def build_exp001_visualization_figure(
                 fill=False,
                 edgecolor="black",
                 linewidth=1.0,
+                zorder=8,
             )
         )
         axis.plot(
@@ -245,15 +350,19 @@ def build_exp001_visualization_figure(
             color="black",
             linestyle="None",
             label="resource source",
+            zorder=4,
         )
         path_line, *_ = axis.plot([], [], color="tab:blue", alpha=0.45)
         position_marker, *_ = axis.plot(
             [],
             [],
             marker="o",
-            color="tab:blue",
-            markersize=6,
+            markerfacecolor="white",
+            markeredgecolor="tab:blue",
+            markeredgewidth=2.0,
+            markersize=11,
             linestyle="None",
+            zorder=7,
         )
         heading_arrow = axis.quiver(
             [],
@@ -262,37 +371,166 @@ def build_exp001_visualization_figure(
             [],
             angles="xy",
             scale_units="xy",
-            scale=5,
+            scale=8,
             color="tab:orange",
+            width=0.008,
+            zorder=8,
+        )
+        probe_lines = tuple(
+            axis.plot(
+                [],
+                [],
+                color=color,
+                alpha=0.85,
+                linestyle=(0, (2, 2)),
+                linewidth=1.3,
+                zorder=6,
+            )[0]
+            for color in ("tab:purple", "tab:green", "tab:red")
+        )
+        mode_badge = axis.text(
+            0.02,
+            0.96,
+            "",
+            transform=axis.transAxes,
+            va="top",
+            ha="left",
+            fontsize=10,
+            fontweight="bold",
+            color="white",
+            zorder=10,
+        )
+        energy_bar_background = Rectangle(
+            (0.94, 0.78),
+            0.035,
+            0.18,
+            transform=axis.transAxes,
+            facecolor="white",
+            edgecolor="black",
+            linewidth=0.8,
+            zorder=8,
+        )
+        energy_bar = Rectangle(
+            (0.94, 0.78),
+            0.035,
+            0.0,
+            transform=axis.transAxes,
+            facecolor="tab:green",
+            edgecolor="none",
+            zorder=9,
+        )
+        axis.add_patch(energy_bar_background)
+        axis.add_patch(energy_bar)
+        energy_access_label = (
+            "CTRL + EVAL" if condition is EXP001Condition.B else "EVAL ONLY"
+        )
+        energy_label = axis.text(
+            0.9575,
+            0.75,
+            energy_access_label,
+            transform=axis.transAxes,
+            va="top",
+            ha="center",
+            fontsize=6,
+            fontweight="bold",
+            rotation=90,
+            zorder=10,
         )
         summary_text = axis.text(
             0.02,
-            0.98,
+            0.82,
             "",
             transform=axis.transAxes,
             va="top",
             ha="left",
             fontsize=8,
             family="monospace",
+            zorder=10,
         )
-        artists.append((path_line, position_marker, heading_arrow, summary_text))
+        axis.text(
+            0.02,
+            0.02,
+            "probe rays: L / F / R",
+            transform=axis.transAxes,
+            va="bottom",
+            ha="left",
+            fontsize=7,
+            color="dimgray",
+            zorder=10,
+        )
+        artists.append(
+            {
+                "path_line": path_line,
+                "position_marker": position_marker,
+                "heading_arrow": heading_arrow,
+                "probe_lines": probe_lines,
+                "mode_badge": mode_badge,
+                "energy_bar": energy_bar,
+                "energy_label": energy_label,
+                "summary_text": summary_text,
+            }
+        )
+
+    mode_colors = {
+        EXP001Mode.EXPLORE: "#2563eb",
+        EXP001Mode.SEEK_RESOURCE: "#d97706",
+        EXP001Mode.CHARGE: "#16a34a",
+    }
 
     def update(frame_index: int) -> tuple[Any, ...]:
         updated: list[Any] = []
         for condition_index, artist_group in enumerate(artists):
             frame = data.frames[condition_index][frame_index]
             condition = tuple(EXP001Condition)[condition_index]
-            path_line, position_marker, heading_arrow, summary_text = artist_group
+            path_line = artist_group["path_line"]
+            position_marker = artist_group["position_marker"]
+            heading_arrow = artist_group["heading_arrow"]
+            probe_lines = artist_group["probe_lines"]
+            mode_badge = artist_group["mode_badge"]
+            energy_bar = artist_group["energy_bar"]
+            energy_label = artist_group["energy_label"]
+            summary_text = artist_group["summary_text"]
             path_x, path_y = zip(*frame.path)
             path_line.set_data(path_x, path_y)
             position_marker.set_data([frame.x], [frame.y])
             heading_arrow.set_offsets(np.asarray([[frame.x, frame.y]]))
             heading_arrow.set_UVC(
-                np.asarray([math.cos(frame.heading)]),
-                np.asarray([math.sin(frame.heading)]),
+                np.asarray([frame.heading_vector[0]]),
+                np.asarray([frame.heading_vector[1]]),
+            )
+            for probe_line, endpoint in zip(probe_lines, frame.probe_endpoints):
+                probe_line.set_data(
+                    [frame.x, endpoint[0]],
+                    [frame.y, endpoint[1]],
+                )
+            mode_badge.set_text(f"MODE  {frame.mode.value}")
+            mode_badge.set_bbox(
+                {
+                    "boxstyle": "round,pad=0.3",
+                    "facecolor": mode_colors[frame.mode],
+                    "edgecolor": "none",
+                    "alpha": 0.95,
+                }
+            )
+            energy_bar.set_height(
+                0.18 * _clamp_normalized(frame.actual_normalized_energy)
+            )
+            energy_label.set_text(
+                format_exp001_energy_visibility_label(frame, condition)
             )
             summary_text.set_text(format_exp001_diagnostic_text(frame, condition))
-            updated.extend(artist_group)
+            updated.extend(
+                (
+                    path_line,
+                    position_marker,
+                    heading_arrow,
+                    *probe_lines,
+                    mode_badge,
+                    energy_bar,
+                    energy_label,
+                    summary_text,
+                )
+            )
         return tuple(updated)
 
     update(0)
@@ -311,9 +549,10 @@ def build_exp001_visualization_figure(
         "Displayed information is not necessarily "
         "controller-visible\n"
         "Energy shown for A and C is privileged evaluator information and is not "
-        "available to those controllers."
+        "available to those controllers. Heatmap and probe rays are also "
+        "evaluator-side annotations."
     )
-    figure.tight_layout(rect=(0, 0, 1, 0.88))
+    figure.tight_layout(rect=(0, 0, 1, 0.84))
     setattr(figure, "_aweform_animation", animation)
     return figure, animation
 
@@ -384,6 +623,7 @@ def _record_frames(
             transition.privileged_evaluator.controller_mode,
             failure_boundary,
             energy_range,
+            environment_config,
         )
         frames.append(
             _with_decision_diagnostics(
@@ -401,6 +641,16 @@ def _record_frames(
         else record.transitions[-1].privileged_evaluator.actual_energy
     )
     final_transition = record.transitions[-1] if record.transitions else None
+    final_heading = (
+        record.initial_state.heading
+        if final_transition is None
+        else final_transition.privileged_evaluator.heading
+    )
+    final_heading_vector, final_probe_endpoints = _frame_geometry(
+        final_position,
+        final_heading,
+        environment_config,
+    )
     final_status = _terminal_status(
         None
         if final_transition is None
@@ -411,11 +661,9 @@ def _record_frames(
             step_index=len(record.transitions),
             x=final_position[0],
             y=final_position[1],
-            heading=(
-                record.initial_state.heading
-                if final_transition is None
-                else final_transition.privileged_evaluator.heading
-            ),
+            heading=final_heading,
+            heading_vector=final_heading_vector,
+            probe_endpoints=final_probe_endpoints,
             actual_normalized_energy=(
                 final_energy - environment_config.energy.failure_boundary
             )
@@ -440,6 +688,7 @@ def _frame_state(
     mode: EXP001Mode,
     failure_boundary: float,
     energy_range: float,
+    environment_config: AweformEnvConfig,
 ) -> EXP001VisualizationFrame:
     if transition_index == 0:
         position = record.initial_state.position
@@ -450,11 +699,18 @@ def _frame_state(
         position = previous.position
         heading = previous.heading
         actual_energy = previous.actual_energy
+    heading_vector, probe_endpoints = _frame_geometry(
+        position,
+        heading,
+        environment_config,
+    )
     return EXP001VisualizationFrame(
         step_index=transition_index,
         x=position[0],
         y=position[1],
         heading=heading,
+        heading_vector=heading_vector,
+        probe_endpoints=probe_endpoints,
         actual_normalized_energy=(actual_energy - failure_boundary)
         / energy_range,
         path=tuple(path),
@@ -466,6 +722,57 @@ def _frame_state(
         controller_visible_energy=None,
         terminal_status="running",
     )
+
+
+def _frame_geometry(
+    position: tuple[float, float],
+    heading: float,
+    environment_config: AweformEnvConfig,
+) -> tuple[
+    tuple[float, float],
+    tuple[tuple[float, float], tuple[float, float], tuple[float, float]],
+]:
+    heading_vector = (math.cos(heading), math.sin(heading))
+    probe_endpoints = (
+        _probe_endpoint(
+            position,
+            heading + environment_config.sensor_angle,
+            environment_config.probe_distance,
+        ),
+        _probe_endpoint(
+            position,
+            heading,
+            environment_config.probe_distance,
+        ),
+        _probe_endpoint(
+            position,
+            heading - environment_config.sensor_angle,
+            environment_config.probe_distance,
+        ),
+    )
+    return heading_vector, probe_endpoints
+
+
+def _probe_endpoint(
+    position: tuple[float, float],
+    direction: float,
+    distance: float,
+) -> tuple[float, float]:
+    return (
+        position[0] + distance * math.cos(direction),
+        position[1] + distance * math.sin(direction),
+    )
+
+
+def _clamp_normalized(value: float) -> float:
+    return max(0.0, min(1.0, value))
+
+
+def _controller_can_see_energy(
+    frame: EXP001VisualizationFrame,
+    condition: EXP001Condition,
+) -> bool:
+    return condition is EXP001Condition.B and frame.next_action is not None
 
 
 def _with_decision_diagnostics(

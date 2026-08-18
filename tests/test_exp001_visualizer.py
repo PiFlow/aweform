@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import replace
 
 import matplotlib
@@ -26,9 +27,11 @@ from aweform import (
     build_exp001_visualization_figure,
     build_exp001_visualization_frames,
     format_exp001_diagnostic_text,
+    format_exp001_energy_visibility_label,
     run_exp001_development_batch,
     select_exp001_seed_records,
 )
+from aweform.resource import ResourceField
 
 
 def _result(seed: int = 701, episode_horizon: int = 4):
@@ -93,6 +96,71 @@ def test_frames_preserve_position_path_heading_and_recorded_decisions() -> None:
     assert after_first.next_action is second_transition.action
 
 
+def test_resource_field_visualization_matches_environment_field() -> None:
+    result = _result()
+    data = build_exp001_visualization_frames(result, seed=701)
+    resource_data = data.resource_field
+    field = ResourceField(
+        world_min=result.environment_config.world_min,
+        world_max=result.environment_config.world_max,
+        source_positions=data.source_positions,
+        peak_intensity=result.environment_config.resource_peak_intensity,
+        length_scale=result.environment_config.resource_length_scale,
+    )
+
+    assert len(resource_data.x_coordinates) == 80
+    assert len(resource_data.y_coordinates) == 80
+    assert len(resource_data.intensities) == 80
+    assert all(len(row) == 80 for row in resource_data.intensities)
+    for row_index in (0, 40, 79):
+        for column_index in (0, 40, 79):
+            point = (
+                resource_data.x_coordinates[column_index],
+                resource_data.y_coordinates[row_index],
+            )
+            assert resource_data.intensities[row_index][column_index] == pytest.approx(
+                field.intensity(point)
+            )
+    assert resource_data.peak_intensity == (
+        result.environment_config.resource_peak_intensity
+    )
+
+
+def test_frame_contains_heading_and_aligned_probe_geometry() -> None:
+    result = _result()
+    data = build_exp001_visualization_frames(result, seed=701)
+    frame = data.frames[0][0]
+    config = result.environment_config
+
+    assert frame.heading_vector == pytest.approx(
+        (math.cos(frame.heading), math.sin(frame.heading))
+    )
+    expected_probe_endpoints = tuple(
+        (
+            frame.x + config.probe_distance * math.cos(angle),
+            frame.y + config.probe_distance * math.sin(angle),
+        )
+        for angle in (
+            frame.heading + config.sensor_angle,
+            frame.heading,
+            frame.heading - config.sensor_angle,
+        )
+    )
+    for actual, expected in zip(frame.probe_endpoints, expected_probe_endpoints):
+        assert actual == pytest.approx(expected)
+
+
+def test_figure_has_energy_bar_and_mode_badge_structure() -> None:
+    result = _result()
+    figure, animation = build_exp001_visualization_figure(result, seed=701)
+
+    for axis in figure.axes:
+        assert len(axis.patches) >= 3
+        assert any(text.get_text().startswith("MODE  ") for text in axis.texts)
+    animation.event_source.stop()
+    plt.close(figure)
+
+
 def test_energy_diagnostics_keep_a_c_blind_and_b_interoceptive() -> None:
     result = _result()
     data = build_exp001_visualization_frames(result, seed=701)
@@ -123,6 +191,34 @@ def test_energy_diagnostics_keep_a_c_blind_and_b_interoceptive() -> None:
     assert "MASKED" not in format_exp001_diagnostic_text(
         c_frame, EXP001Condition.C
     )
+
+
+def test_graphical_energy_visibility_label_tracks_controller_observation() -> None:
+    result = _result()
+    data = build_exp001_visualization_frames(result, seed=701)
+
+    assert format_exp001_energy_visibility_label(
+        data.frames[1][0], EXP001Condition.B
+    ) == "CTRL + EVAL"
+    assert format_exp001_energy_visibility_label(
+        data.frames[1][-1], EXP001Condition.B
+    ) == "EVAL ONLY"
+    assert format_exp001_energy_visibility_label(
+        data.frames[0][0], EXP001Condition.A
+    ) == "EVAL ONLY"
+    assert format_exp001_energy_visibility_label(
+        data.frames[2][0], EXP001Condition.C
+    ) == "EVAL ONLY"
+
+    figure, animation = build_exp001_visualization_figure(result, seed=701)
+    b_energy_label = next(
+        text for text in figure.axes[1].texts if text.get_rotation() == 90
+    )
+    assert b_energy_label.get_text() == "CTRL + EVAL"
+    animation._func(len(data.frames[1]) - 1)
+    assert b_energy_label.get_text() == "EVAL ONLY"
+    animation.event_source.stop()
+    plt.close(figure)
 
 
 def test_shorter_completed_episode_is_padded_without_decisions() -> None:
