@@ -78,6 +78,7 @@ from .exp001_visualizer import (
     build_exp001_visualization_figure,
     build_exp001_visualization_frames,
     format_exp001_diagnostic_text,
+    format_exp001_energy_visibility_label,
     select_exp001_seed_records,
     show_exp001_development_visualization,
 )
@@ -175,6 +176,7 @@ __all__ = [
     "build_exp001_visualization_frames",
     "build_exp001_resource_field_visualization",
     "format_exp001_diagnostic_text",
+    "format_exp001_energy_visibility_label",
     "policy_rng_from_seed",
     "run_exp001_development_batch",
     "run_exp001_c_debug_calibration",

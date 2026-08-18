@@ -27,6 +27,7 @@ from aweform import (
     build_exp001_visualization_figure,
     build_exp001_visualization_frames,
     format_exp001_diagnostic_text,
+    format_exp001_energy_visibility_label,
     run_exp001_development_batch,
     select_exp001_seed_records,
 )
@@ -190,6 +191,34 @@ def test_energy_diagnostics_keep_a_c_blind_and_b_interoceptive() -> None:
     assert "MASKED" not in format_exp001_diagnostic_text(
         c_frame, EXP001Condition.C
     )
+
+
+def test_graphical_energy_visibility_label_tracks_controller_observation() -> None:
+    result = _result()
+    data = build_exp001_visualization_frames(result, seed=701)
+
+    assert format_exp001_energy_visibility_label(
+        data.frames[1][0], EXP001Condition.B
+    ) == "CTRL + EVAL"
+    assert format_exp001_energy_visibility_label(
+        data.frames[1][-1], EXP001Condition.B
+    ) == "EVAL ONLY"
+    assert format_exp001_energy_visibility_label(
+        data.frames[0][0], EXP001Condition.A
+    ) == "EVAL ONLY"
+    assert format_exp001_energy_visibility_label(
+        data.frames[2][0], EXP001Condition.C
+    ) == "EVAL ONLY"
+
+    figure, animation = build_exp001_visualization_figure(result, seed=701)
+    b_energy_label = next(
+        text for text in figure.axes[1].texts if text.get_rotation() == 90
+    )
+    assert b_energy_label.get_text() == "CTRL + EVAL"
+    animation._func(len(data.frames[1]) - 1)
+    assert b_energy_label.get_text() == "EVAL ONLY"
+    animation.event_source.stop()
+    plt.close(figure)
 
 
 def test_shorter_completed_episode_is_padded_without_decisions() -> None:

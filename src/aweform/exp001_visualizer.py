@@ -234,7 +234,7 @@ def format_exp001_diagnostic_text(
 
     if condition is EXP001Condition.B and frame.next_action is None:
         energy_access_label = "EVALUATOR ONLY — no next controller observation"
-    elif condition is EXP001Condition.B:
+    elif _controller_can_see_energy(frame, condition):
         energy_access_label = "CONTROLLER + EVALUATOR"
     else:
         energy_access_label = "EVALUATOR ONLY"
@@ -263,6 +263,17 @@ def format_exp001_diagnostic_text(
         f"sense L/F/R: {sense_text}\n"
         f"{energy_text}\n"
         f"status: {frame.terminal_status}{held_text}"
+    )
+
+
+def format_exp001_energy_visibility_label(
+    frame: EXP001VisualizationFrame,
+    condition: EXP001Condition,
+) -> str:
+    """Return the concise evaluator-side label for the graphical energy bar."""
+
+    return (
+        "CTRL + EVAL" if _controller_can_see_energy(frame, condition) else "EVAL ONLY"
     )
 
 
@@ -477,6 +488,7 @@ def build_exp001_visualization_figure(
             probe_lines = artist_group["probe_lines"]
             mode_badge = artist_group["mode_badge"]
             energy_bar = artist_group["energy_bar"]
+            energy_label = artist_group["energy_label"]
             summary_text = artist_group["summary_text"]
             path_x, path_y = zip(*frame.path)
             path_line.set_data(path_x, path_y)
@@ -503,6 +515,9 @@ def build_exp001_visualization_figure(
             energy_bar.set_height(
                 0.18 * _clamp_normalized(frame.actual_normalized_energy)
             )
+            energy_label.set_text(
+                format_exp001_energy_visibility_label(frame, condition)
+            )
             summary_text.set_text(format_exp001_diagnostic_text(frame, condition))
             updated.extend(
                 (
@@ -512,6 +527,7 @@ def build_exp001_visualization_figure(
                     *probe_lines,
                     mode_badge,
                     energy_bar,
+                    energy_label,
                     summary_text,
                 )
             )
@@ -750,6 +766,13 @@ def _probe_endpoint(
 
 def _clamp_normalized(value: float) -> float:
     return max(0.0, min(1.0, value))
+
+
+def _controller_can_see_energy(
+    frame: EXP001VisualizationFrame,
+    condition: EXP001Condition,
+) -> bool:
+    return condition is EXP001Condition.B and frame.next_action is not None
 
 
 def _with_decision_diagnostics(
