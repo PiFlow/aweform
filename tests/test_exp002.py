@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import math
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -191,6 +192,49 @@ def test_reserved_exp001_and_exp002_seeds_are_rejected_before_execution(
     assert constructions == 0
 
 
+@pytest.mark.parametrize(
+    "drifted_config",
+    [
+        replace(
+            FROZEN_EXP001_CALIBRATION_ENV_CONFIG,
+            energy=replace(
+                FROZEN_EXP001_CALIBRATION_ENV_CONFIG.energy,
+                maximum_energy=9.0,
+            ),
+        ),
+        replace(
+            FROZEN_EXP001_CALIBRATION_ENV_CONFIG,
+            resource_length_scale=0.20,
+        ),
+        replace(
+            FROZEN_EXP001_CALIBRATION_ENV_CONFIG,
+            movement_distance=0.04,
+        ),
+    ],
+)
+def test_environment_drift_is_rejected_before_environment_construction(
+    monkeypatch: pytest.MonkeyPatch,
+    drifted_config: object,
+) -> None:
+    constructions = 0
+    real_environment = exp002_runner.AweformEnv
+
+    class SpyEnvironment(real_environment):
+        def __init__(self, config: object) -> None:
+            nonlocal constructions
+            constructions += 1
+            super().__init__(config)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(exp002_runner, "AweformEnv", SpyEnvironment)
+    with pytest.raises(ValueError, match="frozen EXP-001 environment exactly"):
+        run_exp002_development_batch(
+            seeds=[18005],
+            env_config=drifted_config,  # type: ignore[arg-type]
+            candidate=EXP002BCandidate.B35,
+        )
+    assert constructions == 0
+
+
 def _synthetic_b_episode() -> EXP002EpisodeRecord:
     visible = InteroceptiveObservation(
         energy=0.34,
@@ -286,6 +330,13 @@ def test_return_reserve_diagnostics_are_evaluator_side_and_complete() -> None:
     assert diagnostics.remaining_cell_count == 1020
     assert diagnostics.coverage_fraction == pytest.approx(4 / 1024)
     assert math.isfinite(diagnostics.seek_attempts[0].nearest_source_distance_at_onset)
+
+
+def test_normalized_energy_diagnostics_use_the_frozen_exp001_energy_scale() -> None:
+    energy = exp002_runner.FROZEN_EXP001_CALIBRATION_ENV_CONFIG.energy
+    assert energy.maximum_energy == 10.0
+    assert energy.failure_boundary == 0.0
+    assert exp002_runner._episode_normalized_energy(3.4) == pytest.approx(0.34)
 
 
 def test_coverage_instrumentation_does_not_change_rng_state() -> None:

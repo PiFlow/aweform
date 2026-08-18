@@ -13,7 +13,6 @@ from typing import Sequence
 
 import numpy as np
 
-from .energy import EnergyConfig
 from .env import Action, AweformEnv, AweformEnvConfig
 from .exp001 import (
     EXP001AController,
@@ -24,6 +23,7 @@ from .exp001 import (
     InteroceptiveObservation,
     policy_rng_from_seed,
 )
+from .exp001_calibration import FROZEN_EXP001_CALIBRATION_ENV_CONFIG
 from .exp001_runner import (
     ControllerObservation,
     EXP001Condition,
@@ -215,7 +215,7 @@ def summarize_exp002_episode(
             active_attempt = {
                 "onset_step": evaluator.step_index,
                 "normalized_energy_at_onset": _episode_normalized_energy(
-                    evaluator.actual_energy_before, episode
+                    evaluator.actual_energy_before
                 ),
                 "nearest_source_distance_at_onset": _nearest_source_distance(
                     evaluator.position_before,
@@ -223,14 +223,13 @@ def summarize_exp002_episode(
                 ),
                 "reached_charge": False,
                 "minimum_normalized_energy": _episode_normalized_energy(
-                    evaluator.actual_energy_before, episode
+                    evaluator.actual_energy_before
                 ),
             }
 
         if active_attempt is not None:
             normalized_after = _episode_normalized_energy(
-                evaluator.actual_energy_after,
-                episode,
+                evaluator.actual_energy_after
             )
             active_attempt["minimum_normalized_energy"] = min(
                 float(active_attempt["minimum_normalized_energy"]), normalized_after
@@ -399,7 +398,7 @@ def _entered_seek(
         evaluator.controller_mode_before_action is EXP001Mode.EXPLORE
         and evaluator.controller_mode
         in (EXP001Mode.SEEK_RESOURCE, EXP001Mode.CHARGE)
-        and _episode_normalized_energy(evaluator.actual_energy_before, episode)
+        and _episode_normalized_energy(evaluator.actual_energy_before)
         < episode.candidate.enter_seek
     )
 
@@ -455,10 +454,8 @@ def _nearest_source_distance(
 
 def _episode_normalized_energy(
     actual_energy: float,
-    episode: EXP002EpisodeRecord,
 ) -> float:
-    # EXP-002 uses the frozen V0.1 energy scale: failure boundary 0, maximum 10.
-    energy_config = EnergyConfig(maximum_energy=10.0, basal_cost=0.1)
+    energy_config = FROZEN_EXP001_CALIBRATION_ENV_CONFIG.energy
     energy_range = energy_config.maximum_energy - energy_config.failure_boundary
     return (actual_energy - energy_config.failure_boundary) / energy_range
 
@@ -469,6 +466,11 @@ def _validate_inputs(
 ) -> None:
     if not isinstance(env_config, AweformEnvConfig):
         raise ValueError("env_config must be an AweformEnvConfig")
+    if env_config != FROZEN_EXP001_CALIBRATION_ENV_CONFIG:
+        raise ValueError(
+            "EXP-002 requires env_config to equal the frozen EXP-001 "
+            "environment exactly"
+        )
     if not isinstance(candidate, EXP002BCandidate):
         raise ValueError("candidate must be an EXP002BCandidate")
     if env_config.turn_angle != math.pi / 4.0:
