@@ -1,0 +1,145 @@
+{
+  "candidate_summaries": [
+    {
+      "candidate": "SHORT",
+      "charge_duration": 5,
+      "episode_count": 200,
+      "explore_duration": 10,
+      "horizon_survival_count": 195,
+      "horizon_survival_fraction": 0.975,
+      "maximum_capped_lifespan": 1000,
+      "mean_capped_lifespan": 975.77,
+      "mean_charge_actions": 246.57,
+      "mean_complete_cycle_count": 43.905,
+      "mean_explore_actions": 499.295,
+      "mean_final_normalized_energy": 0.9706025290950991,
+      "mean_minimum_normalized_energy": 0.32051516944048003,
+      "mean_seek_resource_actions": 229.905,
+      "mean_total_harvested_energy": 320.32510709074535,
+      "median_capped_lifespan": 1000.0,
+      "minimum_capped_lifespan": 29
+    },
+    {
+      "candidate": "CURRENT",
+      "charge_duration": 10,
+      "episode_count": 200,
+      "explore_duration": 20,
+      "horizon_survival_count": 157,
+      "horizon_survival_fraction": 0.785,
+      "maximum_capped_lifespan": 1000,
+      "mean_capped_lifespan": 791.555,
+      "mean_charge_actions": 198.745,
+      "mean_complete_cycle_count": 18.975,
+      "mean_explore_actions": 411.78,
+      "mean_final_normalized_energy": 0.7535576068405362,
+      "mean_minimum_normalized_energy": 0.21425733797524138,
+      "mean_seek_resource_actions": 181.03,
+      "mean_total_harvested_energy": 214.6174573068717,
+      "median_capped_lifespan": 1000.0,
+      "minimum_capped_lifespan": 27
+    },
+    {
+      "candidate": "LONG",
+      "charge_duration": 15,
+      "episode_count": 200,
+      "explore_duration": 30,
+      "horizon_survival_count": 114,
+      "horizon_survival_fraction": 0.57,
+      "maximum_capped_lifespan": 1000,
+      "mean_capped_lifespan": 583.52,
+      "mean_charge_actions": 149.42,
+      "mean_complete_cycle_count": 9.41,
+      "mean_explore_actions": 321.185,
+      "mean_final_normalized_energy": 0.5013755308702654,
+      "mean_minimum_normalized_energy": 0.1387026771692062,
+      "mean_seek_resource_actions": 112.915,
+      "mean_total_harvested_energy": 139.9644605460302,
+      "median_capped_lifespan": 1000.0,
+      "minimum_capped_lifespan": 26
+    }
+  ],
+  "manifest": {
+    "c_energy_blind_config_note": "C receives only ExternalObservation(L/F/R); enter_seek and recover are frozen structural fields and are unused by C's energy-blind policy.",
+    "candidate_definitions": [
+      {
+        "candidate": "SHORT",
+        "charge_duration": 5,
+        "explore_duration": 10
+      },
+      {
+        "candidate": "CURRENT",
+        "charge_duration": 10,
+        "explore_duration": 20
+      },
+      {
+        "candidate": "LONG",
+        "charge_duration": 15,
+        "explore_duration": 30
+      }
+    ],
+    "environment_config": {
+      "energy": {
+        "basal_cost": 0.1,
+        "failure_boundary": 0.0,
+        "maximum_energy": 10.0
+      },
+      "episode_horizon": 1000,
+      "harvest_rate": 0.5,
+      "initial_energy": 5.0,
+      "movement_cost": 0.1,
+      "movement_distance": 0.05,
+      "probe_distance": 0.1,
+      "resource_count": 1,
+      "resource_length_scale": 0.25,
+      "resource_peak_intensity": 1.0,
+      "sensor_angle": 0.7853981633974483,
+      "turn_angle": 0.7853981633974483,
+      "turn_cost": 0.02,
+      "wait_cost": 0.0,
+      "world_max": [
+        1.0,
+        1.0
+      ],
+      "world_min": [
+        0.0,
+        0.0
+      ]
+    },
+    "executed_seed_count": 200,
+    "experiment": "EXP-001",
+    "formal_calibration_seed_range": {
+      "count": 200,
+      "end": 20200,
+      "start": 20001
+    },
+    "git_commit_sha": "2869ea2df29d5bd95bb77492cc06301c64d66b8f",
+    "horizon": 1000,
+    "numpy_version": "2.5.2",
+    "protocol_revision": "EXP-001-precalibration-003",
+    "purpose": "calibration",
+    "python_version": "3.14.7",
+    "result_classification": "calibration/development output — not confirmatory evidence",
+    "schema_version": "exp-001-calibration-manifest-v1",
+    "seed_reservations": {
+      "calibration": {
+        "count": 200,
+        "end": 20200,
+        "start": 20001
+      },
+      "confirmatory": {
+        "count": 1000,
+        "end": 31000,
+        "start": 30001
+      }
+    },
+    "selection_rule": "highest C mean capped lifespan; then highest C horizon-survival count; then highest C mean minimum normalized energy; then CURRENT > SHORT > LONG among exact remaining ties",
+    "selection_rule_identifier": "EXP-001-C-MEAN-LIFESPAN-3STEP-CANONICAL-TIE",
+    "shared_controller_config": {
+      "enter_seek": 0.35,
+      "recover": 0.85,
+      "resource_contact_threshold": 0.8
+    }
+  },
+  "schema_version": "exp-001-calibration-v1",
+  "selected_candidate": "SHORT"
+}
