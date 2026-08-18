@@ -311,6 +311,43 @@ def test_artifact_validation_rejects_wrong_top_level_schema_version(
         confirmatory.analyze_exp001_confirmatory_artifact(mutated_path)
 
 
+@pytest.mark.parametrize(
+    ("lifespan", "terminated", "horizon", "valid"),
+    [
+        (999, True, False, True),
+        (1000, False, True, True),
+        (1000, True, False, True),
+        (999, False, True, False),
+        (999, False, False, False),
+        (1000, True, True, False),
+        (1000, False, False, False),
+    ],
+)
+def test_artifact_validator_enforces_terminal_state_semantics(
+    tmp_path: Path,
+    lifespan: int,
+    terminated: bool,
+    horizon: bool,
+    valid: bool,
+) -> None:
+    _path, payload = _synthetic_formal_artifact(tmp_path)
+    rows = payload["episode_summaries"]
+    assert isinstance(rows, list)
+    row = rows[0]
+    assert isinstance(row, dict)
+    row["capped_lifespan"] = lifespan
+    row["completed_transitions"] = lifespan
+    row["terminated_viability_failure"] = terminated
+    row["horizon_survival"] = horizon
+    row["explore_action_count"] = lifespan
+
+    if valid:
+        confirmatory._validate_summary_rows(rows, tmp_path / "synthetic.json")
+    else:
+        with pytest.raises(confirmatory.EXP001ConfirmatoryValidationError):
+            confirmatory._validate_summary_rows(rows, tmp_path / "synthetic.json")
+
+
 def test_analysis_records_distinct_execution_and_analysis_numpy_versions(
     tmp_path: Path,
 ) -> None:

@@ -1035,15 +1035,17 @@ def _validate_summary_rows(value: Any, path: Path) -> tuple[Mapping[str, Any], .
                 raise EXP001ConfirmatoryValidationError(
                     f"{path}: invalid boolean field {field}"
                 )
-        if row["terminated_viability_failure"] == row["horizon_survival"]:
+        if row["capped_lifespan"] < EXP001_CONFIRMATORY_HORIZON:
+            if (
+                not row["terminated_viability_failure"]
+                or row["horizon_survival"]
+            ):
+                raise EXP001ConfirmatoryValidationError(
+                    f"{path}: invalid sub-horizon termination semantics"
+                )
+        elif row["terminated_viability_failure"] == row["horizon_survival"]:
             raise EXP001ConfirmatoryValidationError(
-                f"{path}: invalid termination flags"
-            )
-        if row["horizon_survival"] != (
-            row["capped_lifespan"] == EXP001_CONFIRMATORY_HORIZON
-        ):
-            raise EXP001ConfirmatoryValidationError(
-                f"{path}: invalid horizon semantics"
+                f"{path}: invalid horizon termination flags"
             )
         if (
             sum(
