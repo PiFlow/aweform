@@ -14,6 +14,9 @@ from typing import Final
 from .exp001 import EXP001DevelopmentConfig
 
 EXP002_PROTOCOL_REVISION: Final = "EXP-002-precalibration-001"
+EXP002_PROTOCOL_FILE_SHA256: Final = (
+    "18875e9e97221db0dcb7acb1ee50d9dc6546dd619d9f871430801335455f77d1"
+)
 EXP002_HORIZON: Final = 1000
 EXP002_COVERAGE_GRID_WIDTH: Final = 32
 EXP002_COVERAGE_GRID_HEIGHT: Final = 32

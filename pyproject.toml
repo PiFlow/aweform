@@ -24,6 +24,7 @@ aweform-confirmatory = "aweform.confirmatory:main"
 aweform-analyze-confirmatory = "aweform.confirmatory:analysis_main"
 aweform-confirm-exp001 = "aweform.exp001_confirmatory:main"
 aweform-analyze-exp001-confirmatory = "aweform.exp001_confirmatory:analysis_main"
+aweform-calibrate-exp002 = "aweform.exp002_calibration:main"
 
 [dependency-groups]
 dev = [

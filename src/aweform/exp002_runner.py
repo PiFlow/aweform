@@ -280,8 +280,12 @@ def summarize_exp002_episode(
     capped_lifespan = len(episode.transitions)
     terminal = episode.transitions[-1].privileged_evaluator
     return EXP002EpisodeDiagnostics(
-        capped_lifespan=capped_lifespan,
-        horizon_survivor=terminal.truncated and not terminal.terminated,
+        capped_lifespan=min(capped_lifespan, EXP002_HORIZON),
+        horizon_survivor=(
+            capped_lifespan == EXP002_HORIZON
+            and terminal.truncated
+            and not terminal.terminated
+        ),
         visited_cell_count=coverage.visited_cell_count,
         remaining_cell_count=coverage.remaining_cell_count,
         coverage_fraction=coverage.coverage_fraction,
