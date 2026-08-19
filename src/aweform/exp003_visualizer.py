@@ -439,12 +439,17 @@ def _probe_geometry(
 
 def _format_field_frame(frame: EXP003VisualizationFrame) -> str:
     action = "—" if frame.next_action is None else frame.next_action.name
+    energy_access = (
+        "controller-visible"
+        if frame.controller_visible_energy is not None
+        else "EVALUATOR ONLY — no next controller observation"
+    )
     return (
         f"step {frame.step_index} | mode {frame.mode}\n"
         f"normalized energy: {frame.actual_normalized_energy:.3f} "
         f"[{exp003_energy_visibility_label(frame)}]\n"
         f"next action: {action}\n"
-        f"energy access: controller-visible"
+        f"energy access: {energy_access}"
     )
 
 

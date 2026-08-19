@@ -358,6 +358,17 @@ def test_visualizer_terminal_and_padded_energy_are_evaluator_only() -> None:
         exp003_energy_visibility_label(padded)
         == "EVALUATOR ONLY — no next controller observation"
     )
+    field_ordinary_text = _format_field_frame(data.field_frames[0])
+    field_terminal_text = _format_field_frame(data.field_frames[-1])
+    field_padded_text = _format_field_frame(
+        replace(data.field_frames[-1], is_padded=True)
+    )
+    assert "energy access: controller-visible" in field_ordinary_text
+    assert "[CTRL + EVAL]" in field_ordinary_text
+    for field_text in (field_terminal_text, field_padded_text):
+        assert "EVALUATOR ONLY — no next controller observation" in field_text
+        assert "controller-visible" not in field_text
+        assert "CTRL + EVAL" not in field_text
     assert "EVALUATOR ONLY — no next controller observation" in (
         _format_station_frame(terminal)
     )
