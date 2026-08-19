@@ -136,7 +136,7 @@ def _validate_coordinate(name: str, coordinate: Coordinate) -> None:
         valid = len(coordinate) == 2 and all(
             math.isfinite(float(value)) for value in coordinate
         )
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         valid = False
     if not valid:
         raise ValueError(f"{name} must contain two finite coordinates")
