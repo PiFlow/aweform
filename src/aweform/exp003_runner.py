@@ -92,14 +92,19 @@ class EXP003EpisodeRecord:
 
 @dataclass(frozen=True, slots=True)
 class EXP003SeekAttempt:
-    """Evaluator-only diagnostics for one SEEK attempt."""
+    """Evaluator-only diagnostics for one SEEK attempt.
+
+    ``normalized_energy_before_acquisition`` is sampled from
+    ``actual_energy_before`` on the first transition whose post-transition
+    contact is true. It therefore excludes that transition's charging input.
+    """
 
     onset_step: int
     normalized_energy_at_onset: float
     station_distance_at_onset: float
     reached_charging_contact: bool
     transitions_to_charging_contact: int | None
-    normalized_energy_at_acquisition: float | None
+    normalized_energy_before_acquisition: float | None
     minimum_normalized_energy: float
 
 
@@ -124,7 +129,7 @@ class EXP003EpisodeDiagnostics:
     seek_attempts: tuple[EXP003SeekAttempt, ...]
     energy_when_seek_begins: tuple[float, ...]
     station_distance_when_seek_begins: tuple[float, ...]
-    energy_at_successful_charger_acquisition: tuple[float, ...]
+    energy_before_successful_charger_acquisition: tuple[float, ...]
     seek_attempt_count: int
     seek_attempts_reaching_charger: int
     seek_attempts_reaching_charger_fraction: float
@@ -276,7 +281,7 @@ def summarize_exp003_episode(
                 ),
                 "reached_charging_contact": False,
                 "transitions_to_charging_contact": None,
-                "normalized_energy_at_acquisition": None,
+                "normalized_energy_before_acquisition": None,
                 "minimum_normalized_energy": normalized_before,
             }
 
@@ -293,7 +298,9 @@ def summarize_exp003_episode(
                 active["transitions_to_charging_contact"] = (
                     evaluator.step_index - cast(int, active["onset_step"]) + 1
                 )
-                active["normalized_energy_at_acquisition"] = normalized_after
+                # Acquisition is the start of this atomic transition. The
+                # charging input is applied after this pre-transition reading.
+                active["normalized_energy_before_acquisition"] = normalized_before
                 seek_attempts.append(_freeze_seek_attempt(active))
                 active = None
             elif evaluator.terminated or evaluator.truncated:
@@ -309,10 +316,10 @@ def summarize_exp003_episode(
         episode.transitions[-1].privileged_evaluator.actual_energy_after,
         environment_config,
     )
-    energy_at_success = tuple(
-        float(attempt.normalized_energy_at_acquisition)
+    energy_before_success = tuple(
+        float(attempt.normalized_energy_before_acquisition)
         for attempt in seek_attempts
-        if attempt.normalized_energy_at_acquisition is not None
+        if attempt.normalized_energy_before_acquisition is not None
     )
     transitions_to_success = tuple(
         int(attempt.transitions_to_charging_contact)
@@ -343,7 +350,7 @@ def summarize_exp003_episode(
         station_distance_when_seek_begins=tuple(
             attempt.station_distance_at_onset for attempt in seek_attempts
         ),
-        energy_at_successful_charger_acquisition=energy_at_success,
+        energy_before_successful_charger_acquisition=energy_before_success,
         seek_attempt_count=len(seek_attempts),
         seek_attempts_reaching_charger=reached_count,
         seek_attempts_reaching_charger_fraction=(
@@ -483,10 +490,10 @@ def _freeze_seek_attempt(
             if values["transitions_to_charging_contact"] is None
             else cast(int, values["transitions_to_charging_contact"])
         ),
-        normalized_energy_at_acquisition=(
+        normalized_energy_before_acquisition=(
             None
-            if values["normalized_energy_at_acquisition"] is None
-            else cast(float, values["normalized_energy_at_acquisition"])
+            if values["normalized_energy_before_acquisition"] is None
+            else cast(float, values["normalized_energy_before_acquisition"])
         ),
         minimum_normalized_energy=cast(
             float, values["minimum_normalized_energy"]

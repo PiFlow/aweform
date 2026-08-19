@@ -150,6 +150,7 @@ from .exp003_visualizer import (
     EXP003VisualizationFrame,
     build_exp003_visualization_figure,
     build_exp003_visualization_frames,
+    exp003_energy_visibility_label,
     show_exp003_development_visualization,
 )
 from .resource import ResourceField
@@ -321,6 +322,7 @@ __all__ = [
     "sample_directional_beacon",
     "seek_beacon_action",
     "show_exp003_development_visualization",
+    "exp003_energy_visibility_label",
     "summarize_exp003_episode",
     "validate_exp003_development_seeds",
     "VisualizationData",

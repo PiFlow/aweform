@@ -140,10 +140,13 @@ STATION_B50 evaluator-only diagnostics include capped lifespan, horizon
 survival, final and minimum normalized energy, total charged energy, total
 distance, 32x32 unique-cell coverage, EXPLORE action count and distance,
 recharge cycles, station entries, transitions on the charger, SEEK-onset
-energy and true station distance, successful-acquisition energy, SEEK attempt
-count and success fraction, onset-to-acquisition transitions, and minimum
-energy per SEEK attempt. Station coordinates, true distance, and coverage have
-no causal path into the controller.
+energy and true station distance, the normalized energy **before** the first
+successful charging transition's charge input, SEEK attempt count and success
+fraction, onset-to-acquisition transitions, and minimum energy per SEEK
+attempt. In the atomic transition model, this successful-acquisition energy is
+the acquisition transition's `actual_energy_before`, not its post-charge
+energy. Station coordinates, true distance, and coverage have no causal path
+into the controller.
 
 ## Seed reservations
 

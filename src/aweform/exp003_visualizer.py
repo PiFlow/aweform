@@ -126,7 +126,12 @@ def build_exp003_visualization_figure(
     field_axis.imshow(
         field_values,
         origin="lower",
-        extent=(*data.world_min, *data.world_max),
+        extent=(
+            data.world_min[0],
+            data.world_max[0],
+            data.world_min[1],
+            data.world_max[1],
+        ),
         cmap="YlGn",
         alpha=0.35,
     )
@@ -144,7 +149,12 @@ def build_exp003_visualization_figure(
     station_axis.imshow(
         beacon_values,
         origin="lower",
-        extent=(*data.world_min, *data.world_max),
+        extent=(
+            data.world_min[0],
+            data.world_max[0],
+            data.world_min[1],
+            data.world_max[1],
+        ),
         cmap="Blues",
         alpha=0.18,
     )
@@ -431,7 +441,8 @@ def _format_field_frame(frame: EXP003VisualizationFrame) -> str:
     action = "—" if frame.next_action is None else frame.next_action.name
     return (
         f"step {frame.step_index} | mode {frame.mode}\n"
-        f"normalized energy: {frame.actual_normalized_energy:.3f} [CTRL + EVAL]\n"
+        f"normalized energy: {frame.actual_normalized_energy:.3f} "
+        f"[{exp003_energy_visibility_label(frame)}]\n"
         f"next action: {action}\n"
         f"energy access: controller-visible"
     )
@@ -453,7 +464,8 @@ def _format_station_frame(frame: EXP003VisualizationFrame) -> str:
     )
     return (
         f"step {frame.step_index} | mode {frame.mode}\n"
-        f"normalized energy: {frame.actual_normalized_energy:.3f} [CTRL + EVAL]\n"
+        f"normalized energy: {frame.actual_normalized_energy:.3f} "
+        f"[{exp003_energy_visibility_label(frame)}]\n"
         f"beacon L/F/R: {beacon}\n"
         f"charging_contact: {contact}\n"
         f"coverage: {frame.visited_cell_count} cells ({frame.coverage_fraction:.3f})\n"
@@ -472,6 +484,13 @@ def _terminal_status(evaluator: Any) -> str:
     if evaluator.truncated:
         return "truncated"
     return "running"
+
+
+def exp003_energy_visibility_label(frame: EXP003VisualizationFrame) -> str:
+    """Label actual energy according to the next-observation boundary."""
+    if frame.controller_visible_energy is None:
+        return "EVALUATOR ONLY — no next controller observation"
+    return "CTRL + EVAL"
 
 
 def _pad_frames(

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import copy
 import math
-from dataclasses import fields
+from dataclasses import fields, replace
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
@@ -34,6 +35,13 @@ from aweform.exp002_protocol import (
 )
 from aweform.exp002_runner import run_exp002_development_batch
 from aweform.exp003_runner import _run_station_episode, summarize_exp003_episode
+from aweform.exp003_visualizer import (
+    _format_field_frame,
+    _format_station_frame,
+    build_exp003_visualization_figure,
+    build_exp003_visualization_frames,
+    exp003_energy_visibility_label,
+)
 
 
 def _station_observation(
@@ -127,17 +135,34 @@ def test_inside_charger_gets_fixed_input_and_ordinary_costs_apply() -> None:
     assert env.body.energy == pytest.approx(5.4)
 
 
-def test_crossing_charger_without_ending_inside_does_not_charge() -> None:
+def test_outside_to_inside_move_charges_on_the_same_transition() -> None:
+    env = _manual_env(movement_distance=0.1)
+    assert env.body is not None
+    env.body.x, env.body.y, env.body.heading = 0.1, 0.5, 0.0
+    env.station_center = (0.25, 0.5)
+    assert env.charging_contact is False
+
+    env.step(Action.MOVE_FORWARD)
+
+    assert env.body.position == pytest.approx((0.2, 0.5))
+    assert env.last_transition is not None
+    assert env.last_transition.charging_contact_before is False
+    assert env.last_transition.charging_contact_after is True
+    assert env.last_transition.harvested_energy == 0.5
+
+
+def test_outside_pass_through_move_ends_outside_without_harvest() -> None:
     env = _manual_env(movement_distance=0.3)
     assert env.body is not None
     env.body.x, env.body.y, env.body.heading = 0.1, 0.5, 0.0
-    env.station_center = (0.2, 0.5)
+    env.station_center = (0.25, 0.5)
+    assert env.charging_contact is False
 
     env.step(Action.MOVE_FORWARD)
 
     assert env.body.position == pytest.approx((0.4, 0.5))
     assert env.last_transition is not None
-    assert env.last_transition.charging_contact_before is True
+    assert env.last_transition.charging_contact_before is False
     assert env.last_transition.charging_contact_after is False
     assert env.last_transition.harvested_energy == 0.0
 
@@ -271,6 +296,76 @@ def test_evaluator_diagnostics_do_not_change_recorded_controller_actions() -> No
         transition.privileged_evaluator.action for transition in episode.transitions
     )
     assert after == before
+
+
+def test_successful_acquisition_energy_is_before_charge_input() -> None:
+    config = EXP003StationConfig(episode_horizon=1000)
+    episode = _run_station_episode(18011, config)
+    diagnostics = summarize_exp003_episode(episode, config)
+
+    successful = [
+        attempt
+        for attempt in diagnostics.seek_attempts
+        if attempt.reached_charging_contact
+    ]
+    assert successful
+    for attempt in successful:
+        assert attempt.transitions_to_charging_contact is not None
+        acquisition_index = (
+            attempt.onset_step
+            - 1
+            + attempt.transitions_to_charging_contact
+            - 1
+        )
+        evaluator = episode.transitions[acquisition_index].privileged_evaluator
+        expected_before = (
+            evaluator.actual_energy_before - config.energy.failure_boundary
+        ) / (config.energy.maximum_energy - config.energy.failure_boundary)
+        assert attempt.normalized_energy_before_acquisition == pytest.approx(
+            expected_before
+        )
+        assert evaluator.charging_contact_after is True
+        assert evaluator.harvested_energy == 0.5
+        assert evaluator.actual_energy_after > evaluator.actual_energy_before
+
+
+def test_visualizer_background_extents_are_explicit_xy_bounds() -> None:
+    result = run_exp003_development_comparison([18012])
+    figure, animation = build_exp003_visualization_figure(result, seed=18012)
+    try:
+        assert figure.axes[0].images[0].get_extent() == [0.0, 1.0, 0.0, 1.0]
+        assert figure.axes[1].images[0].get_extent() == [0.0, 1.0, 0.0, 1.0]
+    finally:
+        animation.event_source.stop()
+        plt.close(figure)
+
+
+def test_visualizer_terminal_and_padded_energy_are_evaluator_only() -> None:
+    result = run_exp003_development_comparison([18013])
+    data = build_exp003_visualization_frames(result, seed=18013)
+    ordinary = data.station_frames[0]
+    terminal = data.station_frames[-1]
+    padded = replace(terminal, is_padded=True)
+
+    assert ordinary.controller_visible_energy is not None
+    assert exp003_energy_visibility_label(ordinary) == "CTRL + EVAL"
+    assert terminal.controller_visible_energy is None
+    assert (
+        exp003_energy_visibility_label(terminal)
+        == "EVALUATOR ONLY — no next controller observation"
+    )
+    assert (
+        exp003_energy_visibility_label(padded)
+        == "EVALUATOR ONLY — no next controller observation"
+    )
+    assert "EVALUATOR ONLY — no next controller observation" in (
+        _format_station_frame(terminal)
+    )
+    assert "EVALUATOR ONLY — no next controller observation" in (
+        _format_field_frame(data.field_frames[-1])
+    )
+    assert "station distance:" in _format_station_frame(terminal)
+    assert "[EVALUATOR ONLY]" in _format_station_frame(terminal)
 
 
 def test_field_b50_reference_uses_unchanged_historical_exp002_path() -> None:
