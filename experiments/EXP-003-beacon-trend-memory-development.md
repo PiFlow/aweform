@@ -203,5 +203,13 @@ true distance. The observed batch improvement is descriptive only.
   files/sections outside the scope of this change; no unrelated historical
   files were reformatted. Task-file Ruff lint and focused tests passed.
 
-No visualizer rewrite was needed. No EXP-004 work was started. No formal,
-confirmatory, or reserved seeds were executed.
+The original `FIELD_B50` vs `STATION_B50` visualizer behavior remains unchanged. A
+later post-characterization instrumentation commit adds a separate matched
+`STATION_B50` vs `STATION_B50_TREND` development view that consumes only the
+recorded trajectories and controller-decision traces. It does not modify
+controllers, the environment, runner trajectory generation, thresholds, seed
+policy, or any recorded characterization number. The 40-seed quantitative
+characterization was not recomputed.
+
+No EXP-004 work was started. No formal, confirmatory, or reserved seeds were
+executed.
