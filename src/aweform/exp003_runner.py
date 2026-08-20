@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Sequence
 
@@ -70,6 +70,22 @@ class EXP003SeekFeasibilityMetrics:
             self.available_onset_energy_above_failure
             > self.optimistic_onset_reserve_threshold
         )
+
+
+@dataclass(frozen=True, slots=True)
+class _EXP003SeekBeaconMetrics:
+    """Evaluator-side summaries of recorded controller-visible beacon data."""
+
+    onset_beacon_left: float
+    onset_beacon_forward: float
+    onset_beacon_right: float
+    onset_max_beacon_signal: float
+    onset_mean_beacon_signal: float
+    onset_beacon_directional_contrast: float
+    pre_seek_beacon_observation_count: int
+    pre_seek_recent_mean_beacon_signal: float | None
+    pre_seek_recent_max_beacon_signal: float | None
+    pre_seek_beacon_strength_trend: float | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,6 +169,33 @@ class EXP003SeekAttempt:
     nominal_basal_cost_sum: float
     nominal_action_cost_sum: float
     nominal_total_cost_sum: float
+    realized_forward_distance: float
+    turn_count: int
+    turn_fraction: float
+    actual_forward_to_ideal_transition_ratio: float | None
+    realized_path_to_onset_boundary_ratio: float | None
+    station_distance_trajectory: tuple[float, ...]
+    net_radial_progress_toward_station: float
+    cumulative_inward_radial_progress: float
+    cumulative_outward_radial_movement: float
+    forward_actions_reducing_station_distance: int
+    forward_actions_increasing_station_distance: int
+    forward_inward_progress_fraction: float | None
+    forward_outward_progress_fraction: float | None
+    max_consecutive_transitions_without_net_progress_toward_station: int
+    idealized_nominal_straight_line_cost_demand: float
+    nominal_cost_demand_overhead: float
+    realized_transition_demand_overhead: int
+    onset_beacon_left: float
+    onset_beacon_forward: float
+    onset_beacon_right: float
+    onset_max_beacon_signal: float
+    onset_mean_beacon_signal: float
+    onset_beacon_directional_contrast: float
+    pre_seek_beacon_observation_count: int
+    pre_seek_recent_mean_beacon_signal: float | None
+    pre_seek_recent_max_beacon_signal: float | None
+    pre_seek_beacon_strength_trend: float | None
     pass_through_count: int
     had_pass_through: bool
 
@@ -235,6 +278,25 @@ class _ActiveSeekAttempt:
     wait_count: int = 0
     nominal_basal_cost_sum: float = 0.0
     nominal_action_cost_sum: float = 0.0
+    realized_forward_distance: float = 0.0
+    station_distances: list[float] = field(default_factory=list)
+    cumulative_inward_radial_progress: float = 0.0
+    cumulative_outward_radial_movement: float = 0.0
+    forward_actions_reducing_station_distance: int = 0
+    forward_actions_increasing_station_distance: int = 0
+    current_nonprogress_streak: int = 0
+    max_nonprogress_streak: int = 0
+    idealized_nominal_straight_line_cost_demand: float = 0.0
+    onset_beacon_left: float = 0.0
+    onset_beacon_forward: float = 0.0
+    onset_beacon_right: float = 0.0
+    onset_max_beacon_signal: float = 0.0
+    onset_mean_beacon_signal: float = 0.0
+    onset_beacon_directional_contrast: float = 0.0
+    pre_seek_beacon_observation_count: int = 0
+    pre_seek_recent_mean_beacon_signal: float | None = None
+    pre_seek_recent_max_beacon_signal: float | None = None
+    pre_seek_beacon_strength_trend: float | None = None
     pass_through_count: int = 0
 
 
@@ -314,6 +376,7 @@ def summarize_exp003_episode(
     )
     explore_coverage.mark_position(episode.initial_state.position)
     modes: list[EXP003Mode] = [EXP003Mode.EXPLORE]
+    controller_observation_history: list[StationObservation] = []
     seek_attempts: list[EXP003SeekAttempt] = []
     active: _ActiveSeekAttempt | None = None
     total_distance = 0.0
@@ -337,6 +400,7 @@ def summarize_exp003_episode(
     )
 
     for transition in episode.transitions:
+        controller_observation = transition.controller_visible.observation
         evaluator = transition.privileged_evaluator
         total_distance += math.dist(evaluator.position_before, evaluator.position_after)
         total_charged += evaluator.harvested_energy
@@ -401,6 +465,17 @@ def summarize_exp003_episode(
                 station_distance_at_onset=station_distance_at_onset,
                 config=environment_config,
             )
+            beacon_metrics = _seek_beacon_metrics(
+                controller_observation,
+                controller_observation_history,
+            )
+            idealized_nominal_cost_demand = (
+                feasibility.optimistic_minimum_forward_transitions
+                * (
+                    environment_config.energy.basal_cost
+                    + environment_config.movement_cost
+                )
+            )
             active = _ActiveSeekAttempt(
                 onset_step=evaluator.step_index,
                 normalized_energy_at_onset=normalized_before,
@@ -419,6 +494,30 @@ def summarize_exp003_episode(
                     feasibility.available_onset_energy_above_failure
                 ),
                 optimistic_reserve_margin=feasibility.optimistic_reserve_margin,
+                station_distances=[station_distance_at_onset],
+                idealized_nominal_straight_line_cost_demand=(
+                    idealized_nominal_cost_demand
+                ),
+                onset_beacon_left=beacon_metrics.onset_beacon_left,
+                onset_beacon_forward=beacon_metrics.onset_beacon_forward,
+                onset_beacon_right=beacon_metrics.onset_beacon_right,
+                onset_max_beacon_signal=beacon_metrics.onset_max_beacon_signal,
+                onset_mean_beacon_signal=beacon_metrics.onset_mean_beacon_signal,
+                onset_beacon_directional_contrast=(
+                    beacon_metrics.onset_beacon_directional_contrast
+                ),
+                pre_seek_beacon_observation_count=(
+                    beacon_metrics.pre_seek_beacon_observation_count
+                ),
+                pre_seek_recent_mean_beacon_signal=(
+                    beacon_metrics.pre_seek_recent_mean_beacon_signal
+                ),
+                pre_seek_recent_max_beacon_signal=(
+                    beacon_metrics.pre_seek_recent_max_beacon_signal
+                ),
+                pre_seek_beacon_strength_trend=(
+                    beacon_metrics.pre_seek_beacon_strength_trend
+                ),
             )
 
         if active is not None:
@@ -427,8 +526,37 @@ def summarize_exp003_episode(
             )
             active.nominal_basal_cost_sum += evaluator.basal_cost
             active.nominal_action_cost_sum += evaluator.action_cost
+            station_distance_before = math.dist(
+                evaluator.position_before, episode.initial_state.station_center
+            )
+            station_distance_after = math.dist(
+                evaluator.position_after, episode.initial_state.station_center
+            )
+            radial_progress = station_distance_before - station_distance_after
+            active.station_distances.append(station_distance_after)
+            active.cumulative_inward_radial_progress += max(
+                0.0, radial_progress
+            )
+            active.cumulative_outward_radial_movement += max(
+                0.0, -radial_progress
+            )
+            if radial_progress <= 0.0:
+                active.current_nonprogress_streak += 1
+                active.max_nonprogress_streak = max(
+                    active.max_nonprogress_streak,
+                    active.current_nonprogress_streak,
+                )
+            else:
+                active.current_nonprogress_streak = 0
             if evaluator.action is Action.MOVE_FORWARD:
                 active.move_forward_count += 1
+                active.realized_forward_distance += math.dist(
+                    evaluator.position_before, evaluator.position_after
+                )
+                if radial_progress > 0.0:
+                    active.forward_actions_reducing_station_distance += 1
+                elif radial_progress < 0.0:
+                    active.forward_actions_increasing_station_distance += 1
             elif evaluator.action is Action.TURN_LEFT:
                 active.turn_left_count += 1
             elif evaluator.action is Action.TURN_RIGHT:
@@ -472,6 +600,7 @@ def summarize_exp003_episode(
                 active = None
 
         modes.append(evaluator.controller_mode)
+        controller_observation_history.append(controller_observation)
 
     if active is not None:
         last_evaluator = episode.transitions[-1].privileged_evaluator
@@ -679,6 +808,45 @@ def _normalized_energy(actual_energy: float, config: EXP003StationConfig) -> flo
     )
 
 
+def _seek_beacon_metrics(
+    observation: StationObservation,
+    prior_observations: Sequence[StationObservation],
+) -> _EXP003SeekBeaconMetrics:
+    """Summarize only recorded controller-visible beacon observations."""
+    onset_signals = observation.beacon.as_tuple()
+    onset_max = max(onset_signals)
+    onset_mean = sum(onset_signals) / len(onset_signals)
+    recent = tuple(prior_observations[-5:])
+    recent_strengths = tuple(
+        sum(previous.beacon.as_tuple()) / 3.0 for previous in recent
+    )
+    recent_maxima = tuple(max(previous.beacon.as_tuple()) for previous in recent)
+    recent_count = len(recent)
+    if recent_count:
+        recent_mean = sum(recent_strengths) / recent_count
+        recent_max = max(recent_maxima)
+    else:
+        recent_mean = None
+        recent_max = None
+    trend = (
+        (recent_strengths[-1] - recent_strengths[0]) / (recent_count - 1)
+        if recent_count >= 2
+        else None
+    )
+    return _EXP003SeekBeaconMetrics(
+        onset_beacon_left=observation.beacon.left,
+        onset_beacon_forward=observation.beacon.forward,
+        onset_beacon_right=observation.beacon.right,
+        onset_max_beacon_signal=onset_max,
+        onset_mean_beacon_signal=onset_mean,
+        onset_beacon_directional_contrast=onset_max - min(onset_signals),
+        pre_seek_beacon_observation_count=recent_count,
+        pre_seek_recent_mean_beacon_signal=recent_mean,
+        pre_seek_recent_max_beacon_signal=recent_max,
+        pre_seek_beacon_strength_trend=trend,
+    )
+
+
 def _seek_feasibility_metrics(
     *,
     actual_energy_at_onset: float,
@@ -728,6 +896,14 @@ def _seek_feasibility_metrics(
 def _freeze_seek_attempt(values: _ActiveSeekAttempt) -> EXP003SeekAttempt:
     if values.outcome is None:
         raise ValueError("SEEK attempt outcome is required")
+    turn_count = values.turn_left_count + values.turn_right_count
+    ideal_forward_transitions = values.optimistic_minimum_forward_transitions
+    idealized_cost_demand = values.idealized_nominal_straight_line_cost_demand
+    station_distance_trajectory = tuple(values.station_distances)
+    if not station_distance_trajectory:
+        raise ValueError("SEEK station-distance trajectory is required")
+    onset_boundary_distance = values.distance_to_charging_boundary
+    move_forward_count = values.move_forward_count
     return EXP003SeekAttempt(
         onset_step=values.onset_step,
         normalized_energy_at_onset=values.normalized_energy_at_onset,
@@ -771,6 +947,69 @@ def _freeze_seek_attempt(values: _ActiveSeekAttempt) -> EXP003SeekAttempt:
         nominal_total_cost_sum=(
             values.nominal_basal_cost_sum + values.nominal_action_cost_sum
         ),
+        realized_forward_distance=values.realized_forward_distance,
+        turn_count=turn_count,
+        turn_fraction=(turn_count / values.transitions_elapsed),
+        actual_forward_to_ideal_transition_ratio=(
+            move_forward_count / ideal_forward_transitions
+            if ideal_forward_transitions
+            else None
+        ),
+        realized_path_to_onset_boundary_ratio=(
+            values.realized_forward_distance / onset_boundary_distance
+            if onset_boundary_distance > 0.0
+            else None
+        ),
+        station_distance_trajectory=station_distance_trajectory,
+        net_radial_progress_toward_station=(
+            station_distance_trajectory[0] - station_distance_trajectory[-1]
+        ),
+        cumulative_inward_radial_progress=(
+            values.cumulative_inward_radial_progress
+        ),
+        cumulative_outward_radial_movement=(
+            values.cumulative_outward_radial_movement
+        ),
+        forward_actions_reducing_station_distance=(
+            values.forward_actions_reducing_station_distance
+        ),
+        forward_actions_increasing_station_distance=(
+            values.forward_actions_increasing_station_distance
+        ),
+        forward_inward_progress_fraction=(
+            values.forward_actions_reducing_station_distance / move_forward_count
+            if move_forward_count
+            else None
+        ),
+        forward_outward_progress_fraction=(
+            values.forward_actions_increasing_station_distance / move_forward_count
+            if move_forward_count
+            else None
+        ),
+        max_consecutive_transitions_without_net_progress_toward_station=(
+            values.max_nonprogress_streak
+        ),
+        idealized_nominal_straight_line_cost_demand=idealized_cost_demand,
+        nominal_cost_demand_overhead=(
+            values.nominal_basal_cost_sum
+            + values.nominal_action_cost_sum
+            - idealized_cost_demand
+        ),
+        realized_transition_demand_overhead=(
+            values.transitions_elapsed - ideal_forward_transitions
+        ),
+        onset_beacon_left=values.onset_beacon_left,
+        onset_beacon_forward=values.onset_beacon_forward,
+        onset_beacon_right=values.onset_beacon_right,
+        onset_max_beacon_signal=values.onset_max_beacon_signal,
+        onset_mean_beacon_signal=values.onset_mean_beacon_signal,
+        onset_beacon_directional_contrast=values.onset_beacon_directional_contrast,
+        pre_seek_beacon_observation_count=values.pre_seek_beacon_observation_count,
+        pre_seek_recent_mean_beacon_signal=(
+            values.pre_seek_recent_mean_beacon_signal
+        ),
+        pre_seek_recent_max_beacon_signal=values.pre_seek_recent_max_beacon_signal,
+        pre_seek_beacon_strength_trend=values.pre_seek_beacon_strength_trend,
         pass_through_count=values.pass_through_count,
         had_pass_through=values.pass_through_count > 0,
     )
