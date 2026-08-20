@@ -42,6 +42,7 @@ from aweform.exp003_runner import (
     EXP003SeekOutcome,
     EXP003TransitionRecord,
     _run_station_episode,
+    _seek_feasibility_metrics,
     summarize_exp003_episode,
 )
 from aweform.exp003_visualizer import (
@@ -84,6 +85,8 @@ def _synthetic_transition(
     energy_before: float = 4.9,
     energy_after: float = 4.8,
     harvested_energy: float = 0.0,
+    basal_cost: float = 0.1,
+    action_cost: float = 0.0,
     charging_contact_before: bool = False,
     charging_contact_after: bool = False,
     controller_mode_before_action: EXP003Mode = EXP003Mode.SEEK,
@@ -100,8 +103,8 @@ def _synthetic_transition(
         actual_energy_before=energy_before,
         actual_energy_after=energy_after,
         harvested_energy=harvested_energy,
-        basal_cost=0.1,
-        action_cost=0.0,
+        basal_cost=basal_cost,
+        action_cost=action_cost,
         charging_contact_before=charging_contact_before,
         charging_contact_after=charging_contact_after,
         controller_mode_before_action=controller_mode_before_action,
@@ -364,6 +367,185 @@ def test_evaluator_diagnostics_do_not_change_recorded_controller_actions() -> No
         transition.privileged_evaluator.action for transition in episode.transitions
     )
     assert after == before
+    assert _run_station_episode(
+        18008, EXP003StationConfig(episode_horizon=40)
+    ) == episode
+
+
+def test_seek_feasibility_bound_is_charge_aware_and_strict() -> None:
+    config = EXP003StationConfig(movement_distance=0.3)
+    negative = _seek_feasibility_metrics(
+        actual_energy_at_onset=0.15,
+        station_distance_at_onset=0.55,
+        config=config,
+    )
+    assert negative.distance_to_charging_boundary == pytest.approx(0.45)
+    assert negative.optimistic_minimum_forward_transitions == 2
+    assert negative.optimistic_onset_reserve_threshold == pytest.approx(0.2)
+    assert negative.available_onset_energy_above_failure == pytest.approx(0.15)
+    assert negative.optimistic_reserve_margin == pytest.approx(-0.05)
+    assert not negative.optimistically_feasible
+
+    positive = _seek_feasibility_metrics(
+        actual_energy_at_onset=1.0,
+        station_distance_at_onset=0.2,
+        config=config,
+    )
+    assert positive.distance_to_charging_boundary == pytest.approx(0.1)
+    assert positive.optimistic_minimum_forward_transitions == 1
+    assert positive.optimistic_onset_reserve_threshold == pytest.approx(0.0)
+    assert positive.available_onset_energy_above_failure == pytest.approx(1.0)
+    assert positive.optimistic_reserve_margin == pytest.approx(1.0)
+    assert positive.optimistically_feasible
+
+    zero_margin = _seek_feasibility_metrics(
+        actual_energy_at_onset=0.2,
+        station_distance_at_onset=0.55,
+        config=config,
+    )
+    assert zero_margin.optimistic_reserve_margin == pytest.approx(0.0)
+    assert not zero_margin.optimistically_feasible
+
+    already_inside = _seek_feasibility_metrics(
+        actual_energy_at_onset=0.35,
+        station_distance_at_onset=0.05,
+        config=config,
+    )
+    assert already_inside.distance_to_charging_boundary == pytest.approx(0.0)
+    assert already_inside.optimistic_minimum_forward_transitions == 0
+    assert already_inside.optimistic_onset_reserve_threshold == pytest.approx(0.0)
+    assert already_inside.available_onset_energy_above_failure == pytest.approx(
+        0.35
+    )
+    assert already_inside.optimistic_reserve_margin == pytest.approx(0.35)
+
+
+def test_charge_aware_one_forward_acquisition_is_viable_below_nominal_cost() -> None:
+    config = EXP003StationConfig(initial_energy=0.01, episode_horizon=1)
+    environment = LocalizedChargingStationEnv(config)
+    environment.reset(seed=18014)
+    assert environment.body is not None
+    environment.body.x = 0.45
+    environment.body.y = 0.5
+    environment.body.heading = 0.0
+    environment.body.energy = 0.01
+    environment.station_center = (0.60, 0.5)
+
+    metrics = _seek_feasibility_metrics(
+        actual_energy_at_onset=environment.body.energy,
+        station_distance_at_onset=math.dist(
+            environment.body.position, environment.station_center
+        ),
+        config=config,
+    )
+    assert metrics.optimistic_minimum_forward_transitions == 1
+    assert metrics.available_onset_energy_above_failure < (
+        config.energy.basal_cost + config.movement_cost
+    )
+    assert metrics.optimistically_feasible
+
+    _, reward, terminated, truncated, _ = environment.step(Action.MOVE_FORWARD)
+    assert reward == 0.0
+    assert terminated is False
+    assert truncated is True
+    assert environment.last_transition is not None
+    assert environment.last_transition.charging_contact_after is True
+    assert environment.last_transition.harvested_energy == pytest.approx(0.5)
+    assert environment.last_transition.energy_after == pytest.approx(0.31)
+
+
+def test_seek_attempt_records_action_counts_and_nominal_cost_sums() -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    action_cost=0.02,
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                ),
+                _synthetic_transition(
+                    2,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.25, 0.5),
+                    action_cost=0.1,
+                ),
+                _synthetic_transition(
+                    3,
+                    action=Action.TURN_RIGHT,
+                    position_before=(0.25, 0.5),
+                    position_after=(0.25, 0.5),
+                    action_cost=0.02,
+                ),
+                _synthetic_transition(
+                    4,
+                    action=Action.WAIT,
+                    position_before=(0.25, 0.5),
+                    position_after=(0.25, 0.5),
+                    energy_before=0.2,
+                    energy_after=0.0,
+                    terminated=True,
+                ),
+            )
+        )
+    )
+    attempt = diagnostics.seek_attempts[0]
+    assert attempt.transitions_elapsed == 4
+    assert attempt.move_forward_count == 1
+    assert attempt.turn_left_count == 1
+    assert attempt.turn_right_count == 1
+    assert attempt.wait_count == 1
+    assert attempt.nominal_basal_cost_sum == pytest.approx(0.4)
+    assert attempt.nominal_action_cost_sum == pytest.approx(0.14)
+    assert attempt.nominal_total_cost_sum == pytest.approx(0.54)
+    assert attempt.pass_through_count == 0
+
+
+def test_feasibility_diagnostics_are_evaluator_only() -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    energy_before=0.1,
+                    energy_after=0.1,
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                ),
+                _synthetic_transition(
+                    2,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    energy_before=0.1,
+                    energy_after=0.0,
+                    terminated=True,
+                ),
+            )
+        )
+    )
+    attempt = diagnostics.seek_attempts[0]
+    visible = _synthetic_episode(
+        (
+            _synthetic_transition(
+                1,
+                action=Action.WAIT,
+                position_before=(0.2, 0.5),
+                position_after=(0.2, 0.5),
+                truncated=True,
+            ),
+        )
+    ).transitions[0].controller_visible.observation
+    assert attempt.optimistic_reserve_margin < 0.0
+    assert not hasattr(visible, "optimistic_reserve_margin")
+    assert not hasattr(visible, "station_distance_at_onset")
 
 
 def test_successful_acquisition_energy_is_before_charge_input() -> None:

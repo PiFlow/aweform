@@ -54,6 +54,25 @@ class EXP003SeekOutcome(str, Enum):
 
 
 @dataclass(frozen=True, slots=True)
+class EXP003SeekFeasibilityMetrics:
+    """Evaluator-only charge-aware optimistic SEEK metrics."""
+
+    distance_to_charging_boundary: float
+    optimistic_minimum_forward_transitions: int
+    optimistic_onset_reserve_threshold: float
+    available_onset_energy_above_failure: float
+    optimistic_reserve_margin: float
+
+    @property
+    def optimistically_feasible(self) -> bool:
+        """Return feasibility under the strict optimistic approximation."""
+        return (
+            self.available_onset_energy_above_failure
+            > self.optimistic_onset_reserve_threshold
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class EXP003ControllerStep:
     """The typed observation handed to STATION_B50."""
 
@@ -122,6 +141,20 @@ class EXP003SeekAttempt:
     longest_boundary_clamp_streak: int
     station_distance_at_termination: float | None
     station_distance_at_horizon: float | None
+    distance_to_charging_boundary: float
+    optimistic_minimum_forward_transitions: int
+    optimistic_onset_reserve_threshold: float
+    available_onset_energy_above_failure: float
+    optimistic_reserve_margin: float
+    move_forward_count: int
+    turn_left_count: int
+    turn_right_count: int
+    wait_count: int
+    nominal_basal_cost_sum: float
+    nominal_action_cost_sum: float
+    nominal_total_cost_sum: float
+    pass_through_count: int
+    had_pass_through: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,6 +224,18 @@ class _ActiveSeekAttempt:
     longest_boundary_clamp_streak: int = 0
     station_distance_at_termination: float | None = None
     station_distance_at_horizon: float | None = None
+    distance_to_charging_boundary: float = 0.0
+    optimistic_minimum_forward_transitions: int = 0
+    optimistic_onset_reserve_threshold: float = 0.0
+    available_onset_energy_above_failure: float = 0.0
+    optimistic_reserve_margin: float = 0.0
+    move_forward_count: int = 0
+    turn_left_count: int = 0
+    turn_right_count: int = 0
+    wait_count: int = 0
+    nominal_basal_cost_sum: float = 0.0
+    nominal_action_cost_sum: float = 0.0
+    pass_through_count: int = 0
 
 
 def exp003_controller_observation(raw_observation: object) -> StationObservation:
@@ -348,19 +393,50 @@ def summarize_exp003_episode(
             and normalized_before < 0.50
         )
         if entered_seek:
+            station_distance_at_onset = math.dist(
+                evaluator.position_before, episode.initial_state.station_center
+            )
+            feasibility = _seek_feasibility_metrics(
+                actual_energy_at_onset=evaluator.actual_energy_before,
+                station_distance_at_onset=station_distance_at_onset,
+                config=environment_config,
+            )
             active = _ActiveSeekAttempt(
                 onset_step=evaluator.step_index,
                 normalized_energy_at_onset=normalized_before,
-                station_distance_at_onset=math.dist(
-                    evaluator.position_before, episode.initial_state.station_center
-                ),
+                station_distance_at_onset=station_distance_at_onset,
                 minimum_normalized_energy=normalized_before,
+                distance_to_charging_boundary=(
+                    feasibility.distance_to_charging_boundary
+                ),
+                optimistic_minimum_forward_transitions=(
+                    feasibility.optimistic_minimum_forward_transitions
+                ),
+                optimistic_onset_reserve_threshold=(
+                    feasibility.optimistic_onset_reserve_threshold
+                ),
+                available_onset_energy_above_failure=(
+                    feasibility.available_onset_energy_above_failure
+                ),
+                optimistic_reserve_margin=feasibility.optimistic_reserve_margin,
             )
 
         if active is not None:
             active.transitions_elapsed = (
                 evaluator.step_index - active.onset_step + 1
             )
+            active.nominal_basal_cost_sum += evaluator.basal_cost
+            active.nominal_action_cost_sum += evaluator.action_cost
+            if evaluator.action is Action.MOVE_FORWARD:
+                active.move_forward_count += 1
+            elif evaluator.action is Action.TURN_LEFT:
+                active.turn_left_count += 1
+            elif evaluator.action is Action.TURN_RIGHT:
+                active.turn_right_count += 1
+            elif evaluator.action is Action.WAIT:
+                active.wait_count += 1
+            if pass_through:
+                active.pass_through_count += 1
             active.minimum_normalized_energy = min(
                 active.minimum_normalized_energy, normalized_before, normalized_after
             )
@@ -603,6 +679,52 @@ def _normalized_energy(actual_energy: float, config: EXP003StationConfig) -> flo
     )
 
 
+def _seek_feasibility_metrics(
+    *,
+    actual_energy_at_onset: float,
+    station_distance_at_onset: float,
+    config: EXP003StationConfig,
+) -> EXP003SeekFeasibilityMetrics:
+    """Calculate an evaluator-only optimistic charge-aware SEEK bound.
+
+    This idealized geometric bound assumes perfect straight-line progress,
+    ignores turning and steering inefficiency, and includes the existing
+    same-transition acquisition charge on the final forward transition. A
+    positive margin does not prove that the real controller will acquire.
+    """
+    distance_to_boundary = max(
+        0.0, station_distance_at_onset - config.charging_radius
+    )
+    if distance_to_boundary == 0.0:
+        minimum_forward_transitions = 0
+    else:
+        if config.movement_distance <= 0.0:
+            raise ValueError(
+                "movement_distance must be positive for SEEK feasibility metrics"
+            )
+        minimum_forward_transitions = math.ceil(
+            distance_to_boundary / config.movement_distance
+        )
+    q = config.energy.basal_cost + config.movement_cost
+    h = config.charge_rate
+    if minimum_forward_transitions == 0:
+        optimistic_onset_reserve_threshold = 0.0
+    else:
+        optimistic_onset_reserve_threshold = (
+            (minimum_forward_transitions - 1) * q + max(0.0, q - h)
+        )
+    available_energy = actual_energy_at_onset - config.energy.failure_boundary
+    return EXP003SeekFeasibilityMetrics(
+        distance_to_charging_boundary=distance_to_boundary,
+        optimistic_minimum_forward_transitions=minimum_forward_transitions,
+        optimistic_onset_reserve_threshold=optimistic_onset_reserve_threshold,
+        available_onset_energy_above_failure=available_energy,
+        optimistic_reserve_margin=(
+            available_energy - optimistic_onset_reserve_threshold
+        ),
+    )
+
+
 def _freeze_seek_attempt(values: _ActiveSeekAttempt) -> EXP003SeekAttempt:
     if values.outcome is None:
         raise ValueError("SEEK attempt outcome is required")
@@ -629,6 +751,28 @@ def _freeze_seek_attempt(values: _ActiveSeekAttempt) -> EXP003SeekAttempt:
         longest_boundary_clamp_streak=values.longest_boundary_clamp_streak,
         station_distance_at_termination=values.station_distance_at_termination,
         station_distance_at_horizon=values.station_distance_at_horizon,
+        distance_to_charging_boundary=values.distance_to_charging_boundary,
+        optimistic_minimum_forward_transitions=(
+            values.optimistic_minimum_forward_transitions
+        ),
+        optimistic_onset_reserve_threshold=(
+            values.optimistic_onset_reserve_threshold
+        ),
+        available_onset_energy_above_failure=(
+            values.available_onset_energy_above_failure
+        ),
+        optimistic_reserve_margin=values.optimistic_reserve_margin,
+        move_forward_count=values.move_forward_count,
+        turn_left_count=values.turn_left_count,
+        turn_right_count=values.turn_right_count,
+        wait_count=values.wait_count,
+        nominal_basal_cost_sum=values.nominal_basal_cost_sum,
+        nominal_action_cost_sum=values.nominal_action_cost_sum,
+        nominal_total_cost_sum=(
+            values.nominal_basal_cost_sum + values.nominal_action_cost_sum
+        ),
+        pass_through_count=values.pass_through_count,
+        had_pass_through=values.pass_through_count > 0,
     )
 
 
