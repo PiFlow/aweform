@@ -372,31 +372,89 @@ def test_evaluator_diagnostics_do_not_change_recorded_controller_actions() -> No
     ) == episode
 
 
-def test_seek_feasibility_bound_arithmetic_and_zero_distance() -> None:
+def test_seek_feasibility_bound_is_charge_aware_and_strict() -> None:
     config = EXP003StationConfig(movement_distance=0.3)
     negative = _seek_feasibility_metrics(
-        actual_energy_at_onset=0.35,
+        actual_energy_at_onset=0.15,
         station_distance_at_onset=0.55,
         config=config,
     )
-    assert negative == pytest.approx((0.45, 2, 0.4, 0.35, -0.05))
+    assert negative.distance_to_charging_boundary == pytest.approx(0.45)
+    assert negative.optimistic_minimum_forward_transitions == 2
+    assert negative.optimistic_onset_reserve_threshold == pytest.approx(0.2)
+    assert negative.available_onset_energy_above_failure == pytest.approx(0.15)
+    assert negative.optimistic_reserve_margin == pytest.approx(-0.05)
+    assert not negative.optimistically_feasible
 
     positive = _seek_feasibility_metrics(
         actual_energy_at_onset=1.0,
         station_distance_at_onset=0.2,
         config=config,
     )
-    assert positive == pytest.approx((0.1, 1, 0.2, 1.0, 0.8))
+    assert positive.distance_to_charging_boundary == pytest.approx(0.1)
+    assert positive.optimistic_minimum_forward_transitions == 1
+    assert positive.optimistic_onset_reserve_threshold == pytest.approx(0.0)
+    assert positive.available_onset_energy_above_failure == pytest.approx(1.0)
+    assert positive.optimistic_reserve_margin == pytest.approx(1.0)
+    assert positive.optimistically_feasible
+
+    zero_margin = _seek_feasibility_metrics(
+        actual_energy_at_onset=0.2,
+        station_distance_at_onset=0.55,
+        config=config,
+    )
+    assert zero_margin.optimistic_reserve_margin == pytest.approx(0.0)
+    assert not zero_margin.optimistically_feasible
 
     already_inside = _seek_feasibility_metrics(
         actual_energy_at_onset=0.35,
         station_distance_at_onset=0.05,
         config=config,
     )
-    assert already_inside == pytest.approx((0.0, 0, 0.0, 0.35, 0.35))
+    assert already_inside.distance_to_charging_boundary == pytest.approx(0.0)
+    assert already_inside.optimistic_minimum_forward_transitions == 0
+    assert already_inside.optimistic_onset_reserve_threshold == pytest.approx(0.0)
+    assert already_inside.available_onset_energy_above_failure == pytest.approx(
+        0.35
+    )
+    assert already_inside.optimistic_reserve_margin == pytest.approx(0.35)
 
 
-def test_seek_attempt_records_action_counts_and_actual_expenditure() -> None:
+def test_charge_aware_one_forward_acquisition_is_viable_below_nominal_cost() -> None:
+    config = EXP003StationConfig(initial_energy=0.01, episode_horizon=1)
+    environment = LocalizedChargingStationEnv(config)
+    environment.reset(seed=18014)
+    assert environment.body is not None
+    environment.body.x = 0.45
+    environment.body.y = 0.5
+    environment.body.heading = 0.0
+    environment.body.energy = 0.01
+    environment.station_center = (0.60, 0.5)
+
+    metrics = _seek_feasibility_metrics(
+        actual_energy_at_onset=environment.body.energy,
+        station_distance_at_onset=math.dist(
+            environment.body.position, environment.station_center
+        ),
+        config=config,
+    )
+    assert metrics.optimistic_minimum_forward_transitions == 1
+    assert metrics.available_onset_energy_above_failure < (
+        config.energy.basal_cost + config.movement_cost
+    )
+    assert metrics.optimistically_feasible
+
+    _, reward, terminated, truncated, _ = environment.step(Action.MOVE_FORWARD)
+    assert reward == 0.0
+    assert terminated is False
+    assert truncated is True
+    assert environment.last_transition is not None
+    assert environment.last_transition.charging_contact_after is True
+    assert environment.last_transition.harvested_energy == pytest.approx(0.5)
+    assert environment.last_transition.energy_after == pytest.approx(0.31)
+
+
+def test_seek_attempt_records_action_counts_and_nominal_cost_sums() -> None:
     diagnostics = summarize_exp003_episode(
         _synthetic_episode(
             (
@@ -441,9 +499,9 @@ def test_seek_attempt_records_action_counts_and_actual_expenditure() -> None:
     assert attempt.turn_left_count == 1
     assert attempt.turn_right_count == 1
     assert attempt.wait_count == 1
-    assert attempt.actual_basal_energy_expenditure == pytest.approx(0.4)
-    assert attempt.actual_action_cost_expenditure == pytest.approx(0.14)
-    assert attempt.actual_total_energy_expenditure == pytest.approx(0.54)
+    assert attempt.nominal_basal_cost_sum == pytest.approx(0.4)
+    assert attempt.nominal_action_cost_sum == pytest.approx(0.14)
+    assert attempt.nominal_total_cost_sum == pytest.approx(0.54)
     assert attempt.pass_through_count == 0
 
 
