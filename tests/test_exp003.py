@@ -518,30 +518,28 @@ def test_censored_attempts_are_excluded_from_resolved_acquisition_fraction() -> 
                 _synthetic_transition(
                     4,
                     action=Action.TURN_LEFT,
-                    position_before=(0.5, 0.5),
-                    position_after=(0.5, 0.5),
+                    position_before=(0.8, 0.5),
+                    position_after=(0.8, 0.5),
                     controller_mode_before_action=EXP003Mode.EXPLORE,
                     controller_mode=EXP003Mode.SEEK,
                 ),
                 _synthetic_transition(
                     5,
                     action=Action.MOVE_FORWARD,
-                    position_before=(0.5, 0.5),
-                    position_after=(0.5, 0.5),
-                    energy_before=0.1,
-                    energy_after=0.0,
+                    position_before=(0.8, 0.5),
+                    position_after=(0.8, 0.5),
                     charging_contact_before=False,
                     charging_contact_after=False,
-                    terminated=True,
+                    truncated=True,
                 ),
             )
         )
     )
     assert diagnostics.acquired_count == 1
-    assert diagnostics.terminated_before_acquisition_count == 1
-    assert diagnostics.horizon_censored_count == 0
+    assert diagnostics.terminated_before_acquisition_count == 0
+    assert diagnostics.horizon_censored_count == 1
     assert diagnostics.acquisition_fraction_among_resolved_attempts == pytest.approx(
-        0.5
+        1.0
     )
 
 
@@ -629,15 +627,28 @@ def test_explore_entry_and_harvest_are_classified_separately() -> None:
                     charging_contact_after=True,
                     controller_mode_before_action=EXP003Mode.EXPLORE,
                     controller_mode=EXP003Mode.EXPLORE,
+                ),
+                _synthetic_transition(
+                    2,
+                    action=Action.WAIT,
+                    position_before=(0.25, 0.5),
+                    position_after=(0.25, 0.5),
+                    energy_before=5.4,
+                    energy_after=5.8,
+                    charging_contact_before=True,
+                    charging_contact_after=True,
+                    harvested_energy=0.5,
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.EXPLORE,
                     truncated=True,
                 ),
             ),
             station_center=(0.25, 0.5),
         ),
-        EXP003StationConfig(episode_horizon=1, movement_distance=0.15),
+        EXP003StationConfig(episode_horizon=2, movement_distance=0.15),
     )
     assert diagnostics.explore_station_entry_count == 1
-    assert diagnostics.explore_harvested_energy == pytest.approx(0.5)
+    assert diagnostics.explore_harvested_energy == pytest.approx(1.0)
 
 
 def test_visualizer_background_extents_are_explicit_xy_bounds() -> None:

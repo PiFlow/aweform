@@ -327,10 +327,10 @@ def summarize_exp003_episode(
             station_entries += 1
             if evaluator.controller_mode is EXP003Mode.EXPLORE:
                 explore_station_entries += 1
-                explore_harvested_energy += evaluator.harvested_energy
 
         if evaluator.controller_mode is EXP003Mode.EXPLORE:
             explore_actions += 1
+            explore_harvested_energy += evaluator.harvested_energy
             if evaluator.action is Action.MOVE_FORWARD:
                 explore_coverage.mark_movement(
                     evaluator.position_before, evaluator.position_after
