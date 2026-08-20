@@ -29,6 +29,7 @@ from .exp003 import (
     EXP003StationConfig,
     LocalizedChargingStationEnv,
     StationB50Controller,
+    StationB50FullController,
     StationObservation,
 )
 from .exp003_seed_policy import validate_exp003_development_seeds
@@ -216,8 +217,14 @@ class EXP003EpisodeDiagnostics:
     explore_action_count: int
     explore_distance_travelled: float
     recharge_cycle_count: int
+    completed_recharge_cycle_count: int
     station_entry_count: int
     transitions_on_charger: int
+    charge_wait_transition_count: int
+    charging_transitions_per_recharge_cycle: tuple[int, ...]
+    charging_departure_energies: tuple[float, ...]
+    full_energy_departure_fraction: float | None
+    transitions_from_charger_departure_to_next_seek: tuple[int, ...]
     seek_attempts: tuple[EXP003SeekAttempt, ...]
     energy_when_seek_begins: tuple[float, ...]
     station_distance_when_seek_begins: tuple[float, ...]
@@ -251,6 +258,18 @@ class EXP003DevelopmentComparison:
     field_b50_diagnostics: tuple[EXP002EpisodeDiagnostics, ...]
     station_b50_episodes: tuple[EXP003EpisodeRecord, ...]
     station_b50_diagnostics: tuple[EXP003EpisodeDiagnostics, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class EXP003StationPolicyComparison:
+    """Matched STATION_B50 and STATION_B50_FULL development output."""
+
+    development_seeds: tuple[int, ...]
+    station_environment_config: EXP003StationConfig
+    station_b50_episodes: tuple[EXP003EpisodeRecord, ...]
+    station_b50_diagnostics: tuple[EXP003EpisodeDiagnostics, ...]
+    station_b50_full_episodes: tuple[EXP003EpisodeRecord, ...]
+    station_b50_full_diagnostics: tuple[EXP003EpisodeDiagnostics, ...]
 
 
 @dataclass(slots=True)
@@ -359,6 +378,37 @@ def run_exp003_development_comparison(
     )
 
 
+def run_exp003_station_policy_comparison(
+    seeds: Sequence[int],
+    station_config: EXP003StationConfig | None = None,
+) -> EXP003StationPolicyComparison:
+    """Run matched historical and full-recharge station policies."""
+    development_seeds = validate_exp003_development_seeds(seeds)
+    config = station_config or EXP003StationConfig()
+    station_b50_episodes = tuple(
+        _run_station_episode(seed, config, StationB50Controller)
+        for seed in development_seeds
+    )
+    station_b50_full_episodes = tuple(
+        _run_station_episode(seed, config, StationB50FullController)
+        for seed in development_seeds
+    )
+    return EXP003StationPolicyComparison(
+        development_seeds=development_seeds,
+        station_environment_config=config,
+        station_b50_episodes=station_b50_episodes,
+        station_b50_diagnostics=tuple(
+            summarize_exp003_episode(episode, config)
+            for episode in station_b50_episodes
+        ),
+        station_b50_full_episodes=station_b50_full_episodes,
+        station_b50_full_diagnostics=tuple(
+            summarize_exp003_episode(episode, config)
+            for episode in station_b50_full_episodes
+        ),
+    )
+
+
 def summarize_exp003_episode(
     episode: EXP003EpisodeRecord,
     config: EXP003StationConfig | None = None,
@@ -387,6 +437,13 @@ def summarize_exp003_episode(
     explore_station_entries = 0
     explore_harvested_energy = 0.0
     transitions_on_charger = 0
+    charge_wait_transition_count = 0
+    charging_cycle_active = False
+    charging_transitions_current_cycle = 0
+    charging_transitions_per_recharge_cycle: list[int] = []
+    charging_departure_energies: list[float] = []
+    transitions_from_charger_departure_to_next_seek: list[int] = []
+    pending_charger_departure_step: int | None = None
     move_forward_actions = 0
     boundary_clamped_move_forward_count = 0
     boundary_clamp_streak = 0
@@ -432,6 +489,37 @@ def summarize_exp003_episode(
             pass_through_count += 1
         if evaluator.charging_contact_after:
             transitions_on_charger += 1
+        if (
+            evaluator.controller_mode is EXP003Mode.CHARGE
+            and evaluator.action is Action.WAIT
+        ):
+            charge_wait_transition_count += 1
+        if not evaluator.charging_contact_before and evaluator.charging_contact_after:
+            if evaluator.controller_mode in (EXP003Mode.SEEK, EXP003Mode.CHARGE):
+                charging_cycle_active = True
+                charging_transitions_current_cycle = 1
+        elif charging_cycle_active and evaluator.charging_contact_after:
+            charging_transitions_current_cycle += 1
+
+        charger_departure = (
+            evaluator.controller_mode_before_action is EXP003Mode.CHARGE
+            and evaluator.controller_mode is EXP003Mode.EXPLORE
+        )
+        if charger_departure and charging_cycle_active:
+            charging_transitions_per_recharge_cycle.append(
+                charging_transitions_current_cycle
+            )
+            charging_departure_energies.append(normalized_before)
+            pending_charger_departure_step = evaluator.step_index
+            charging_cycle_active = False
+            charging_transitions_current_cycle = 0
+        elif (
+            charging_cycle_active
+            and evaluator.controller_mode_before_action is EXP003Mode.CHARGE
+            and evaluator.controller_mode is EXP003Mode.SEEK
+        ):
+            charging_cycle_active = False
+            charging_transitions_current_cycle = 0
         if not evaluator.charging_contact_before and evaluator.charging_contact_after:
             station_entries += 1
             if evaluator.controller_mode is EXP003Mode.EXPLORE:
@@ -457,6 +545,11 @@ def summarize_exp003_episode(
             and normalized_before < 0.50
         )
         if entered_seek:
+            if pending_charger_departure_step is not None:
+                transitions_from_charger_departure_to_next_seek.append(
+                    evaluator.step_index - pending_charger_departure_step
+                )
+                pending_charger_departure_step = None
             station_distance_at_onset = math.dist(
                 evaluator.position_before, episode.initial_state.station_center
             )
@@ -655,8 +748,23 @@ def summarize_exp003_episode(
         explore_action_count=explore_actions,
         explore_distance_travelled=explore_distance,
         recharge_cycle_count=_count_recharge_cycles(modes),
+        completed_recharge_cycle_count=len(charging_transitions_per_recharge_cycle),
         station_entry_count=station_entries,
         transitions_on_charger=transitions_on_charger,
+        charge_wait_transition_count=charge_wait_transition_count,
+        charging_transitions_per_recharge_cycle=tuple(
+            charging_transitions_per_recharge_cycle
+        ),
+        charging_departure_energies=tuple(charging_departure_energies),
+        full_energy_departure_fraction=(
+            sum(math.isclose(energy, 1.0) for energy in charging_departure_energies)
+            / len(charging_departure_energies)
+            if charging_departure_energies
+            else None
+        ),
+        transitions_from_charger_departure_to_next_seek=tuple(
+            transitions_from_charger_departure_to_next_seek
+        ),
         seek_attempts=tuple(seek_attempts),
         energy_when_seek_begins=tuple(
             attempt.normalized_energy_at_onset for attempt in seek_attempts
@@ -733,13 +841,14 @@ def exp003_coverage_grid_states(
 def _run_station_episode(
     environment_seed: int,
     config: EXP003StationConfig,
+    controller_class: type[StationB50Controller] = StationB50Controller,
 ) -> EXP003EpisodeRecord:
     environment = LocalizedChargingStationEnv(config)
     raw_observation, info = environment.reset(seed=environment_seed)
     if info != {}:
         raise RuntimeError("EXP-003 reset crossed the evaluator boundary")
     policy_rng = RandomStreams.from_seed(environment_seed).policy
-    controller = StationB50Controller(policy_rng)
+    controller = controller_class(policy_rng)
     controller.reset()
     if environment.body is None or environment.station_center is None:
         raise RuntimeError("EXP-003 environment did not initialize evaluator state")

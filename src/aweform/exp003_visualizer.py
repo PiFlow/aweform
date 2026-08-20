@@ -25,6 +25,8 @@ from .exp003_runner import (
     run_exp003_development_comparison,
 )
 
+_ACTIVE_ANIMATIONS: list[FuncAnimation] = []
+
 
 @dataclass(frozen=True, slots=True)
 class EXP003VisualizationFrame:
@@ -243,8 +245,12 @@ def show_exp003_development_visualization(
     seed: int | None = None,
 ) -> None:
     """Show the development visualization."""
-    build_exp003_visualization_figure(result, seed)
-    plt.show()
+    _, animation = build_exp003_visualization_figure(result, seed)
+    _ACTIVE_ANIMATIONS.append(animation)
+    try:
+        plt.show()
+    finally:
+        _ACTIVE_ANIMATIONS.remove(animation)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
