@@ -157,6 +157,13 @@ from .exp003_seed_policy import (
     EXP003_CONFIRMATORY_SEEDS,
     validate_exp003_development_seeds,
 )
+from .exp003_trend_visualizer import (
+    EXP003TrendVisualizationData,
+    EXP003TrendVisualizationFrame,
+    build_exp003_trend_visualization_figure,
+    build_exp003_trend_visualization_frames,
+    show_exp003_trend_visualization,
+)
 from .exp003_visualizer import (
     EXP003VisualizationData,
     EXP003VisualizationFrame,
@@ -327,6 +334,8 @@ __all__ = [
     "EXP003TransitionRecord",
     "EXP003VisualizationData",
     "EXP003VisualizationFrame",
+    "EXP003TrendVisualizationData",
+    "EXP003TrendVisualizationFrame",
     "EXP003_CALIBRATION_SEEDS",
     "EXP003_CONFIRMATORY_SEEDS",
     "LocalizedChargingStationEnv",
@@ -337,6 +346,8 @@ __all__ = [
     "beacon_signal",
     "build_exp003_visualization_figure",
     "build_exp003_visualization_frames",
+    "build_exp003_trend_visualization_figure",
+    "build_exp003_trend_visualization_frames",
     "exp003_controller_observation",
     "exp003_coverage_grid_for_episode",
     "exp003_coverage_grid_states",
@@ -346,6 +357,7 @@ __all__ = [
     "sample_directional_beacon",
     "seek_beacon_action",
     "show_exp003_development_visualization",
+    "show_exp003_trend_visualization",
     "exp003_energy_visibility_label",
     "summarize_exp003_episode",
     "validate_exp003_development_seeds",
