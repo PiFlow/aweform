@@ -12,7 +12,10 @@ V0.1 is intentionally minimal. Its first experiment asks whether access to an or
 
 The active foundation contains no learning model yet. In particular, V0.1 does not begin with PPO, JEPA, an LLM, camera vision, a learned world model, social behaviour, play, awe, networking, or physical robotics.
 
-The first planned experiment is [`EXP-000 — Interoception and Viability`](experiments/EXP-000-interoception-viability.md).
+EXP-000 and EXP-001 are completed. EXP-002 calibration is complete, with B50
+selected among the tested thresholds for development. EXP-003 localized
+charging-station development is beginning. See the
+[`research roadmap`](docs/research-roadmap.md) for the chronological ledger.
 
 ## Developmental approach
 
@@ -35,7 +38,10 @@ Behavioural evidence alone does not establish that Aweform is alive, conscious, 
 
 ## Status
 
-Foundation phase. No V0.1 organism implementation has been started in this repository yet.
+Foundation phase. EXP-000 and EXP-001 are completed, EXP-002 calibration is
+complete with B50 selected for development, and EXP-003 localized charging
+station instrumentation is underway. The project remains within the V0.1
+electronic-cell stage; no later-stage cognition or physical control is implied.
 
 ## License
 
