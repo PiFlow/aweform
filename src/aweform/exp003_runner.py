@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Sequence, cast
+from enum import Enum
+from typing import Sequence
 
 import numpy as np
 
@@ -42,6 +43,14 @@ class EXP003EvaluatorInitialState:
     heading: float
     actual_energy: float
     station_center: tuple[float, float]
+
+
+class EXP003SeekOutcome(str, Enum):
+    """Evaluator-only outcome classification for one SEEK attempt."""
+
+    ACQUIRED = "ACQUIRED"
+    TERMINATED_BEFORE_ACQUISITION = "TERMINATED_BEFORE_ACQUISITION"
+    HORIZON_CENSORED = "HORIZON_CENSORED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,10 +111,17 @@ class EXP003SeekAttempt:
     onset_step: int
     normalized_energy_at_onset: float
     station_distance_at_onset: float
+    outcome: EXP003SeekOutcome
+    transitions_elapsed: int
     reached_charging_contact: bool
     transitions_to_charging_contact: int | None
     normalized_energy_before_acquisition: float | None
     minimum_normalized_energy: float
+    boundary_clamp_count: int
+    had_boundary_clamp: bool
+    longest_boundary_clamp_streak: int
+    station_distance_at_termination: float | None
+    station_distance_at_horizon: float | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,8 +149,19 @@ class EXP003EpisodeDiagnostics:
     seek_attempt_count: int
     seek_attempts_reaching_charger: int
     seek_attempts_reaching_charger_fraction: float
+    acquired_count: int
+    terminated_before_acquisition_count: int
+    horizon_censored_count: int
+    acquisition_fraction_among_resolved_attempts: float | None
     transitions_from_seek_to_successful_acquisition: tuple[int, ...]
     minimum_energy_during_seek_attempts: tuple[float, ...]
+    boundary_clamped_move_forward_count: int
+    clamped_move_forward_fraction: float
+    longest_clamped_forward_streak: int
+    clamped_move_forward_counts_by_mode: tuple[tuple[EXP003Mode, int], ...]
+    pass_through_count: int
+    explore_station_entry_count: int
+    explore_harvested_energy: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,6 +175,22 @@ class EXP003DevelopmentComparison:
     field_b50_diagnostics: tuple[EXP002EpisodeDiagnostics, ...]
     station_b50_episodes: tuple[EXP003EpisodeRecord, ...]
     station_b50_diagnostics: tuple[EXP003EpisodeDiagnostics, ...]
+
+
+@dataclass(slots=True)
+class _ActiveSeekAttempt:
+    onset_step: int
+    normalized_energy_at_onset: float
+    station_distance_at_onset: float
+    minimum_normalized_energy: float
+    transitions_elapsed: int = 0
+    outcome: EXP003SeekOutcome | None = None
+    normalized_energy_before_acquisition: float | None = None
+    boundary_clamp_count: int = 0
+    current_boundary_clamp_streak: int = 0
+    longest_boundary_clamp_streak: int = 0
+    station_distance_at_termination: float | None = None
+    station_distance_at_horizon: float | None = None
 
 
 def exp003_controller_observation(raw_observation: object) -> StationObservation:
@@ -227,13 +270,23 @@ def summarize_exp003_episode(
     explore_coverage.mark_position(episode.initial_state.position)
     modes: list[EXP003Mode] = [EXP003Mode.EXPLORE]
     seek_attempts: list[EXP003SeekAttempt] = []
-    active: dict[str, float | int | bool | None] | None = None
+    active: _ActiveSeekAttempt | None = None
     total_distance = 0.0
     explore_actions = 0
     explore_distance = 0.0
     total_charged = 0.0
     station_entries = 0
+    explore_station_entries = 0
+    explore_harvested_energy = 0.0
     transitions_on_charger = 0
+    move_forward_actions = 0
+    boundary_clamped_move_forward_count = 0
+    boundary_clamp_streak = 0
+    longest_boundary_clamp_streak = 0
+    clamped_move_forward_counts_by_mode = {
+        mode: 0 for mode in EXP003Mode
+    }
+    pass_through_count = 0
     minimum_energy = _normalized_energy(
         episode.initial_state.actual_energy, environment_config
     )
@@ -249,13 +302,35 @@ def summarize_exp003_episode(
             evaluator.actual_energy_after, environment_config
         )
         minimum_energy = min(minimum_energy, normalized_before, normalized_after)
+        boundary_clamped = _is_boundary_clamped(evaluator, environment_config)
+        if evaluator.action is Action.MOVE_FORWARD:
+            move_forward_actions += 1
+        if boundary_clamped:
+            boundary_clamped_move_forward_count += 1
+            boundary_clamp_streak += 1
+            longest_boundary_clamp_streak = max(
+                longest_boundary_clamp_streak, boundary_clamp_streak
+            )
+            clamped_move_forward_counts_by_mode[evaluator.controller_mode] += 1
+        else:
+            boundary_clamp_streak = 0
+        pass_through = _is_outside_pass_through(
+            evaluator, episode.initial_state.station_center, environment_config
+        )
+        if pass_through:
+            if evaluator.harvested_energy != 0.0:
+                raise ValueError("charger pass-through must harvest exactly zero")
+            pass_through_count += 1
         if evaluator.charging_contact_after:
             transitions_on_charger += 1
         if not evaluator.charging_contact_before and evaluator.charging_contact_after:
             station_entries += 1
+            if evaluator.controller_mode is EXP003Mode.EXPLORE:
+                explore_station_entries += 1
 
         if evaluator.controller_mode is EXP003Mode.EXPLORE:
             explore_actions += 1
+            explore_harvested_energy += evaluator.harvested_energy
             if evaluator.action is Action.MOVE_FORWARD:
                 explore_coverage.mark_movement(
                     evaluator.position_before, evaluator.position_after
@@ -273,43 +348,66 @@ def summarize_exp003_episode(
             and normalized_before < 0.50
         )
         if entered_seek:
-            active = {
-                "onset_step": evaluator.step_index,
-                "normalized_energy_at_onset": normalized_before,
-                "station_distance_at_onset": math.dist(
+            active = _ActiveSeekAttempt(
+                onset_step=evaluator.step_index,
+                normalized_energy_at_onset=normalized_before,
+                station_distance_at_onset=math.dist(
                     evaluator.position_before, episode.initial_state.station_center
                 ),
-                "reached_charging_contact": False,
-                "transitions_to_charging_contact": None,
-                "normalized_energy_before_acquisition": None,
-                "minimum_normalized_energy": normalized_before,
-            }
+                minimum_normalized_energy=normalized_before,
+            )
 
         if active is not None:
-            active["minimum_normalized_energy"] = min(
-                cast(float, active["minimum_normalized_energy"]),
-                normalized_before,
-                normalized_after,
+            active.transitions_elapsed = (
+                evaluator.step_index - active.onset_step + 1
             )
-            if evaluator.charging_contact_after and not bool(
-                active["reached_charging_contact"]
-            ):
-                active["reached_charging_contact"] = True
-                active["transitions_to_charging_contact"] = (
-                    evaluator.step_index - cast(int, active["onset_step"]) + 1
+            active.minimum_normalized_energy = min(
+                active.minimum_normalized_energy, normalized_before, normalized_after
+            )
+            if boundary_clamped:
+                active.boundary_clamp_count += 1
+                active.current_boundary_clamp_streak += 1
+                active.longest_boundary_clamp_streak = max(
+                    active.longest_boundary_clamp_streak,
+                    active.current_boundary_clamp_streak,
                 )
+            else:
+                active.current_boundary_clamp_streak = 0
+            if evaluator.charging_contact_after:
+                active.outcome = EXP003SeekOutcome.ACQUIRED
                 # Acquisition is the start of this atomic transition. The
                 # charging input is applied after this pre-transition reading.
-                active["normalized_energy_before_acquisition"] = normalized_before
+                active.normalized_energy_before_acquisition = normalized_before
                 seek_attempts.append(_freeze_seek_attempt(active))
                 active = None
-            elif evaluator.terminated or evaluator.truncated:
+            elif evaluator.terminated:
+                active.outcome = EXP003SeekOutcome.TERMINATED_BEFORE_ACQUISITION
+                active.station_distance_at_termination = math.dist(
+                    evaluator.position_after, episode.initial_state.station_center
+                )
+                seek_attempts.append(_freeze_seek_attempt(active))
+                active = None
+            elif evaluator.truncated:
+                active.outcome = EXP003SeekOutcome.HORIZON_CENSORED
+                active.station_distance_at_horizon = math.dist(
+                    evaluator.position_after, episode.initial_state.station_center
+                )
                 seek_attempts.append(_freeze_seek_attempt(active))
                 active = None
 
         modes.append(evaluator.controller_mode)
 
     if active is not None:
+        last_evaluator = episode.transitions[-1].privileged_evaluator
+        if last_evaluator.terminated or not last_evaluator.truncated:
+            raise ValueError(
+                "active SEEK attempt ended without genuine horizon truncation"
+            )
+        active.outcome = EXP003SeekOutcome.HORIZON_CENSORED
+        last_position = last_evaluator.position_after
+        active.station_distance_at_horizon = math.dist(
+            last_position, episode.initial_state.station_center
+        )
         seek_attempts.append(_freeze_seek_attempt(active))
     capped_lifespan = min(len(episode.transitions), environment_config.episode_horizon)
     final_energy = _normalized_energy(
@@ -326,7 +424,18 @@ def summarize_exp003_episode(
         for attempt in seek_attempts
         if attempt.transitions_to_charging_contact is not None
     )
-    reached_count = sum(attempt.reached_charging_contact for attempt in seek_attempts)
+    acquired_count = sum(
+        attempt.outcome is EXP003SeekOutcome.ACQUIRED for attempt in seek_attempts
+    )
+    terminated_count = sum(
+        attempt.outcome is EXP003SeekOutcome.TERMINATED_BEFORE_ACQUISITION
+        for attempt in seek_attempts
+    )
+    censored_count = sum(
+        attempt.outcome is EXP003SeekOutcome.HORIZON_CENSORED
+        for attempt in seek_attempts
+    )
+    resolved_count = acquired_count + terminated_count
     return EXP003EpisodeDiagnostics(
         capped_lifespan=capped_lifespan,
         horizon_survivor=capped_lifespan == environment_config.episode_horizon
@@ -352,14 +461,35 @@ def summarize_exp003_episode(
         ),
         energy_before_successful_charger_acquisition=energy_before_success,
         seek_attempt_count=len(seek_attempts),
-        seek_attempts_reaching_charger=reached_count,
+        seek_attempts_reaching_charger=acquired_count,
         seek_attempts_reaching_charger_fraction=(
-            reached_count / len(seek_attempts) if seek_attempts else 0.0
+            acquired_count / len(seek_attempts) if seek_attempts else 0.0
+        ),
+        acquired_count=acquired_count,
+        terminated_before_acquisition_count=terminated_count,
+        horizon_censored_count=censored_count,
+        acquisition_fraction_among_resolved_attempts=(
+            acquired_count / resolved_count if resolved_count else None
         ),
         transitions_from_seek_to_successful_acquisition=transitions_to_success,
         minimum_energy_during_seek_attempts=tuple(
             attempt.minimum_normalized_energy for attempt in seek_attempts
         ),
+        boundary_clamped_move_forward_count=boundary_clamped_move_forward_count,
+        clamped_move_forward_fraction=(
+            boundary_clamped_move_forward_count / move_forward_actions
+            if move_forward_actions
+            else 0.0
+        ),
+        longest_clamped_forward_streak=longest_boundary_clamp_streak,
+        clamped_move_forward_counts_by_mode=tuple(
+            (mode, count)
+            for mode, count in clamped_move_forward_counts_by_mode.items()
+            if count
+        ),
+        pass_through_count=pass_through_count,
+        explore_station_entry_count=explore_station_entries,
+        explore_harvested_energy=explore_harvested_energy,
     )
 
 
@@ -473,32 +603,88 @@ def _normalized_energy(actual_energy: float, config: EXP003StationConfig) -> flo
     )
 
 
-def _freeze_seek_attempt(
-    values: dict[str, float | int | bool | None],
-) -> EXP003SeekAttempt:
+def _freeze_seek_attempt(values: _ActiveSeekAttempt) -> EXP003SeekAttempt:
+    if values.outcome is None:
+        raise ValueError("SEEK attempt outcome is required")
     return EXP003SeekAttempt(
-        onset_step=cast(int, values["onset_step"]),
-        normalized_energy_at_onset=cast(
-            float, values["normalized_energy_at_onset"]
-        ),
-        station_distance_at_onset=cast(
-            float, values["station_distance_at_onset"]
-        ),
-        reached_charging_contact=bool(values["reached_charging_contact"]),
+        onset_step=values.onset_step,
+        normalized_energy_at_onset=values.normalized_energy_at_onset,
+        station_distance_at_onset=values.station_distance_at_onset,
+        outcome=values.outcome,
+        transitions_elapsed=values.transitions_elapsed,
+        reached_charging_contact=values.outcome is EXP003SeekOutcome.ACQUIRED,
         transitions_to_charging_contact=(
-            None
-            if values["transitions_to_charging_contact"] is None
-            else cast(int, values["transitions_to_charging_contact"])
+            values.transitions_elapsed
+            if values.outcome is EXP003SeekOutcome.ACQUIRED
+            else None
         ),
         normalized_energy_before_acquisition=(
-            None
-            if values["normalized_energy_before_acquisition"] is None
-            else cast(float, values["normalized_energy_before_acquisition"])
+            values.normalized_energy_before_acquisition
+            if values.outcome is EXP003SeekOutcome.ACQUIRED
+            else None
         ),
-        minimum_normalized_energy=cast(
-            float, values["minimum_normalized_energy"]
-        ),
+        minimum_normalized_energy=values.minimum_normalized_energy,
+        boundary_clamp_count=values.boundary_clamp_count,
+        had_boundary_clamp=values.boundary_clamp_count > 0,
+        longest_boundary_clamp_streak=values.longest_boundary_clamp_streak,
+        station_distance_at_termination=values.station_distance_at_termination,
+        station_distance_at_horizon=values.station_distance_at_horizon,
     )
+
+
+def _is_boundary_clamped(
+    evaluator: EXP003EvaluatorStep,
+    config: EXP003StationConfig,
+) -> bool:
+    """Classify a forward step whose unconstrained endpoint left the world."""
+    if evaluator.action is not Action.MOVE_FORWARD:
+        return False
+    proposed = (
+        evaluator.position_before[0]
+        + config.movement_distance * math.cos(evaluator.heading),
+        evaluator.position_before[1]
+        + config.movement_distance * math.sin(evaluator.heading),
+    )
+    outside = any(
+        proposed_coordinate < lower or proposed_coordinate > upper
+        for proposed_coordinate, lower, upper in zip(
+            proposed, config.world_min, config.world_max
+        )
+    )
+    if not outside:
+        return False
+    return proposed != evaluator.position_after
+
+
+def _is_outside_pass_through(
+    evaluator: EXP003EvaluatorStep,
+    station_center: tuple[float, float],
+    config: EXP003StationConfig,
+) -> bool:
+    """Classify an outside-to-outside forward segment crossing the charger."""
+    if (
+        evaluator.action is not Action.MOVE_FORWARD
+        or evaluator.charging_contact_before
+        or evaluator.charging_contact_after
+    ):
+        return False
+    start = evaluator.position_before
+    end = evaluator.position_after
+    dx = end[0] - start[0]
+    dy = end[1] - start[1]
+    denominator = dx * dx + dy * dy
+    if denominator == 0.0:
+        return False
+    projection = (
+        (station_center[0] - start[0]) * dx
+        + (station_center[1] - start[1]) * dy
+    ) / denominator
+    projection = min(1.0, max(0.0, projection))
+    closest = (
+        start[0] + projection * dx,
+        start[1] + projection * dy,
+    )
+    return math.dist(closest, station_center) <= config.charging_radius
 
 
 def _count_recharge_cycles(modes: Sequence[EXP003Mode]) -> int:
