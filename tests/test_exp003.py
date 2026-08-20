@@ -91,6 +91,7 @@ def _synthetic_transition(
     charging_contact_after: bool = False,
     controller_mode_before_action: EXP003Mode = EXP003Mode.SEEK,
     controller_mode: EXP003Mode = EXP003Mode.SEEK,
+    visible_observation: StationObservation | None = None,
     terminated: bool = False,
     truncated: bool = False,
 ) -> EXP003TransitionRecord:
@@ -113,7 +114,9 @@ def _synthetic_transition(
         truncated=truncated,
     )
     return EXP003TransitionRecord(
-        controller_visible=EXP003ControllerStep(_station_observation(0.49)),
+        controller_visible=EXP003ControllerStep(
+            visible_observation or _station_observation(0.49)
+        ),
         privileged_evaluator=evaluator,
     )
 
@@ -503,6 +506,183 @@ def test_seek_attempt_records_action_counts_and_nominal_cost_sums() -> None:
     assert attempt.nominal_action_cost_sum == pytest.approx(0.14)
     assert attempt.nominal_total_cost_sum == pytest.approx(0.54)
     assert attempt.pass_through_count == 0
+
+
+def test_seek_realized_path_progress_and_nominal_overhead_diagnostics() -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.79, 0.5),
+                    position_after=(0.79, 0.5),
+                    action_cost=0.02,
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                ),
+                _synthetic_transition(
+                    2,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.79, 0.5),
+                    position_after=(0.74, 0.5),
+                    action_cost=0.1,
+                ),
+                _synthetic_transition(
+                    3,
+                    action=Action.TURN_RIGHT,
+                    position_before=(0.74, 0.5),
+                    position_after=(0.74, 0.5),
+                    action_cost=0.02,
+                ),
+                _synthetic_transition(
+                    4,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.74, 0.5),
+                    position_after=(0.79, 0.5),
+                    action_cost=0.1,
+                ),
+                _synthetic_transition(
+                    5,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.79, 0.5),
+                    position_after=(0.79, 0.5),
+                    action_cost=0.02,
+                ),
+                _synthetic_transition(
+                    6,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.79, 0.5),
+                    position_after=(0.69, 0.5),
+                    action_cost=0.1,
+                ),
+                _synthetic_transition(
+                    7,
+                    action=Action.WAIT,
+                    position_before=(0.69, 0.5),
+                    position_after=(0.69, 0.5),
+                    energy_before=0.1,
+                    energy_after=0.0,
+                    terminated=True,
+                ),
+            ),
+        )
+    )
+    attempt = diagnostics.seek_attempts[0]
+    assert attempt.optimistic_minimum_forward_transitions == 4
+    assert attempt.move_forward_count == 3
+    assert attempt.realized_forward_distance == pytest.approx(0.2)
+    assert attempt.transitions_elapsed == 7
+    assert attempt.turn_count == 3
+    assert attempt.turn_fraction == pytest.approx(3 / 7)
+    assert attempt.actual_forward_to_ideal_transition_ratio == pytest.approx(0.75)
+    assert attempt.realized_path_to_onset_boundary_ratio == pytest.approx(
+        0.2 / 0.19
+    )
+    assert attempt.station_distance_trajectory == pytest.approx(
+        (0.29, 0.29, 0.24, 0.24, 0.29, 0.29, 0.19, 0.19)
+    )
+    assert attempt.net_radial_progress_toward_station == pytest.approx(0.1)
+    assert attempt.cumulative_inward_radial_progress == pytest.approx(0.15)
+    assert attempt.cumulative_outward_radial_movement == pytest.approx(0.05)
+    assert attempt.forward_actions_reducing_station_distance == 2
+    assert attempt.forward_actions_increasing_station_distance == 1
+    assert attempt.forward_inward_progress_fraction == pytest.approx(2 / 3)
+    assert attempt.forward_outward_progress_fraction == pytest.approx(1 / 3)
+    assert (
+        attempt.max_consecutive_transitions_without_net_progress_toward_station
+        == 3
+    )
+    assert attempt.idealized_nominal_straight_line_cost_demand == pytest.approx(0.8)
+    assert attempt.nominal_total_cost_sum == pytest.approx(1.06)
+    assert attempt.nominal_cost_demand_overhead == pytest.approx(0.26)
+    assert attempt.realized_transition_demand_overhead == 3
+
+
+def test_seek_path_ratios_and_forward_fractions_use_none_for_zero_denominators(
+) -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.55, 0.5),
+                    position_after=(0.55, 0.5),
+                    action_cost=0.02,
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                    terminated=True,
+                ),
+            )
+        )
+    )
+    attempt = diagnostics.seek_attempts[0]
+    assert attempt.optimistic_minimum_forward_transitions == 0
+    assert attempt.actual_forward_to_ideal_transition_ratio is None
+    assert attempt.realized_path_to_onset_boundary_ratio is None
+    assert attempt.forward_inward_progress_fraction is None
+    assert attempt.forward_outward_progress_fraction is None
+    assert attempt.realized_forward_distance == 0.0
+    assert attempt.idealized_nominal_straight_line_cost_demand == 0.0
+
+
+def test_seek_beacon_diagnostics_use_onset_and_previous_five_visible_observations(
+) -> None:
+    pre_values = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+    pre_transitions = tuple(
+        _synthetic_transition(
+            step,
+            action=Action.WAIT,
+            position_before=(0.8, 0.5),
+            position_after=(0.8, 0.5),
+            controller_mode_before_action=EXP003Mode.EXPLORE,
+            controller_mode=EXP003Mode.EXPLORE,
+            visible_observation=_station_observation(
+                0.49, beacon=(value, value, value)
+            ),
+        )
+        for step, value in enumerate(pre_values, start=1)
+    )
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            pre_transitions
+            + (
+                _synthetic_transition(
+                    7,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.8, 0.5),
+                    position_after=(0.8, 0.5),
+                    action_cost=0.02,
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                    visible_observation=_station_observation(
+                        0.49, beacon=(0.6, 0.4, 0.2)
+                    ),
+                ),
+                _synthetic_transition(
+                    8,
+                    action=Action.WAIT,
+                    position_before=(0.8, 0.5),
+                    position_after=(0.8, 0.5),
+                    energy_before=0.1,
+                    energy_after=0.0,
+                    terminated=True,
+                ),
+            )
+        )
+    )
+    attempt = diagnostics.seek_attempts[0]
+    assert attempt.onset_beacon_left == pytest.approx(0.6)
+    assert attempt.onset_beacon_forward == pytest.approx(0.4)
+    assert attempt.onset_beacon_right == pytest.approx(0.2)
+    assert attempt.onset_max_beacon_signal == pytest.approx(0.6)
+    assert attempt.onset_mean_beacon_signal == pytest.approx(0.4)
+    assert attempt.onset_beacon_directional_contrast == pytest.approx(0.4)
+    assert attempt.pre_seek_beacon_observation_count == 5
+    assert attempt.pre_seek_recent_mean_beacon_signal == pytest.approx(0.4)
+    assert attempt.pre_seek_recent_max_beacon_signal == pytest.approx(0.6)
+    assert attempt.pre_seek_beacon_strength_trend == pytest.approx(0.1)
 
 
 def test_feasibility_diagnostics_are_evaluator_only() -> None:
