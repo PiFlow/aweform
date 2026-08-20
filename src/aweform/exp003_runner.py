@@ -152,7 +152,7 @@ class EXP003EpisodeDiagnostics:
     acquired_count: int
     terminated_before_acquisition_count: int
     horizon_censored_count: int
-    acquisition_fraction_among_resolved_attempts: float
+    acquisition_fraction_among_resolved_attempts: float | None
     transitions_from_seek_to_successful_acquisition: tuple[int, ...]
     minimum_energy_during_seek_attempts: tuple[float, ...]
     boundary_clamped_move_forward_count: int
@@ -398,8 +398,13 @@ def summarize_exp003_episode(
         modes.append(evaluator.controller_mode)
 
     if active is not None:
+        last_evaluator = episode.transitions[-1].privileged_evaluator
+        if last_evaluator.terminated or not last_evaluator.truncated:
+            raise ValueError(
+                "active SEEK attempt ended without genuine horizon truncation"
+            )
         active.outcome = EXP003SeekOutcome.HORIZON_CENSORED
-        last_position = episode.transitions[-1].privileged_evaluator.position_after
+        last_position = last_evaluator.position_after
         active.station_distance_at_horizon = math.dist(
             last_position, episode.initial_state.station_center
         )
@@ -464,7 +469,7 @@ def summarize_exp003_episode(
         terminated_before_acquisition_count=terminated_count,
         horizon_censored_count=censored_count,
         acquisition_fraction_among_resolved_attempts=(
-            acquired_count / resolved_count if resolved_count else 0.0
+            acquired_count / resolved_count if resolved_count else None
         ),
         transitions_from_seek_to_successful_acquisition=transitions_to_success,
         minimum_energy_during_seek_attempts=tuple(

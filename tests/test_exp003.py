@@ -481,6 +481,48 @@ def test_seek_outcomes_classify_acquisition_termination_and_censoring() -> None:
     assert censored.seek_attempts[0].station_distance_at_horizon == pytest.approx(
         0.25
     )
+    assert censored.acquisition_fraction_among_resolved_attempts is None
+
+
+def test_zero_resolved_attempts_have_undefined_acquisition_fraction() -> None:
+    no_seek = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.WAIT,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.EXPLORE,
+                    truncated=True,
+                ),
+            )
+        )
+    )
+    assert no_seek.seek_attempt_count == 0
+    assert no_seek.acquisition_fraction_among_resolved_attempts is None
+
+
+def test_partial_record_with_active_seek_fails_without_horizon_truncation() -> None:
+    with pytest.raises(
+        ValueError,
+        match="active SEEK attempt ended without genuine horizon truncation",
+    ):
+        summarize_exp003_episode(
+            _synthetic_episode(
+                (
+                    _synthetic_transition(
+                        1,
+                        action=Action.TURN_LEFT,
+                        position_before=(0.2, 0.5),
+                        position_after=(0.2, 0.5),
+                        controller_mode_before_action=EXP003Mode.EXPLORE,
+                        controller_mode=EXP003Mode.SEEK,
+                    ),
+                )
+            )
+        )
 
 
 def test_censored_attempts_are_excluded_from_resolved_acquisition_fraction() -> None:
@@ -649,6 +691,33 @@ def test_explore_entry_and_harvest_are_classified_separately() -> None:
     )
     assert diagnostics.explore_station_entry_count == 1
     assert diagnostics.explore_harvested_energy == pytest.approx(1.0)
+
+
+def test_charge_to_explore_recovery_harvest_counts_as_explore_energy() -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.WAIT,
+                    position_before=(0.25, 0.5),
+                    position_after=(0.25, 0.5),
+                    energy_before=8.6,
+                    energy_after=9.0,
+                    harvested_energy=0.5,
+                    charging_contact_before=True,
+                    charging_contact_after=True,
+                    controller_mode_before_action=EXP003Mode.CHARGE,
+                    controller_mode=EXP003Mode.EXPLORE,
+                    truncated=True,
+                ),
+            ),
+            station_center=(0.25, 0.5),
+        ),
+        EXP003StationConfig(episode_horizon=1),
+    )
+    assert diagnostics.explore_station_entry_count == 0
+    assert diagnostics.explore_harvested_energy == pytest.approx(0.5)
 
 
 def test_visualizer_background_extents_are_explicit_xy_bounds() -> None:
