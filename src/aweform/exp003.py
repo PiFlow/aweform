@@ -458,6 +458,35 @@ class StationB50Controller:
         )
 
 
+class StationB50FullController(StationB50Controller):
+    """Additive B50 variant that remains docked until normalized energy is 1.0."""
+
+    def act(self, observation: StationObservation) -> Action:
+        """Use the historical policy with full-recovery CHARGE semantics."""
+        if not isinstance(observation, StationObservation):
+            raise ValueError("observation must be a StationObservation")
+        if self._mode is EXP003Mode.EXPLORE:
+            if observation.energy < self.config.enter_seek:
+                self._mode = EXP003Mode.SEEK
+            else:
+                return self._explore_action(observation.beacon)
+
+        if self._mode is EXP003Mode.SEEK:
+            if observation.beacon.charging_contact:
+                self._mode = EXP003Mode.CHARGE
+                return Action.WAIT
+            return seek_beacon_action(observation.beacon)
+
+        if not observation.beacon.charging_contact:
+            self._mode = EXP003Mode.SEEK
+            return seek_beacon_action(observation.beacon)
+        if observation.energy >= 1.0:
+            self._mode = EXP003Mode.EXPLORE
+            self.explorer.begin_segment()
+            return self._explore_action(observation.beacon)
+        return Action.WAIT
+
+
 def seek_beacon_action(observation: BeaconObservation) -> Action:
     """Use the historical L/F/R steering tie convention on beacon values."""
     if not isinstance(observation, BeaconObservation):

@@ -7,7 +7,9 @@ from dataclasses import fields, replace
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.animation import FuncAnimation
 
+import aweform.exp003_visualizer as exp003_visualizer_module
 from aweform import (
     EXP003_CALIBRATION_SEEDS,
     EXP003_CHARGE_RATE,
@@ -21,11 +23,13 @@ from aweform import (
     ExternalObservation,
     LocalizedChargingStationEnv,
     StationB50Controller,
+    StationB50FullController,
     StationObservation,
     StochasticPersistentExplorer,
     beacon_signal,
     exp003_controller_observation,
     run_exp003_development_comparison,
+    run_exp003_station_policy_comparison,
     sample_directional_beacon,
     validate_exp003_development_seeds,
 )
@@ -324,6 +328,67 @@ def test_controller_lost_contact_returns_to_seek_and_recovery_is_strictly_above(
     assert controller.mode is EXP003Mode.CHARGE
 
 
+def test_full_recharge_controller_waits_until_exact_full_energy() -> None:
+    controller = StationB50FullController(policy_rng_from_seed(18004))
+    controller.reset()
+    controller.act(_station_observation(0.4))
+    controller.act(_station_observation(0.4, contact=True))
+    assert controller.mode is EXP003Mode.CHARGE
+    for energy in (0.85, 0.90, 0.99):
+        assert controller.act(_station_observation(energy, contact=True)) is Action.WAIT
+        assert controller.mode is EXP003Mode.CHARGE
+    controller.act(_station_observation(1.0, contact=True))
+    assert controller.mode is EXP003Mode.EXPLORE
+
+
+def test_full_recharge_contact_loss_returns_to_seek_without_waiting() -> None:
+    controller = StationB50FullController(policy_rng_from_seed(18005))
+    controller.reset()
+    controller.act(_station_observation(0.4))
+    controller.act(_station_observation(0.4, contact=True))
+    action = controller.act(
+        _station_observation(0.99, beacon=(0.0, 1.0, 0.0), contact=False)
+    )
+    assert controller.mode is EXP003Mode.SEEK
+    assert action is Action.MOVE_FORWARD
+
+
+def test_full_recharge_starts_a_fresh_explore_segment_at_full_energy() -> None:
+    first = StationB50FullController(policy_rng_from_seed(18006))
+    second = StationB50FullController(policy_rng_from_seed(18006))
+    first.reset()
+    second.reset()
+    first.act(_station_observation(0.4))
+    first.act(_station_observation(0.4, contact=True))
+    first_action = first.act(_station_observation(1.0, contact=True))
+    second_action = second.act(_station_observation(1.0, contact=False))
+    assert first.mode is EXP003Mode.EXPLORE
+    assert first_action is second_action
+
+
+def test_historical_station_b50_trajectory_is_unchanged_by_additive_policy() -> None:
+    config = EXP003StationConfig(episode_horizon=80)
+    historical = _run_station_episode(18007, config)
+    explicit_historical = _run_station_episode(
+        18007, config, StationB50Controller
+    )
+    assert historical == explicit_historical
+
+
+def test_full_recharge_policy_uses_same_seeded_policy_rng_ownership() -> None:
+    first = StationB50FullController(policy_rng_from_seed(18008))
+    second = StationB50FullController(policy_rng_from_seed(18008))
+    first.reset()
+    second.reset()
+    first.act(_station_observation(0.4))
+    first.act(_station_observation(0.4, contact=True))
+    first.act(_station_observation(0.9, contact=True))
+    first.act(_station_observation(0.99, contact=True))
+    first_action = first.act(_station_observation(1.0, contact=True))
+    second_action = second.act(_station_observation(1.0))
+    assert first_action is second_action
+
+
 def test_exploration_primitive_actions_match_historical_primitive() -> None:
     historical = StochasticPersistentExplorer(policy_rng_from_seed(18005))
     station = StationB50Controller(policy_rng_from_seed(18005))
@@ -373,6 +438,129 @@ def test_evaluator_diagnostics_do_not_change_recorded_controller_actions() -> No
     assert _run_station_episode(
         18008, EXP003StationConfig(episode_horizon=40)
     ) == episode
+
+
+def test_recovery_diagnostics_capture_full_dock_cycle_and_departure_timing() -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.8, 0.5),
+                    position_after=(0.8, 0.5),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                ),
+                _synthetic_transition(
+                    2,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.8, 0.5),
+                    position_after=(0.5, 0.5),
+                    charging_contact_after=True,
+                    harvested_energy=0.5,
+                    controller_mode_before_action=EXP003Mode.SEEK,
+                    controller_mode=EXP003Mode.SEEK,
+                ),
+                _synthetic_transition(
+                    3,
+                    action=Action.WAIT,
+                    position_before=(0.5, 0.5),
+                    position_after=(0.5, 0.5),
+                    energy_before=5.0,
+                    energy_after=5.4,
+                    charging_contact_before=True,
+                    charging_contact_after=True,
+                    controller_mode_before_action=EXP003Mode.SEEK,
+                    controller_mode=EXP003Mode.CHARGE,
+                ),
+                _synthetic_transition(
+                    4,
+                    action=Action.WAIT,
+                    position_before=(0.5, 0.5),
+                    position_after=(0.5, 0.5),
+                    energy_before=9.0,
+                    energy_after=9.4,
+                    charging_contact_before=True,
+                    charging_contact_after=True,
+                    controller_mode_before_action=EXP003Mode.CHARGE,
+                    controller_mode=EXP003Mode.CHARGE,
+                ),
+                _synthetic_transition(
+                    5,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.5, 0.5),
+                    position_after=(0.5, 0.5),
+                    energy_before=10.0,
+                    energy_after=9.9,
+                    charging_contact_before=True,
+                    charging_contact_after=True,
+                    controller_mode_before_action=EXP003Mode.CHARGE,
+                    controller_mode=EXP003Mode.EXPLORE,
+                ),
+                _synthetic_transition(
+                    6,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.5, 0.5),
+                    position_after=(0.5, 0.5),
+                    energy_before=9.9,
+                    energy_after=9.8,
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.EXPLORE,
+                ),
+                _synthetic_transition(
+                    7,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.5, 0.5),
+                    position_after=(0.5, 0.5),
+                    energy_before=4.9,
+                    energy_after=4.8,
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                    truncated=True,
+                ),
+            ),
+        )
+    )
+    assert diagnostics.completed_recharge_cycle_count == 1
+    assert diagnostics.charging_transitions_per_recharge_cycle == (4,)
+    assert diagnostics.charge_wait_transition_count == 2
+    assert diagnostics.charging_departure_energies == (1.0,)
+    assert diagnostics.full_energy_departure_fraction == 1.0
+    assert diagnostics.transitions_from_charger_departure_to_next_seek == (2,)
+
+
+def test_visualizer_retains_animation_during_show_only() -> None:
+    result = run_exp003_development_comparison([18012])
+    observed: list[FuncAnimation] = []
+
+    def fake_show() -> None:
+        observed.extend(exp003_visualizer_module._ACTIVE_ANIMATIONS)
+
+    original_show = exp003_visualizer_module.plt.show
+    exp003_visualizer_module.plt.show = fake_show
+    try:
+        exp003_visualizer_module.show_exp003_development_visualization(
+            result, seed=18012
+        )
+    finally:
+        exp003_visualizer_module.plt.show = original_show
+    assert len(observed) == 1
+    assert exp003_visualizer_module._ACTIVE_ANIMATIONS == []
+    animation = observed[0]
+    animation.event_source.stop()
+    plt.close(animation._fig)
+
+
+def test_matched_station_policy_comparison_uses_same_seeds_and_config() -> None:
+    comparison = run_exp003_station_policy_comparison(
+        [18101], EXP003StationConfig(episode_horizon=40)
+    )
+    assert comparison.development_seeds == (18101,)
+    assert comparison.station_b50_episodes[0].initial_state == (
+        comparison.station_b50_full_episodes[0].initial_state
+    )
+    assert comparison.station_environment_config.charging_radius == 0.10
 
 
 def test_seek_feasibility_bound_is_charge_aware_and_strict() -> None:
@@ -1165,3 +1353,14 @@ def test_station_runner_exposes_evaluator_metrics_but_empty_info_boundary() -> N
     assert hasattr(evaluator, "charging_contact_after")
     assert not hasattr(visible, "station_center")
     assert not hasattr(visible, "coverage_fraction")
+
+
+def test_full_recharge_controller_receives_only_controller_visible_observation(
+) -> None:
+    observation = _station_observation(0.4, contact=True)
+    controller = StationB50FullController(policy_rng_from_seed(18010))
+    assert not hasattr(observation, "position")
+    assert not hasattr(observation, "station_center")
+    assert not hasattr(observation, "station_distance")
+    assert not hasattr(observation, "coverage_fraction")
+    controller.act(observation)
