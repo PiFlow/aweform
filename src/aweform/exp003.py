@@ -34,6 +34,8 @@ EXP003_STATION_PLACEMENT_MAX_ATTEMPTS: Final[int] = 10_000
 EXP003_HORIZON: Final[int] = 1000
 EXP003_COVERAGE_GRID_WIDTH: Final[int] = 32
 EXP003_COVERAGE_GRID_HEIGHT: Final[int] = 32
+EXP003_TREND_ANTICIPATORY_ENERGY_THRESHOLD: Final[float] = 0.65
+EXP003_TREND_WEAK_BEACON_THRESHOLD: Final[float] = 0.10
 
 
 @dataclass(frozen=True, slots=True)
@@ -389,6 +391,27 @@ class EXP003Mode(Enum):
     CHARGE = "CHARGE"
 
 
+class EXP003SeekTrigger(Enum):
+    """Controller-visible reason for entering SEEK from EXPLORE."""
+
+    HISTORICAL_ENERGY = "HISTORICAL_ENERGY_BELOW_0.50"
+    ANTICIPATORY_TREND = "ANTICIPATORY_BEACON_TREND"
+
+
+@dataclass(frozen=True, slots=True)
+class EXP003ControllerDecision:
+    """Visible-signal decision trace retained for evaluator diagnostics only.
+
+    The trace is not an additional observation.  Its optional beacon values
+    are copied from the current decision's controller-visible L/F/R values and
+    the controller's one previous EXPLORE maximum.
+    """
+
+    seek_trigger: EXP003SeekTrigger | None = None
+    anticipatory_current_max_beacon: float | None = None
+    anticipatory_previous_max_beacon: float | None = None
+
+
 @dataclass(frozen=True, slots=True)
 class EXP003ControllerConfig:
     """B50-derived station controller thresholds."""
@@ -417,17 +440,27 @@ class StationB50Controller:
         self.config = config or EXP003ControllerConfig()
         self.explorer = StochasticPersistentExplorer(policy_rng)
         self._mode = EXP003Mode.EXPLORE
+        self._last_decision = EXP003ControllerDecision()
 
     @property
     def mode(self) -> EXP003Mode:
         return self._mode
 
+    @property
+    def last_decision(self) -> EXP003ControllerDecision:
+        """Return the visible-signal trace for the most recent decision."""
+        return self._last_decision
+
     def act(self, observation: StationObservation) -> Action:
         """Choose using energy, L/F/R beacon, and causal contact only."""
         if not isinstance(observation, StationObservation):
             raise ValueError("observation must be a StationObservation")
+        self._last_decision = EXP003ControllerDecision()
         if self._mode is EXP003Mode.EXPLORE:
             if observation.energy < self.config.enter_seek:
+                self._last_decision = EXP003ControllerDecision(
+                    seek_trigger=EXP003SeekTrigger.HISTORICAL_ENERGY
+                )
                 self._mode = EXP003Mode.SEEK
             else:
                 return self._explore_action(observation.beacon)
@@ -450,6 +483,7 @@ class StationB50Controller:
     def reset(self) -> None:
         self._mode = EXP003Mode.EXPLORE
         self.explorer.begin_segment()
+        self._last_decision = EXP003ControllerDecision()
 
     def _explore_action(self, beacon: BeaconObservation) -> Action:
         """Reuse the historical stochastic primitive through an internal adapter."""
@@ -465,8 +499,12 @@ class StationB50FullController(StationB50Controller):
         """Use the historical policy with full-recovery CHARGE semantics."""
         if not isinstance(observation, StationObservation):
             raise ValueError("observation must be a StationObservation")
+        self._last_decision = EXP003ControllerDecision()
         if self._mode is EXP003Mode.EXPLORE:
             if observation.energy < self.config.enter_seek:
+                self._last_decision = EXP003ControllerDecision(
+                    seek_trigger=EXP003SeekTrigger.HISTORICAL_ENERGY
+                )
                 self._mode = EXP003Mode.SEEK
             else:
                 return self._explore_action(observation.beacon)
@@ -485,6 +523,80 @@ class StationB50FullController(StationB50Controller):
             self.explorer.begin_segment()
             return self._explore_action(observation.beacon)
         return Action.WAIT
+
+
+class StationB50TrendController(StationB50Controller):
+    """Development-only B50 variant with one-step beacon-trend memory.
+
+    The only persistent temporal state is the previous EXPLORE decision's
+    maximum of the visible left/forward/right beacon values.  The 0.65 energy
+    and 0.10 beacon thresholds are provisional development hypotheses, not
+    calibrated scientific values.
+    """
+
+    def __init__(
+        self,
+        policy_rng: np.random.Generator,
+        config: EXP003ControllerConfig | None = None,
+    ) -> None:
+        super().__init__(policy_rng, config)
+        self._previous_explore_beacon_max: float | None = None
+
+    @property
+    def previous_explore_beacon_max(self) -> float | None:
+        """Return the one previous EXPLORE beacon maximum, if one exists."""
+        return self._previous_explore_beacon_max
+
+    def act(self, observation: StationObservation) -> Action:
+        """Apply historical B50 plus the one-step anticipatory guard."""
+        if not isinstance(observation, StationObservation):
+            raise ValueError("observation must be a StationObservation")
+        self._last_decision = EXP003ControllerDecision()
+        if self._mode is EXP003Mode.EXPLORE:
+            current_max = max(observation.beacon.as_tuple())
+            previous_max = self._previous_explore_beacon_max
+            if observation.energy < self.config.enter_seek:
+                self._last_decision = EXP003ControllerDecision(
+                    seek_trigger=EXP003SeekTrigger.HISTORICAL_ENERGY
+                )
+                self._previous_explore_beacon_max = None
+                self._mode = EXP003Mode.SEEK
+            elif (
+                observation.energy < EXP003_TREND_ANTICIPATORY_ENERGY_THRESHOLD
+                and current_max < EXP003_TREND_WEAK_BEACON_THRESHOLD
+                and previous_max is not None
+                and current_max < previous_max
+            ):
+                self._last_decision = EXP003ControllerDecision(
+                    seek_trigger=EXP003SeekTrigger.ANTICIPATORY_TREND,
+                    anticipatory_current_max_beacon=current_max,
+                    anticipatory_previous_max_beacon=previous_max,
+                )
+                self._previous_explore_beacon_max = None
+                self._mode = EXP003Mode.SEEK
+            else:
+                self._previous_explore_beacon_max = current_max
+                return self._explore_action(observation.beacon)
+
+        if self._mode is EXP003Mode.SEEK:
+            if observation.beacon.charging_contact:
+                self._mode = EXP003Mode.CHARGE
+                return Action.WAIT
+            return seek_beacon_action(observation.beacon)
+
+        if not observation.beacon.charging_contact:
+            self._mode = EXP003Mode.SEEK
+            return seek_beacon_action(observation.beacon)
+        if observation.energy > self.config.recover:
+            self._mode = EXP003Mode.EXPLORE
+            self.explorer.begin_segment()
+            self._previous_explore_beacon_max = None
+            return self._explore_action(observation.beacon)
+        return Action.WAIT
+
+    def reset(self) -> None:
+        super().reset()
+        self._previous_explore_beacon_max = None
 
 
 def seek_beacon_action(observation: BeaconObservation) -> Action:
