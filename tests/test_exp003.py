@@ -34,7 +34,16 @@ from aweform.exp002_protocol import (
     EXP002BCandidate,
 )
 from aweform.exp002_runner import run_exp002_development_batch
-from aweform.exp003_runner import _run_station_episode, summarize_exp003_episode
+from aweform.exp003_runner import (
+    EXP003ControllerStep,
+    EXP003EpisodeRecord,
+    EXP003EvaluatorInitialState,
+    EXP003EvaluatorStep,
+    EXP003SeekOutcome,
+    EXP003TransitionRecord,
+    _run_station_episode,
+    summarize_exp003_episode,
+)
 from aweform.exp003_visualizer import (
     _format_field_frame,
     _format_station_frame,
@@ -63,6 +72,65 @@ def _manual_env(**kwargs: object) -> LocalizedChargingStationEnv:
     assert env.body is not None
     assert env.station_center is not None
     return env
+
+
+def _synthetic_transition(
+    step: int,
+    *,
+    action: Action,
+    position_before: tuple[float, float],
+    position_after: tuple[float, float],
+    heading: float = 0.0,
+    energy_before: float = 4.9,
+    energy_after: float = 4.8,
+    harvested_energy: float = 0.0,
+    charging_contact_before: bool = False,
+    charging_contact_after: bool = False,
+    controller_mode_before_action: EXP003Mode = EXP003Mode.SEEK,
+    controller_mode: EXP003Mode = EXP003Mode.SEEK,
+    terminated: bool = False,
+    truncated: bool = False,
+) -> EXP003TransitionRecord:
+    evaluator = EXP003EvaluatorStep(
+        step_index=step,
+        action=action,
+        position_before=position_before,
+        position_after=position_after,
+        heading=heading,
+        actual_energy_before=energy_before,
+        actual_energy_after=energy_after,
+        harvested_energy=harvested_energy,
+        basal_cost=0.1,
+        action_cost=0.0,
+        charging_contact_before=charging_contact_before,
+        charging_contact_after=charging_contact_after,
+        controller_mode_before_action=controller_mode_before_action,
+        controller_mode=controller_mode,
+        terminated=terminated,
+        truncated=truncated,
+    )
+    return EXP003TransitionRecord(
+        controller_visible=EXP003ControllerStep(_station_observation(0.49)),
+        privileged_evaluator=evaluator,
+    )
+
+
+def _synthetic_episode(
+    transitions: tuple[EXP003TransitionRecord, ...],
+    *,
+    station_center: tuple[float, float] = (0.5, 0.5),
+) -> EXP003EpisodeRecord:
+    first = transitions[0].privileged_evaluator
+    return EXP003EpisodeRecord(
+        environment_seed=18003,
+        initial_state=EXP003EvaluatorInitialState(
+            position=first.position_before,
+            heading=first.heading,
+            actual_energy=5.0,
+            station_center=station_center,
+        ),
+        transitions=transitions,
+    )
 
 
 def test_exp003_development_values_and_fresh_reservations_are_exact() -> None:
@@ -327,6 +395,249 @@ def test_successful_acquisition_energy_is_before_charge_input() -> None:
         assert evaluator.charging_contact_after is True
         assert evaluator.harvested_energy == 0.5
         assert evaluator.actual_energy_after > evaluator.actual_energy_before
+
+
+def test_seek_outcomes_classify_acquisition_termination_and_censoring() -> None:
+    acquired = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                ),
+                _synthetic_transition(
+                    2,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.5, 0.5),
+                    charging_contact_after=True,
+                    harvested_energy=0.5,
+                ),
+            )
+        )
+    )
+    assert acquired.seek_attempts[0].outcome is EXP003SeekOutcome.ACQUIRED
+    assert acquired.acquired_count == 1
+    assert acquired.terminated_before_acquisition_count == 0
+    assert acquired.horizon_censored_count == 0
+
+    terminated = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                ),
+                _synthetic_transition(
+                    2,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.25, 0.5),
+                    energy_before=0.1,
+                    energy_after=0.0,
+                    terminated=True,
+                ),
+            )
+        )
+    )
+    assert (
+        terminated.seek_attempts[0].outcome
+        is EXP003SeekOutcome.TERMINATED_BEFORE_ACQUISITION
+    )
+    assert terminated.seek_attempts[0].station_distance_at_termination == pytest.approx(
+        0.25
+    )
+
+    censored = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                ),
+                _synthetic_transition(
+                    2,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.25, 0.5),
+                    truncated=True,
+                ),
+            )
+        )
+    )
+    assert censored.seek_attempts[0].outcome is EXP003SeekOutcome.HORIZON_CENSORED
+    assert censored.seek_attempts[0].station_distance_at_horizon == pytest.approx(
+        0.25
+    )
+
+
+def test_censored_attempts_are_excluded_from_resolved_acquisition_fraction() -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                ),
+                _synthetic_transition(
+                    2,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.5, 0.5),
+                    charging_contact_after=True,
+                    harvested_energy=0.5,
+                ),
+                _synthetic_transition(
+                    3,
+                    action=Action.WAIT,
+                    position_before=(0.5, 0.5),
+                    position_after=(0.5, 0.5),
+                    energy_before=9.0,
+                    energy_after=8.9,
+                    charging_contact_before=True,
+                    charging_contact_after=True,
+                    controller_mode_before_action=EXP003Mode.CHARGE,
+                    controller_mode=EXP003Mode.EXPLORE,
+                ),
+                _synthetic_transition(
+                    4,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.5, 0.5),
+                    position_after=(0.5, 0.5),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                ),
+                _synthetic_transition(
+                    5,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.5, 0.5),
+                    position_after=(0.5, 0.5),
+                    energy_before=0.1,
+                    energy_after=0.0,
+                    charging_contact_before=False,
+                    charging_contact_after=False,
+                    terminated=True,
+                ),
+            )
+        )
+    )
+    assert diagnostics.acquired_count == 1
+    assert diagnostics.terminated_before_acquisition_count == 1
+    assert diagnostics.horizon_censored_count == 0
+    assert diagnostics.acquisition_fraction_among_resolved_attempts == pytest.approx(
+        0.5
+    )
+
+
+def test_boundary_clamps_include_ordinary_diagonal_and_attempt_streaks() -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.1, 0.1),
+                    position_after=(0.1, 0.1),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                ),
+                _synthetic_transition(
+                    2,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.0, 0.5),
+                    position_after=(0.0, 0.5),
+                    heading=math.pi,
+                ),
+                _synthetic_transition(
+                    3,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.0, 0.0),
+                    position_after=(0.0, 0.0),
+                    heading=5 * math.pi / 4,
+                ),
+                _synthetic_transition(
+                    4,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.25, 0.5),
+                    charging_contact_after=True,
+                    harvested_energy=0.5,
+                ),
+            ),
+            station_center=(0.25, 0.5),
+        )
+    )
+    assert diagnostics.boundary_clamped_move_forward_count == 2
+    assert diagnostics.clamped_move_forward_fraction == pytest.approx(2 / 3)
+    assert diagnostics.longest_clamped_forward_streak == 2
+    attempt = diagnostics.seek_attempts[0]
+    assert attempt.boundary_clamp_count == 2
+    assert attempt.had_boundary_clamp is True
+    assert attempt.longest_boundary_clamp_streak == 2
+
+
+def test_pass_through_is_classified_and_has_zero_harvest() -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.1, 0.5),
+                    position_after=(0.4, 0.5),
+                    heading=0.0,
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.EXPLORE,
+                    truncated=True,
+                ),
+            ),
+            station_center=(0.25, 0.5),
+        ),
+        EXP003StationConfig(episode_horizon=1, movement_distance=0.3),
+    )
+    assert diagnostics.pass_through_count == 1
+    assert diagnostics.total_charged_energy == 0.0
+
+
+def test_explore_entry_and_harvest_are_classified_separately() -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.1, 0.5),
+                    position_after=(0.25, 0.5),
+                    heading=0.0,
+                    harvested_energy=0.5,
+                    charging_contact_after=True,
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.EXPLORE,
+                    truncated=True,
+                ),
+            ),
+            station_center=(0.25, 0.5),
+        ),
+        EXP003StationConfig(episode_horizon=1, movement_distance=0.15),
+    )
+    assert diagnostics.explore_station_entry_count == 1
+    assert diagnostics.explore_harvested_energy == pytest.approx(0.5)
 
 
 def test_visualizer_background_extents_are_explicit_xy_bounds() -> None:
