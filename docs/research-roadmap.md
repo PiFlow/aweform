@@ -36,11 +36,26 @@ and [`EXP-001 calibration record`](../experiments/EXP-001-calibration-record.md)
 EXP-002 asked how the interoceptive SEEK-entry threshold trades off viability
 and spatial exploration. Formal calibration completed among the frozen
 candidates B35/B40/B45/B50 and selected **B50** using the recorded rule.
-B50 is not established as globally optimal because it is the upper tested
-boundary, not an exhaustive search. Confirmatory execution is deliberately
-deferred. Seeds `50001–51000` remain reserved and untouched. See the canonical
-[`EXP-002 protocol`](../experiments/EXP-002-interoceptive-seek-threshold.md)
-and [`EXP-002 calibration evidence`](../experiments/EXP-002-calibration-result.md).
+B50 is not established as globally optimal: it is the upper tested boundary,
+selected for maximum spatial coverage among viability-eligible candidates, not
+for competitiveness against C. Confirmatory execution was deliberately
+deferred at calibration time. It is now specified but not yet executed: a
+confirmatory statistical addendum (separate from, and not modifying, the
+frozen pre-calibration protocol below, following the same pattern
+[`EXP-001's confirmatory addendum`](../experiments/EXP-001-confirmatory-statistical-addendum.md)
+established) freezes B50 vs. the frozen EXP-001 `C_SHORT` comparator as the
+primary confirmatory contrast — does calibrating B change, reverse, or narrow
+EXP-001's `C_GREATER` result — and B50 vs. B35 as a preregistered key
+secondary — does calibrating the SEEK threshold improve B's own mechanism
+independent of C. Both are evaluated as a matched triple per seed on the
+untouched seeds `50001–51000`, with their own frozen bootstrap convention
+(not inherited from EXP-000 or EXP-001). This confirmatory question was
+formulated after viewing EXP-002's calibration evidence but before any
+confirmatory seed was touched; it was not preregistered before calibration.
+See the canonical
+[`EXP-002 protocol`](../experiments/EXP-002-interoceptive-seek-threshold.md),
+[`EXP-002 calibration evidence`](../experiments/EXP-002-calibration-result.md),
+and the [`EXP-002 confirmatory statistical addendum`](../experiments/EXP-002-confirmatory-statistical-addendum.md).
 
 ## C. Active
 
@@ -58,26 +73,67 @@ and its durable interface decision is [`ADR 0008`](adr/0008-exp-003-localized-ch
 These are **PROVISIONAL DEVELOPMENTAL DIRECTIONS**, not frozen protocols or
 preregistered experiment numbers. Their exact numbering and order may change.
 
-### EXP-004 — Adaptive homeostatic regulator ("D")
+### EXP-004 — Ecological robustness probe
 
-Combine actual internal energy with minimal short-term history of the
-controller-visible beacon: for example current/recent beacon strength, recent
-trend, or time since strong charger evidence. Do not expose station
-coordinates or true distance. Ask whether context-sensitive return decisions
-outperform a fixed threshold. Memory is introduced only because the station
-world creates a reason to use it.
+EXP-001's `C_GREATER` result is consistent with more than one explanation:
+that B was never calibrated while C was (EXP-002, above, addresses this
+directly); that closed-loop control can exploit per-episode realized state a
+fixed timer cannot; or that a fixed schedule may have an advantage in a
+stationary environment because it can be calibrated to that fixed
+distribution. EXP-004 tests the third explanation directly rather than
+assuming it. It replaces the previous provisional EXP-004 ("adaptive
+homeostatic regulator") and EXP-005 ("ecological change") with a single
+combined design, since the beacon-history mechanism envisioned for the former
+is already prototyped in EXP-003 development (`STATION_B50_TREND`) and can be
+tested directly under the latter's perturbation rather than staged separately.
 
-### EXP-005 — Ecological change
+Reuses EXP-003's station/beacon environment with one hidden perturbation —
+station relocation at a seed-determined, hidden time within a preregistered
+window — evaluated for three controllers: `STATION_B50`; `STATION_B50_TREND`,
+pinned to an exact, named inheritance from its EXP-003 development branch
+(merge SHA, and its exact thresholds and one-scalar state semantics, all
+specified in the EXP-004 protocol) rather than a silently-updated version; and
+a newly-calibrated station-compatible energy-blind fixed-schedule regulator
+(fixed mode-timing only — it still steers locally via the same L/F/R beacon
+signal during SEEK as B and T, and returns to SEEK immediately if charging
+contact is lost, including from relocation, rather than blindly waiting out a
+fixed timer at a station that no longer exists). Each controller runs in a
+stationary and a one-hidden-relocation condition — six matched cells per seed.
+The relocation schedule is generated once per master seed from a dedicated
+perturbation RNG, independent of environment/policy RNG streams and of
+controller behavior, and applied identically across all three controllers'
+relocation cells.
 
-Introduce one challenge at a time, such as charger depletion, disappearance,
-or relocation, and test adaptation rather than assuming a permanently
-available resource.
+Primary estimand: `Δ_B`, the change in B's advantage over C between the
+relocation and stationary conditions. Key secondary: `Γ`, the same question
+for T's advantage over B — does one-step beacon history gain relative value
+under relocation beyond what plain energy feedback already provides.
+Pre-formal work uses separate seed roles — C calibration, then six-cell
+development characterization (including horizon-adequacy and
+relocation-exposure-adequacy checks), then untouched confirmatory seeds —
+reserved in the EXP-004 protocol rather than in this roadmap.
+
+### Learning-transition ADR
+
+A parallel work item, not a numbered provisional experiment: before any
+experience-dependent or learned regulation is roadmapped, an ADR specifies a
+three-tier seed discipline — free design/development seeds; a finite,
+enumerated, pre-frozen model-selection/hyperparameter grid; untouched
+confirmatory seeds, with any post-freeze architecture change requiring a new
+named experiment revision rather than reopening the current one — and treats
+organism/lifetime definition, learned-state persistence, reset semantics, the
+inheritance-versus-learning boundary, and update timing as part of the frozen
+scientific contract, not implementation detail. Whether the experiment after
+EXP-004 is a learning experiment or EXP-006 (below) is an evidence-based
+choice made once EXP-004 and this ADR both land, not a pre-committed number.
 
 ### EXP-006 — Occlusion / obstacles
 
 Allow beacon evidence to become unavailable or misleading through walls or
 geometry, creating a genuine need for spatial memory, prediction, or a
-primitive world model.
+primitive world model. Its position directly after EXP-004 is not fixed: a
+learning-transition experiment may be inserted before it, numbered at that
+time, if the ADR above resolves its methodology in time.
 
 ### Later directions
 
@@ -87,6 +143,8 @@ experience; prediction/world models; play and curiosity when viability permits
 surplus exploration; social interaction and machine-native communication; and
 eventual physical embodiment. These remain aligned with the
 [`North Star`](north-star.md) and [`developmental principles`](developmental-principles.md).
+The learning-transition ADR above begins scoping the first item in this list;
+it does not by itself authorize implementation.
 
 Future roadmap items are hypotheses and developmental directions. They are
 allowed to change when evidence creates a better next question.
