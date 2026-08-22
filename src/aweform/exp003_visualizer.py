@@ -16,7 +16,12 @@ from matplotlib.patches import Circle
 from .env import Action, AweformEnvConfig
 from .exp001 import EXP001Mode, InteroceptiveObservation
 from .exp002_runner import EXP002EpisodeRecord
-from .exp003 import EXP003Mode, EXP003StationConfig, beacon_signal
+from .exp003 import (
+    EXP003Mode,
+    EXP003SeekTrigger,
+    EXP003StationConfig,
+    beacon_signal,
+)
 from .exp003_runner import (
     EXP003DevelopmentComparison,
     EXP003EpisodeDiagnostics,
@@ -49,6 +54,10 @@ class EXP003VisualizationFrame:
     coverage_fraction: float
     station_distance: float | None
     terminal_status: str
+    current_beacon_max: float | None = None
+    previous_explore_beacon_max: float | None = None
+    beacon_delta: float | None = None
+    seek_trigger: EXP003SeekTrigger | None = None
     is_padded: bool = False
 
 
