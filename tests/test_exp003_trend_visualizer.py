@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from dataclasses import replace
 
 import matplotlib.pyplot as plt
 import pytest
@@ -157,6 +158,32 @@ def test_trend_figure_has_exactly_two_left_right_policy_panels() -> None:
     assert figure.axes[1].get_title().startswith("RIGHT — STATION_B50_TREND")
     assert "STATION_B50 vs STATION_B50_TREND" in figure._suptitle.get_text()
     assert "NOT CALIBRATION OR CONFIRMATORY EVIDENCE" in figure._suptitle.get_text()
+    animation.event_source.stop()
+    plt.close(figure)
+
+
+def test_trend_figure_uses_configured_beacon_scale(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configured_scale = 0.5
+    comparison = replace(
+        _synthetic_comparison(),
+        station_environment_config=EXP003StationConfig(
+            episode_horizon=2,
+            beacon_scale=configured_scale,
+        ),
+    )
+    seen_scales: list[float] = []
+
+    def record_beacon_scale(distance: float, beacon_scale: float) -> float:
+        seen_scales.append(beacon_scale)
+        return 0.0
+
+    monkeypatch.setattr(visualizer, "beacon_signal", record_beacon_scale)
+    figure, animation = build_exp003_trend_visualization_figure(comparison)
+
+    assert seen_scales
+    assert set(seen_scales) == {configured_scale}
     animation.event_source.stop()
     plt.close(figure)
 
