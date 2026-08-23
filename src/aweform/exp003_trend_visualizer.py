@@ -43,6 +43,7 @@ class EXP003TrendVisualizationData:
     world_max: tuple[float, float]
     station_center: tuple[float, float]
     charging_radius: float
+    beacon_scale: float
     probe_distance: float
     sensor_angle: float
     historical_frames: tuple[EXP003VisualizationFrame, ...]
@@ -88,6 +89,7 @@ def build_exp003_trend_visualization_frames(
         world_max=config.world_max,
         station_center=historical.initial_state.station_center,
         charging_radius=config.charging_radius,
+        beacon_scale=config.beacon_scale,
         probe_distance=config.probe_distance,
         sensor_angle=config.sensor_angle,
         historical_frames=historical_frames,
@@ -122,7 +124,12 @@ def build_exp003_trend_visualization_figure(
     grid = np.linspace(data.world_min[0], data.world_max[0], 50)
     beacon_values = np.asarray(
         [
-            [beacon_signal(math.dist((x, y), data.station_center)) for x in grid]
+            [
+                beacon_signal(
+                    math.dist((x, y), data.station_center), data.beacon_scale
+                )
+                for x in grid
+            ]
             for y in grid
         ],
         dtype=float,
