@@ -36,11 +36,26 @@ and [`EXP-001 calibration record`](../experiments/EXP-001-calibration-record.md)
 EXP-002 asked how the interoceptive SEEK-entry threshold trades off viability
 and spatial exploration. Formal calibration completed among the frozen
 candidates B35/B40/B45/B50 and selected **B50** using the recorded rule.
-B50 is not established as globally optimal because it is the upper tested
-boundary, not an exhaustive search. Confirmatory execution is deliberately
-deferred. Seeds `50001–51000` remain reserved and untouched. See the canonical
-[`EXP-002 protocol`](../experiments/EXP-002-interoceptive-seek-threshold.md)
-and [`EXP-002 calibration evidence`](../experiments/EXP-002-calibration-result.md).
+B50 is not established as globally optimal: it is the upper tested boundary,
+selected for maximum spatial coverage among viability-eligible candidates, not
+for competitiveness against C. Confirmatory execution was deliberately
+deferred at calibration time. It is now specified but not yet executed: a
+confirmatory statistical addendum (separate from, and not modifying, the
+frozen pre-calibration protocol below, following the same pattern
+[`EXP-001's confirmatory addendum`](../experiments/EXP-001-confirmatory-statistical-addendum.md)
+established) freezes B50 vs. the frozen EXP-001 `C_SHORT` comparator as the
+primary confirmatory contrast — does calibrating B change, reverse, or narrow
+EXP-001's `C_GREATER` result — and B50 vs. B35 as a preregistered key
+secondary — does calibrating the SEEK threshold improve B's own mechanism
+independent of C. Both are evaluated as a matched triple per seed on the
+untouched seeds `50001–51000`, with their own frozen bootstrap convention
+(not inherited from EXP-000 or EXP-001). This confirmatory question was
+formulated after viewing EXP-002's calibration evidence but before any
+confirmatory seed was touched; it was not preregistered before calibration.
+See the canonical
+[`EXP-002 protocol`](../experiments/EXP-002-interoceptive-seek-threshold.md),
+[`EXP-002 calibration evidence`](../experiments/EXP-002-calibration-result.md),
+and the [`EXP-002 confirmatory statistical addendum`](../experiments/EXP-002-confirmatory-statistical-addendum.md).
 
 ## C. Active
 
