@@ -89,29 +89,42 @@ tested directly under the latter's perturbation rather than staged separately.
 
 Reuses EXP-003's station/beacon environment with one hidden perturbation —
 station relocation at a seed-determined, hidden time within a preregistered
-window — evaluated for three controllers: `STATION_B50`; `STATION_B50_TREND`,
-pinned to an exact, named inheritance from its EXP-003 development branch
-(merge SHA, and its exact thresholds and one-scalar state semantics, all
-specified in the EXP-004 protocol) rather than a silently-updated version; and
-a newly-calibrated station-compatible energy-blind fixed-schedule regulator
-(fixed mode-timing only — it still steers locally via the same L/F/R beacon
-signal during SEEK as B and T, and returns to SEEK immediately if charging
-contact is lost, including from relocation, rather than blindly waiting out a
-fixed timer at a station that no longer exists). Each controller runs in a
-stationary and a one-hidden-relocation condition — six matched cells per seed.
+window — evaluated for `STATION_B50` and a newly-calibrated station-compatible
+energy-blind fixed-schedule regulator. `STATION_B50_TREND` is a candidate third
+controller only if the EXP-003 trend development work is independently
+approved and merged. Once that happens, it is pinned to an exact, named
+inheritance from its EXP-003 development branch (merge SHA, and its exact
+thresholds and one-scalar state semantics, all specified in the EXP-004
+protocol) rather than a silently-updated version. If it is not merged in time,
+EXP-004 proceeds with `STATION_B50` and the station-compatible regulator, with
+the third arm decided separately. The station-compatible regulator uses fixed
+mode timing only — it still steers locally via the same L/F/R beacon signal
+during SEEK as B and T, and returns to SEEK immediately if charging contact is
+lost, including from relocation, rather than blindly waiting out a fixed timer
+at a station that no longer exists. Each included controller runs in a
+stationary and a one-hidden-relocation condition; the three-controller version
+therefore has six matched cells per seed.
 The relocation schedule is generated once per master seed from a dedicated
 perturbation RNG, independent of environment/policy RNG streams and of
-controller behavior, and applied identically across all three controllers'
-relocation cells.
+controller behavior, and applied identically across the included controllers;
+with T included, this means all three, otherwise both.
 
-Primary estimand: `Δ_B`, the change in B's advantage over C between the
-relocation and stationary conditions. Key secondary: `Γ`, the same question
-for T's advantage over B — does one-step beacon history gain relative value
-under relocation beyond what plain energy feedback already provides.
-Pre-formal work uses separate seed roles — C calibration, then six-cell
-development characterization (including horizon-adequacy and
-relocation-exposure-adequacy checks), then untouched confirmatory seeds —
-reserved in the EXP-004 protocol rather than in this roadmap.
+The primary question is whether B's advantage over the station-compatible
+regulator changes between the relocation and stationary conditions. If T is
+included, the key secondary is the same question for T's advantage over B —
+whether one-step beacon history gains relative value under relocation beyond
+what plain energy feedback already provides. The station-compatible regulator
+is a different controller in a different (station) environment from frozen
+EXP-001/002 `C_SHORT`, so this does not directly retest `C_GREATER`; it tests
+whether a similar fixed-schedule-advantage pattern reappears in the new
+environment. The formal estimand definition (endpoint, contrast, sign
+convention, and interpretation rule) is deferred to the EXP-004 protocol
+document and is not fixed by this roadmap entry.
+Pre-formal work uses separate seed roles — station-compatible regulator
+calibration, then development characterization of the included controller
+cells (including horizon-adequacy and relocation-exposure-adequacy checks),
+then untouched confirmatory seeds — reserved in the EXP-004 protocol rather
+than in this roadmap.
 
 ### Learning-transition ADR
 
