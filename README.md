@@ -10,7 +10,10 @@ Here, **electronic cell** is a developmental analogy for that minimal inside/out
 
 V0.2 was opened by [`ADR 0009`](docs/adr/0009-v0.2-bounded-observation-history-state.md). It changes exactly one thing from V0.1: a controller may add bounded one-step observation-history state to its causal action path, within a defined budget and registration rule. The substrate, environment, and observation/action contract are unchanged, and every other V0.1 non-goal still stands.
 
-V0.1 is not closed. EXP-002's confirmatory execution remains specified but unexecuted on untouched seeds `50001–51000`. EXP-000 through EXP-003 were specified and run under V0.1.
+V0.1 is not closed. EXP-002's confirmatory execution remains specified but
+unexecuted on untouched seeds `50001–51000`. EXP-000 and EXP-001 have
+completed evidence; EXP-002 calibration is complete but confirmation is
+unexecuted; and EXP-003 remains development-only under V0.1.
 
 The stage remains intentionally minimal. EXP-004 is the first V0.2 experiment. V0.1's first experiment, EXP-000, asked whether access to an organism's own internal energetic state can causally reorganize its behaviour in ways that improve viability.
 
