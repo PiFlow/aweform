@@ -21,8 +21,8 @@ The active foundation contains no learning model. In particular, neither V0.1 no
 
 EXP-000 and EXP-001 are completed. EXP-002 calibration is complete, with B50
 selected among the tested thresholds for development. EXP-003 localized
-charging-station development is complete and closed to further scope
-additions. See the
+charging-station work remains development/instrumentation-only and is closed
+to further scope additions. See the
 [`research roadmap`](docs/research-roadmap.md) for the chronological ledger.
 
 ## Developmental approach
@@ -49,7 +49,8 @@ Behavioural evidence alone does not establish that Aweform is alive, conscious, 
 
 Foundation phase. EXP-000 and EXP-001 are completed, EXP-002 calibration is
 complete with B50 selected for development, and EXP-003 localized charging
-station instrumentation is complete. The project is within the V0.2
+station instrumentation remains development-only and closed to further scope
+additions. The project is within the V0.2
 electronic-cell stage; no later-stage cognition or physical control is implied.
 
 ## License
