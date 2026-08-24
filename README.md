@@ -12,7 +12,7 @@ V0.2 was opened by [`ADR 0009`](docs/adr/0009-v0.2-bounded-observation-history-s
 
 V0.1 is not closed. EXP-002's confirmatory execution remains specified but unexecuted on untouched seeds `50001–51000`. EXP-000 through EXP-003 were specified and run under V0.1.
 
-The stage remains intentionally minimal. Its first experiment asked whether access to an organism's own internal energetic state can causally reorganize its behaviour in ways that improve viability.
+The stage remains intentionally minimal. EXP-004 is the first V0.2 experiment. V0.1's first experiment, EXP-000, asked whether access to an organism's own internal energetic state can causally reorganize its behaviour in ways that improve viability.
 
 The active foundation contains no learning model. In particular, neither V0.1 nor V0.2 includes PPO, JEPA, an LLM, camera vision, a learned world model, social behaviour, play, awe, networking, or physical robotics. V0.2's bounded observation history is not learning: nothing is adjusted from experience.
 
@@ -32,8 +32,9 @@ Read:
 - [`docs/north-star.md`](docs/north-star.md) — what Aweform is trying to become
 - [`docs/developmental-principles.md`](docs/developmental-principles.md) — evolution-inspired development, play, curiosity, and awe
 - [`docs/adr/0001-v0.1-electronic-cell.md`](docs/adr/0001-v0.1-electronic-cell.md) — the V0.1 scope decision
+- [`docs/adr/0009-v0.2-bounded-observation-history-state.md`](docs/adr/0009-v0.2-bounded-observation-history-state.md) — the V0.2 scope decision
 - [`docs/reproducibility.md`](docs/reproducibility.md) — seed separation and confirmatory-run discipline
-- [`docs/safety-boundary.md`](docs/safety-boundary.md) — V0.1 experimental boundary
+- [`docs/safety-boundary.md`](docs/safety-boundary.md) — experimental boundary, written for V0.1 and applying unchanged to V0.2
 - [`experiments/EXP-000-interoception-viability.md`](experiments/EXP-000-interoception-viability.md) — first experiment specification
 
 ## Scientific humility
