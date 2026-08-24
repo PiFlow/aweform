@@ -1,0 +1,24 @@
+name: Reproducibility
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.5"
+          python-version: "3.14.7"
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run python -m compileall -q src
+      # CPython 3.14 accepts legacy exception syntax that older Python rejects.
+      - run: uv run --python 3.13.15 --no-project python -m compileall -q src
+      - run: uv run python -c "import aweform"
+      - run: uv run pytest -q
+      - run: uv run ruff check .
+      - run: uv run mypy src --strict
