@@ -11,7 +11,7 @@ Read the canonical project documents before changing code:
 
 ## Current scope
 
-V0.1 is the **electronic-cell stage**. "Electronic cell" is a developmental analogy, not a claim of biological equivalence. The immediate scientific objective is EXP-000: test whether informative access to internal energetic state improves viability relative to a closely matched energy-blind ablation.
+V0.2 is the **memory-capable electronic-cell stage**, opened by [`ADR 0009`](docs/adr/0009-v0.2-bounded-observation-history-state.md). "Electronic cell" is a developmental analogy, not a claim of biological equivalence. V0.2 changes exactly one thing from V0.1: controllers may add bounded one-step observation-history state to the causal action path, within ADR 0009's conditions, budget, and registration rule. The substrate, environment, and observation/action contract are unchanged, and every other V0.1 non-goal still stands. V0.1 is not closed: EXP-002's confirmatory execution remains specified but unexecuted on untouched seeds `50001–51000`.
 
 Do not reintroduce or add later-stage capabilities unless an explicit task and, where appropriate, a new ADR authorise them. This includes:
 
@@ -19,7 +19,7 @@ Do not reintroduce or add later-stage capabilities unless an explicit task and, 
 - reinforcement learning or PPO
 - JEPA or other learned world models
 - camera vision
-- memory systems
+- memory systems beyond the bounded one-step observation-history state authorised by ADR 0009 — that authorisation is a category with a hard per-controller budget, not a general permission
 - curiosity/play mechanisms
 - awe mechanisms
 - social behaviour
@@ -40,7 +40,7 @@ Do not reintroduce or add later-stage capabilities unless an explicit task and, 
 - Do not change acceptance conditions because results are disappointing.
 - Do not tune against acceptance seeds after they have been designated.
 - Keep scientific success metrics distinct from reinforcement-learning reward. EXP-000 requires reward to remain exactly `0.0` on every transition.
-- Treat the V0.1 energy variable as an engineered viability state, not as biological metabolism or a reward score.
+- Treat the energy variable as an engineered viability state, not as biological metabolism or a reward score.
 - Distinguish programmed behaviour, learned behaviour, and genuinely unexpected trajectories in reports.
 - Do not claim consciousness, emotion, subjective experience, genuine life, metabolism, Darwinian evolution, or emergent intelligence from behavioural evidence alone.
 - Keep code readable and testable.

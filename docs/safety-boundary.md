@@ -1,6 +1,10 @@
-# V0.1 Safety and Experimental Boundary
+# Safety and Experimental Boundary
 
-V0.1 is a bounded simulation experiment. The boundary exists for both safety and scientific clarity.
+This boundary was written for V0.1 and applies unchanged to V0.2. ADR 0009
+opened V0.2 by permitting bounded one-step observation-history state inside a
+controller; it does not touch anything this document allows or forbids.
+
+The project is a bounded simulation experiment. The boundary exists for both safety and scientific clarity.
 
 ## Allowed
 
@@ -29,7 +33,7 @@ V0.1 is a bounded simulation experiment. The boundary exists for both safety and
 
 ## Scope discipline
 
-V0.1 should not contain hardware-control scaffolding, networking abstractions, self-updating mechanisms, or speculative future autonomy systems.
+The project should not contain hardware-control scaffolding, networking abstractions, self-updating mechanisms, or speculative future autonomy systems.
 
 Any future expansion of these boundaries requires an explicit project decision and should be reviewed in the context of the experiment that needs it.
 

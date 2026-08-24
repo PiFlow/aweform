@@ -64,7 +64,8 @@ and the [`EXP-002 confirmatory statistical addendum`](../experiments/EXP-002-con
 EXP-003 is development / instrumentation only. It separates sensing from
 energy acquisition, requires physical station occupancy to recharge, maps the
 simulation interface toward plausible future robot sensors, and creates a
-stronger ecological problem before introducing memory. The active specification
+stronger ecological problem before introducing memory. It was specified and
+run under V0.1, before ADR 0009 opened V0.2. The active specification
 is [`EXP-003 localized charging station`](../experiments/EXP-003-localized-charging-station.md),
 and its durable interface decision is [`ADR 0008`](adr/0008-exp-003-localized-charging-interface.md).
 
@@ -96,7 +97,7 @@ Reuses EXP-003's station/beacon environment with one hidden perturbation —
 station relocation at a seed-determined, hidden time within a preregistered
 window — evaluated for `STATION_B50` and a newly-calibrated station-compatible
 energy-blind fixed-schedule regulator. `STATION_B50_TREND` is a candidate third
-controller only if ADR 0009 (bounded one-step beacon-trend memory) is accepted
+controller only if ADR 0009 (V0.2 bounded observation-history state) is accepted
 and the trend controller development work is independently approved and
 merged. Once that happens, it is pinned to an exact, named inheritance from
 its development branch (merge SHA, and its exact thresholds, clearing points,
