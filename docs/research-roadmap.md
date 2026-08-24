@@ -84,18 +84,22 @@ distribution. EXP-004 tests the third explanation directly rather than
 assuming it. It replaces the previous provisional EXP-004 ("adaptive
 homeostatic regulator") and EXP-005 ("ecological change") with a single
 combined design, since the beacon-history mechanism envisioned for the former
-is already prototyped in EXP-003 development (`STATION_B50_TREND`) and can be
-tested directly under the latter's perturbation rather than staged separately.
+is already prototyped (`STATION_B50_TREND`) and can be tested directly under
+the latter's perturbation rather than staged separately. That prototype was
+built during EXP-003 development work; EXP-003 is closed, so it is carried
+forward as EXP-004 preparatory controller development rather than as an
+addition to EXP-003.
 
 Reuses EXP-003's station/beacon environment with one hidden perturbation —
 station relocation at a seed-determined, hidden time within a preregistered
 window — evaluated for `STATION_B50` and a newly-calibrated station-compatible
 energy-blind fixed-schedule regulator. `STATION_B50_TREND` is a candidate third
-controller only if the EXP-003 trend development work is independently
-approved and merged. Once that happens, it is pinned to an exact, named
-inheritance from its EXP-003 development branch (merge SHA, and its exact
-thresholds and one-scalar state semantics, all specified in the EXP-004
-protocol) rather than a silently-updated version. If it is not merged in time,
+controller only if ADR 0009 (bounded controller-visible temporal state) is
+accepted and the trend controller development work is independently approved
+and merged. Once that happens, it is pinned to an exact, named inheritance from
+its development branch (merge SHA, and its exact thresholds, clearing points,
+and one-scalar state semantics, all specified in the EXP-004 protocol) rather
+than a silently-updated version. If it is not merged in time,
 EXP-004 proceeds with `STATION_B50` and the station-compatible regulator, with
 the third arm decided separately. The station-compatible regulator uses fixed
 mode timing only — it still steers locally via the same L/F/R beacon signal
