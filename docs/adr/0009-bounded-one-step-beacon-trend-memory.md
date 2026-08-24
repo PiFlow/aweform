@@ -41,12 +41,17 @@ mechanism that provides it.
 
 ## Decision
 
-Authorised: exactly one memory variable, in one named controller.
+Authorised: exactly one *added* memory variable, in one named controller.
+
+The unit of authorisation is one new observation-history value placed on the
+controller's causal action path. It is not a claim that the controller retains
+nothing else; see "Pre-existing retained state" below, which this ADR neither
+introduces, re-authorises, nor modifies.
 
 - **Variable:** `StationB50TrendController._previous_explore_beacon_max`,
   exposed read-only as `previous_explore_beacon_max`, of type
-  `float | None`. It is the only value this controller retains between
-  decisions.
+  `float | None`. It is the only value this controller adds to the retained
+  state it inherits from `StationB50Controller`.
 - **Derivation:** `max(left, forward, right)` of the controller-visible beacon
   observation at the previous ordinary EXPLORE decision. No other observation
   component, and no evaluator-only quantity, contributes to it.
@@ -55,7 +60,8 @@ Authorised: exactly one memory variable, in one named controller.
   averaged, integrated, filtered, or combined with an earlier value.
 - **Use:** one comparison, `current_beacon_max < previous_explore_beacon_max`,
   as one conjunct of the anticipatory SEEK guard. It has no other effect on
-  action selection.
+  action selection. Its value is additionally copied into the diagnostic
+  `EXP003ControllerDecision` record, which no action-selection branch reads.
 - **Clearing points**, all four of which are part of the frozen scientific
   contract for any experiment using this controller: on `reset()`; on EXPLORE
   entering SEEK by the historical energy rule; on EXPLORE entering SEEK by the
@@ -65,11 +71,39 @@ Authorised: exactly one memory variable, in one named controller.
   weak-beacon threshold remain constants declared in source. No update rule
   adjusts them from experience.
 
+### Pre-existing retained state
+
+`StationB50TrendController` subclasses `StationB50Controller` and already
+retains, before this ADR, state that persists between decisions and determines
+actions:
+
+- `_mode` (`EXPLORE`/`SEEK`/`CHARGE`), the hysteresis mode variable authorised
+  by ADR 0004. It is worth stating plainly that `_mode` is itself dependent on
+  past observations: a past energy reading below the threshold is what keeps
+  the controller in SEEK on later steps. This ADR must therefore not be cited
+  as evidence that the historical controller was otherwise stateless.
+- the `StochasticPersistentExplorer` run-and-turn segment counters
+  (`_forward_actions_remaining`, `_turn_action`, `_turn_actions_remaining`) and
+  its `policy_rng` bit-generator state, which advances on every run-length
+  sample. These are the EXP-001 exploration primitive, specified in that
+  experiment and carried forward unchanged.
+- `_last_decision`, a per-decision diagnostic record. It is written by `act()`
+  and read only by external inspection; no action-selection branch reads it,
+  so it is not on the causal path.
+
+None of the above is authorised, re-authorised, modified, or extended by this
+ADR. They are named here so that the authorisation above is a statement about
+what is *added*, and so the ADR does not contradict the controller it describes
+at the moment of acceptance. Changing any of them is outside this ADR entirely
+and is governed by ADR 0004 and the EXP-001 specification.
+
+### Exclusions
+
 Everything else remains excluded and requires its own ADR before any
 development branch may add it. In particular this ADR does **not** authorise:
 
-- a second retained variable in this controller, or any retained variable in
-  any other controller;
+- a second added retained value in this controller, or any added retained
+  value in any other controller, whether or not it is observation-derived;
 - retention over more than one decision, or any multi-step accumulation,
   integration, smoothing, or filtering;
 - retention of anything not derived solely from the controller's own
@@ -83,6 +117,14 @@ This ADR authorises the mechanism only. It authorises no experimental claim,
 seed reservation, calibration, or confirmatory run.
 
 ## Rationale
+
+Framing the authorisation as *added* state rather than as *all* state is a
+correction from independent review. An earlier accepted wording said the
+variable was "the only value this controller retains between decisions", which
+was false at the moment of acceptance: the controller already inherited `_mode`
+and the explorer's segment and RNG state. A frozen contract that its own
+subject violates is worse than no contract, because it invites the next reader
+to decide which half to believe.
 
 The narrow form is deliberate. An earlier draft authorised "a fixed, enumerated
 set of scalars" for any controller, which is not a bound: a controller carrying
@@ -117,10 +159,10 @@ rule. If the project later wants a reusable class-wide authorisation, that is a
 materially larger decision and needs an explicit numerical state budget and an
 enforceable registration rule, not a restatement of this ADR.
 
-A controller carrying memory is harder to reason about than a stateless one:
-its behaviour depends on clearing points, so experiments using it must pin the
-exact source revision, thresholds, clearing points, and state semantics they
-inherited rather than tracking a branch.
+Adding observation-history state makes the controller harder to reason about
+than the variant without it: its behaviour depends on clearing points, so
+experiments using it must pin the exact source revision, thresholds, clearing
+points, and state semantics they inherited rather than tracking a branch.
 
 Authorising the mechanism does not retroactively authorise evidence produced
 before this ADR. The `18141–18180` development batch run under the earlier
