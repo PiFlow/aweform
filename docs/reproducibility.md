@@ -40,6 +40,15 @@ The simulator may hold hidden ground truth needed for physics, resource generati
 
 Evaluator access to hidden position, resource coordinates, or ground-truth fields does not imply agent access.
 
+## Validation claims and review evidence
+
+A validation claim attached to an exact Git SHA requires that exact committed
+tree, from a clean checkout, to compile and import successfully. Results
+produced from a dirty working tree must disclose the dirty state and patch;
+they must not cite the clean commit as if it contained the source that was
+executed. Reviewer language must distinguish “I inspected the tests” from “I
+executed the tests.”
+
 ## Failed and exploratory runs
 
 Exploratory and failed runs are part of the research record. They may be excluded from the final confirmatory summary only according to rules defined before the confirmatory run, such as a genuine execution failure.
