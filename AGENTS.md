@@ -19,7 +19,7 @@ Do not reintroduce or add later-stage capabilities unless an explicit task and, 
 - reinforcement learning or PPO
 - JEPA or other learned world models
 - camera vision
-- memory systems beyond the bounded one-step observation-history state authorised by ADR 0009 — that authorisation caps a controller at **one** such value, forbids any write that reads retained state, and gates merging on a registry and its checks, neither of which exists yet
+- memory systems beyond the bounded one-step observation-history state authorised by ADR 0009 — that authorisation caps a controller at **one** such value, forbids retained state from determining an observation-write's value, function, or input components, and gates merging on a registry and its checks, neither of which exists yet
 - curiosity/play mechanisms
 - awe mechanisms
 - social behaviour
