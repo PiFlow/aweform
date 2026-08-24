@@ -1,6 +1,12 @@
 # ADR 0009 — Bounded One-Step Beacon-Trend Memory
 
-**Status:** Proposed
+**Status:** Accepted
+
+**Authorisation:** Flow, 2026-08-24, Buzz Aweform channel. Flow ruled that
+the project needs memory "now or later" provided it is recorded and made to
+work, and delegated the choice of form. The narrow form below — one named
+variable in one named controller — was chosen over a reusable class-wide
+authorisation, which was raised in review and deliberately not drafted.
 
 **Amends:** ADR 0001 (V0.1 non-goal "memory"), narrowly and only for the single
 mechanism named below.
