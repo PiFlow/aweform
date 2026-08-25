@@ -113,10 +113,11 @@ versus T is a compound controller contrast, not a pure memory effect. Each
 included controller runs in stationary and one-hidden-relocation conditions;
 the primary design therefore has four matched cells per seed, and the
 optional four-controller package has eight.
-The relocation schedule is generated once per master seed from a dedicated
-perturbation RNG, independent of environment/policy RNG streams and of
-controller behavior, and applied identically across the included controllers;
-with T included, this means all three, otherwise both.
+The single relocation schedule is generated once per master seed from a
+dedicated perturbation RNG, independent of environment/policy RNG streams and
+controller behavior, and applied identically across both included controllers
+in the primary design and across all four included controllers when the
+optional history-analysis package is used.
 
 The primary question is whether B's advantage over the station-compatible
 regulator changes between the relocation and stationary conditions. If the
