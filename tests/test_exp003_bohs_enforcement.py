@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import ast
 import inspect
+from pathlib import Path
 
 import pytest
 
@@ -77,6 +78,33 @@ def _fresh() -> StationB50TrendController:
     return StationB50TrendController(policy_rng_from_seed(1001))
 
 
+class _WriteCountingTrend(StationB50TrendController):
+    """``StationB50TrendController`` that counts writes to the BOHS field.
+
+    All writes to the field route through ``__setattr__`` (the base class has
+    one), so counting there measures the true per-``act()`` write cadence (ADR
+    B.7) without touching source.  ``reset_count()`` clears the tally between
+    decisions.
+    """
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        object.__setattr__(self, "_bohs_write_count", 0)
+        super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+
+    def __setattr__(self, name: str, value: object) -> None:
+        if name == BOHS_SLUG:
+            count = object.__getattribute__(self, "_bohs_write_count") + 1
+            object.__setattr__(self, "_bohs_write_count", count)
+        object.__setattr__(self, name, value)
+
+    def reset_count(self) -> None:
+        object.__setattr__(self, "_bohs_write_count", 0)
+
+    @property
+    def write_count(self) -> int:
+        return object.__getattribute__(self, "_bohs_write_count")
+
+
 def _current_max(observation: StationObservation) -> float:
     return max(observation.beacon.as_tuple())
 
@@ -124,6 +152,102 @@ def _class_of(note: str) -> str:
     if note.startswith("causal-inherited"):
         return "causal-inherited"
     raise AssertionError(f"unrecognised registry note: {note!r}")
+
+
+def _registry_markdown_path() -> Path:
+    """The single manifest referenced by ADR 0009 Section D."""
+    return (
+        Path(__file__).resolve().parents[1]
+        / "docs" / "adr" / "0009-bohs-registry.md"
+    )
+
+
+def _parse_registry_direct_rows() -> tuple[dict[str, dict[str, str]], dict[str, str]]:
+    """Parse the Markdown manifest into (per-controller direct rows, nested rows).
+
+    Direct rows classify a controller's own attribute; nested rows name an
+    object's nested retained field with a ``<root>.<field>`` attribute in the
+    first column.  Returns ``(direct, nested)`` where ``direct[controller] =
+    {attribute: classification}`` and ``nested = {"explorer.policy_rng":
+    "causal-inherited", ...}`` keyed exactly as the row's first column reads.
+    """
+    text = _registry_markdown_path().read_text(encoding="utf-8")
+    sections: list[tuple[str, list[str]]] = []
+    section: str | None = None
+    rows: list[str] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("### "):
+            if section is not None:
+                sections.append((section, rows))
+            section = line[len("### "):].strip().strip("`")
+            rows = []
+            continue
+        if section is None:
+            continue
+        if line.startswith("|") and line.endswith("|"):
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            if len(cells) < 2:
+                continue
+            if all(set(c) <= {"-", " "} or c in {"", ":", "-"} for c in cells):
+                continue
+            rows.append(cells)
+    if section is not None:
+        sections.append((section, rows))
+
+    direct: dict[str, dict[str, str]] = {}
+    nested: dict[str, str] = {}
+    for heading, rows_ in sections:
+        for cells in rows_:
+            attr = cells[0].strip("`")
+            classification = cells[1].strip("`").split()[0]
+            if classification.lower() in {"classification", "**classification**"}:
+                continue
+            if attr.startswith("explorer."):
+                nested[attr] = classification
+            else:
+                direct.setdefault(heading, {})[attr] = classification
+    return direct, nested
+
+
+def test_registry_manifest_matches_source_declarations() -> None:
+    """The Markdown manifest (not merely in-test constants) must not drift.
+
+    Sol's finding: the registry checks compared source declarations against an
+    in-test dictionary, so a divergence in ``docs/adr/0009-bohs-registry.md``
+    itself would pass silently.  This test reads the real manifest and requires
+    every controller row and every nested row to agree with the source
+    ``RETAINED_STATE`` declarations (already pinned to the expected
+    classification by the check above), so drift on either side is caught.
+    """
+    direct, nested = _parse_registry_direct_rows()
+
+    # Every covered controller's direct rows must match the source declaration.
+    for class_name, expected in EXPECTED_CLASSIFICATION.items():
+        assert class_name in direct, (
+            f"{class_name} missing from the registry manifest"
+        )
+        for attr, classification in expected.items():
+            assert attr in direct[class_name], (
+                f"{class_name}.{attr} missing from the registry manifest rows"
+            )
+            assert direct[class_name][attr] == classification, (
+                f"{class_name}.{attr} classified {direct[class_name][attr]!r} "
+                f"in the manifest, expected {classification!r}"
+            )
+        # No extra and no missing rows: the row set is exactly the declared set.
+        assert set(direct[class_name]) == set(expected), (
+            f"{class_name} manifest rows changed: "
+            f"{set(direct[class_name]) ^ set(expected)}"
+        )
+
+    # Nested retained state of the explorer root is listed and classified.
+    for attr, classification in EXPECTED_EXPLORER_NESTED.items():
+        key = f"explorer.{attr}"
+        assert key in nested, f"{key} missing from the registry manifest"
+        assert nested[key] == classification, (
+            f"{key} classified {nested[key]!r}, expected {classification!r}"
+        )
 
 
 def test_registry_covers_all_retained_state_of_covered_controllers() -> None:
@@ -339,6 +463,86 @@ def test_b2_write_is_fixed_max_function_of_the_current_observation() -> None:
         assert p is None or type(p) is float
 
 
+def test_b3_no_unregistered_clears_writes_only_registered_points() -> None:
+    """Every ``None`` write is enumerated from source and occurs at a
+    registered clearing point: exactly five clears (init, E1, E2, C2, reset)
+    and exactly one observation write (E3).  Any additional clear — an
+    unregistered ``None`` assignment — changes the count or the location and
+    fails, so a clearing point omitted from the registry cannot pass silently
+    (ADR 0009 B.3)."""
+    import aweform.exp003 as exp003  # noqa: PLC0415
+
+    tree = ast.parse(inspect.getsource(exp003))
+    stores: list[tuple[int, str, ast.expr]] = []
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Assign)
+            and any(
+                isinstance(t, ast.Attribute)
+                and t.attr == BOHS_SLUG
+                and isinstance(t.ctx, ast.Store)
+                for t in node.targets
+            )
+        ):
+            stores.append((node.lineno, "", node.value))
+        elif isinstance(node, ast.AnnAssign):
+            t = node.target
+            if isinstance(t, ast.Attribute) and t.attr == BOHS_SLUG:
+                stores.append((node.lineno, "", node.value))
+        elif isinstance(node, ast.AugAssign):
+            t = node.target
+            if isinstance(t, ast.Attribute) and t.attr == BOHS_SLUG:
+                stores.append((node.lineno, "!", node.value))
+
+    none_writes = [s for s in stores if isinstance(s[2], ast.Constant)
+                   and s[2].value is None]
+    other_writes = [s for s in stores if s not in none_writes]
+    assert len(none_writes) == 5, (
+        f"expected exactly five registered clears (init, E1, E2, C2, reset), "
+        f"found {len(none_writes)}"
+    )
+    assert len(other_writes) == 1, (
+        f"expected exactly one observation write (E3), found {len(other_writes)}"
+    )
+    # The five clears sit one each in __init__, E1, E2, C2, and reset; no clear
+    # belongs to any other control point, and the E3 write is the only
+    # non-None write in the module.
+    clear_lines = sorted(s[0] for s in none_writes)
+    act_method = _method_source(tree, "StationB50TrendController", "act")
+    reset_method = _method_source(tree, "StationB50TrendController", "reset")
+    init_method = _method_source(tree, "StationB50TrendController", "__init__")
+    assert act_method is not None and reset_method is not None
+    assert init_method is not None
+    in_act = sorted(
+        ln for ln in clear_lines if act_method.lineno <= ln <= act_method.end_lineno
+    )
+    in_init = [
+        ln for ln in clear_lines if init_method.lineno <= ln <= init_method.end_lineno
+    ]
+    in_reset = [
+        ln
+        for ln in clear_lines
+        if reset_method.lineno <= ln <= reset_method.end_lineno
+    ]
+    assert len(in_act) == 3, f"act() must hold E1/E2/C2 clears, got {in_act}"
+    assert len(in_init) == 1, f"__init__ must hold the init clear, got {in_init}"
+    assert len(in_reset) == 1, f"reset() must hold the reset clear, got {in_reset}"
+    # The E3 observation write is the only non-None write.
+    write_act = [
+        ln
+        for ln, _op, _val in other_writes
+        if act_method.lineno <= ln <= act_method.end_lineno
+    ]
+    assert len(write_act) == 1, f"E3 write must be unique in act(), got {write_act}"
+    write_line = write_act[0]
+    # Source order within act(): E1 clear, E2 clear, E3 write, C2 clear.
+    e1e2 = [ln for ln in in_act if ln < write_line]
+    c2 = [ln for ln in in_act if ln > write_line]
+    assert e1e2 == in_act[:2] and len(c2) == 1, (
+        f"act() clear order not E1,E2 < write < C2: before={e1e2} after={c2}"
+    )
+
+
 def test_b3_and_b8_clears_only_at_registered_points_and_reach_none() -> None:
     # E1/E2/C2/reset clear P; init starts None.  No other path clears it.
     # E1 clear
@@ -427,6 +631,58 @@ def test_b6_no_carry_over_into_non_explore_branches() -> None:
             )
 
 
+def test_b7_counts_writes_per_path() -> None:
+    """Count the BOHS-field writes on every implementation path: at most one
+    per ``act()`` on each EXPLORE/SEEK/CHARGE decision, and no writer outside
+    the controller (ADR 0009 B.7, made per-path rather than a single spot
+    check)."""
+    def explore_at(p: float | None) -> _WriteCountingTrend:
+        c = _WriteCountingTrend(policy_rng_from_seed(1001))
+        if p is not None:
+            c.act(_obs_triple(p, _ENERGY_E3, False))  # E3 sets P, stays EXPLORE
+        return c
+
+    def seek_at() -> _WriteCountingTrend:
+        c = explore_at(None)
+        c.act(_obs_triple(_BEACON_STRONG, _ENERGY_E1, False))  # E1 -> SEEK
+        return c
+
+    def charge_at() -> _WriteCountingTrend:
+        c = seek_at()
+        c.act(_obs_triple(_BEACON_STRONG, _ENERGY_E1, True))  # S1 -> CHARGE
+        return c
+
+    paths: list[tuple[str, _WriteCountingTrend, StationObservation]] = []
+    for p in (None, _BEACON_WEAK_SMALL, _BEACON_WEAK_NEAR, _BEACON_STRONG):
+        for obs in _explore_obs_classes():
+            paths.append((f"EXPLORE p={p}", explore_at(p), obs))
+    for obs in (_obs_triple(_BEACON_STRONG, _ENERGY_E3, False),
+                _obs_triple(_BEACON_STRONG, _ENERGY_E3, True)):
+        paths.append(("SEEK/S2", seek_at(), obs))
+    paths.append(("SEEK/S1", seek_at(),
+                  _obs_triple(_BEACON_STRONG, _ENERGY_E3, True)))
+    paths.append(("CHARGE/C2", charge_at(),
+                  _obs_triple(_BEACON_STRONG, _ENERGY_C2, True)))
+    paths.append(("CHARGE/C3", charge_at(),
+                  _obs_triple(_BEACON_STRONG, _ENERGY_C3, True)))
+    paths.append(("CHARGE/C1", charge_at(),
+                  _obs_triple(_BEACON_STRONG, _ENERGY_E3, False)))
+
+    seen_0 = seen_1 = 0
+    for label, c, obs in paths:
+        c.reset_count()
+        c.act(obs)
+        wrote = c.write_count
+        assert wrote <= 1, f"{label}: {wrote} writes in one act()"
+        seen_1 += wrote
+        seen_0 += wrote == 0
+    # The cadence is genuinely exercised: some paths write once (E1/E2/E3/C2),
+    # some never (S1/S2/C1/C3).
+    assert seen_1 > 0 and seen_0 > 0, (
+        "per-path cadence invoked no 0-write or 1-write path"
+    )
+
+
 def test_b7_single_write_per_act_and_no_external_writer() -> None:
     """At most one write to the BOHS field per act(); no writer outside the
     controller (ADR 0009 B.7)."""
@@ -494,6 +750,27 @@ def test_b9_bohs_thresholds_are_final_and_constant() -> None:
     ):
         assert isinstance(value, float)
         assert value == float(candidate)  # pinned development constants
+    # Both thresholds are declared ``Final[float]`` in source, not merely
+    # module floats (ADR 0009 B.9 / Section D), so no branch can rebind them.
+    import aweform.exp003 as exp003  # noqa: PLC0415
+
+    tree = ast.parse(inspect.getsource(exp003))
+    final_names = {
+        "EXP003_TREND_ANTICIPATORY_ENERGY_THRESHOLD",
+        "EXP003_TREND_WEAK_BEACON_THRESHOLD",
+    }
+    seen: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            if node.target.id in final_names:
+                ann = ast.unparse(node.annotation)
+                assert ann == "Final[float]", (
+                    f"{node.target.id} annotated {ann!r}, expected Final[float]"
+                )
+                seen.add(node.target.id)
+    assert seen == final_names, (
+        f"missing Final[float] declarations: {final_names - seen}"
+    )
     # Thresholds do not change across a run / are not adapted from experience.
     c = _fresh()
     c.act(_obs(0.70, (0.6, 0.6, 0.6)))
@@ -514,6 +791,45 @@ def test_b10_provenance_is_the_controller_observation_contract() -> None:
     assert c._previous_explore_beacon_max not in {
         0.21, 0.33,  # not any single L/F/R, and no privileged state involved
     }
+
+    # Source trace (ADR 0009 B.10 / Section D): the BOHS write's value resolves
+    # to exactly ``max(observation.beacon.as_tuple())`` — the controller's own
+    # observation contract — and never to privileged/evaluator state (body
+    # position, coordinates, trajectory, or simulator internals).
+    import aweform.exp003 as exp003  # noqa: PLC0415
+
+    tree = ast.parse(inspect.getsource(exp003))
+    act = _method_source(tree, "StationB50TrendController", "act")
+    assert act is not None
+
+    # Locate the single non-None write to the field inside act().
+    write_var: str | None = None
+    for node in ast.walk(act):
+        if (
+            isinstance(node, ast.Assign)
+            and any(
+                isinstance(t, ast.Attribute)
+                and t.attr == BOHS_SLUG
+                and isinstance(t.ctx, ast.Store)
+                for t in node.targets
+            )
+            and isinstance(node.value, ast.Name)
+        ):
+            write_var = node.value.id
+    assert write_var is not None, "E3 write value not found in act()"
+
+    # The value name is bound once in act() to exactly the contract expression.
+    binding_exprs = [
+        ast.unparse(n.value)
+        for n in ast.walk(act)
+        if isinstance(n, ast.Assign)
+        and isinstance(n.targets[0], ast.Name)
+        and n.targets[0].id == write_var
+    ]
+    assert binding_exprs == ["max(observation.beacon.as_tuple())"], (
+        f"{write_var} bound by {binding_exprs}, expected only "
+        "max(observation.beacon.as_tuple())"
+    )
 
 
 def test_section_e_no_action_selection_reads_the_diagnostic_trace() -> None:
@@ -627,6 +943,44 @@ def test_config_binding_cannot_be_reassigned_between_acts() -> None:
     c2 = _fresh()
     with pytest.raises(AttributeError):
         c2.config = adversarial
+    assert c2.config is not adversarial
+
+
+def test_config_binding_cannot_be_deleted_then_reassigned() -> None:
+    """``del config`` must fail, else delete-then-reassign bypasses the freeze.
+
+    ``__setattr__`` alone guards a *reassignment* (``c.config = x`` while
+    ``config`` already sits in ``__dict__``), but ``del controller.config``
+    removes the attribute first, so a subsequent assignment no longer sees an
+    existing binding and ``__setattr__`` would let the adversary slip a
+    branch-dependent configuration through.  The pairing ``__delattr__`` must
+    reject the deletion itself, keeping ``config`` read-only (ADR 0009 B.5's
+    five-property exception)."""
+    from aweform.exp003 import EXP003ControllerConfig
+
+    c = _fresh()
+    original = c.config
+    adversarial = EXP003ControllerConfig(enter_seek=0.49, recover=0.95)
+    with pytest.raises(AttributeError):
+        del c.config  # type: ignore[misc]
+    assert c.config is original
+    # With deletion rejected, delete-then-reassign cannot land the adversary.
+    with pytest.raises(AttributeError):
+        del c.config  # type: ignore[misc]
+    with pytest.raises(AttributeError):
+        c.config = adversarial  # type: ignore[misc]
+    assert c.config is original
+    assert c.config.recover == 0.85  # still the construction value
+    # C2 still fires on the construction recover (0.85), not an adversarial 0.95.
+    c.act(_obs(0.40, (0.1, 0.2, 0.3), contact=True))  # E1-S1 -> CHARGE
+    c.act(_obs(0.90, (0.1, 0.2, 0.3), contact=True))
+    assert c._mode is EXP003Mode.EXPLORE
+    # A fresh controller is equally deletion-proof before any act().
+    c2 = _fresh()
+    original2 = c2.config
+    with pytest.raises(AttributeError):
+        del c2.config  # type: ignore[misc]
+    assert c2.config is original2
     assert c2.config is not adversarial
 
 
@@ -744,28 +1098,46 @@ def test_b5_dominance_exhaustive_finite_state_enumeration() -> None:
     0.09, 0.60}`` the predicate classes can produce.  Forward-BFS from the
     constructor state ``(EXPLORE, None)``, driving the *real* controller, and
     exhaust all mode/contact/energy branches until the reachable state set
-    closes.  On every transition assert the domination invariant:
+    closes.
 
-      * non-``EXPLORE`` modes always carry ``previous_max is None`` — an
-        E1/E2 clear or a C1/C2/C3 hand-off never revives the bit;
-      * any non-``None`` result equals the ``max`` of *this* call's observation
-        (an E3 write), i.e. a fresh write of the immediate predecessor, never a
-        carried-over value;
-      * re-entry to ``EXPLORE`` from ``SEEK``/``CHARGE`` is only via ``C2``
-        (which clears) or ``reset()``, so the next read sees ``None``.
+    **Join sensitivity (ADR 0009 B.5, as amended for Sol's finding).**  The
+    ``(mode, previous_max)`` projection alone is path-local: it can merge a
+    barriered E2 history with a fresh-write history.  Every state therefore
+    additionally carries ``barrier_may_be_set`` — the **OR** over every
+    incoming edge's provenance flag — so a barriered predecessor is never
+    silently dropped by projection.  Propagation rules follow the amended ADR:
 
-    Together with the single read site proved above, every reachable read
-    observes only a dominated value — the exact association Sol required, tied
-    to the actual branch graph rather than a hand-picked trajectory.
+      * EXPLORE entry is the sole read site: assert ``not barrier`` there;
+      * E2's prior-``P``-dependent clear is the barriered clear and sets the
+        barrier on its SEEK edge;
+      * S1/S2/C1/C3 propagate the incoming barrier unchanged through
+        SEEK/CHARGE;
+      * E3's fresh observation write clears the barrier on *that* edge only;
+      * C2 / reset clear the barrier only as a dominating clear covering
+        **all** incoming histories before a later read.
+
+    A barriered E2 history can therefore reach an EXPLORE read only through C2
+    or reset (each a dominating re-clear); any other route leaves the read
+    state's OR-accumulated flag True and trips the assertion.  That is exactly
+    the all-histories dominance and the "no barriered E2 history reconverges
+    with a fresh-write path before a later read" obligations of the amended
+    ADR, bound to the real branch graph rather than a hand-picked trajectory.
     """
     start = ("EXPLORE", None)
+    barrier: dict[tuple[str, float | None], bool] = {start: False}
+    incoming: dict[tuple[str, float | None], set[bool]] = {start: set()}
     states: set[tuple[str, float | None]] = {start}
     frontier = [start]
-    write_obs: dict[float, float] = {}  # literal -> the obs max that wrote it
 
     while frontier:
         mode, p = frontier.pop()
-        c = _controller_at(mode, p)
+        b = barrier[(mode, p)]
+        if mode == "EXPLORE":
+            # Sole read site (proved above): no incoming history barriered.
+            assert not b, (
+                f"EXPLORE read reached with barriered predecessor "
+                f"({mode},{p}) barrier={b}"
+            )
         if mode == "EXPLORE":
             obs_classes = _explore_obs_classes()
         elif mode == "SEEK":
@@ -791,16 +1163,56 @@ def test_b5_dominance_exhaustive_finite_state_enumeration() -> None:
                 assert np == _current_max(obs), (
                     f"({mode},{p}) -> ({nmode},{np}): P is not max of this obs"
                 )
-                write_obs[np] = _current_max(obs)
             if nmode != "EXPLORE":
                 assert np is None, (
                     f"non-EXPLORE mode {nmode} carried P={np!r} (stale bit)"
                 )
 
+            # Barrier provenance for this edge.
+            trig = a._last_decision.seek_trigger
+            if mode == "EXPLORE":
+                if trig is EXP003SeekTrigger.HISTORICAL_ENERGY:
+                    edge_b = False   # E1 registered clear; no read follows
+                elif trig is EXP003SeekTrigger.ANTICIPATORY_TREND:
+                    edge_b = True    # E2 prior-P-dependent clear: sets barrier
+                else:
+                    edge_b = False   # E3 fresh observation write clears
+            else:
+                if mode == "CHARGE" and nmode == "EXPLORE":
+                    edge_b = False   # C2 dominating clear of all histories
+                else:
+                    edge_b = b       # S1/S2/C1/C3 propagate unchanged
+
             nxt = (nmode, np)
-            if nxt not in states:
-                states.add(nxt)
+            incoming.setdefault(nxt, set()).add(edge_b)
+            prev_barrier = barrier.get(nxt)
+            # OR-acquire every incoming edge's flag: never drop a barriered
+            # predecessor when projecting onto (mode, previous_max).
+            merged = edge_b if prev_barrier is None else (prev_barrier or edge_b)
+            if merged != prev_barrier or nxt not in states:
+                barrier[nxt] = merged
+                if nxt not in states:
+                    states.add(nxt)
                 frontier.append(nxt)
+
+    # Join sensitivity: no reachable read state is barriered, and no incoming
+    # edge into a read state carries the barrier — a barriered E2 history must
+    # pass through a dominating clear (C2/reset) to reach any later read.
+    for key, b in barrier.items():
+        mode, _p = key
+        if mode == "EXPLORE":
+            assert not b, f"reachable read state {key} carries barrier={b}"
+            assert incoming[key] <= {False}, (
+                f"read state {key} has a barriered incoming edge: "
+                f"{incoming[key]}"
+            )
+    # The join machinery must engage, not be everywhere False: a barriered E2
+    # history reaches a non-EXPLORE state and is discharged only by a
+    # dominating clear before any read.  This keeps the OR-accumulation proof
+    # from being vacuous.
+    assert any(
+        b for (mode, _p), b in barrier.items() if mode != "EXPLORE"
+    ), "no barriered history reached SEEK/CHARGE; join proof is vacuous"
 
     # Re-entry to EXPLORE with non-None P is a same-decision E3 write only:
     # no state is reachable by carrying a prior bit through a clear.

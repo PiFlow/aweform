@@ -62,7 +62,7 @@ Adds one BOHS field on top of the base rows above.
 
 | Attribute | Classification | Required fields / notes |
 |---|---|---|
-| `_previous_explore_beacon_max` | `bohs` | Declared type `float \| None`. Fixed observation function (ADR 0009 B.2): `max` over the current observation's beacon `left`/`forward`/`right` — a copy of one controller-visible selection, applied unconditionally at the single observation-write point. Registered clearing points (ADR 0009 B.3): construction (`__init__`), `E1`, `E2`, `C2`, and `reset`. Complete reader set (ADR 0009 B.4): the E2 anticipatory navigation guard (reads the snapshot of the immediately preceding value) and the `previous_explore_beacon_max` property (external inspection). Budget consumption: 1 (ADR 0009 C). Uniquely among the covered state, it is `bohs`; the only observation-write value the controller ever stores. |
+| `_previous_explore_beacon_max` | `bohs` | Declared type `float \| None`. Fixed observation function (ADR 0009 B.2): `max` over the current observation's beacon `left`/`forward`/`right` — a copy of one controller-visible selection, applied unconditionally at the single observation-write point. Registered clearing points (ADR 0009 B.3): construction (`__init__`), `E1`, `E2`, `C2`, and `reset`. Complete reader set (ADR 0009 B.4): the EXPLORE-entry snapshot (the field is loaded into `previous_max` on **every** EXPLORE path before any guard runs, so the E2 navigation guard reads that snapshot of the immediately preceding value) and the `previous_explore_beacon_max` property (external inspection). Budget consumption: 1 (ADR 0009 C). Uniquely among the covered state, it is `bohs`; the only observation-write value the controller ever stores. |
 
 ## Notes
 
