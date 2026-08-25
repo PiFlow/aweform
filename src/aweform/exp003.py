@@ -432,6 +432,19 @@ class EXP003ControllerConfig:
 class StationB50Controller:
     """B50-derived controller adapted to physical charging contact."""
 
+    # ``config`` is exposed as a read-only property backed by the ``_config``
+    # slot, so the construction-invariant binding cannot be rebound by
+    # assignment, ``del``, OR by direct mutation of ``vars(self)["config"]``
+    # (the property data-descriptor shadows any ``__dict__`` entry).  The
+    # backing ``_config`` slot is itself frozen by ``__setattr__``/``__delattr__``
+    # below, so a caller cannot ``del c._config`` then ``c._config = adv`` to
+    # swap in a branch-dependent configuration through the read-only property.
+    # The remaining attrs live in the normal ``__dict__``.
+    __slots__ = ("_config", "__dict__")
+    # Typed slot so mypy resolves the ``config`` property's return and the
+    # ``__setattr__``/``__delattr__`` guards against the backing storage.
+    _config: EXP003ControllerConfig
+
     # ADR 0009 Section D retained-state declaration.  Each controller declares
     # its own entries; ``docs/adr/0009-bohs-registry.md`` is the union of
     # these declarations plus the nested retained state of the objects named
@@ -440,7 +453,10 @@ class StationB50Controller:
     RETAINED_STATE: ClassVar[dict[str, str]] = {
         "_mode": "causal-inherited: EXP-003 three-mode form",
         "config": (
-            "causal-inherited: construction-invariant EXP003ControllerConfig"
+            "causal-inherited: construction-invariant EXP003ControllerConfig; "
+            "controller-visible binding is a read-only property (no setter/"
+            "deleter) backed by the _config slot, and both the property and "
+            "the backing _config slot are frozen for the run"
         ),
         "explorer": (
             "causal-inherited: EXP-001 run-and-turn primitive; nested "
@@ -455,37 +471,47 @@ class StationB50Controller:
         # before the first act(), immutable for the run, independent of
         # observations/history, and unable to encode a branch bit.  The frozen
         # EXP003ControllerConfig value alone is insufficient: the public
-        # ``config`` binding on the controller is freely reassignable between
-        # act() calls, and C2/E1 read through that binding.  Freeze the binding
-        # itself so no caller can swap in a branch-dependent configuration
-        # after construction.  Construction values remain configurable.
-        if name == "config" and "config" in self.__dict__:
+        # ``config`` binding on the controller had to be frozen as well, or a
+        # caller could swap in a branch-dependent configuration between act()
+        # calls and C2/E1 would read through that binding.  Both ``config`` and
+        # its backing ``_config`` slot are rejected so no assignment (including
+        # ``del c._config`` then ``c._config = adv``) can swap the value the
+        # read-only property returns; construction writes the ``_config`` slot
+        # directly via ``object.__setattr__`` in ``__init__``.
+        if name in ("config", "_config"):
             raise AttributeError(
                 "config is construction-invariant and immutable for the run"
             )
         object.__setattr__(self, name, value)
 
     def __delattr__(self, name: str) -> None:
-        # ADR 0009 B.5 (cont.): a read-only controller binding is the paired
-        # half of the non-rebindable ``__setattr__`` above.  The five-property
-        # configuration exception requires the controller-visible binding to
-        # be ``read-only`` after initialization; a binding the caller can
-        # remove with ``del`` and then re-create through ``__setattr__`` is
-        # not read-only.  Reject every deletion of ``config`` so the first
-        # assignment (in ``__init__``) is genuinely the only write to the
-        # binding across the controller's lifetime.
-        if name == "config":
+        # ADR 0009 B.5 (cont.): reject deletion of the ``config`` binding AND
+        # its backing ``_config`` slot, so the construction write is the only
+        # write across the controller's lifetime.  A binding a caller could
+        # remove with ``del`` (then re-create through a rebound ``__setattr__``)
+        # is not read-only — and with the property reading ``_config``, an
+        # unguarded ``del c._config`` would be the same swap through a different
+        # door.
+        if name in ("config", "_config"):
             raise AttributeError(
                 "config is construction-invariant and immutable for the run"
             )
         object.__delattr__(self, name)
+
+    @property
+    def config(self) -> EXP003ControllerConfig:
+        """The construction-invariant configuration (read-only binding)."""
+        return self._config
 
     def __init__(
         self,
         policy_rng: np.random.Generator,
         config: EXP003ControllerConfig | None = None,
     ) -> None:
-        self.config = config or EXP003ControllerConfig()
+        # Write the backing slot directly: the ``_config`` name is frozen by
+        # ``__setattr__``, so the construction value is the only write allowed,
+        # performed here via ``object.__setattr__``.
+        object.__setattr__(self, "_config", config or EXP003ControllerConfig())
         self.explorer = StochasticPersistentExplorer(policy_rng)
         self._mode = EXP003Mode.EXPLORE
         self._last_decision = EXP003ControllerDecision()
@@ -589,8 +615,9 @@ class StationB50TrendController(StationB50Controller):
         "_previous_explore_beacon_max": (
             "bohs; type float|None; write = max of current beacon L/F/R "
             "(B.2); clears at init, E1, E2, C2, reset (B.3); readers = the "
-            "E2 navigation guard and the previous_explore_beacon_max "
-            "property; budget 1"
+            "EXPLORE-entry snapshot (loaded into previous_max on every "
+            "EXPLORE path before any guard), the E2 navigation guard, and the "
+            "previous_explore_beacon_max property; budget 1"
         ),
     }
 
