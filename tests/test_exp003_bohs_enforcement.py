@@ -180,6 +180,71 @@ def _production_source_trees() -> list[ast.Module]:
     ]
 
 
+def _production_last_decision_loads() -> list[
+    tuple[Path, tuple[str, ...], tuple[str, ...], tuple[bool, ...]]
+]:
+    """Return production ``Load`` sites for the diagnostic private field."""
+
+    class Visitor(ast.NodeVisitor):
+        def __init__(self, path: Path) -> None:
+            self.path = path
+            self.classes: list[str] = []
+            self.functions: list[str] = []
+            self.properties: list[bool] = []
+            self.loads: list[
+                tuple[Path, tuple[str, ...], tuple[str, ...], tuple[bool, ...]]
+            ] = []
+
+        def visit_ClassDef(self, node: ast.ClassDef) -> None:
+            self.classes.append(node.name)
+            self.generic_visit(node)
+            self.classes.pop()
+
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+            self.functions.append(node.name)
+            self.properties.append(
+                any(
+                    (isinstance(decorator, ast.Name) and decorator.id == "property")
+                    or (
+                        isinstance(decorator, ast.Attribute)
+                        and decorator.attr == "getter"
+                    )
+                    for decorator in node.decorator_list
+                )
+            )
+            self.generic_visit(node)
+            self.functions.pop()
+            self.properties.pop()
+
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+            self.functions.append(node.name)
+            self.properties.append(False)
+            self.generic_visit(node)
+            self.functions.pop()
+            self.properties.pop()
+
+        def visit_Attribute(self, node: ast.Attribute) -> None:
+            if node.attr == "_last_decision" and isinstance(node.ctx, ast.Load):
+                self.loads.append(
+                    (
+                        self.path,
+                        tuple(self.classes),
+                        tuple(self.functions),
+                        tuple(self.properties),
+                    )
+                )
+            self.generic_visit(node)
+
+    loads: list[
+        tuple[Path, tuple[str, ...], tuple[str, ...], tuple[bool, ...]]
+    ] = []
+    for path in _production_sources():
+        visitor = Visitor(path)
+        visitor.visit(ast.parse(path.read_text(encoding="utf-8")))
+        loads.extend(visitor.loads)
+    return loads
+
+
 def _parse_registry() -> tuple[
     set[str],
     dict[str, dict[str, str]],
@@ -342,7 +407,10 @@ def test_registry_manifest_matches_source_declarations() -> None:
                 f"causal row {section}.{attr} omits its governing source"
             )
         elif classification == "diagnostic":
-            for field in ("Complete reader set", "external inspection"):
+            for field in (
+                "Complete production reader set",
+                "External consumers inspect",
+            ):
                 assert field in note, (
                     f"diagnostic row {section}.{attr} omits {field}"
                 )
@@ -394,8 +462,6 @@ def test_registry_note_fields_are_machine_checked() -> None:
     reader set — could drift without the gate noticing.  This couples those
     note fields to source-derived facts (ADR 0009 B.2/B.4/C and Section E).
     """
-    import aweform.exp003 as exp003  # noqa: PLC0415
-
     _sections, _direct, _nested, notes = _parse_registry()
     bohs_note = notes[f"StationB50TrendController.{BOHS_SLUG}"]
     diag_note = notes["StationB50Controller._last_decision"]
@@ -453,25 +519,21 @@ def test_registry_note_fields_are_machine_checked() -> None:
     assert _registry_bohs_clearing_points() == {"init", "E1", "E2", "C2", "reset"}
 
     # --- _last_decision complete reader set (ADR 0009 E) ------------------
-    assert "Complete reader set" in diag_note, (
-        "diagnostic note has no complete-reader-set clause"
+    assert "Complete production reader set" in diag_note, (
+        "diagnostic note has no complete production reader-set clause"
     )
-    assert "last_decision" in diag_note, "diagnostic note omits the property reader"
-    assert "external inspection" in diag_note, (
-        "diagnostic note does not state external inspection"
+    assert "exactly `StationB50Controller.last_decision`" in diag_note, (
+        "diagnostic note does not enumerate the exact property reader"
     )
-    assert "no action-selection branch reads it" in diag_note, (
+    assert (
+        "External consumers inspect the diagnostic value returned through that property"
+        in diag_note
+    ), (
+        "diagnostic note does not route external inspection through the property"
+    )
+    assert "no action-selection branch reads the private field" in diag_note, (
         "diagnostic note does not state the no-action-read invariant"
     )
-    # Source confirms the property is the sanctioned reader and act() never loads
-    # the trace (Section E, independently asserted wholesale below).
-    for class_name in ("StationB50Controller", "StationB50TrendController",
-                       "StationB50FullController"):
-        act = _method_source(ast.parse(inspect.getsource(exp003)),
-                             class_name, "act")
-        if act is not None:
-            assert _attr_load_count(ast.unparse(act), "_last_decision") == 0
-
     # --- config binding freeze is enrolled in the registry -----------------
     assert "read-only property" in config_note, (
         "config note does not state the read-only binding"
@@ -580,6 +642,20 @@ def test_diagnostic_field_is_never_read_by_an_action_selection_branch() -> None:
             assert _attr_load_count(src, "_last_decision") == 0, (
                 f"{class_name}.act reads diagnostic _last_decision"
             )
+
+
+def test_diagnostic_field_has_exactly_one_production_reader() -> None:
+    """The private trace is loaded only by its public diagnostic property."""
+    loads = _production_last_decision_loads()
+    assert len(loads) == 1, (
+        "expected exactly one production Load of _last_decision, found "
+        f"{loads}"
+    )
+    path, classes, functions, properties = loads[0]
+    assert path.name == "exp003.py"
+    assert classes == ("StationB50Controller",)
+    assert functions == ("last_decision",)
+    assert properties == (True,)
 
 
 # ---------------------------------------------------------------------------
