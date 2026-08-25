@@ -11,7 +11,7 @@ Read the canonical project documents before changing code:
 
 ## Current scope
 
-V0.2 is the **memory-capable electronic-cell stage**, opened by [`ADR 0009`](docs/adr/0009-v0.2-bounded-observation-history-state.md). "Electronic cell" is a developmental analogy, not a claim of biological equivalence. V0.2 changes exactly one thing from V0.1: controllers may add bounded one-step observation-history state to the causal action path, within ADR 0009's conditions, budget, and registration rule. The substrate, environment, and observation/action contract are unchanged, and every other V0.1 non-goal still stands. V0.1 is not closed: EXP-002's confirmatory execution remains specified but unexecuted on untouched seeds `50001–51000`.
+V0.2 is the **BOHS-authorized electronic-cell stage**, opened by [`ADR 0009`](docs/adr/0009-v0.2-bounded-observation-history-state.md). "Electronic cell" is a developmental analogy, not a claim of biological equivalence. V0.2 changes exactly one permission boundary from V0.1: controllers may add bounded one-step observation-history state to the causal action path, within ADR 0009's conditions, budget, and registration rule. The substrate, environment, and observation/action contract are unchanged, and every other V0.1 non-goal still stands. V0.1 is not closed: EXP-002's confirmatory execution remains specified but unexecuted on untouched seeds `50001–51000`.
 
 Do not reintroduce or add later-stage capabilities unless an explicit task and, where appropriate, a new ADR authorise them. This includes:
 
@@ -53,6 +53,6 @@ The developmental roadmap is a research direction, not a request to pre-build fu
 
 - Luna/Codex is the primary implementation agent.
 - GPT-5.6 Sol performs the first independent implementation/scientific review; Claude Opus 5 performs the final independent review.
-- Each review records the exact candidate SHA. Any commit after review invalidates that review and requires review of the new HEAD.
+- Each independent review of record must be posted as a comment on the relevant GitHub PR and must contain the reviewer identity, `PASS` or `REQUEST CHANGES`, and the exact reviewed HEAD SHA. Only `PASS` against the current HEAD qualifies. Any later commit invalidates that `PASS` and requires review of the new HEAD.
 - Repository evidence outranks agent summaries, and no actor treats its own implementation as independent approval.
 - Flow authorises merges. Merge only after both Sol and Opus pass the exact current candidate and Flow authorises it.

@@ -6,7 +6,7 @@ The project does **not** begin with a chatbot, LLM, human-like psychology, or a 
 
 Here, **electronic cell** is a developmental analogy for that minimal inside/outside viability problem. V0.1 does not claim to reproduce biological cells or biological metabolism.
 
-## Current stage: V0.2 — Memory-Capable Electronic Cell
+## Current stage: V0.2 — BOHS-Authorized Electronic Cell
 
 V0.2 was opened by [`ADR 0009`](docs/adr/0009-v0.2-bounded-observation-history-state.md). It changes exactly one thing from V0.1: a controller may add bounded one-step observation-history state to its causal action path, within a defined budget and registration rule. The substrate, environment, and observation/action contract are unchanged, and every other V0.1 non-goal still stands.
 

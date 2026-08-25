@@ -84,49 +84,51 @@ stationary environment because it can be calibrated to that fixed
 distribution. EXP-004 tests the third explanation directly rather than
 assuming it. It replaces the previous provisional EXP-004 ("adaptive
 homeostatic regulator") and EXP-005 ("ecological change") with a single
-combined design, since the beacon-history mechanism envisioned for the former
-is already prototyped (`STATION_B50_TREND`) and can be tested directly under
-the latter's perturbation rather than staged separately. That prototype was
-built during EXP-003 development work; EXP-003 is closed to further scope
-additions (Flow, 2026-08-24), so it is carried forward as EXP-004 preparatory
-controller development rather than as an addition to EXP-003. The EXP-003
-specification and its existing development records remain canonical as
-written.
+combined design. The trend controller remains optional analysis material,
+not a prerequisite for the primary experiment. The EXP-003 specification and
+its existing development records remain canonical as written.
 
-Reuses EXP-003's station/beacon environment with one hidden perturbation —
-station relocation at a seed-determined, hidden time within a preregistered
-window — evaluated for `STATION_B50` and a newly-calibrated station-compatible
-energy-blind fixed-schedule regulator. `STATION_B50_TREND` is a candidate third
-controller only if ADR 0009 (V0.2 bounded observation-history state) is accepted
-and the trend controller development work is independently approved and
-merged. Once that happens, it is pinned to an exact, named inheritance from
-its development branch (merge SHA, and its exact thresholds, clearing points,
-and one-scalar state semantics, all specified in the EXP-004 protocol) rather
-than a silently-updated version. If it is not merged in time,
-EXP-004 proceeds with `STATION_B50` and the station-compatible regulator, with
-the third arm decided separately. The station-compatible regulator uses fixed
-mode timing only — it still steers locally via the same L/F/R beacon signal
-during SEEK as B and T, and returns to SEEK immediately if charging contact is
-lost, including from relocation, rather than blindly waiting out a fixed timer
-at a station that no longer exists. Each included controller runs in a
-stationary and a one-hidden-relocation condition; the three-controller version
-therefore has six matched cells per seed.
+EXP-004 reuses EXP-003's station/beacon environment with one hidden
+perturbation — station relocation at a seed-determined, hidden time within a
+preregistered window. Its primary arms are:
+
+- `STATION_B50`;
+- a station-compatible energy-blind fixed-schedule regulator.
+
+An optional history-analysis package may add both `STATION_B50_LEVEL` and
+`STATION_B50_TREND`, only after their respective implementation/provenance
+and review gates are satisfied. `STATION_B50_LEVEL` is planned but is not
+implemented or authorised by this roadmap entry. Conceptually it preserves
+the historical B50 behavior, uses the same current-observation anticipatory
+window as T (energy in T's anticipatory range and current maximum beacon below
+T's weak-beacon threshold), reads no previous beacon history, and contains no
+BOHS. The station-compatible regulator still steers locally via the same
+L/F/R beacon signal during SEEK as B and T, and returns to SEEK immediately if
+charging contact is lost, including from relocation.
+
+The optional package has explicit contrasts: B versus LEVEL estimates the
+effect of the added current-observation level rule; LEVEL versus T is the
+matched contrast relevant to the added one-step historical condition; and B
+versus T is a compound controller contrast, not a pure memory effect. Each
+included controller runs in stationary and one-hidden-relocation conditions;
+the primary design therefore has four matched cells per seed, and the
+optional four-controller package has eight.
 The relocation schedule is generated once per master seed from a dedicated
 perturbation RNG, independent of environment/policy RNG streams and of
 controller behavior, and applied identically across the included controllers;
 with T included, this means all three, otherwise both.
 
 The primary question is whether B's advantage over the station-compatible
-regulator changes between the relocation and stationary conditions. If T is
-included, the key secondary is the same question for T's advantage over B —
-whether one-step beacon history gains relative value under relocation beyond
-what plain energy feedback already provides. The station-compatible regulator
-is a different controller in a different (station) environment from frozen
-EXP-001/002 `C_SHORT`, so this does not directly retest `C_GREATER`; it tests
-whether a similar fixed-schedule-advantage pattern reappears in the new
-environment. The formal estimand definition (endpoint, contrast, sign
-convention, and interpretation rule) is deferred to the EXP-004 protocol
-document and is not fixed by this roadmap entry.
+regulator changes between the relocation and stationary conditions. If the
+optional package is included, its history-specific question is the matched
+LEVEL-versus-T comparison; B-versus-T remains a compound contrast. The
+station-compatible regulator is a different controller in a different
+(station) environment from frozen EXP-001/002 `C_SHORT`, so this does not
+directly retest `C_GREATER`; it tests whether a similar fixed-schedule-
+advantage pattern reappears in the new environment. The formal estimand
+definition (endpoint, contrast, sign convention, and interpretation rule) is
+deferred to the EXP-004 protocol document and is not fixed by this roadmap
+entry.
 Pre-formal work uses separate seed roles — station-compatible regulator
 calibration, then development characterization of the included controller
 cells (including horizon-adequacy and relocation-exposure-adequacy checks),
