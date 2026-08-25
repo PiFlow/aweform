@@ -10,6 +10,8 @@
 - PR #37 was merged into `main` at
   `84712aab80e96ab1306d696e0c7800851d0a7a89`.
 - The feature branch is `codex/exp-003-beacon-trend-memory`.
+- The preserved historical provenance branch is
+  `archive/exp003-trend-characterization-18141-18180`.
 - Source/tests commit:
   `15fbfafd0758c2139b89a3783516181df2748496`.
 - The final head is the commit containing this record; its exact SHA is
@@ -165,9 +167,11 @@ diagnostic association, not a causal explanation.
 10. Lethal SEEK attempts remained associated with weak onset beacon
     information: both remaining trend-policy lethal attempts had onset maximum
     beacon below `0.10`.
-11. This batch supports further descriptive study of one-step
-    temporal/context-sensitive regulation. It does not justify formalizing
-    EXP-003, claiming causality, or adding a larger memory mechanism.
+11. This batch may support further descriptive study of the compound
+    anticipatory controller, but not an isolated memory/history effect. A
+    future matched `STATION_B50_LEVEL` arm is required for history-specific
+    inference. It does not justify formalizing EXP-003, claiming causality,
+    or adding a larger memory mechanism.
 
 ## Limitations
 
@@ -190,6 +194,12 @@ The quantitative result is one ordinary development batch. It does not
 separate the effects of anticipatory return timing from all downstream
 trajectory differences and does not establish that beacon weakening measured
 true distance. The observed batch improvement is descriptive only.
+
+`STATION_B50_TREND` differs from `STATION_B50` not only by one-step history
+but also by its current-observation level gates. Therefore, B-vs-T is a
+compound controller contrast, and the observed descriptive improvement cannot
+be attributed specifically to history. A future matched
+`STATION_B50_LEVEL` arm is required for history-specific inference.
 
 ## Validation
 
