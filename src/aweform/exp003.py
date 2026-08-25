@@ -465,6 +465,21 @@ class StationB50Controller:
             )
         object.__setattr__(self, name, value)
 
+    def __delattr__(self, name: str) -> None:
+        # ADR 0009 B.5 (cont.): a read-only controller binding is the paired
+        # half of the non-rebindable ``__setattr__`` above.  The five-property
+        # configuration exception requires the controller-visible binding to
+        # be ``read-only`` after initialization; a binding the caller can
+        # remove with ``del`` and then re-create through ``__setattr__`` is
+        # not read-only.  Reject every deletion of ``config`` so the first
+        # assignment (in ``__init__``) is genuinely the only write to the
+        # binding across the controller's lifetime.
+        if name == "config":
+            raise AttributeError(
+                "config is construction-invariant and immutable for the run"
+            )
+        object.__delattr__(self, name)
+
     def __init__(
         self,
         policy_rng: np.random.Generator,
