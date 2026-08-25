@@ -34,6 +34,7 @@ EXP003_STATION_PLACEMENT_MAX_ATTEMPTS: Final[int] = 10_000
 EXP003_HORIZON: Final[int] = 1000
 EXP003_COVERAGE_GRID_WIDTH: Final[int] = 32
 EXP003_COVERAGE_GRID_HEIGHT: Final[int] = 32
+EXP003_B50_ENTER_SEEK_THRESHOLD: Final[float] = 0.50
 EXP003_TREND_ANTICIPATORY_ENERGY_THRESHOLD: Final[float] = 0.65
 EXP003_TREND_WEAK_BEACON_THRESHOLD: Final[float] = 0.10
 
@@ -416,7 +417,7 @@ class EXP003ControllerDecision:
 class EXP003ControllerConfig:
     """B50-derived station controller thresholds."""
 
-    enter_seek: float = 0.50
+    enter_seek: float = EXP003_B50_ENTER_SEEK_THRESHOLD
     recover: float = 0.85
     exploration_hazard: float = EXP001_EXPLORER_HAZARD
 

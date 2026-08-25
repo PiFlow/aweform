@@ -23,8 +23,11 @@ from .exp002_runner import (
     _run_episode as run_historical_b50_episode,
 )
 from .exp003 import (
+    EXP003_B50_ENTER_SEEK_THRESHOLD,
     EXP003_COVERAGE_GRID_HEIGHT,
     EXP003_COVERAGE_GRID_WIDTH,
+    EXP003_TREND_ANTICIPATORY_ENERGY_THRESHOLD,
+    EXP003_TREND_WEAK_BEACON_THRESHOLD,
     EXP003ControllerDecision,
     EXP003Mode,
     EXP003SeekTrigger,
@@ -149,7 +152,10 @@ class EXP003SeekAttempt:
     """
 
     onset_step: int
-    seek_trigger: EXP003SeekTrigger
+    # ``None`` represents a legitimate SEEK mechanism that is not one of the
+    # EXP-003 diagnostic trigger types.  The evaluator must not classify
+    # every future level-only or fixed-schedule controller as T.
+    seek_trigger: EXP003SeekTrigger | None
     normalized_energy_at_onset: float
     station_distance_at_onset: float
     outcome: EXP003SeekOutcome
@@ -302,7 +308,7 @@ class EXP003StationTrendComparison:
 @dataclass(slots=True)
 class _ActiveSeekAttempt:
     onset_step: int
-    seek_trigger: EXP003SeekTrigger
+    seek_trigger: EXP003SeekTrigger | None
     normalized_energy_at_onset: float
     station_distance_at_onset: float
     minimum_normalized_energy: float
@@ -609,21 +615,22 @@ def summarize_exp003_episode(
             decision = controller_observation_step.decision
             seek_trigger = decision.seek_trigger
             if seek_trigger is None:
-                if controller_observation.energy < 0.50:
+                if (
+                    controller_observation.energy
+                    < EXP003_B50_ENTER_SEEK_THRESHOLD
+                ):
                     seek_trigger = EXP003SeekTrigger.HISTORICAL_ENERGY
-                else:
-                    raise ValueError(
-                        "EXP-003 SEEK entry above 0.50 requires a controller "
-                        "decision trigger"
-                    )
             if seek_trigger is EXP003SeekTrigger.HISTORICAL_ENERGY:
-                if controller_observation.energy >= 0.50:
+                if (
+                    controller_observation.energy
+                    >= EXP003_B50_ENTER_SEEK_THRESHOLD
+                ):
                     raise ValueError(
                         "historical energy SEEK trigger must be below 0.50"
                     )
                 anticipatory_current_max = None
                 anticipatory_previous_max = None
-            else:
+            elif seek_trigger is EXP003SeekTrigger.ANTICIPATORY_TREND:
                 anticipatory_current_max = decision.anticipatory_current_max_beacon
                 anticipatory_previous_max = decision.anticipatory_previous_max_beacon
                 if (
@@ -639,11 +646,19 @@ def summarize_exp003_episode(
                         "anticipatory current beacon is not controller-visible"
                     )
                 if not (
-                    0.50 <= controller_observation.energy < 0.65
-                    and anticipatory_current_max < 0.10
+                    EXP003_B50_ENTER_SEEK_THRESHOLD
+                    <= controller_observation.energy
+                    < EXP003_TREND_ANTICIPATORY_ENERGY_THRESHOLD
+                    and anticipatory_current_max
+                    < EXP003_TREND_WEAK_BEACON_THRESHOLD
                     and anticipatory_current_max < anticipatory_previous_max
                 ):
                     raise ValueError("invalid anticipatory SEEK decision trace")
+            else:
+                # An unclassified controller-visible SEEK entry remains
+                # representable without borrowing STATION_B50_TREND's rule.
+                anticipatory_current_max = None
+                anticipatory_previous_max = None
             if pending_charger_departure_step is not None:
                 transitions_from_charger_departure_to_next_seek.append(
                     evaluator.step_index - pending_charger_departure_step

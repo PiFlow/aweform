@@ -110,6 +110,7 @@ from .exp001_visualizer import (
     show_exp001_development_visualization,
 )
 from .exp003 import (
+    EXP003_B50_ENTER_SEEK_THRESHOLD,
     EXP003_BEACON_SCALE,
     EXP003_CHARGE_RATE,
     EXP003_CHARGING_RADIUS,
@@ -311,6 +312,7 @@ __all__ = [
     "BeaconObservation",
     "DirectionalBeacon",
     "EXP003_BEACON_SCALE",
+    "EXP003_B50_ENTER_SEEK_THRESHOLD",
     "EXP003_CHARGE_RATE",
     "EXP003_CHARGING_RADIUS",
     "EXP003_TREND_ANTICIPATORY_ENERGY_THRESHOLD",

@@ -536,6 +536,120 @@ def test_anticipatory_diagnostics_keep_visible_signals_separate_from_distance() 
     assert not hasattr(decision.observation, "station_distance")
 
 
+def test_historical_energy_seek_diagnostics_remain_classified_as_b50() -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                    visible_observation=_station_observation(0.49),
+                ),
+                _synthetic_transition(
+                    2,
+                    action=Action.MOVE_FORWARD,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    truncated=True,
+                ),
+            )
+        )
+    )
+
+    assert diagnostics.historical_energy_seek_entry_count == 1
+    assert diagnostics.anticipatory_seek_entry_count == 0
+    assert (
+        diagnostics.seek_attempts[0].seek_trigger
+        is EXP003SeekTrigger.HISTORICAL_ENERGY
+    )
+
+
+def test_exp003_t_diagnostics_validate_the_exact_anticipatory_rule() -> None:
+    decision = EXP003ControllerDecision(
+        seek_trigger=EXP003SeekTrigger.ANTICIPATORY_TREND,
+        anticipatory_current_max_beacon=0.07,
+        anticipatory_previous_max_beacon=0.09,
+    )
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                    visible_observation=_station_observation(
+                        0.60, beacon=(0.07, 0.06, 0.05)
+                    ),
+                    decision=decision,
+                    truncated=True,
+                ),
+            )
+        )
+    )
+
+    assert diagnostics.anticipatory_seek_entry_count == 1
+    assert diagnostics.anticipatory_current_max_beacons == (0.07,)
+    assert diagnostics.anticipatory_previous_max_beacons == (0.09,)
+    assert diagnostics.anticipatory_beacon_deltas == pytest.approx((-0.02,))
+
+    invalid_decision = replace(decision, anticipatory_previous_max_beacon=0.06)
+    with pytest.raises(ValueError, match="invalid anticipatory SEEK decision trace"):
+        summarize_exp003_episode(
+            _synthetic_episode(
+                (
+                    _synthetic_transition(
+                        1,
+                        action=Action.TURN_LEFT,
+                        position_before=(0.2, 0.5),
+                        position_after=(0.2, 0.5),
+                        controller_mode_before_action=EXP003Mode.EXPLORE,
+                        controller_mode=EXP003Mode.SEEK,
+                        visible_observation=_station_observation(
+                            0.60, beacon=(0.07, 0.06, 0.05)
+                        ),
+                        decision=invalid_decision,
+                        truncated=True,
+                    ),
+                )
+            )
+        )
+
+
+def test_unclassified_high_energy_seek_entry_is_representable() -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                    visible_observation=_station_observation(
+                        0.60, beacon=(0.20, 0.20, 0.20)
+                    ),
+                    truncated=True,
+                ),
+            )
+        )
+    )
+
+    assert diagnostics.seek_attempt_count == 1
+    assert diagnostics.seek_attempts[0].seek_trigger is None
+    assert diagnostics.historical_energy_seek_entry_count == 0
+    assert diagnostics.anticipatory_seek_entry_count == 0
+    assert diagnostics.seek_attempts[0].anticipatory_current_max_beacon is None
+    assert diagnostics.seek_attempts[0].anticipatory_previous_max_beacon is None
+
+
 def test_evaluator_station_distance_cannot_change_recorded_controller_actions() -> None:
     episode = _run_station_episode(
         18142, EXP003StationConfig(), StationB50TrendController
