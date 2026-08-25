@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Final
+from typing import ClassVar, Final
 
 import gymnasium as gym
 import numpy as np
@@ -49,7 +49,7 @@ class BeaconObservation:
 
     def __post_init__(self) -> None:
         for name in ("left", "forward", "right"):
-            _validate_normalized_value(name, getattr(self, name))
+            _validate_beacon_component(name, getattr(self, name))
         if not isinstance(self.charging_contact, bool):
             raise ValueError("charging_contact must be a bool")
 
@@ -432,6 +432,39 @@ class EXP003ControllerConfig:
 class StationB50Controller:
     """B50-derived controller adapted to physical charging contact."""
 
+    # ADR 0009 Section D retained-state declaration.  Each controller declares
+    # its own entries; ``docs/adr/0009-bohs-registry.md`` is the union of
+    # these declarations plus the nested retained state of the objects named
+    # here (``explorer.policy_rng`` and the segment counters).  The values are
+    # registry classifications, not runtime data.
+    RETAINED_STATE: ClassVar[dict[str, str]] = {
+        "_mode": "causal-inherited: EXP-003 three-mode form",
+        "config": (
+            "causal-inherited: construction-invariant EXP003ControllerConfig"
+        ),
+        "explorer": (
+            "causal-inherited: EXP-001 run-and-turn primitive; nested "
+            "policy_rng, _forward_actions_remaining, _turn_action, "
+            "_turn_actions_remaining"
+        ),
+        "_last_decision": "diagnostic: no action-selection reads",
+    }
+
+    def __setattr__(self, name: str, value: object) -> None:
+        # ADR 0009 B.5: ``config`` must be construction-invariant — initialized
+        # before the first act(), immutable for the run, independent of
+        # observations/history, and unable to encode a branch bit.  The frozen
+        # EXP003ControllerConfig value alone is insufficient: the public
+        # ``config`` binding on the controller is freely reassignable between
+        # act() calls, and C2/E1 read through that binding.  Freeze the binding
+        # itself so no caller can swap in a branch-dependent configuration
+        # after construction.  Construction values remain configurable.
+        if name == "config" and "config" in self.__dict__:
+            raise AttributeError(
+                "config is construction-invariant and immutable for the run"
+            )
+        object.__setattr__(self, name, value)
+
     def __init__(
         self,
         policy_rng: np.random.Generator,
@@ -533,6 +566,18 @@ class StationB50TrendController(StationB50Controller):
     and 0.10 beacon thresholds are provisional development hypotheses, not
     calibrated scientific values.
     """
+
+    # ADR 0009 Section D: the one authorised BOHS field added by this class.
+    # The manifest (docs/adr/0009-bohs-registry.md) is the union of this
+    # declaration and the base class's.
+    RETAINED_STATE: ClassVar[dict[str, str]] = {
+        "_previous_explore_beacon_max": (
+            "bohs; type float|None; write = max of current beacon L/F/R "
+            "(B.2); clears at init, E1, E2, C2, reset (B.3); readers = the "
+            "E2 navigation guard and the previous_explore_beacon_max "
+            "property; budget 1"
+        ),
+    }
 
     def __init__(
         self,
@@ -698,3 +743,18 @@ def _validate_normalized_value(name: str, value: float) -> float:
     if not 0.0 <= value <= 1.0:
         raise ValueError(f"{name} must be finite and within [0, 1]")
     return value
+
+
+def _validate_beacon_component(name: str, value: float) -> float:
+    """Reject every non-built-in-float L/F/R adversary at the boundary.
+
+    Only an exact built-in ``float`` is accepted.  ``int`` and ``bool``
+    (Python integers are arbitrary-precision, unlike the IEEE-754 double the
+    observation contract uses, and ``bool`` is an ``int`` subclass) and any
+    non-built-in numeric such as ``numpy.float64`` are rejected so the value
+    passed to ``max`` in the trend controller's observation write is a genuine
+    built-in float (ADR 0009 B.1).
+    """
+    if type(value) is not float:
+        raise ValueError(f"{name} must be a built-in float")
+    return _validate_normalized_value(name, value)
