@@ -163,52 +163,73 @@ def _registry_markdown_path() -> Path:
     )
 
 
-def _parse_registry_direct_rows() -> tuple[dict[str, dict[str, str]], dict[str, str]]:
-    """Parse the Markdown manifest into (per-controller direct rows, nested rows).
+def _production_sources() -> list[Path]:
+    """Every production ``aweform`` source file (not the tests)."""
+    src_dir = Path(__file__).resolve().parents[1] / "src" / "aweform"
+    return sorted(src_dir.glob("*.py"))
 
-    Direct rows classify a controller's own attribute; nested rows name an
-    object's nested retained field with a ``<root>.<field>`` attribute in the
-    first column.  Returns ``(direct, nested)`` where ``direct[controller] =
-    {attribute: classification}`` and ``nested = {"explorer.policy_rng":
-    "causal-inherited", ...}`` keyed exactly as the row's first column reads.
+
+def _production_source_trees() -> list[ast.Module]:
+    """AST of every production source file (for whole-tree searches)."""
+    return [
+        ast.parse(path.read_text(encoding="utf-8")) for path in _production_sources()
+    ]
+
+
+def _parse_registry() -> tuple[
+    set[str],
+    dict[str, dict[str, str]],
+    dict[str, str],
+    dict[str, str],
+]:
+    """Parse the manifest into ``(sections, direct, nested, notes)``.
+
+    - ``sections`` — the set of ``### `` controller headings.
+    - ``direct[controller][attribute]`` — classification of a controller's own
+      row.
+    - ``nested["explorer.<field>"]`` — classification of a nested retained row.
+    - ``notes["<controller>.<attribute>"]`` — the joined note cell (Attributes
+      after the classification column) of a direct row; nested rows are keyed by
+      ``"explorer.<field>"``.
+
+    Unlike the original parser, which read only the classification token, the
+    note text is retained so every required field a classification demands
+    (registered clearing points, reader sets, budget, functions) can be
+    machine-checked against source rather than accepted on trust.
     """
     text = _registry_markdown_path().read_text(encoding="utf-8")
-    sections: list[tuple[str, list[str]]] = []
+    sections: set[str] = set()
+    direct: dict[str, dict[str, str]] = {}
+    nested: dict[str, str] = {}
+    notes: dict[str, str] = {}
     section: str | None = None
-    rows: list[str] = []
     for raw in text.splitlines():
         line = raw.strip()
         if line.startswith("### "):
-            if section is not None:
-                sections.append((section, rows))
             section = line[len("### "):].strip().strip("`")
-            rows = []
+            sections.add(section)
             continue
         if section is None:
             continue
-        if line.startswith("|") and line.endswith("|"):
-            cells = [c.strip() for c in line.strip("|").split("|")]
-            if len(cells) < 2:
-                continue
-            if all(set(c) <= {"-", " "} or c in {"", ":", "-"} for c in cells):
-                continue
-            rows.append(cells)
-    if section is not None:
-        sections.append((section, rows))
-
-    direct: dict[str, dict[str, str]] = {}
-    nested: dict[str, str] = {}
-    for heading, rows_ in sections:
-        for cells in rows_:
-            attr = cells[0].strip("`")
-            classification = cells[1].strip("`").split()[0]
-            if classification.lower() in {"classification", "**classification**"}:
-                continue
-            if attr.startswith("explorer."):
-                nested[attr] = classification
-            else:
-                direct.setdefault(heading, {})[attr] = classification
-    return direct, nested
+        if not (line.startswith("|") and line.endswith("|")):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 2:
+            continue
+        if all(set(c) <= {"-", " "} or c in {"", ":", "-"} for c in cells):
+            continue
+        attr = cells[0].strip("`")
+        classification = cells[1].strip("`").split()[0]
+        if classification.lower() in {"classification", "**classification**"}:
+            continue
+        note = " ".join(c for c in cells[2:])
+        if attr.startswith("explorer."):
+            nested[attr] = classification
+            notes[attr] = note
+        else:
+            direct.setdefault(section, {})[attr] = classification
+            notes[f"{section}.{attr}"] = note
+    return sections, direct, nested, notes
 
 
 def _registry_bohs_clearing_points() -> set[str]:
@@ -221,24 +242,8 @@ def _registry_bohs_clearing_points() -> set[str]:
     adds, or renames a clearing point, the token set changes and the check
     fails — a clearing-point drift cannot pass while source is unchanged.
     """
-    text = _registry_markdown_path().read_text(encoding="utf-8")
-    note_cells: list[str] = []
-    section: str | None = None
-    for raw in text.splitlines():
-        line = raw.strip()
-        if line.startswith("### "):
-            section = line[len("### "):].strip().strip("`")
-            continue
-        if section != "StationB50TrendController":
-            continue
-        if not (line.startswith("|") and line.endswith("|")):
-            continue
-        cells = [c.strip() for c in line.strip("|").split("|")]
-        if len(cells) >= 3 and cells[0].strip("`") == BOHS_SLUG:
-            note_cells = cells
-            break
-    assert note_cells, "BOHS row with a note cell not found in the manifest"
-    note = " ".join(c.strip() for c in note_cells[1:])
+    _sections, _direct, _nested, notes = _parse_registry()
+    note = notes[f"StationB50TrendController.{BOHS_SLUG}"]
     clause = re.search(
         r"Registered clearing points \(ADR 0009 B\.3\):(?P<body>.*?)"
         r"\s*Complete reader",
@@ -264,7 +269,14 @@ def test_registry_manifest_matches_source_declarations() -> None:
     ``RETAINED_STATE`` declarations (already pinned to the expected
     classification by the check above), so drift on either side is caught.
     """
-    direct, nested = _parse_registry_direct_rows()
+    sections, direct, nested, _ = _parse_registry()
+
+    # The manifest covers exactly the two declared controllers: no extra covered
+    # section (a controller section silently added could authorise state that
+    # the source declarations and this gate never reviewed), none missing.
+    assert sections == {"StationB50Controller", "StationB50TrendController"}, (
+        f"registry covered sections changed: {sections}"
+    )
 
     # Every covered controller's direct rows must match the source declaration.
     for class_name, expected in EXPECTED_CLASSIFICATION.items():
@@ -285,13 +297,151 @@ def test_registry_manifest_matches_source_declarations() -> None:
             f"{set(direct[class_name]) ^ set(expected)}"
         )
 
-    # Nested retained state of the explorer root is listed and classified.
+    # Nested retained state of the explorer root is listed, classified, and is
+    # exactly the expected row set — no nested row can silently appear or drop.
+    assert set(nested) == {
+        f"explorer.{field}" for field in EXPECTED_EXPLORER_NESTED
+    }, f"registry nested rows changed: {set(nested)}"
     for attr, classification in EXPECTED_EXPLORER_NESTED.items():
         key = f"explorer.{attr}"
         assert key in nested, f"{key} missing from the registry manifest"
         assert nested[key] == classification, (
             f"{key} classified {nested[key]!r}, expected {classification!r}"
         )
+
+
+def _module_bohs_load_sites() -> list[int]:
+    """Line numbers of every BOHS ``Load`` in ``exp003.py``.
+
+    The registry's complete-reader-set claim must enumerate *all* readers.  The
+    only LOads are the EXPLORE-entry snapshot (``previous_max =
+    self._previous_explore_beacon_max``) and the read-only property.  This the
+    source-derived reader set the manifest note is checked against.
+    """
+    import aweform.exp003 as exp003  # noqa: PLC0415
+
+    tree = ast.parse(inspect.getsource(exp003))
+    return sorted(
+        n.lineno
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Attribute)
+        and n.attr == BOHS_SLUG
+        and isinstance(n.ctx, ast.Load)
+    )
+
+
+def test_registry_note_fields_are_machine_checked() -> None:
+    """Every required field the registry classifies is machine-checked, not
+    accepted on trust.
+
+    Sol's finding: the manifest tests compared classifications and B.3 tokens
+    only, so the other required fields in the note cells — the BOHS function,
+    its complete reader set and budget, and the diagnostic ``_last_decision``
+    reader set — could drift without the gate noticing.  This couples those
+    note fields to source-derived facts (ADR 0009 B.2/B.4/C and Section E).
+    """
+    import aweform.exp003 as exp003  # noqa: PLC0415
+
+    _sections, _direct, _nested, notes = _parse_registry()
+    bohs_note = notes[f"StationB50TrendController.{BOHS_SLUG}"]
+    diag_note = notes["StationB50Controller._last_decision"]
+    config_note = notes["StationB50Controller.config"]
+
+    # --- BOHS B.2 fixed observation function -------------------------------
+    fn_clause = re.search(
+        r"Fixed observation function \(ADR 0009 B\.2\):(?P<body>.*?)"
+        r"\s*Registered clearing points",
+        bohs_note,
+        flags=re.S,
+    )
+    assert fn_clause, "BOHS note has no B.2 function clause"
+    fn_body = fn_clause.group("body")
+    for token in ("max", "left", "forward", "right"):
+        assert token in fn_body, f"B.2 note omits {token}: {fn_body!r}"
+
+    # --- BOHS complete reader set (ADR 0009 B.4) ---------------------------
+    readers_clause = re.search(
+        r"Complete reader set \(ADR 0009 B\.4\):(?P<body>.*?)"
+        r"\s*Budget consumption",
+        bohs_note,
+        flags=re.S,
+    )
+    assert readers_clause, "BOHS note has no complete-reader-set clause"
+    readers_body = readers_clause.group("body")
+    # The note must enumerate BOTH readers: the EXPLORE-entry snapshot (the
+    # forward port of Sol's finding — the source omitted it from its declared
+    # reader set) and the read-only property.
+    assert "EXPLORE-entry snapshot" in readers_body, (
+        "BOHS reader set omits the every-EXPLORE-entry snapshot"
+    )
+    assert "previous_explore_beacon_max" in readers_body, (
+        "BOHS reader set omits the previous_explore_beacon_max property"
+    )
+    # Source confirms exactly these two readers exist.
+    loads = _module_bohs_load_sites()
+    assert len(loads) == 2, f"expected snapshot + property loads, found {loads}"
+
+    # --- BOHS budget (ADR 0009 C) ------------------------------------------
+    budget_clause = re.search(
+        r"Budget consumption:\s*(?P<body>.*?)(?:\s*Uniquely|$)",
+        bohs_note,
+    )
+    assert budget_clause, "BOHS note has no budget clause"
+    assert "1" in budget_clause.group("body"), "BOHS budget must be 1"
+
+    # --- pre-registered B.3 clearing points (already coupled separately) ---
+    assert _registry_bohs_clearing_points() == {"init", "E1", "E2", "C2", "reset"}
+
+    # --- _last_decision complete reader set (ADR 0009 E) ------------------
+    assert "Complete reader set" in diag_note, (
+        "diagnostic note has no complete-reader-set clause"
+    )
+    assert "last_decision" in diag_note, "diagnostic note omits the property reader"
+    assert "external inspection" in diag_note, (
+        "diagnostic note does not state external inspection"
+    )
+    assert "no action-selection branch reads it" in diag_note, (
+        "diagnostic note does not state the no-action-read invariant"
+    )
+    # Source confirms the property is the sanctioned reader and act() never loads
+    # the trace (Section E, independently asserted wholesale below).
+    for class_name in ("StationB50Controller", "StationB50TrendController",
+                       "StationB50FullController"):
+        act = _method_source(ast.parse(inspect.getsource(exp003)),
+                             class_name, "act")
+        if act is not None:
+            assert _attr_load_count(ast.unparse(act), "_last_decision") == 0
+
+    # --- config binding freeze is enrolled in the registry -----------------
+    assert "read-only property" in config_note, (
+        "config note does not state the read-only binding"
+    )
+    assert "_config" in config_note, "config note does not name the backing slot"
+    assert "vars(" in config_note, "config note does not address the dict bypass"
+
+
+def _instance_logical_attrs(obj: object) -> set[str]:
+    """All retained attribute names on ``obj``, folding ``_config`` into
+    ``config``.
+
+    ``config`` is now a read-only data descriptor backed by the ``_config``
+    slot, so the logical ``config`` binding never appears in ``vars(obj)``.
+    Enumerate ``__dict__`` keys plus every ``__slots__`` across the MRO and fold
+    the backing ``_config`` slot into the ``config`` binding it backs, so the
+    completeness check still measures the registry's logical attributes.
+    """
+    names = set(vars(obj))
+    for cls in type(obj).__mro__:
+        slots = getattr(cls, "__slots__", ())
+        if isinstance(slots, str):
+            slots = (slots,)
+        names.update(
+            s for s in slots if s not in ("__dict__", "__weakref__")
+        )
+    if "_config" in names:
+        names.discard("_config")
+        names.add("config")
+    return names
 
 
 def test_registry_covers_all_retained_state_of_covered_controllers() -> None:
@@ -303,7 +453,7 @@ def test_registry_covers_all_retained_state_of_covered_controllers() -> None:
     names an attribute that exists on the live instance.
     """
     controller = _fresh()
-    direct_attrs = set(vars(controller))
+    direct_attrs = _instance_logical_attrs(controller)
     declared_union = set(EXPECTED_CLASSIFICATION["StationB50Controller"]) | set(
         EXPECTED_CLASSIFICATION["StationB50TrendController"]
     )
@@ -736,37 +886,82 @@ def test_b7_counts_writes_per_path() -> None:
 
 def test_b7_single_write_per_act_and_no_external_writer() -> None:
     """At most one write to the BOHS field per act(); no writer outside the
-    controller (ADR 0009 B.7)."""
+    controller (ADR 0009 B.7).
+
+    Sol's finding: B.7 discovered writers only inside ``src/aweform/exp003.py``,
+    so a writer in another production module passed unseen.  The discovery is
+    now exhaustive over **every** production source file, and indirect writers
+    (``setattr(obj, "_previous_explore_beacon_max", ...)`` with the field name
+    as a string literal) are rejected as well — a BOHS write must be an
+    explicit ``self.<field>`` attribute store inside the controller.
+    """
     import aweform.exp003 as exp003  # noqa: PLC0415
 
     tree = ast.parse(inspect.getsource(exp003))
 
-    # Locate every assignment (Store) to the BOHS field across the whole module
-    # and require every one to sit inside a StationB50TrendController method —
-    # i.e. no writer outside the controller.
-    store_nodes = [
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Attribute)
-        and node.attr == BOHS_SLUG
-        and isinstance(node.ctx, ast.Store)
-    ]
-    assert store_nodes, "no BOHS field assignment found in module"
+    # Discover writers across every production source file.
+    all_store_sites = []
+    for path in _production_sources():
+        src_tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(src_tree):
+            if (
+                isinstance(node, ast.Attribute)
+                and node.attr == BOHS_SLUG
+                and isinstance(node.ctx, ast.Store)
+            ):
+                all_store_sites.append((path, node.lineno))
+    assert all_store_sites, "no BOHS field assignment found in production sources"
+
+    # Every write lives inside exp003.py's StationB50TrendController.
     trend_class = next(
         cls for cls in ast.walk(tree)
         if isinstance(cls, ast.ClassDef) and cls.name == "StationB50TrendController"
     )
     stores_inside_controller = 0
-    for fn in (body for body in trend_class.body if isinstance(body, ast.FunctionDef)):
-        fn_node_ids = {id(n) for n in ast.walk(fn)}
-        for node in store_nodes:
-            if id(node) in fn_node_ids:
-                stores_inside_controller += 1
-    # Every write to the BOHS field lives inside the controller — no writer
-    # outside it (B.7's second clause).
-    assert stores_inside_controller == len(store_nodes), (
+    fn_id_sets = [
+        {id(n) for n in ast.walk(fn)}
+        for fn in (b for b in trend_class.body if isinstance(b, ast.FunctionDef))
+    ]
+    for path, lineno in all_store_sites:
+        assert path.name == "exp003.py", (
+            f"BOHS write outside exp003.py: {path}@{lineno}"
+        )
+        node = next(
+            n for n in ast.walk(tree)
+            if isinstance(n, ast.Attribute)
+            and n.attr == BOHS_SLUG
+            and n.lineno == lineno
+        )
+        if any(id(node) in ids for ids in fn_id_sets):
+            stores_inside_controller += 1
+    assert stores_inside_controller == len(all_store_sites), (
         "a BOHS-field write occurs outside StationB50TrendController"
     )
+
+    # No indirect writer: no production file calls ``setattr``/``delattr``/a
+    # ``__setattr__`` (or ``delattr``) with the BOHS field name as a string
+    # literal — an indirect call writes the field without an attribute Store.
+    for path in _production_sources():
+        src_tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(src_tree):
+            if not isinstance(node, ast.Call):
+                continue
+            fn = node.func
+            fields = [
+                a.value
+                for a in node.args
+                if isinstance(a, ast.Constant) and a.value == BOHS_SLUG
+            ]
+            if isinstance(fn, ast.Name) and fn.id in ("setattr", "delattr"):
+                assert not fields, (
+                    f"indirect BOHS writer via {fn.id} in {path.name}@{node.lineno}"
+                )
+            elif isinstance(fn, ast.Attribute) and fn.attr in (
+                "__setattr__", "__delattr__", "setattr", "delattr"
+            ):
+                assert not fields, (
+                    f"indirect BOHS writer via {fn.attr} in {path.name}@{node.lineno}"
+                )
 
     # Runtime: a single act() call performs at most one write — running the
     # exhaustive corpus never leaves the field in a state inconsistent with
@@ -803,25 +998,69 @@ def test_b9_bohs_thresholds_are_final_and_constant() -> None:
         assert value == float(candidate)  # pinned development constants
     # Both thresholds are declared ``Final[float]`` in source, not merely
     # module floats (ADR 0009 B.9 / Section D), so no branch can rebind them.
-    import aweform.exp003 as exp003  # noqa: PLC0415
-
-    tree = ast.parse(inspect.getsource(exp003))
     final_names = {
         "EXP003_TREND_ANTICIPATORY_ENERGY_THRESHOLD",
         "EXP003_TREND_WEAK_BEACON_THRESHOLD",
     }
     seen: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
-            if node.target.id in final_names:
-                ann = ast.unparse(node.annotation)
-                assert ann == "Final[float]", (
-                    f"{node.target.id} annotated {ann!r}, expected Final[float]"
-                )
-                seen.add(node.target.id)
+    for tree in _production_source_trees():
+        for node in ast.walk(tree):
+            if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+                if node.target.id in final_names:
+                    ann = ast.unparse(node.annotation)
+                    assert ann == "Final[float]", (
+                        f"{node.target.id} annotated {ann!r}, expected Final[float]"
+                    )
+                    seen.add(node.target.id)
     assert seen == final_names, (
         f"missing Final[float] declarations: {final_names - seen}"
     )
+
+    # B.9 exhaustiveness (Sol's finding): enumerate every assignment/update site
+    # of each threshold across ALL production sources and require exactly one —
+    # its ``Final[float]`` declaration — with no rebinding, augmented assignment,
+    # or attribute-store elsewhere.  A later ``EXP003_..._THRESHOLD = x`` or
+    # ``+=`` would be an update site and fails here.
+    for tree in _production_source_trees():
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign):
+                names = {
+                    t.id
+                    for t in node.targets
+                    if isinstance(t, ast.Name) and t.id in final_names
+                }
+                assert not names, (
+                    f"{names} reassigned (not a Final[float] declaration) at line "
+                    f"{node.lineno}"
+                )
+            elif isinstance(node, ast.AugAssign):
+                t = node.target
+                if isinstance(t, ast.Name) and t.id in final_names:
+                    raise AssertionError(f"{t.id} updated at line {node.lineno}")
+            elif isinstance(node, ast.AnnAssign):
+                t = node.target
+                if isinstance(t, ast.Name) and t.id in final_names:
+                    if node.value is None:  # a bare annotation is not a binding
+                        continue
+                    ann = ast.unparse(node.annotation)
+                    assert ann == "Final[float]", (
+                        f"{t.id} bound {ann!r}, expected Final[float]"
+                    )
+    # Exactly one frozen ``Final[float]`` declaration per BOHS-specific threshold
+    # across the whole production tree (the count of AnnAssigns counted above is
+    # the only binding site, so each threshold is declared exactly once).
+    decl_counts = {name: 0 for name in final_names}
+    for tree in _production_source_trees():
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.AnnAssign)
+                and isinstance(node.target, ast.Name)
+                and node.target.id in final_names
+                and node.value is not None
+                and ast.unparse(node.annotation) == "Final[float]"
+            ):
+                decl_counts[node.target.id] += 1
+    assert all(count == 1 for count in decl_counts.values()), decl_counts
     # Thresholds do not change across a run / are not adapted from experience.
     c = _fresh()
     c.act(_obs(0.70, (0.6, 0.6, 0.6)))
@@ -1035,6 +1274,50 @@ def test_config_binding_cannot_be_deleted_then_reassigned() -> None:
     assert c2.config is not adversarial
 
 
+def test_config_binding_cannot_be_swapped_via_instance_dict_or_backing_slot() -> None:
+    """The B.5 binding freeze holds against ``vars()`` and backing-slot swaps.
+
+    Sol reproduced ``vars(controller)["config"] = adversarial`` changing
+    ``recover`` from 0.85 to 0.95.  Closing that needs more than an extra
+    ``__setattr__`` guard: ``config`` is a read-only data descriptor backed by
+    the ``_config`` slot, so a bare instance-``__dict__`` entry is shadowed and
+    never readable as ``config``; and the backing ``_config`` slot is itself
+    frozen, so ``del c._config`` / ``c._config = adv`` — the alternate door
+    through the same read-only property — is rejected.  Run on every covered
+    controller (ADR 0009 B.5, Sol requirement 1).
+    """
+    from aweform.exp003 import EXP003ControllerConfig, StationB50FullController
+
+    for cls_ in (
+        StationB50Controller,
+        StationB50TrendController,
+        StationB50FullController,
+    ):
+        c = cls_(policy_rng_from_seed(1001))
+        original = c.config
+        adversarial = EXP003ControllerConfig(enter_seek=0.49, recover=0.95)
+
+        # Sol's exact instance-dictionary mutation: shadowed by the descriptor.
+        vars(c)["config"] = adversarial  # type: ignore[index]
+        assert c.config is original, f"{cls_.__name__} dict mutation swapped config"
+        assert c.config.recover == 0.85
+        assert getattr(c, "config") is original  # the dict entry is not readable
+
+        # Backing-slot route: delete-then-reassign must fail.
+        with pytest.raises(AttributeError):
+            del c._config  # type: ignore[misc]
+        with pytest.raises(AttributeError):
+            c._config = adversarial  # type: ignore[misc]
+        assert c.config is original
+        assert c.config.recover == 0.85
+        assert c.config is not adversarial
+
+        # The construction binding is still live and unchanged: a BOHS branch
+        # reading ``self.config.recover`` (or any config field) observes the
+        # construction value, never an adversarial one.
+        assert c.config.recover == original.recover == 0.85
+
+
 # ---------------------------------------------------------------------------
 # ADR 0009 B.5: genuine dominance of a later clear over BOHS reads.
 # ---------------------------------------------------------------------------
@@ -1161,22 +1444,72 @@ def test_b5_inherited_causal_state_never_selects_a_bohs_operation() -> None:
     act = _method_source(tree, "StationB50TrendController", "act")
     assert act is not None
 
-    predicate_attrs: set[str] = set()
-    for node in ast.walk(act):
-        if isinstance(node, ast.If):
-            for sub in ast.walk(node.test):
-                if (
-                    isinstance(sub, ast.Attribute)
-                    and isinstance(sub.value, ast.Name)
-                    and sub.value.id == "self"
-                    and isinstance(sub.ctx, ast.Load)
-                ):
-                    predicate_attrs.add(sub.attr)
+    # Resolve helper methods across the whole inheritance chain (Trend and its
+    # base ``StationB50Controller`` both contribute methods ``act()`` calls).
+    class_methods: dict[str, ast.FunctionDef] = {}
+    for cls in ast.walk(tree):
+        if isinstance(cls, ast.ClassDef) and cls.name in (
+            "StationB50Controller", "StationB50TrendController",
+        ):
+            for fn in cls.body:
+                if isinstance(fn, ast.FunctionDef):
+                    class_methods.setdefault(fn.name, fn)
+    module_funcs = {
+        fn.name: fn
+        for fn in tree.body
+        if isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
 
-    # Inherited causal state (explorer root, RNG, run-and-turn counters) must
-    # never appear in a predicate, so it cannot select a BOHS operation or a
-    # retained-mode transition (ADR B.5's "inspect all other inherited causal
-    # state" clause).
+    def resolve_callee(name: str) -> ast.AST | None:
+        return class_methods.get(name) or module_funcs.get(name)
+
+    def collect_callees(fn_ast: ast.AST) -> set[str]:
+        names = set()
+        for node in ast.walk(fn_ast):
+            if not isinstance(node, ast.Call):
+                continue
+            f = node.func
+            if (
+                isinstance(f, ast.Attribute)
+                and isinstance(f.value, ast.Name)
+                and f.value.id == "self"
+                and isinstance(f.ctx, ast.Load)
+            ):
+                names.add(f.attr)
+            elif isinstance(f, ast.Name) and isinstance(f.ctx, ast.Load):
+                names.add(f.id)
+        return names
+
+    def predicate_attrs(fn_ast: ast.AST) -> set[str]:
+        """Attribute names loaded as ``self.<attr>`` in any ``If`` test."""
+        preds: set[str] = set()
+        for node in ast.walk(fn_ast):
+            if isinstance(node, ast.If):
+                for sub in ast.walk(node.test):
+                    if (
+                        isinstance(sub, ast.Attribute)
+                        and isinstance(sub.value, ast.Name)
+                        and sub.value.id == "self"
+                        and isinstance(sub.ctx, ast.Load)
+                    ):
+                        preds.add(sub.attr)
+        return preds
+
+    def performs_retained_operation(fn_ast: ast.AST) -> list[str]:
+        """Any BOHS read/write/clear or retained-mode transition a body makes.
+
+        Helpers must never perform a BOHS operation (ADR 0009 B.5 — only the
+        sanctioned read/write/clean sites in ``act()`` may carry them) nor
+        assign ``_mode`` (a retained-mode transition).  Returns the offending
+        attribute accesses.
+        """
+        off = [
+            n.attr
+            for n in ast.walk(fn_ast)
+            if isinstance(n, ast.Attribute) and n.attr in (BOHS_SLUG, "_mode")
+        ]
+        return off
+
     forbidden = {
         "explorer",
         "policy_rng",
@@ -1184,14 +1517,56 @@ def test_b5_inherited_causal_state_never_selects_a_bohs_operation() -> None:
         "_turn_action",
         "_turn_actions_remaining",
     }
-    assert not (predicate_attrs & forbidden), (
+
+    # Collect ``self.<attr>`` predicates over ``act()`` AND every helper it
+    # reaches transitively (methods and module functions), so an inherited
+    # causal state that a helper reads to influence a decision — Sol's
+    # helper-mediated gap — is inspected, not only ``act()``'s direct ``if``
+    # predicates.  Every such helper must also be free of BOHS operations and
+    # retained-mode transitions: BOHS read/write/clear and ``_mode`` assignment
+    # live only in ``act()``.
+    all_predicates: set[str] = set(predicate_attrs(act))
+    stack = [
+        fn
+        for callee in collect_callees(act)
+        if (fn := resolve_callee(callee)) is not None
+    ]
+    inspected: set[str] = set()
+    while stack:
+        fn = stack.pop()
+        fid = getattr(fn, "name", None)
+        if fid in inspected:
+            continue
+        inspected.add(fid)
+        all_predicates |= predicate_attrs(fn)
+        assert not performs_retained_operation(fn), (
+            f"helper {fid!r} performs a BOHS read/write/clear or a retained-mode "
+            f"transition; these must live only in act() (ADR 0009 B.5)"
+        )
+        for callee in collect_callees(fn):
+            cfn = resolve_callee(callee)
+            if cfn is not None:
+                stack.append(cfn)
+
+    # The helper-mediated inspection engaged: the reachable helpers are exactly
+    # the two action primitives act() calls (not a vacuous run over nothing).
+    assert inspected == {"_explore_action", "seek_beacon_action"}, (
+        f"helper-mediated B.5 inspection reached {inspected}, expected "
+        "{'_explore_action', 'seek_beacon_action'}"
+    )
+
+    # Inherited causal state (explorer root, RNG, run-and-turn counters) must
+    # never appear in any predicate — in ``act()`` or any helper — so it cannot
+    # select a BOHS operation or a retained-mode transition (ADR B.5's "inspect
+    # all other inherited causal state" clause).
+    assert not (all_predicates & forbidden), (
         f"inherited causal state in a BOHS/mode predicate: "
-        f"{predicate_attrs & forbidden}"
+        f"{all_predicates & forbidden}"
     )
     # Non-vacuous: predicates are actually scanned and use the sanctioned
     # retained _mode (block gate) and construction-invariant config.
-    assert {"_mode", "config"} <= predicate_attrs, (
-        f"expected _mode/config predicates present, got {predicate_attrs}"
+    assert {"_mode", "config"} <= all_predicates, (
+        f"expected _mode/config predicates present, got {all_predicates}"
     )
 
 
