@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import ast
 import inspect
+import re
 from pathlib import Path
 
 import pytest
@@ -208,6 +209,49 @@ def _parse_registry_direct_rows() -> tuple[dict[str, dict[str, str]], dict[str, 
             else:
                 direct.setdefault(heading, {})[attr] = classification
     return direct, nested
+
+
+def _registry_bohs_clearing_points() -> set[str]:
+    """The registered B.3 clearing points read from the manifest's BOHS row.
+
+    Parses the note cell of the ``_previous_explore_beacon_max`` row for the
+    "Registered clearing points (ADR 0009 B.3):" clause and returns its
+    backticked tokens with ``__init__`` normalized to ``init``.  This couples
+    B.3's executable check to the registry artifact: if the manifest omits,
+    adds, or renames a clearing point, the token set changes and the check
+    fails — a clearing-point drift cannot pass while source is unchanged.
+    """
+    text = _registry_markdown_path().read_text(encoding="utf-8")
+    note_cells: list[str] = []
+    section: str | None = None
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("### "):
+            section = line[len("### "):].strip().strip("`")
+            continue
+        if section != "StationB50TrendController":
+            continue
+        if not (line.startswith("|") and line.endswith("|")):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) >= 3 and cells[0].strip("`") == BOHS_SLUG:
+            note_cells = cells
+            break
+    assert note_cells, "BOHS row with a note cell not found in the manifest"
+    note = " ".join(c.strip() for c in note_cells[1:])
+    clause = re.search(
+        r"Registered clearing points \(ADR 0009 B\.3\):(?P<body>.*?)"
+        r"\s*Complete reader",
+        note,
+        flags=re.S,
+    )
+    assert clause, "registry BOHS row has no B.3 clearing-point clause"
+    tokens = re.findall(r"`([^`]+)`", clause.group("body"))
+    normalized = {("init" if t == "__init__" else t) for t in tokens}
+    assert normalized == {"init", "E1", "E2", "C2", "reset"}, (
+        f"registry B.3 clearing points changed: {normalized}"
+    )
+    return normalized
 
 
 def test_registry_manifest_matches_source_declarations() -> None:
@@ -540,6 +584,13 @@ def test_b3_no_unregistered_clears_writes_only_registered_points() -> None:
     c2 = [ln for ln in in_act if ln > write_line]
     assert e1e2 == in_act[:2] and len(c2) == 1, (
         f"act() clear order not E1,E2 < write < C2: before={e1e2} after={c2}"
+    )
+    # Couple B.3 to the registry artifact: the source-enumerated clear labels
+    # must equal the manifest's registered clearing points, so a manifest that
+    # omits or changes E1/E2/C2/reset cannot pass while source is unchanged.
+    source_labels = {"init", "E1", "E2", "C2", "reset"}
+    assert source_labels == _registry_bohs_clearing_points(), (
+        "source clearing points diverge from the registry B.3 clause"
     )
 
 
@@ -1085,6 +1136,62 @@ def test_b5_dominance_sole_read_site_is_in_explore_branch() -> None:
     explore_clause = reading_clauses[0]
     assert "self._mode is EXP003Mode.EXPLORE" in ast.unparse(explore_clause.test), (
         "the reading clause is not the EXPLORE block"
+    )
+
+
+def test_b5_inherited_causal_state_never_selects_a_bohs_operation() -> None:
+    """No inherited causal state selects a BOHS read/write/clear or a
+    retained-mode transition.
+
+    The amended ADR 0009 B.5 requires the exhaustive check to "inspect all
+    other inherited causal state as well as BOHS reads when identifying the
+    dependency", not only BOHS itself.  ``StationB50TrendController`` inherits
+    ``explorer`` (RNG + run-and-turn counters) and ``_mode`` from
+    ``StationB50Controller``.  This test proves from source that none of the
+    explorer/RNG/counter state appears in any branch predicate of ``act()``:
+    the only control-flow guards read the current observation, the sanctioned
+    construction-invariant ``config``, or the allowed retained ``_mode``.  The
+    finite-state dominance BFS is therefore complete regardless of explorer
+    state: varying the explorer RNG/counters cannot change which BOHS
+    operation or which retained-mode transition any observation produces.
+    """
+    import aweform.exp003 as exp003  # noqa: PLC0415
+
+    tree = ast.parse(inspect.getsource(exp003))
+    act = _method_source(tree, "StationB50TrendController", "act")
+    assert act is not None
+
+    predicate_attrs: set[str] = set()
+    for node in ast.walk(act):
+        if isinstance(node, ast.If):
+            for sub in ast.walk(node.test):
+                if (
+                    isinstance(sub, ast.Attribute)
+                    and isinstance(sub.value, ast.Name)
+                    and sub.value.id == "self"
+                    and isinstance(sub.ctx, ast.Load)
+                ):
+                    predicate_attrs.add(sub.attr)
+
+    # Inherited causal state (explorer root, RNG, run-and-turn counters) must
+    # never appear in a predicate, so it cannot select a BOHS operation or a
+    # retained-mode transition (ADR B.5's "inspect all other inherited causal
+    # state" clause).
+    forbidden = {
+        "explorer",
+        "policy_rng",
+        "_forward_actions_remaining",
+        "_turn_action",
+        "_turn_actions_remaining",
+    }
+    assert not (predicate_attrs & forbidden), (
+        f"inherited causal state in a BOHS/mode predicate: "
+        f"{predicate_attrs & forbidden}"
+    )
+    # Non-vacuous: predicates are actually scanned and use the sanctioned
+    # retained _mode (block gate) and construction-invariant config.
+    assert {"_mode", "config"} <= predicate_attrs, (
+        f"expected _mode/config predicates present, got {predicate_attrs}"
     )
 
 
