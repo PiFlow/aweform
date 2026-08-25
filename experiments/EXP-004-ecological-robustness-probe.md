@@ -124,9 +124,11 @@ For every master seed, generate one hidden relocation schedule:
    not move the station.
 
 The target is generated once per master seed and reused unchanged across B, C,
-and T and across both conditions. Placement never conditions on body position,
-mode, energy, controller, or trajectory. A target that happens to appear near
-one controller is retained; it is part of the frozen perturbation.
+and T and across both conditions. After the canonical reset, target rejection
+reads only the recorded initial station centre; it does not directly read body
+position, energy, mode, controller state, or any cell trajectory. A target that
+happens to appear near one controller is retained; it is part of the frozen
+perturbation.
 
 The per-master-seed run manifest must record the protocol revision, exact
 implementation merge SHA, all frozen controller configurations, `master_seed`,
@@ -184,9 +186,14 @@ fresh `StochasticPersistentExplorer` using that cell's policy RNG stream. Its
 run-and-turn primitive, beacon steering, action tie rules, and RNG draw order
 are exactly those inherited from EXP-001/EXP-003; only the N/M mode counters
 are new. The EXPLORE counter starts at zero, the first N EXPLORE actions are
-counted, and the next decision enters SEEK. A contact-preserving CHARGE WAIT
-increments the counter; contact loss resets it to zero; after M such WAIT
-transitions the next decision starts EXPLORE and the counter is reset. No
+counted, and the next decision enters SEEK. At that fixed N-to-SEEK boundary,
+call `StochasticPersistentExplorer.begin_segment()` exactly once: it sets
+`_forward_actions_remaining` to `0`, `_turn_action` to `None`, and
+`_turn_actions_remaining` to `0`, without reseeding or advancing the policy
+RNG. A contact-preserving CHARGE WAIT increments the counter; contact loss
+resets it to zero; after M such WAIT transitions the next decision starts
+EXPLORE and the counter is reset. At that fixed M-to-EXPLORE boundary, call
+`begin_segment()` exactly once with the same reset/no-RNG-draw semantics. No
 counter or partial segment is carried across `reset()` or cells.
 
 Calibration uses only stationary comparator outcomes on seeds `80001–80200`.
@@ -291,8 +298,10 @@ resampled independently. Initialize exactly one
 through all `100_000` paired bootstrap replicates; do not reinitialize it per
 replicate or estimand. Each replicate samples 1,000 seed indices with
 replacement from `[0, 1000)`, using the same sampled indices for `Delta_B` and
-`Gamma_T` to preserve covariance. Report ordinary two-sided 95th-percentile
-intervals with NumPy linear interpolation.
+`Gamma_T` to preserve covariance. For each estimand, if `boot` is its 100,000
+element bootstrap vector, compute the central interval as
+`numpy.percentile(boot, [2.5, 97.5], method="linear")`; report those lower and
+upper endpoints as the ordinary two-sided 95% interval.
 
 No p-value, BCa interval, studentization, one-sided interval, adaptive
 resampling, or post-result method change is permitted.
