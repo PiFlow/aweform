@@ -614,12 +614,6 @@ def summarize_exp003_episode(
         if entered_seek:
             decision = controller_observation_step.decision
             seek_trigger = decision.seek_trigger
-            if seek_trigger is None:
-                if (
-                    controller_observation.energy
-                    < EXP003_B50_ENTER_SEEK_THRESHOLD
-                ):
-                    seek_trigger = EXP003SeekTrigger.HISTORICAL_ENERGY
             if seek_trigger is EXP003SeekTrigger.HISTORICAL_ENERGY:
                 if (
                     controller_observation.energy

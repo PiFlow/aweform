@@ -315,6 +315,7 @@ def test_controller_thresholds_and_contact_docking_semantics() -> None:
     assert controller.mode is EXP003Mode.EXPLORE
     controller.act(_station_observation(0.499, beacon=(1.0, 1.0, 1.0)))
     assert controller.mode is EXP003Mode.SEEK
+    assert controller.last_decision.seek_trigger is EXP003SeekTrigger.HISTORICAL_ENERGY
     controller.act(_station_observation(0.499, beacon=(1.0, 1.0, 1.0)))
     assert controller.mode is EXP003Mode.SEEK
     controller.act(_station_observation(0.499, beacon=(0.0, 1.0, 0.0), contact=True))
@@ -548,6 +549,9 @@ def test_historical_energy_seek_diagnostics_remain_classified_as_b50() -> None:
                     controller_mode_before_action=EXP003Mode.EXPLORE,
                     controller_mode=EXP003Mode.SEEK,
                     visible_observation=_station_observation(0.49),
+                    decision=EXP003ControllerDecision(
+                        seek_trigger=EXP003SeekTrigger.HISTORICAL_ENERGY
+                    ),
                 ),
                 _synthetic_transition(
                     2,
@@ -676,6 +680,7 @@ def test_full_recharge_controller_waits_until_exact_full_energy() -> None:
     controller = StationB50FullController(policy_rng_from_seed(18004))
     controller.reset()
     controller.act(_station_observation(0.4))
+    assert controller.last_decision.seek_trigger is EXP003SeekTrigger.HISTORICAL_ENERGY
     controller.act(_station_observation(0.4, contact=True))
     assert controller.mode is EXP003Mode.CHARGE
     for energy in (0.85, 0.90, 0.99):
@@ -683,6 +688,107 @@ def test_full_recharge_controller_waits_until_exact_full_energy() -> None:
         assert controller.mode is EXP003Mode.CHARGE
     controller.act(_station_observation(1.0, contact=True))
     assert controller.mode is EXP003Mode.EXPLORE
+
+
+@pytest.mark.parametrize("energy", [0.50, 0.49])
+def test_unclassified_seek_entry_preserves_none_at_any_energy(energy: float) -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                    visible_observation=_station_observation(energy),
+                    decision=EXP003ControllerDecision(),
+                    truncated=True,
+                ),
+            )
+        )
+    )
+
+    assert diagnostics.seek_attempts[0].seek_trigger is None
+
+
+def test_declared_historical_energy_trigger_is_validated() -> None:
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                    visible_observation=_station_observation(0.49),
+                    decision=EXP003ControllerDecision(
+                        seek_trigger=EXP003SeekTrigger.HISTORICAL_ENERGY
+                    ),
+                    truncated=True,
+                ),
+            )
+        )
+    )
+
+    assert diagnostics.seek_attempts[0].seek_trigger is (
+        EXP003SeekTrigger.HISTORICAL_ENERGY
+    )
+
+
+def test_declared_anticipatory_trend_trigger_remains_strictly_validated() -> None:
+    decision = EXP003ControllerDecision(
+        seek_trigger=EXP003SeekTrigger.ANTICIPATORY_TREND,
+        anticipatory_current_max_beacon=0.07,
+        anticipatory_previous_max_beacon=0.09,
+    )
+    diagnostics = summarize_exp003_episode(
+        _synthetic_episode(
+            (
+                _synthetic_transition(
+                    1,
+                    action=Action.TURN_LEFT,
+                    position_before=(0.2, 0.5),
+                    position_after=(0.2, 0.5),
+                    controller_mode_before_action=EXP003Mode.EXPLORE,
+                    controller_mode=EXP003Mode.SEEK,
+                    visible_observation=_station_observation(
+                        0.60, beacon=(0.07, 0.06, 0.05)
+                    ),
+                    decision=decision,
+                    truncated=True,
+                ),
+            )
+        )
+    )
+
+    assert diagnostics.seek_attempts[0].seek_trigger is (
+        EXP003SeekTrigger.ANTICIPATORY_TREND
+    )
+
+    with pytest.raises(ValueError, match="invalid anticipatory SEEK decision trace"):
+        summarize_exp003_episode(
+            _synthetic_episode(
+                (
+                    _synthetic_transition(
+                        1,
+                        action=Action.TURN_LEFT,
+                        position_before=(0.2, 0.5),
+                        position_after=(0.2, 0.5),
+                        controller_mode_before_action=EXP003Mode.EXPLORE,
+                        controller_mode=EXP003Mode.SEEK,
+                        visible_observation=_station_observation(
+                            0.70, beacon=(0.07, 0.06, 0.05)
+                        ),
+                        decision=decision,
+                        truncated=True,
+                    ),
+                )
+            )
+        )
 
 
 def test_full_recharge_contact_loss_returns_to_seek_without_waiting() -> None:
