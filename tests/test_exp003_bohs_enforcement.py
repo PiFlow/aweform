@@ -180,71 +180,6 @@ def _production_source_trees() -> list[ast.Module]:
     ]
 
 
-def _production_last_decision_loads() -> list[
-    tuple[Path, tuple[str, ...], tuple[str, ...], tuple[bool, ...]]
-]:
-    """Return production ``Load`` sites for the diagnostic private field."""
-
-    class Visitor(ast.NodeVisitor):
-        def __init__(self, path: Path) -> None:
-            self.path = path
-            self.classes: list[str] = []
-            self.functions: list[str] = []
-            self.properties: list[bool] = []
-            self.loads: list[
-                tuple[Path, tuple[str, ...], tuple[str, ...], tuple[bool, ...]]
-            ] = []
-
-        def visit_ClassDef(self, node: ast.ClassDef) -> None:
-            self.classes.append(node.name)
-            self.generic_visit(node)
-            self.classes.pop()
-
-        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-            self.functions.append(node.name)
-            self.properties.append(
-                any(
-                    (isinstance(decorator, ast.Name) and decorator.id == "property")
-                    or (
-                        isinstance(decorator, ast.Attribute)
-                        and decorator.attr == "getter"
-                    )
-                    for decorator in node.decorator_list
-                )
-            )
-            self.generic_visit(node)
-            self.functions.pop()
-            self.properties.pop()
-
-        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-            self.functions.append(node.name)
-            self.properties.append(False)
-            self.generic_visit(node)
-            self.functions.pop()
-            self.properties.pop()
-
-        def visit_Attribute(self, node: ast.Attribute) -> None:
-            if node.attr == "_last_decision" and isinstance(node.ctx, ast.Load):
-                self.loads.append(
-                    (
-                        self.path,
-                        tuple(self.classes),
-                        tuple(self.functions),
-                        tuple(self.properties),
-                    )
-                )
-            self.generic_visit(node)
-
-    loads: list[
-        tuple[Path, tuple[str, ...], tuple[str, ...], tuple[bool, ...]]
-    ] = []
-    for path in _production_sources():
-        visitor = Visitor(path)
-        visitor.visit(ast.parse(path.read_text(encoding="utf-8")))
-        loads.extend(visitor.loads)
-    return loads
-
-
 def _parse_registry() -> tuple[
     set[str],
     dict[str, dict[str, str]],
@@ -646,16 +581,39 @@ def test_diagnostic_field_is_never_read_by_an_action_selection_branch() -> None:
 
 def test_diagnostic_field_has_exactly_one_production_reader() -> None:
     """The private trace is loaded only by its public diagnostic property."""
-    loads = _production_last_decision_loads()
+    loads: list[tuple[Path, ast.Module, ast.Attribute]] = []
+    for path in _production_sources():
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        loads.extend(
+            (path, tree, node)
+            for node in ast.walk(tree)
+            if (
+                isinstance(node, ast.Attribute)
+                and node.attr == "_last_decision"
+                and isinstance(node.ctx, ast.Load)
+            )
+        )
     assert len(loads) == 1, (
         "expected exactly one production Load of _last_decision, found "
-        f"{loads}"
+        f"{[(path, node.lineno) for path, _, node in loads]}"
     )
-    path, classes, functions, properties = loads[0]
+    path, tree, load = loads[0]
     assert path.name == "exp003.py"
-    assert classes == ("StationB50Controller",)
-    assert functions == ("last_decision",)
-    assert properties == (True,)
+    owners = [
+        (class_node, function_node)
+        for class_node in ast.walk(tree)
+        if isinstance(class_node, ast.ClassDef)
+        and class_node.name == "StationB50Controller"
+        for function_node in class_node.body
+        if isinstance(function_node, ast.FunctionDef)
+        and function_node.name == "last_decision"
+        and any(
+            isinstance(decorator, ast.Name) and decorator.id == "property"
+            for decorator in function_node.decorator_list
+        )
+    ]
+    assert len(owners) == 1
+    assert any(node is load for node in ast.walk(owners[0][1]))
 
 
 # ---------------------------------------------------------------------------
