@@ -166,7 +166,11 @@ def _registry_markdown_path() -> Path:
 def _production_sources() -> list[Path]:
     """Every production ``aweform`` source file (not the tests)."""
     src_dir = Path(__file__).resolve().parents[1] / "src" / "aweform"
-    return sorted(src_dir.glob("*.py"))
+    return sorted(
+        path
+        for path in src_dir.rglob("*.py")
+        if "__pycache__" not in path.parts
+    )
 
 
 def _production_source_trees() -> list[ast.Module]:
@@ -309,6 +313,40 @@ def test_registry_manifest_matches_source_declarations() -> None:
             f"{key} classified {nested[key]!r}, expected {classification!r}"
         )
 
+    # Every row must carry the fields required by its classification.  This
+    # prevents a row from remaining green while its name/classification stays
+    # present but its governing source, provenance, reader, writer/clear, or
+    # budget contract is silently removed from the manifest.
+    _, _, _, notes = _parse_registry()
+    rows = [
+        (section, attr, classification, notes[f"{section}.{attr}"])
+        for section, attrs in direct.items()
+        for attr, classification in attrs.items()
+    ] + [
+        ("nested", attr, classification, notes[attr])
+        for attr, classification in nested.items()
+    ]
+    for section, attr, classification, note in rows:
+        assert note.strip(), f"empty registry note for {section}.{attr}"
+        if classification == "bohs":
+            for field in (
+                "Declared type",
+                "Fixed observation function",
+                "Registered clearing points",
+                "Complete reader set",
+                "Budget consumption",
+            ):
+                assert field in note, f"BOHS row {section}.{attr} omits {field}"
+        elif classification == "causal-inherited":
+            assert "Governed by" in note, (
+                f"causal row {section}.{attr} omits its governing source"
+            )
+        elif classification == "diagnostic":
+            for field in ("Complete reader set", "external inspection"):
+                assert field in note, (
+                    f"diagnostic row {section}.{attr} omits {field}"
+                )
+
 
 def _module_bohs_load_sites() -> list[int]:
     """Line numbers of every BOHS ``Load`` in ``exp003.py``.
@@ -327,6 +365,22 @@ def _module_bohs_load_sites() -> list[int]:
         if isinstance(n, ast.Attribute)
         and n.attr == BOHS_SLUG
         and isinstance(n.ctx, ast.Load)
+    )
+
+
+def _method_bohs_load_sites(class_name: str, method: str) -> list[int]:
+    """Return BOHS loads in one named production method."""
+    import aweform.exp003 as exp003  # noqa: PLC0415
+
+    tree = ast.parse(inspect.getsource(exp003))
+    fn = _method_source(tree, class_name, method)
+    assert fn is not None, f"{class_name}.{method} was not found"
+    return sorted(
+        node.lineno
+        for node in ast.walk(fn)
+        if isinstance(node, ast.Attribute)
+        and node.attr == BOHS_SLUG
+        and isinstance(node.ctx, ast.Load)
     )
 
 
@@ -380,6 +434,12 @@ def test_registry_note_fields_are_machine_checked() -> None:
     # Source confirms exactly these two readers exist.
     loads = _module_bohs_load_sites()
     assert len(loads) == 2, f"expected snapshot + property loads, found {loads}"
+    assert len(_method_bohs_load_sites(
+        "StationB50TrendController", "act"
+    )) == 1, "BOHS snapshot reader drifted out of the EXPLORE action path"
+    assert len(_method_bohs_load_sites(
+        "StationB50TrendController", "previous_explore_beacon_max"
+    )) == 1, "BOHS diagnostic/property reader drifted"
 
     # --- BOHS budget (ADR 0009 C) ------------------------------------------
     budget_clause = re.search(
@@ -897,6 +957,7 @@ def test_b7_single_write_per_act_and_no_external_writer() -> None:
     """
     import aweform.exp003 as exp003  # noqa: PLC0415
 
+    exp003_path = Path(inspect.getfile(exp003)).resolve()
     tree = ast.parse(inspect.getsource(exp003))
 
     # Discover writers across every production source file.
@@ -923,8 +984,8 @@ def test_b7_single_write_per_act_and_no_external_writer() -> None:
         for fn in (b for b in trend_class.body if isinstance(b, ast.FunctionDef))
     ]
     for path, lineno in all_store_sites:
-        assert path.name == "exp003.py", (
-            f"BOHS write outside exp003.py: {path}@{lineno}"
+        assert path.resolve() == exp003_path, (
+            f"BOHS write outside the controller module: {path}@{lineno}"
         )
         node = next(
             n for n in ast.walk(tree)
