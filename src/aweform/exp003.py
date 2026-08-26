@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Final
+from typing import ClassVar, Final
 
 import gymnasium as gym
 import numpy as np
@@ -34,6 +34,9 @@ EXP003_STATION_PLACEMENT_MAX_ATTEMPTS: Final[int] = 10_000
 EXP003_HORIZON: Final[int] = 1000
 EXP003_COVERAGE_GRID_WIDTH: Final[int] = 32
 EXP003_COVERAGE_GRID_HEIGHT: Final[int] = 32
+EXP003_B50_ENTER_SEEK_THRESHOLD: Final[float] = 0.50
+EXP003_TREND_ANTICIPATORY_ENERGY_THRESHOLD: Final[float] = 0.65
+EXP003_TREND_WEAK_BEACON_THRESHOLD: Final[float] = 0.10
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,7 +50,7 @@ class BeaconObservation:
 
     def __post_init__(self) -> None:
         for name in ("left", "forward", "right"):
-            _validate_normalized_value(name, getattr(self, name))
+            _validate_beacon_component(name, getattr(self, name))
         if not isinstance(self.charging_contact, bool):
             raise ValueError("charging_contact must be a bool")
 
@@ -389,11 +392,32 @@ class EXP003Mode(Enum):
     CHARGE = "CHARGE"
 
 
+class EXP003SeekTrigger(Enum):
+    """Controller-visible reason for entering SEEK from EXPLORE."""
+
+    HISTORICAL_ENERGY = "HISTORICAL_ENERGY_BELOW_0.50"
+    ANTICIPATORY_TREND = "ANTICIPATORY_BEACON_TREND"
+
+
+@dataclass(frozen=True, slots=True)
+class EXP003ControllerDecision:
+    """Visible-signal decision trace retained for evaluator diagnostics only.
+
+    The trace is not an additional observation.  Its optional beacon values
+    are copied from the current decision's controller-visible L/F/R values and
+    the controller's one previous EXPLORE maximum.
+    """
+
+    seek_trigger: EXP003SeekTrigger | None = None
+    anticipatory_current_max_beacon: float | None = None
+    anticipatory_previous_max_beacon: float | None = None
+
+
 @dataclass(frozen=True, slots=True)
 class EXP003ControllerConfig:
     """B50-derived station controller thresholds."""
 
-    enter_seek: float = 0.50
+    enter_seek: float = EXP003_B50_ENTER_SEEK_THRESHOLD
     recover: float = 0.85
     exploration_hazard: float = EXP001_EXPLORER_HAZARD
 
@@ -409,25 +433,109 @@ class EXP003ControllerConfig:
 class StationB50Controller:
     """B50-derived controller adapted to physical charging contact."""
 
+    # ``config`` is exposed as a read-only property backed by the ``_config``
+    # slot, so the construction-invariant binding cannot be rebound by
+    # assignment, ``del``, OR by direct mutation of ``vars(self)["config"]``
+    # (the property data-descriptor shadows any ``__dict__`` entry).  The
+    # backing ``_config`` slot is itself frozen by ``__setattr__``/``__delattr__``
+    # below, so a caller cannot ``del c._config`` then ``c._config = adv`` to
+    # swap in a branch-dependent configuration through the read-only property.
+    # The remaining attrs live in the normal ``__dict__``.
+    __slots__ = ("_config", "__dict__")
+    # Typed slot so mypy resolves the ``config`` property's return and the
+    # ``__setattr__``/``__delattr__`` guards against the backing storage.
+    _config: EXP003ControllerConfig
+
+    # ADR 0009 Section D retained-state declaration.  Each controller declares
+    # its own entries; ``docs/adr/0009-bohs-registry.md`` is the union of
+    # these declarations plus the nested retained state of the objects named
+    # here (``explorer.policy_rng`` and the segment counters).  The values are
+    # registry classifications, not runtime data.
+    RETAINED_STATE: ClassVar[dict[str, str]] = {
+        "_mode": "causal-inherited: EXP-003 three-mode form",
+        "config": (
+            "causal-inherited: construction-invariant EXP003ControllerConfig; "
+            "controller-visible binding is a read-only property (no setter/"
+            "deleter) backed by the _config slot, and both the property and "
+            "the backing _config slot are frozen for the run"
+        ),
+        "explorer": (
+            "causal-inherited: EXP-001 run-and-turn primitive; nested "
+            "policy_rng, _forward_actions_remaining, _turn_action, "
+            "_turn_actions_remaining"
+        ),
+        "_last_decision": "diagnostic: no action-selection reads",
+    }
+
+    def __setattr__(self, name: str, value: object) -> None:
+        # ADR 0009 B.5: ``config`` must be construction-invariant — initialized
+        # before the first act(), immutable for the run, independent of
+        # observations/history, and unable to encode a branch bit.  The frozen
+        # EXP003ControllerConfig value alone is insufficient: the public
+        # ``config`` binding on the controller had to be frozen as well, or a
+        # caller could swap in a branch-dependent configuration between act()
+        # calls and C2/E1 would read through that binding.  Both ``config`` and
+        # its backing ``_config`` slot are rejected so no assignment (including
+        # ``del c._config`` then ``c._config = adv``) can swap the value the
+        # read-only property returns; construction writes the ``_config`` slot
+        # directly via ``object.__setattr__`` in ``__init__``.
+        if name in ("config", "_config"):
+            raise AttributeError(
+                "config is construction-invariant and immutable for the run"
+            )
+        object.__setattr__(self, name, value)
+
+    def __delattr__(self, name: str) -> None:
+        # ADR 0009 B.5 (cont.): reject deletion of the ``config`` binding AND
+        # its backing ``_config`` slot, so the construction write is the only
+        # write across the controller's lifetime.  A binding a caller could
+        # remove with ``del`` (then re-create through a rebound ``__setattr__``)
+        # is not read-only — and with the property reading ``_config``, an
+        # unguarded ``del c._config`` would be the same swap through a different
+        # door.
+        if name in ("config", "_config"):
+            raise AttributeError(
+                "config is construction-invariant and immutable for the run"
+            )
+        object.__delattr__(self, name)
+
+    @property
+    def config(self) -> EXP003ControllerConfig:
+        """The construction-invariant configuration (read-only binding)."""
+        return self._config
+
     def __init__(
         self,
         policy_rng: np.random.Generator,
         config: EXP003ControllerConfig | None = None,
     ) -> None:
-        self.config = config or EXP003ControllerConfig()
+        # Write the backing slot directly: the ``_config`` name is frozen by
+        # ``__setattr__``, so the construction value is the only write allowed,
+        # performed here via ``object.__setattr__``.
+        object.__setattr__(self, "_config", config or EXP003ControllerConfig())
         self.explorer = StochasticPersistentExplorer(policy_rng)
         self._mode = EXP003Mode.EXPLORE
+        self._last_decision = EXP003ControllerDecision()
 
     @property
     def mode(self) -> EXP003Mode:
         return self._mode
 
+    @property
+    def last_decision(self) -> EXP003ControllerDecision:
+        """Return the visible-signal trace for the most recent decision."""
+        return self._last_decision
+
     def act(self, observation: StationObservation) -> Action:
         """Choose using energy, L/F/R beacon, and causal contact only."""
         if not isinstance(observation, StationObservation):
             raise ValueError("observation must be a StationObservation")
+        self._last_decision = EXP003ControllerDecision()
         if self._mode is EXP003Mode.EXPLORE:
             if observation.energy < self.config.enter_seek:
+                self._last_decision = EXP003ControllerDecision(
+                    seek_trigger=EXP003SeekTrigger.HISTORICAL_ENERGY
+                )
                 self._mode = EXP003Mode.SEEK
             else:
                 return self._explore_action(observation.beacon)
@@ -450,6 +558,7 @@ class StationB50Controller:
     def reset(self) -> None:
         self._mode = EXP003Mode.EXPLORE
         self.explorer.begin_segment()
+        self._last_decision = EXP003ControllerDecision()
 
     def _explore_action(self, beacon: BeaconObservation) -> Action:
         """Reuse the historical stochastic primitive through an internal adapter."""
@@ -465,8 +574,12 @@ class StationB50FullController(StationB50Controller):
         """Use the historical policy with full-recovery CHARGE semantics."""
         if not isinstance(observation, StationObservation):
             raise ValueError("observation must be a StationObservation")
+        self._last_decision = EXP003ControllerDecision()
         if self._mode is EXP003Mode.EXPLORE:
             if observation.energy < self.config.enter_seek:
+                self._last_decision = EXP003ControllerDecision(
+                    seek_trigger=EXP003SeekTrigger.HISTORICAL_ENERGY
+                )
                 self._mode = EXP003Mode.SEEK
             else:
                 return self._explore_action(observation.beacon)
@@ -485,6 +598,93 @@ class StationB50FullController(StationB50Controller):
             self.explorer.begin_segment()
             return self._explore_action(observation.beacon)
         return Action.WAIT
+
+
+class StationB50TrendController(StationB50Controller):
+    """Development-only B50 variant with one-step beacon-trend memory.
+
+    The only persistent temporal state is the previous EXPLORE decision's
+    maximum of the visible left/forward/right beacon values.  The 0.65 energy
+    and 0.10 beacon thresholds are provisional development hypotheses, not
+    calibrated scientific values.
+    """
+
+    # ADR 0009 Section D: the one authorised BOHS field added by this class.
+    # The manifest (docs/adr/0009-bohs-registry.md) is the union of this
+    # declaration and the base class's.
+    RETAINED_STATE: ClassVar[dict[str, str]] = {
+        "_previous_explore_beacon_max": (
+            "bohs; type float|None; write = max of current beacon L/F/R "
+            "(B.2); clears at init, E1, E2, C2, reset (B.3); readers = the "
+            "EXPLORE-entry snapshot (loaded into previous_max on every "
+            "EXPLORE path before any guard), the E2 navigation guard, and the "
+            "previous_explore_beacon_max property; budget 1"
+        ),
+    }
+
+    def __init__(
+        self,
+        policy_rng: np.random.Generator,
+        config: EXP003ControllerConfig | None = None,
+    ) -> None:
+        super().__init__(policy_rng, config)
+        self._previous_explore_beacon_max: float | None = None
+
+    @property
+    def previous_explore_beacon_max(self) -> float | None:
+        """Return the one previous EXPLORE beacon maximum, if one exists."""
+        return self._previous_explore_beacon_max
+
+    def act(self, observation: StationObservation) -> Action:
+        """Apply historical B50 plus the one-step anticipatory guard."""
+        if not isinstance(observation, StationObservation):
+            raise ValueError("observation must be a StationObservation")
+        self._last_decision = EXP003ControllerDecision()
+        if self._mode is EXP003Mode.EXPLORE:
+            current_max = max(observation.beacon.as_tuple())
+            previous_max = self._previous_explore_beacon_max
+            if observation.energy < self.config.enter_seek:
+                self._last_decision = EXP003ControllerDecision(
+                    seek_trigger=EXP003SeekTrigger.HISTORICAL_ENERGY
+                )
+                self._previous_explore_beacon_max = None
+                self._mode = EXP003Mode.SEEK
+            elif (
+                observation.energy < EXP003_TREND_ANTICIPATORY_ENERGY_THRESHOLD
+                and current_max < EXP003_TREND_WEAK_BEACON_THRESHOLD
+                and previous_max is not None
+                and current_max < previous_max
+            ):
+                self._last_decision = EXP003ControllerDecision(
+                    seek_trigger=EXP003SeekTrigger.ANTICIPATORY_TREND,
+                    anticipatory_current_max_beacon=current_max,
+                    anticipatory_previous_max_beacon=previous_max,
+                )
+                self._previous_explore_beacon_max = None
+                self._mode = EXP003Mode.SEEK
+            else:
+                self._previous_explore_beacon_max = current_max
+                return self._explore_action(observation.beacon)
+
+        if self._mode is EXP003Mode.SEEK:
+            if observation.beacon.charging_contact:
+                self._mode = EXP003Mode.CHARGE
+                return Action.WAIT
+            return seek_beacon_action(observation.beacon)
+
+        if not observation.beacon.charging_contact:
+            self._mode = EXP003Mode.SEEK
+            return seek_beacon_action(observation.beacon)
+        if observation.energy > self.config.recover:
+            self._mode = EXP003Mode.EXPLORE
+            self.explorer.begin_segment()
+            self._previous_explore_beacon_max = None
+            return self._explore_action(observation.beacon)
+        return Action.WAIT
+
+    def reset(self) -> None:
+        super().reset()
+        self._previous_explore_beacon_max = None
 
 
 def seek_beacon_action(observation: BeaconObservation) -> Action:
@@ -586,3 +786,18 @@ def _validate_normalized_value(name: str, value: float) -> float:
     if not 0.0 <= value <= 1.0:
         raise ValueError(f"{name} must be finite and within [0, 1]")
     return value
+
+
+def _validate_beacon_component(name: str, value: float) -> float:
+    """Reject every non-built-in-float L/F/R adversary at the boundary.
+
+    Only an exact built-in ``float`` is accepted.  ``int`` and ``bool``
+    (Python integers are arbitrary-precision, unlike the IEEE-754 double the
+    observation contract uses, and ``bool`` is an ``int`` subclass) and any
+    non-built-in numeric such as ``numpy.float64`` are rejected so the value
+    passed to ``max`` in the trend controller's observation write is a genuine
+    built-in float (ADR 0009 B.1).
+    """
+    if type(value) is not float:
+        raise ValueError(f"{name} must be a built-in float")
+    return _validate_normalized_value(name, value)

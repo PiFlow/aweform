@@ -23,13 +23,19 @@ from .exp002_runner import (
     _run_episode as run_historical_b50_episode,
 )
 from .exp003 import (
+    EXP003_B50_ENTER_SEEK_THRESHOLD,
     EXP003_COVERAGE_GRID_HEIGHT,
     EXP003_COVERAGE_GRID_WIDTH,
+    EXP003_TREND_ANTICIPATORY_ENERGY_THRESHOLD,
+    EXP003_TREND_WEAK_BEACON_THRESHOLD,
+    EXP003ControllerDecision,
     EXP003Mode,
+    EXP003SeekTrigger,
     EXP003StationConfig,
     LocalizedChargingStationEnv,
     StationB50Controller,
     StationB50FullController,
+    StationB50TrendController,
     StationObservation,
 )
 from .exp003_seed_policy import validate_exp003_development_seeds
@@ -91,9 +97,10 @@ class _EXP003SeekBeaconMetrics:
 
 @dataclass(frozen=True, slots=True)
 class EXP003ControllerStep:
-    """The typed observation handed to STATION_B50."""
+    """The typed observation and post-decision visible-signal trace."""
 
     observation: StationObservation
+    decision: EXP003ControllerDecision = field(default_factory=EXP003ControllerDecision)
 
 
 @dataclass(frozen=True, slots=True)
@@ -145,6 +152,10 @@ class EXP003SeekAttempt:
     """
 
     onset_step: int
+    # ``None`` represents a legitimate SEEK mechanism that is not one of the
+    # EXP-003 diagnostic trigger types.  The evaluator must not classify
+    # every future level-only or fixed-schedule controller as T.
+    seek_trigger: EXP003SeekTrigger | None
     normalized_energy_at_onset: float
     station_distance_at_onset: float
     outcome: EXP003SeekOutcome
@@ -197,6 +208,9 @@ class EXP003SeekAttempt:
     pre_seek_recent_mean_beacon_signal: float | None
     pre_seek_recent_max_beacon_signal: float | None
     pre_seek_beacon_strength_trend: float | None
+    anticipatory_current_max_beacon: float | None
+    anticipatory_previous_max_beacon: float | None
+    anticipatory_beacon_delta: float | None
     pass_through_count: int
     had_pass_through: bool
 
@@ -226,6 +240,13 @@ class EXP003EpisodeDiagnostics:
     full_energy_departure_fraction: float | None
     transitions_from_charger_departure_to_next_seek: tuple[int, ...]
     seek_attempts: tuple[EXP003SeekAttempt, ...]
+    historical_energy_seek_entry_count: int
+    anticipatory_seek_entry_count: int
+    anticipatory_seek_entry_fraction: float
+    anticipatory_normalized_energies: tuple[float, ...]
+    anticipatory_current_max_beacons: tuple[float, ...]
+    anticipatory_previous_max_beacons: tuple[float, ...]
+    anticipatory_beacon_deltas: tuple[float, ...]
     energy_when_seek_begins: tuple[float, ...]
     station_distance_when_seek_begins: tuple[float, ...]
     energy_before_successful_charger_acquisition: tuple[float, ...]
@@ -272,9 +293,22 @@ class EXP003StationPolicyComparison:
     station_b50_full_diagnostics: tuple[EXP003EpisodeDiagnostics, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class EXP003StationTrendComparison:
+    """Matched STATION_B50 and one-step STATION_B50_TREND output."""
+
+    development_seeds: tuple[int, ...]
+    station_environment_config: EXP003StationConfig
+    station_b50_episodes: tuple[EXP003EpisodeRecord, ...]
+    station_b50_diagnostics: tuple[EXP003EpisodeDiagnostics, ...]
+    station_b50_trend_episodes: tuple[EXP003EpisodeRecord, ...]
+    station_b50_trend_diagnostics: tuple[EXP003EpisodeDiagnostics, ...]
+
+
 @dataclass(slots=True)
 class _ActiveSeekAttempt:
     onset_step: int
+    seek_trigger: EXP003SeekTrigger | None
     normalized_energy_at_onset: float
     station_distance_at_onset: float
     minimum_normalized_energy: float
@@ -316,6 +350,8 @@ class _ActiveSeekAttempt:
     pre_seek_recent_mean_beacon_signal: float | None = None
     pre_seek_recent_max_beacon_signal: float | None = None
     pre_seek_beacon_strength_trend: float | None = None
+    anticipatory_current_max_beacon: float | None = None
+    anticipatory_previous_max_beacon: float | None = None
     pass_through_count: int = 0
 
 
@@ -409,6 +445,37 @@ def run_exp003_station_policy_comparison(
     )
 
 
+def run_exp003_station_trend_comparison(
+    seeds: Sequence[int],
+    station_config: EXP003StationConfig | None = None,
+) -> EXP003StationTrendComparison:
+    """Run the matched historical and one-step trend station policies."""
+    development_seeds = validate_exp003_development_seeds(seeds)
+    config = station_config or EXP003StationConfig()
+    station_b50_episodes = tuple(
+        _run_station_episode(seed, config, StationB50Controller)
+        for seed in development_seeds
+    )
+    station_b50_trend_episodes = tuple(
+        _run_station_episode(seed, config, StationB50TrendController)
+        for seed in development_seeds
+    )
+    return EXP003StationTrendComparison(
+        development_seeds=development_seeds,
+        station_environment_config=config,
+        station_b50_episodes=station_b50_episodes,
+        station_b50_diagnostics=tuple(
+            summarize_exp003_episode(episode, config)
+            for episode in station_b50_episodes
+        ),
+        station_b50_trend_episodes=station_b50_trend_episodes,
+        station_b50_trend_diagnostics=tuple(
+            summarize_exp003_episode(episode, config)
+            for episode in station_b50_trend_episodes
+        ),
+    )
+
+
 def summarize_exp003_episode(
     episode: EXP003EpisodeRecord,
     config: EXP003StationConfig | None = None,
@@ -457,7 +524,8 @@ def summarize_exp003_episode(
     )
 
     for transition in episode.transitions:
-        controller_observation = transition.controller_visible.observation
+        controller_observation_step = transition.controller_visible
+        controller_observation = controller_observation_step.observation
         evaluator = transition.privileged_evaluator
         total_distance += math.dist(evaluator.position_before, evaluator.position_after)
         total_charged += evaluator.harvested_energy
@@ -542,9 +610,49 @@ def summarize_exp003_episode(
         entered_seek = (
             evaluator.controller_mode_before_action is EXP003Mode.EXPLORE
             and evaluator.controller_mode in (EXP003Mode.SEEK, EXP003Mode.CHARGE)
-            and normalized_before < 0.50
         )
         if entered_seek:
+            decision = controller_observation_step.decision
+            seek_trigger = decision.seek_trigger
+            if seek_trigger is EXP003SeekTrigger.HISTORICAL_ENERGY:
+                if (
+                    controller_observation.energy
+                    >= EXP003_B50_ENTER_SEEK_THRESHOLD
+                ):
+                    raise ValueError(
+                        "historical energy SEEK trigger must be below 0.50"
+                    )
+                anticipatory_current_max = None
+                anticipatory_previous_max = None
+            elif seek_trigger is EXP003SeekTrigger.ANTICIPATORY_TREND:
+                anticipatory_current_max = decision.anticipatory_current_max_beacon
+                anticipatory_previous_max = decision.anticipatory_previous_max_beacon
+                if (
+                    anticipatory_current_max is None
+                    or anticipatory_previous_max is None
+                ):
+                    raise ValueError(
+                        "anticipatory SEEK entry requires both beacon maxima"
+                    )
+                visible_current_max = max(controller_observation.beacon.as_tuple())
+                if anticipatory_current_max != visible_current_max:
+                    raise ValueError(
+                        "anticipatory current beacon is not controller-visible"
+                    )
+                if not (
+                    EXP003_B50_ENTER_SEEK_THRESHOLD
+                    <= controller_observation.energy
+                    < EXP003_TREND_ANTICIPATORY_ENERGY_THRESHOLD
+                    and anticipatory_current_max
+                    < EXP003_TREND_WEAK_BEACON_THRESHOLD
+                    and anticipatory_current_max < anticipatory_previous_max
+                ):
+                    raise ValueError("invalid anticipatory SEEK decision trace")
+            else:
+                # An unclassified controller-visible SEEK entry remains
+                # representable without borrowing STATION_B50_TREND's rule.
+                anticipatory_current_max = None
+                anticipatory_previous_max = None
             if pending_charger_departure_step is not None:
                 transitions_from_charger_departure_to_next_seek.append(
                     evaluator.step_index - pending_charger_departure_step
@@ -571,6 +679,7 @@ def summarize_exp003_episode(
             )
             active = _ActiveSeekAttempt(
                 onset_step=evaluator.step_index,
+                seek_trigger=seek_trigger,
                 normalized_energy_at_onset=normalized_before,
                 station_distance_at_onset=station_distance_at_onset,
                 minimum_normalized_energy=normalized_before,
@@ -611,6 +720,8 @@ def summarize_exp003_episode(
                 pre_seek_beacon_strength_trend=(
                     beacon_metrics.pre_seek_beacon_strength_trend
                 ),
+                anticipatory_current_max_beacon=anticipatory_current_max,
+                anticipatory_previous_max_beacon=anticipatory_previous_max,
             )
 
         if active is not None:
@@ -734,6 +845,15 @@ def summarize_exp003_episode(
         for attempt in seek_attempts
     )
     resolved_count = acquired_count + terminated_count
+    historical_energy_seek_entry_count = sum(
+        attempt.seek_trigger is EXP003SeekTrigger.HISTORICAL_ENERGY
+        for attempt in seek_attempts
+    )
+    anticipatory_attempts = tuple(
+        attempt
+        for attempt in seek_attempts
+        if attempt.seek_trigger is EXP003SeekTrigger.ANTICIPATORY_TREND
+    )
     return EXP003EpisodeDiagnostics(
         capped_lifespan=capped_lifespan,
         horizon_survivor=capped_lifespan == environment_config.episode_horizon
@@ -766,6 +886,29 @@ def summarize_exp003_episode(
             transitions_from_charger_departure_to_next_seek
         ),
         seek_attempts=tuple(seek_attempts),
+        historical_energy_seek_entry_count=historical_energy_seek_entry_count,
+        anticipatory_seek_entry_count=len(anticipatory_attempts),
+        anticipatory_seek_entry_fraction=(
+            len(anticipatory_attempts) / len(seek_attempts) if seek_attempts else 0.0
+        ),
+        anticipatory_normalized_energies=tuple(
+            attempt.normalized_energy_at_onset for attempt in anticipatory_attempts
+        ),
+        anticipatory_current_max_beacons=tuple(
+            float(attempt.anticipatory_current_max_beacon)
+            for attempt in anticipatory_attempts
+            if attempt.anticipatory_current_max_beacon is not None
+        ),
+        anticipatory_previous_max_beacons=tuple(
+            float(attempt.anticipatory_previous_max_beacon)
+            for attempt in anticipatory_attempts
+            if attempt.anticipatory_previous_max_beacon is not None
+        ),
+        anticipatory_beacon_deltas=tuple(
+            float(attempt.anticipatory_beacon_delta)
+            for attempt in anticipatory_attempts
+            if attempt.anticipatory_beacon_delta is not None
+        ),
         energy_when_seek_begins=tuple(
             attempt.normalized_energy_at_onset for attempt in seek_attempts
         ),
@@ -881,7 +1024,10 @@ def _run_station_episode(
             raise RuntimeError("EXP-003 telemetry disagrees with controller action")
         transitions.append(
             EXP003TransitionRecord(
-                controller_visible=EXP003ControllerStep(controller_observation),
+                controller_visible=EXP003ControllerStep(
+                    controller_observation,
+                    decision=controller.last_decision,
+                ),
                 privileged_evaluator=EXP003EvaluatorStep(
                     step_index=telemetry.step_index,
                     action=telemetry.action,
@@ -1015,6 +1161,7 @@ def _freeze_seek_attempt(values: _ActiveSeekAttempt) -> EXP003SeekAttempt:
     move_forward_count = values.move_forward_count
     return EXP003SeekAttempt(
         onset_step=values.onset_step,
+        seek_trigger=values.seek_trigger,
         normalized_energy_at_onset=values.normalized_energy_at_onset,
         station_distance_at_onset=values.station_distance_at_onset,
         outcome=values.outcome,
@@ -1119,6 +1266,17 @@ def _freeze_seek_attempt(values: _ActiveSeekAttempt) -> EXP003SeekAttempt:
         ),
         pre_seek_recent_max_beacon_signal=values.pre_seek_recent_max_beacon_signal,
         pre_seek_beacon_strength_trend=values.pre_seek_beacon_strength_trend,
+        anticipatory_current_max_beacon=values.anticipatory_current_max_beacon,
+        anticipatory_previous_max_beacon=values.anticipatory_previous_max_beacon,
+        anticipatory_beacon_delta=(
+            None
+            if values.anticipatory_current_max_beacon is None
+            or values.anticipatory_previous_max_beacon is None
+            else (
+                values.anticipatory_current_max_beacon
+                - values.anticipatory_previous_max_beacon
+            )
+        ),
         pass_through_count=values.pass_through_count,
         had_pass_through=values.pass_through_count > 0,
     )
