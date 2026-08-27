@@ -10,7 +10,7 @@ from aweform.d001 import (
     d001_contact_net_energy,
     run_d001_probe,
 )
-from aweform.exp003 import EXP003StationConfig
+from aweform.exp003 import EXP003_HORIZON, EXP003StationConfig
 
 
 def test_d001_contact_arithmetic_is_positive_for_both_constant_policies() -> None:
@@ -41,11 +41,21 @@ def test_d001_docked_constant_policies_survive_and_reach_full_energy() -> None:
     assert by_policy[D001Policy.DOCK_TURN_LEFT].first_full_energy_step == 14
 
 
-def test_d001_default_development_seeds_are_accepted() -> None:
-    results = run_d001_probe(D001_DEFAULT_DEVELOPMENT_SEEDS, horizon=1)
+def test_d001_default_development_probe_survives_full_horizon() -> None:
+    results = run_d001_probe(
+        D001_DEFAULT_DEVELOPMENT_SEEDS,
+        horizon=EXP003_HORIZON,
+    )
 
     assert len(results) == 2 * len(D001_DEFAULT_DEVELOPMENT_SEEDS)
-    assert all(result.truncated for result in results)
+    for result in results:
+        assert result.transitions == EXP003_HORIZON
+        assert result.final_energy == 10.0
+        assert result.minimum_energy == 5.0
+        assert result.charging_contact_preserved
+        assert result.position_preserved
+        assert not result.terminated
+        assert result.truncated
 
 
 def test_d001_rejects_formally_reserved_seed() -> None:
