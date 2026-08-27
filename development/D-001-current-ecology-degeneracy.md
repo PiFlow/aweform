@@ -33,7 +33,9 @@ Neither probe reads beacon values, energy, hidden evaluator state, or history af
 
 ## Observed
 
-The exact SHA above was executed directly in a clean isolated worktree with the encoded development seeds only.
+The executable probe at exact SHA `4058d7ad0bc529afc0d52d40b4671eb80b254698` was run directly in a clean isolated worktree. The D-record itself was committed afterward, so later documentation-only commits do not claim to have been part of the executed artifact.
+
+Only the encoded development seeds `18141`, `18142`, and `18143` were used. No formal, calibration, confirmatory, acceptance, or otherwise reserved seed was executed.
 
 Across all three seeds and both policies (six runs total):
 
