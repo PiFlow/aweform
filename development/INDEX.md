@@ -17,6 +17,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | ID | Question | Status | Record |
 |---|---|---|---|
 | D-001 | Current EXP-003 ecology degeneracy probe | CONTINUING | [`D-001-current-ecology-degeneracy.md`](D-001-current-ecology-degeneracy.md) |
+| D-002 | Minimal thermal ecology | CONTINUING | [`D-002-minimal-thermal-ecology.md`](D-002-minimal-thermal-ecology.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 
