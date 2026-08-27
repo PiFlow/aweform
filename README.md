@@ -12,7 +12,7 @@ V0.3 is opened by [`ADR 0010`](docs/adr/0010-v0.3-lifetime-plasticity.md). It pe
 
 V0.2 remains historically valid for work performed under [`ADR 0009`](docs/adr/0009-v0.2-bounded-observation-history-state.md), which authorized bounded one-step observation-history state. V0.3 does not rewrite or invalidate V0.1/V0.2 experiments or ADRs.
 
-EXP-002's confirmatory execution remains specified but unexecuted on untouched seeds `50001–51000`. EXP-000 and EXP-001 have completed evidence; EXP-002 calibration is complete but confirmation is unexecuted; and EXP-003 localized charging-station work remains development-only in its historical record.
+EXP-002's confirmatory execution remains specified but unexecuted on untouched seeds `50001–51000`. EXP-000 and EXP-001 have completed evidence; EXP-002 calibration is complete but confirmation is unexecuted; and EXP-003 remains the historical V0.2 localized-charging / observation-history development foundation.
 
 The active development process now uses a fast `D-NNN` development lane and a separate `EXP-NNN` evidence lane. `D-001` is the next development identifier and will probe the current EXP-003 ecology degeneracy before thermal work. EXP-004 is reserved conceptually as the next major evidence milestone, **not** as the next implementation step; its exact claim and protocol remain unfrozen until development earns them.
 
@@ -45,7 +45,7 @@ Behavioural evidence alone does not establish that Aweform is alive, conscious, 
 
 ## Status
 
-Foundation/development phase under the V0.3 permission boundary. EXP-000 and EXP-001 are completed; EXP-002 calibration is complete with confirmation still unexecuted; EXP-003 remains the historical localized-charging development foundation; and the active `D-NNN` lane is ready to begin with D-001. No later-stage cognition or physical control is implied.
+Foundation/development phase under the V0.3 permission boundary. EXP-000 and EXP-001 are completed; EXP-002 calibration is complete with confirmation still unexecuted; EXP-003 remains the historical V0.2 localized-charging / observation-history development foundation; and the active `D-NNN` lane is ready to begin with D-001. No later-stage cognition or physical control is implied.
 
 ## License
 
