@@ -2,7 +2,7 @@
 
 - **id:** D-002
 - **date:** 2026-08-27
-- **exact_sha:** `PENDING — no substantive D-002 execution yet`
+- **exact_sha:** `328a8471d39aaca923f3217b0513f871b9633255`
 - **development_seeds:** `18141, 18142, 18143`
 - **disposition:** `CONTINUING`
 
@@ -85,3 +85,92 @@ the historical five-channel environment. It adds no learner, plasticity,
 reward, controller, new evidence protocol, seed reservation, or future-stage
 capability. Evaluator-only thermal transition telemetry remains outside the
 organism observation.
+
+## Execution
+
+The substantive probe was executed from the clean implementation commit
+`328a8471d39aaca923f3217b0513f871b9633255` on development seeds `18141`,
+`18142`, and `18143`. No formal, calibration, confirmatory, acceptance, or
+otherwise reserved seed was used.
+
+The executed constants were exactly:
+
+```text
+ambient_thermal_state = 0.0
+initial_thermal_state = 0.20
+upper_thermal_failure_boundary = 1.0
+charging_heat_per_offered_energy = 0.04
+passive_cooling_per_transition = 0.01
+```
+
+The physical alternating-schedule witness was the following evaluator-side
+open-loop action sequence, repeated from body/station centre with initial
+heading zero:
+
+```text
+WAIT x3
+MOVE_FORWARD x4
+TURN_LEFT x4
+WAIT x3
+MOVE_FORWARD x4
+```
+
+It uses actual EXP-003 movement, turning, post-action contact, charging
+radius, offered input, basal cost, and action costs. It does not teleport
+during the schedule or use organism feedback.
+
+## Observed
+
+Direct observations from the machine-readable probe were identical across all
+three development seeds:
+
+- Permanent dock with constant `WAIT`: 80 transitions, thermal termination,
+  final energy `10.0`, final thermal state `1.0`, and no truncation.
+- Permanent off-dock with constant `WAIT`: 51 transitions, energetic
+  termination, final energy `0.0`, final thermal state `0.0`, and no thermal
+  termination.
+- Alternating physical witness: all 1000 transitions, no energy or thermal
+  termination, horizon truncation, minimum energy `4.7200000000000095`, final
+  energy `9.240000000000004`, maximum thermal state `0.23999999999999994`, and
+  final thermal state `0.01999999999999997`. The schedule recorded 389
+  post-action contact transitions per seed.
+
+The complete JSON emitted by `uv run python -m aweform.d002` is the execution
+artifact returned with this development result.
+
+## Surprised by
+
+The suggested 18-action schedule was physically valid without adjustment and
+remained viable for the full 1000-transition horizon. Its thermal state
+settled near ambient rather than approaching the upper boundary. The docked
+probe also reached thermal failure at a stable, interpretable point while the
+energy store was already full, demonstrating that offered-input heating does
+not disappear at the battery clip.
+
+## Provisional reading
+
+**Direct observations:** The implementation produces a genuine competing
+viability ecology under the declared constants: continuous contact is
+thermally non-viable, continuous non-contact is energetically non-viable, and
+at least one physically realizable alternating schedule is viable over the
+tested development horizon.
+
+**Arithmetic/mechanical inference:** With contact net energy positive before
+clipping for `WAIT` and with the witness's repeated contact/off-contact
+geometry, the observed energy trajectory is consistent with the unchanged
+EXP-003 energy update plus the actual schedule costs. The thermal trajectory is
+consistent with the deterministic leaky offered-input integral and its
+clamping rule.
+
+**Hypothesis:** The smallest authorized second viability pressure is sufficient
+to create a regulation problem worth examining in D-003. This does not show
+that learning is necessary, does not establish organism competence, and is not
+confirmatory evidence. Because thermal state is a deterministic leaky integral
+of contact history, a later controller using thermal interoception would show
+sufficiency for that tested mechanism, not automatically necessity.
+
+## Next
+
+Retain these constants and use D-003, if authorized, to examine a simple
+fixed/non-learning regulation mechanism. Do not interpret this D-002 probe as
+controller evaluation or as evidence for an EXP protocol.
