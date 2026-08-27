@@ -16,6 +16,8 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 
 | ID | Question | Status | Record |
 |---|---|---|---|
-| D-001 | Current EXP-003 ecology degeneracy probe | — | not yet created |
+| D-001 | Current EXP-003 ecology degeneracy probe | CONTINUING | [`D-001-current-ecology-degeneracy.md`](D-001-current-ecology-degeneracy.md) |
+
+`D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 
 Add one row when a meaningful D-record is committed. Historical EXP-000 through EXP-003 are not relabelled into this index.
