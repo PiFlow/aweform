@@ -4,55 +4,94 @@ Read the canonical project documents before changing code:
 
 1. `docs/north-star.md`
 2. `docs/developmental-principles.md`
-3. the relevant ADR under `docs/adr/`
-4. the relevant experiment specification under `experiments/`
-5. `docs/reproducibility.md`
-6. `docs/safety-boundary.md`
+3. `docs/development-evidence-workflow.md`
+4. the relevant ADR under `docs/adr/`
+5. the relevant development record or experiment specification
+6. `docs/reproducibility.md`
+7. `docs/safety-boundary.md`
 
 ## Current scope
 
-V0.2 is the **BOHS-authorized electronic-cell stage**, opened by [`ADR 0009`](docs/adr/0009-v0.2-bounded-observation-history-state.md). "Electronic cell" is a developmental analogy, not a claim of biological equivalence. V0.2 changes exactly one permission boundary from V0.1: controllers may add bounded one-step observation-history state to the causal action path, within ADR 0009's conditions, budget, and registration rule. The substrate, environment, and observation/action contract are unchanged, and every other V0.1 non-goal still stands. V0.1 is not closed: EXP-002's confirmatory execution remains specified but unexecuted on untouched seeds `50001–51000`.
+Aweform now uses two research lanes:
 
-Do not reintroduce or add later-stage capabilities unless an explicit task and, where appropriate, a new ADR authorise them. This includes:
+- **Development (`D-NNN`)** for fast, descriptive, exploratory iteration on legal development seeds.
+- **Evidence (`EXP-NNN`)** for important claims that justify frozen protocols, untouched reserved seeds, exact-SHA reproducibility, and independent review.
 
-- LLMs or human-language cognition
-- reinforcement learning or PPO
-- JEPA or other learned world models
-- camera vision
-- memory systems beyond the bounded one-step observation-history state authorised by ADR 0009 — that authorisation caps a controller at **one** such value, forbids retained state from determining an observation-write's value, function, or input components, and gates merging on the registry and executable checks required by ADR 0009
-- curiosity/play mechanisms
-- awe mechanisms
-- social behaviour
-- obstacles or complex physics
-- networking or external APIs
-- physical robot control
-- self-modification or replication
-- evolutionary optimisation
+The current developmental permission boundary is **V0.3 — lifetime plasticity / sensory-plasticity closure**, opened by [`ADR 0010`](docs/adr/0010-v0.3-lifetime-plasticity.md). [`ADR 0009`](docs/adr/0009-v0.2-bounded-observation-history-state.md) remains the valid historical authorization for V0.2 work performed under it and is not rewritten by V0.3.
+
+V0.3 permits bounded persistent plastic/learned state within a continuous organism lifetime when every causal write obeys the declared sensory/plasticity provenance boundary. It does not pre-authorize a particular learner, world model, thermal ecology, predictor horizon, or arbitration architecture.
+
+Historical EXP-000 through EXP-003 retain their original identifiers and records. EXP-002 confirmatory execution remains specified-but-unexecuted on untouched seeds `50001–51000`.
+
+Do not reintroduce or add later-stage capabilities merely because they are plausible future directions. An explicit task is required, and any new or changed **durable architecture, sensory/plasticity, information, or safety permission boundary** requires an appropriate new ADR or explicit ADR amendment plus the formal independent review defined below before merge. Ordinary mechanism choices that stay within an already authorized durable boundary do not require a new ADR merely because they are development work.
+
+In particular, no task implicitly authorizes:
+
+- LLMs or human-language cognition;
+- reinforcement learning, PPO, or deep RL;
+- JEPA-scale or other learned world-model architectures not otherwise authorized;
+- camera vision;
+- curiosity or play mechanisms;
+- awe mechanisms;
+- social behaviour;
+- obstacles or complex physics;
+- networking or external APIs;
+- physical robot control;
+- self-modification or replication;
+- heredity, population selection, or evolutionary optimisation.
 
 ## Working rules
 
-- Prefer the smallest mechanism that tests the current hypothesis.
+- Prefer the smallest mechanism that tests the current developmental question.
 - Do not optimize for sophistication.
+- Do not make an ecology harder merely because a competent simple controller succeeds; simple success is evidence.
 - Preserve deterministic seeds, reproducibility, comparator fairness, and experimental controls.
-- Keep development/calibration seeds separate from untouched acceptance seeds.
-- Never give an agent hidden resource coordinates, absolute position, or other privileged world state unless an experiment explicitly requires it.
-- Keep evaluator-only privileged telemetry separate from agent observations.
-- Do not change acceptance conditions because results are disappointing.
-- Do not tune against acceptance seeds after they have been designated.
-- Keep scientific success metrics distinct from reinforcement-learning reward. EXP-000 requires reward to remain exactly `0.0` on every transition.
-- Treat the energy variable as an engineered viability state, not as biological metabolism or a reward score.
-- Distinguish programmed behaviour, learned behaviour, and genuinely unexpected trajectories in reports.
-- Do not claim consciousness, emotion, subjective experience, genuine life, metabolism, Darwinian evolution, or emergent intelligence from behavioural evidence alone.
+- Keep evaluator-only privileged state separate from organism-visible observations and plastic updates.
+- Never give an organism hidden coordinates, true distance, coverage, lifespan, experiment labels, reserved-seed identity, evaluator success labels, future information, or human task reward unless a future explicit scientific boundary says otherwise.
+- Keep development seeds separate from every existing formal reservation.
+- Do not change formal acceptance conditions because results are disappointing.
+- Do not tune against designated acceptance/confirmatory seeds after they have been reserved for evidence.
+- Keep scientific success metrics distinct from organism learning signals or reward. Historical EXP-000's frozen reward requirement remains exactly `0.0` on every transition.
+- Treat energy and future internal variables as engineered viability states, not biological claims or reward scores.
+- Distinguish programmed mechanisms, learned mechanisms, descriptive observations, hypotheses, and inferential claims.
+- Preserve negative and null results.
+- Do not claim consciousness, emotion, subjective experience, genuine life, metabolism, or emergent intelligence from behavioural evidence alone.
 - Keep code readable and testable.
 - Do not add dependencies or abstractions solely for anticipated future stages.
 - Make obvious minimal engineering choices independently. Ask only when a genuine project-defining ambiguity remains.
 
-The developmental roadmap is a research direction, not a request to pre-build future modules. Do not create speculative abstractions simply to reserve future architecture.
+## Development lane
 
-## Review workflow
+Ordinary `D-NNN` work is intentionally lightweight. Several meaningful iterations in one evening should be normal.
 
-- Luna/Codex is the primary implementation agent.
-- GPT-5.6 Sol performs the first independent implementation/scientific review; Claude Opus 5 performs the final independent review.
-- Each independent review of record must be posted as a comment on the relevant GitHub PR and must contain the reviewer identity, `PASS` or `REQUEST CHANGES`, and the exact reviewed HEAD SHA. Only `PASS` against the current HEAD qualifies. Any later commit invalidates that `PASS` and requires review of the new HEAD.
+A development iteration may:
+
+- use legal development/debug seeds;
+- visualize and inspect behaviour;
+- tune or discard mechanisms;
+- record descriptive observations and surprises;
+- end as `ABANDONED`, `CONTINUING`, or `PROMOTED→EXP-NNN`.
+
+It makes **no confirmatory claim**. A D-result may motivate a later EXP protocol but cannot count as confirmatory evidence for that claim.
+
+Development work does not require dual Sol + Opus exact-SHA review for every iteration when it makes no evidence claim and does not change a durable architecture/information/sensory-plasticity/safety boundary, frozen evidence, or reserved-seed contract. Normal tests still apply and Flow controls merges.
+
+## Evidence and durable-boundary review
+
+Formal independent review remains mandatory for:
+
+- evidence-lane EXP claims/executions;
+- new or changed durable architecture, sensory/plasticity, information, or safety boundaries;
+- modifications to frozen evidence or reserved-seed contracts.
+
+For those reviews:
+
+- Luna/Codex may implement, but its own summary is not independent evidence.
+- GPT-5.6 Sol performs the first independent implementation/scientific review.
+- Claude Opus 5 performs the final independent review.
+- Each independent review of record must be posted as a comment on the relevant GitHub PR and must contain the reviewer identity, `PASS` or `REQUEST CHANGES`, and the exact reviewed HEAD SHA.
+- Only `PASS` against the exact current HEAD qualifies. Any later commit invalidates that `PASS` and requires review of the new HEAD.
 - Repository evidence outranks agent summaries, and no actor treats its own implementation as independent approval.
-- Flow authorises merges. Merge only after both Sol and Opus pass the exact current candidate and Flow authorises it.
+- Flow authorises merges. Merge only after **both Sol and Opus pass the exact current candidate** and Flow authorises it.
+
+The developmental-reset foundation itself changes durable governance and therefore remains subject to this rigorous review before merge.

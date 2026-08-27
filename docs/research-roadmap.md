@@ -2,179 +2,149 @@
 
 ## A. Purpose
 
-Aweform is being developed from minimal self-maintenance toward adaptive,
-machine-native cognition and eventual physical embodiment. The project’s
-long-term orientation and humility boundaries are defined in the
-[`North Star`](north-star.md); this document adds chronological context and
-decision memory without replacing the North Star, developmental principles, or
-ADRs.
+Aweform is being developed from minimal self-maintenance toward adaptive, machine-native cognition and eventual physical embodiment. The project’s long-term orientation and humility boundaries are defined in the [`North Star`](north-star.md); this document adds chronological context and decision memory without replacing the North Star, developmental principles, ADRs, development records, or frozen experiment protocols.
+
+Aweform now operates with two research lanes described in [`development-evidence-workflow.md`](development-evidence-workflow.md): fast descriptive `D-NNN` development and formal `EXP-NNN` evidence.
 
 ## B. Completed / evidence ledger
 
 ### EXP-000 — Interoception and viability
 
-The question was whether informative access to internal energetic state
-improves viability relative to a closely matched fixed-mask, energy-blind
-controller in the frozen simulator. EXP-000 is completed with confirmatory
-support. Its narrow result concerns the programmed homeostatic mechanism and
-that specific ablation in that specific capped simulator; it makes no claim
-about consciousness, biological life, intelligence, or general artificial
-life. See the canonical [`EXP-000 final result record`](../experiments/EXP-000-final-result-record.md).
+EXP-000 is completed with confirmatory support. Its narrow result concerns the programmed homeostatic mechanism and that specific ablation in that specific capped simulator; it makes no claim about consciousness, biological life, intelligence, or general artificial life. See the canonical [`EXP-000 final result record`](../experiments/EXP-000-final-result-record.md).
 
 ### EXP-001 — Interoception versus open-loop homeostasis
 
-EXP-001 is **CLOSED**. Its formal confirmatory result is `C_GREATER`: calibrated
-energy-blind C had greater mean capped lifespan than interoceptive B in the
-frozen 1000-transition EXP-001 simulator. This is a narrow result for the
-specified programmed controllers and environment, not evidence that
-interoception is generally harmful or that fixed schedules are generally
-superior. See the canonical [`EXP-001 closeout`](../experiments/EXP-001-closeout.md)
-and [`EXP-001 calibration record`](../experiments/EXP-001-calibration-record.md).
+EXP-001 is **CLOSED**. Its formal confirmatory result is `C_GREATER`: calibrated energy-blind C had greater mean capped lifespan than interoceptive B in the frozen 1000-transition EXP-001 simulator. This is a narrow result for the specified programmed controllers and environment, not evidence that interoception is generally harmful or that fixed schedules are generally superior. See the canonical [`EXP-001 closeout`](../experiments/EXP-001-closeout.md).
 
 ### EXP-002 — Interoceptive SEEK-entry threshold
 
-EXP-002 asked how the interoceptive SEEK-entry threshold trades off viability
-and spatial exploration. Formal calibration completed among the frozen
-candidates B35/B40/B45/B50 and selected **B50** using the recorded rule.
-B50 is not established as globally optimal: it is the upper tested boundary,
-selected for maximum spatial coverage among viability-eligible candidates, not
-for competitiveness against C. Confirmatory execution was deliberately
-deferred at calibration time. It is now specified but not yet executed: a
-confirmatory statistical addendum (separate from, and not modifying, the
-frozen pre-calibration protocol below, following the same pattern
-[`EXP-001's confirmatory addendum`](../experiments/EXP-001-confirmatory-statistical-addendum.md)
-established) freezes B50 vs. the frozen EXP-001 `C_SHORT` comparator as the
-primary confirmatory contrast — does calibrating B change, reverse, or narrow
-EXP-001's `C_GREATER` result — and B50 vs. B35 as a preregistered key
-secondary — does calibrating the SEEK threshold improve B's own mechanism
-independent of C. Both are evaluated as a matched triple per seed on the
-untouched seeds `50001–51000`, with their own frozen bootstrap convention
-(not inherited from EXP-000 or EXP-001). This confirmatory question was
-formulated after viewing EXP-002's calibration evidence but before any
-confirmatory seed was touched; it was not preregistered before calibration.
-See the canonical
-[`EXP-002 protocol`](../experiments/EXP-002-interoceptive-seek-threshold.md),
-[`EXP-002 calibration evidence`](../experiments/EXP-002-calibration-result.md),
-and the [`EXP-002 confirmatory statistical addendum`](../experiments/EXP-002-confirmatory-statistical-addendum.md).
+Formal calibration completed and selected B50 under the recorded rule. Confirmatory execution remains deliberately unexecuted on untouched seeds `50001–51000`. See the canonical [`EXP-002 protocol`](../experiments/EXP-002-interoceptive-seek-threshold.md), [`calibration evidence`](../experiments/EXP-002-calibration-result.md), and [`confirmatory statistical addendum`](../experiments/EXP-002-confirmatory-statistical-addendum.md).
 
-## C. Active
+## C. Historical development foundation
 
 ### EXP-003 — Localized charging station + IR-like beacon
 
-EXP-003 is development / instrumentation only. It separates sensing from
-energy acquisition, requires physical station occupancy to recharge, maps the
-simulation interface toward plausible future robot sensors, and creates a
-stronger ecological problem before introducing memory. It was specified and
-run under V0.1, before ADR 0009 opened V0.2. The active specification
-is [`EXP-003 localized charging station`](../experiments/EXP-003-localized-charging-station.md),
-and its durable interface decision is [`ADR 0008`](adr/0008-exp-003-localized-charging-interface.md).
+EXP-003 is development/instrumentation only. It separates sensing from energy acquisition, requires physical station occupancy to recharge, and established the station/beacon interface used by the current development substrate. Its historical records remain canonical under the EXP-003 identifier; they are not retrospectively renamed into the new D-series. The localized-charging interface remains governed by [`ADR 0008`](adr/0008-exp-003-localized-charging-interface.md).
 
-## D. Provisional future experiments
+ADR 0009 subsequently opened V0.2 bounded observation-history state and remains the valid historical authorization for the V0.2 work performed under it.
 
-These are **PROVISIONAL DEVELOPMENTAL DIRECTIONS**, not frozen protocols or
-preregistered experiment numbers. Their exact numbering and order may change.
+## D. Developmental process reset
 
-### EXP-004 — Ecological robustness probe
+The previous roadmap treated most developmental changes as if they were approaching formal evidence. That preserved rigor but created too much ceremony for exploratory iteration.
 
-EXP-001's `C_GREATER` result is consistent with more than one explanation:
-that B was never calibrated while C was (EXP-002, above, addresses this
-directly); that closed-loop control can exploit per-episode realized state a
-fixed timer cannot; or that a fixed schedule may have an advantage in a
-stationary environment because it can be calibrated to that fixed
-distribution. EXP-004 tests the third explanation directly rather than
-assuming it. It replaces the previous provisional EXP-004 ("adaptive
-homeostatic regulator") and EXP-005 ("ecological change") with a single
-combined design. The trend controller remains optional analysis material,
-not a prerequisite for the primary experiment. The EXP-003 specification and
-its existing development records remain canonical as written.
+The project now separates:
 
-EXP-004 reuses EXP-003's station/beacon environment with one hidden
-perturbation — station relocation at a seed-determined, hidden time within a
-preregistered window. Its primary arms are:
+- **D-series:** rapid descriptive development on legal development seeds;
+- **EXP-series:** important claims worth freezing and testing on untouched reserved seeds with exact-SHA review.
 
-- `STATION_B50`;
-- a station-compatible energy-blind fixed-schedule regulator.
+Development results may motivate evidence experiments but cannot count as confirmatory evidence for their claims.
 
-An optional history-analysis package may add both `STATION_B50_LEVEL` and
-`STATION_B50_TREND`, only after their respective implementation/provenance
-and review gates are satisfied. `STATION_B50_LEVEL` is planned but is not
-implemented or authorised by this roadmap entry. Conceptually it preserves
-the historical B50 behavior, uses the same current-observation anticipatory
-window as T (energy in T's anticipatory range and current maximum beacon below
-T's weak-beacon threshold), reads no previous beacon history, and contains no
-BOHS. The station-compatible regulator still steers locally via the same
-L/F/R beacon signal during SEEK as B and T, and returns to SEEK immediately if
-charging contact is lost, including from relocation.
+## E. Active provisional D-sequence
 
-The optional package has explicit contrasts: B versus LEVEL estimates the
-effect of the added current-observation level rule; LEVEL versus T is the
-matched contrast relevant to the added one-step historical condition; and B
-versus T is a compound controller contrast, not a pure memory effect. Each
-included controller runs in stationary and one-hidden-relocation conditions;
-the primary design therefore has four matched cells per seed, and the
-optional four-controller package has eight.
-The single relocation schedule is generated once per master seed from a
-dedicated perturbation RNG, independent of environment/policy RNG streams and
-controller behavior, and applied identically across both included controllers
-in the primary design and across all four included controllers when the
-optional history-analysis package is used.
+The sequence below is intentionally provisional. Development evidence may reorder, split, merge, or abandon items.
 
-The primary question is whether B's advantage over the station-compatible
-regulator changes between the relocation and stationary conditions. If the
-optional package is included, its history-specific question is the matched
-LEVEL-versus-T comparison; B-versus-T remains a compound contrast. The
-station-compatible regulator is a different controller in a different
-(station) environment from frozen EXP-001/002 `C_SHORT`, so this does not
-directly retest `C_GREATER`; it tests whether a similar fixed-schedule-
-advantage pattern reappears in the new environment. The formal estimand
-definition (endpoint, contrast, sign convention, and interpretation rule) is
-deferred to the EXP-004 protocol document and is not fixed by this roadmap
-entry.
-Pre-formal work uses separate seed roles — station-compatible regulator
-calibration, then development characterization of the included controller
-cells (including horizon-adequacy and relocation-exposure-adequacy checks),
-then untouched confirmatory seeds — reserved in the EXP-004 protocol rather
-than in this roadmap.
+### D-001 — Current ecology degeneracy probe
 
-### Learning-transition ADR
+Empirically verify the already-identified current EXP-003 ecological degeneracy and cheap constant policies before changing the world.
 
-A parallel work item, not a numbered provisional experiment: before any
-experience-dependent or learned regulation is roadmapped, an ADR specifies a
-three-tier seed discipline — free design/development seeds; a finite,
-enumerated, pre-frozen model-selection/hyperparameter grid; untouched
-confirmatory seeds, with any post-freeze architecture change requiring a new
-named experiment revision rather than reopening the current one — and treats
-organism/lifetime definition, learned-state persistence, reset semantics, the
-inheritance-versus-learning boundary, and update timing as part of the frozen
-scientific contract, not implementation detail. Whether the experiment after
-EXP-004 is a learning experiment or EXP-006 (below) is an evidence-based
-choice made once EXP-004 and this ADR both land, not a pre-committed number.
+The current source arithmetic predicts that a docked organism can `WAIT` indefinitely while gaining energy until clipping at maximum. D-001 should establish the actual behavioural consequence using development seeds and lightweight descriptive records.
 
-### EXP-006 — Occlusion / obstacles
+No thermal mechanism is required for D-001.
 
-Allow beacon evidence to become unavailable or misleading through walls or
-geometry, creating a genuine need for spatial memory, prediction, or a
-primitive world model. Its position directly after EXP-004 is not fixed: a
-learning-transition experiment may be inserted before it, numbered at that
-time, if the ADR above resolves its methodology in time.
+### D-002 — Minimal thermal ecology
 
-### Later directions
+Introduce temperature as a second interoceptive viability dimension with the smallest coherent dynamics needed to study energy/heat coupling.
 
-Later developmental directions include learned adaptation rather than fully
-hand-designed regulation; persistent memory and individuality through
-experience; prediction/world models; play and curiosity when viability permits
-surplus exploration; social interaction and machine-native communication; and
-eventual physical embodiment. These remain aligned with the
-[`North Star`](north-star.md) and [`developmental principles`](developmental-principles.md).
-The learning-transition ADR above begins scoping the first item in this list;
-it does not by itself authorize implementation.
+Candidate ingredients include charging heat, actuator heat, passive cooling, thermal interoception, and thermal consequences such as reduced charge efficiency and/or viability threat.
 
-Future roadmap items are hypotheses and developmental directions. They are
-allowed to change when evidence creates a better next question.
+**Distance-dependent cooling is not pre-frozen.** Start with the smallest coherent thermal world and let development reveal whether station-local heat or distance-dependent cooling is needed.
 
-## E. Decision-log convention
+Before execution, the D-record should state what regulatory conflict the ecology is intended to create so a degenerate shortcut can be distinguished from a legitimate simple solution without post-hoc reinterpretation.
 
-- Experiment-specific frozen decisions live in `experiments/`.
+Thermal implementation must explicitly declare what physical quantity drives heat. In the existing energy system, charger input can be offered while realized stored-energy increase is zero at the energy ceiling. Tying heat only to accepted storage increase could silently re-admit indefinite docking. Charge-efficiency throttling alone may also fail to remove docking if effective charging remains above basal cost.
+
+### D-003 — Fixed-policy / fixed-parameter sufficiency
+
+Characterize whether cheap non-learning policies already regulate the thermal ecology.
+
+Useful controls include obvious degeneracies, fixed excursion patterns, random walk, and a non-learning `THERMOSTATIC_SHUTTLE`-type controller using organism-visible temperature/contact plus minimal phase state.
+
+A competent fixed feedback controller solving a coherent world is **evidence**, not a reason to make the world harder. Do not redesign the ecology merely to force learning to become necessary.
+
+### D-004 — Continuous-lifetime harness / infrastructure consolidation
+
+Consolidate duplicated development infrastructure only where doing so materially increases iteration speed or is required for continuous lifetime execution.
+
+Do not pre-build speculative world-model, serialization, checkpoint, or learner frameworks. Harness segmentation remains invisible to the organism under ADR 0010.
+
+### D-005 — Cheapest adaptive scalar learner
+
+Introduce the smallest genuinely experience-dependent scalar adaptation worth testing. Preserve inspectability and lifetime continuity.
+
+The goal is to determine whether plasticity changes future behaviour through organism-visible consequences, not to maximize benchmark performance.
+
+### D-006 — Fixed life-inspired circuits, zero plasticity
+
+Introduce the structural computation needed for a fair ablation before the first richer plastic candidate. Candidate circuits may include delay-and-compare temporal beacon processing plus energy and thermal feedback, but exact structure remains developmental rather than frozen here.
+
+### D-007 — First plastic candidates
+
+Compare small plastic candidates only after D-006 supplies the zero-plasticity structural control.
+
+Current candidates include:
+
+- minimal learned/adaptive gains;
+- a tiny action-conditioned predictor;
+- a tiny reservoir/readout only as a capacity diagnostic if useful.
+
+The first prediction target and horizon remain unresolved. A clean starting diagnostic may be one-step action-conditioned prediction of `Δenergy` and `Δtemperature` from controller-visible state plus the organism’s own action. If one-step prediction is trivial, that is information rather than a reason to manufacture a harder horizon.
+
+Poor prediction must not automatically be interpreted as evidence that a larger learner is required. It may instead reflect omitted organism-visible state, partial observability, stochasticity, retained-state insufficiency, or true model-capacity failure.
+
+Before interpreting action-conditioned counterfactual queries, record suitable evaluator-side state/mode-action visitation diagnostics. On-policy learning can otherwise lock in false beliefs about rarely sampled actions.
+
+### D-008 — Different histories → matched common probe
+
+Give identically initialized organisms different lifetime histories, then compare them under a common matched probe to ask whether retained experience is behaviourally load-bearing.
+
+A future clean probe should equalize non-plastic state, match the probe world/RNG, freeze learning where appropriate, and inject the **complete declared plastic state** rather than only headline weights.
+
+## F. Candidate EXP-004 evidence milestone
+
+`EXP-004` is reserved conceptually as the next major evidence milestone, not as the next implementation step. No EXP-004 seed range is reserved by this roadmap.
+
+The previous provisional roadmap described EXP-004 as an ecological-robustness/station-relocation experiment. That proposal remains part of project history but is no longer the active next protocol after the developmental-process reset.
+
+The current candidate direction is stronger and later: **does lifetime experience causally alter later homeostatic behaviour?** A particularly sharp candidate is history-conditioned behavioural divergence in a matched common probe world between identically initialized organisms.
+
+This claim is not frozen. D-development must establish the mechanism, appropriate matched controls, complete plastic-state semantics, and a useful probe before an evidence protocol is opened.
+
+## G. Durable scientific rules for development
+
+### Do not design worlds to require the capability you want to celebrate
+
+A simple controller that genuinely regulates the intended competing constraints is a legitimate result.
+
+Distinguish it from a **degenerate solution** that maintains viability by bypassing the intended regulatory problem through an accounting loophole, indefinite docking/stillness, meaningless boundary oscillation, or similar shortcut.
+
+### Learning is not the default explanation for prediction failure
+
+When a predictive mechanism fails, development records should distinguish partial observability, omitted state, stochasticity, causal mis-specification, data coverage, and learner capacity before increasing model size.
+
+### Continuous lifetime is causal, not merely a logging convention
+
+Within a developmental stage, short harness horizons do not reset the organism. A deliberate stage reset is an explicit lifecycle/new-lifetime event under ADR 0010.
+
+## H. Later directions
+
+Later developmental directions include nonstationarity, partial observability that earns memory, stronger prediction and planning, safe-surplus exploration, quiescent consolidation when its function is justified, sandboxed computer-native embodiment, and eventual physical embodiment.
+
+Darwinian evolution, heredity, and cross-stage inherited learned state remain separate later research questions rather than shortcuts for finding the first learner.
+
+## I. Decision-log convention
+
+- Lightweight development records live in `development/`.
+- Experiment-specific frozen evidence decisions live in `experiments/`.
 - Durable architecture and information-boundary decisions live in `docs/adr/`.
 - This roadmap gives chronological context and provisional future direction.
 - Result artifacts remain canonical evidence.
