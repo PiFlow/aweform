@@ -23,21 +23,40 @@ V0.3 permits bounded persistent plastic/learned state within a continuous organi
 
 Historical EXP-000 through EXP-003 retain their original identifiers and records. EXP-002 confirmatory execution remains specified-but-unexecuted on untouched seeds `50001–51000`.
 
-Do not reintroduce later-stage capabilities merely because they are plausible future directions. In particular, no task implicitly authorizes LLM cognition, PPO/deep RL, JEPA-scale models, curiosity/play, social behaviour, networking, external APIs, physical robot control, self-modification, replication, heredity, population selection, or evolutionary optimisation.
+Do not reintroduce or add later-stage capabilities merely because they are plausible future directions. An explicit task is required, and any new or changed **durable architecture, sensory/plasticity, information, or safety permission boundary** requires an appropriate new ADR or explicit ADR amendment plus the formal independent review defined below before merge. Ordinary mechanism choices that stay within an already authorized durable boundary do not require a new ADR merely because they are development work.
+
+In particular, no task implicitly authorizes:
+
+- LLMs or human-language cognition;
+- reinforcement learning, PPO, or deep RL;
+- JEPA-scale or other learned world-model architectures not otherwise authorized;
+- camera vision;
+- curiosity or play mechanisms;
+- awe mechanisms;
+- social behaviour;
+- obstacles or complex physics;
+- networking or external APIs;
+- physical robot control;
+- self-modification or replication;
+- heredity, population selection, or evolutionary optimisation.
 
 ## Working rules
 
 - Prefer the smallest mechanism that tests the current developmental question.
 - Do not optimize for sophistication.
 - Do not make an ecology harder merely because a competent simple controller succeeds; simple success is evidence.
+- Preserve deterministic seeds, reproducibility, comparator fairness, and experimental controls.
 - Keep evaluator-only privileged state separate from organism-visible observations and plastic updates.
 - Never give an organism hidden coordinates, true distance, coverage, lifespan, experiment labels, reserved-seed identity, evaluator success labels, future information, or human task reward unless a future explicit scientific boundary says otherwise.
 - Keep development seeds separate from every existing formal reservation.
 - Do not change formal acceptance conditions because results are disappointing.
+- Do not tune against designated acceptance/confirmatory seeds after they have been reserved for evidence.
+- Keep scientific success metrics distinct from organism learning signals or reward. Historical EXP-000's frozen reward requirement remains exactly `0.0` on every transition.
 - Treat energy and future internal variables as engineered viability states, not biological claims or reward scores.
 - Distinguish programmed mechanisms, learned mechanisms, descriptive observations, hypotheses, and inferential claims.
 - Preserve negative and null results.
 - Do not claim consciousness, emotion, subjective experience, genuine life, metabolism, or emergent intelligence from behavioural evidence alone.
+- Keep code readable and testable.
 - Do not add dependencies or abstractions solely for anticipated future stages.
 - Make obvious minimal engineering choices independently. Ask only when a genuine project-defining ambiguity remains.
 
@@ -55,7 +74,7 @@ A development iteration may:
 
 It makes **no confirmatory claim**. A D-result may motivate a later EXP protocol but cannot count as confirmatory evidence for that claim.
 
-Development work does not require dual Sol + Opus exact-SHA review for every iteration when it makes no evidence claim and does not change a durable architecture/information/safety boundary, frozen evidence, or reserved-seed contract. Normal tests still apply and Flow controls merges.
+Development work does not require dual Sol + Opus exact-SHA review for every iteration when it makes no evidence claim and does not change a durable architecture/information/sensory-plasticity/safety boundary, frozen evidence, or reserved-seed contract. Normal tests still apply and Flow controls merges.
 
 ## Evidence and durable-boundary review
 
@@ -70,9 +89,9 @@ For those reviews:
 - Luna/Codex may implement, but its own summary is not independent evidence.
 - GPT-5.6 Sol performs the first independent implementation/scientific review.
 - Claude Opus 5 performs the final independent review.
-- Each review of record must identify the exact reviewed HEAD SHA and state `PASS` or `REQUEST CHANGES`.
-- A later commit invalidates the prior exact-SHA pass and requires review of the new HEAD.
-- Repository evidence outranks agent summaries.
-- Flow authorises merges.
+- Each independent review of record must be posted as a comment on the relevant GitHub PR and must contain the reviewer identity, `PASS` or `REQUEST CHANGES`, and the exact reviewed HEAD SHA.
+- Only `PASS` against the exact current HEAD qualifies. Any later commit invalidates that `PASS` and requires review of the new HEAD.
+- Repository evidence outranks agent summaries, and no actor treats its own implementation as independent approval.
+- Flow authorises merges. Merge only after **both Sol and Opus pass the exact current candidate** and Flow authorises it.
 
 The developmental-reset foundation itself changes durable governance and therefore remains subject to this rigorous review before merge.
