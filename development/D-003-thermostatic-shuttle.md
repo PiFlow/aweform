@@ -2,7 +2,7 @@
 
 - **id:** D-003
 - **date:** 2026-08-28
-- **exact_sha:** `PENDING` — no substantive D-003 execution yet
+- **exact_sha:** `34310d2c3f4198aadd74d030b610142d23d99e24`
 - **development_seeds:** `18141, 18142, 18143`
 - **disposition:** `CONTINUING`
 - **horizon:** `1000`
@@ -70,6 +70,63 @@ A completed shuttle cycle means a return to `CHARGE` after completing
 `DEPART → COOL → TURN_RETURN → RETURN`. Cycle count is evaluator telemetry and
 is never exposed to the controller.
 
-This record is a pre-execution declaration. Results, the exact executed
-implementation SHA, and direct observations will be added after the clean
-Commit-B probe.
+## Executed result
+
+The substantive probe was run exactly once from the clean executable Commit B
+`34310d2c3f4198aadd74d030b610142d23d99e24`, using only development seeds
+`18141`, `18142`, and `18143` at the fixed 1000-transition horizon. No
+reserved/formal seed was executed.
+
+### Direct observations
+
+All three seeds reached the 1000-transition horizon without energy or thermal
+termination and therefore ended by truncation. Each completed 13 shuttle
+cycles under the declared cycle definition.
+
+| Seed | Min/final energy | Max/final thermal state | Charging/off-contact transitions | Cycles |
+|---|---:|---:|---:|---:|
+| 18141 | `5.0 / 9.52000000000002` | `0.6300000000000002 / 0.33999999999999997` | `507 / 493` | 13 |
+| 18142 | `5.0 / 10.0` | `0.6200000000000002 / 0.6000000000000002` | `520 / 480` | 13 |
+| 18143 | `5.0 / 9.52000000000002` | `0.6300000000000002 / 0.33999999999999997` | `507 / 493` | 13 |
+
+The minimum thermal state was `0.20000000298023224` for every seed. Maximum
+energy was `10.0` for every seed. Mode entry counts were `CHARGE: 14`,
+`DEPART: 13`, `COOL: 13`, `TURN_RETURN: 13`, and `RETURN: 13` for every seed.
+
+The evaluator positioned body and station centre at `(0.5, 0.5)` and preserved
+the seeded reset heading. The observed seeded headings were approximately
+`6.2517569980776315`, `0.376285001824293`, and `5.593233811248814` for the
+three seeds respectively. These headings were evaluator-only and never
+entered the controller observation.
+
+### Mechanical/arithmetic inference
+
+The result is consistent with the existing D-002 ecology: charging contact
+raises thermal state through offered station input, off-contact allows passive
+cooling, and the fixed four-turn half-turn plus the current movement geometry
+returns the body to contact. The small seed-dependent differences in contact
+duty cycle and final state are consistent with different preserved initial
+headings; no stochastic controller behaviour is present.
+
+### Hypothesis
+
+Under the fixed D-002 ecology and this evaluator-side post-contact setup, a
+very small fixed non-learning feedback mechanism using thermal interoception,
+charging contact, and bounded own-action phase state is sufficient to sustain
+repeated regulation through the tested development horizon.
+
+This remains descriptive development work. It does not show that learning is
+unnecessary in general, that thermal interoception is necessary, that the
+controller can acquire the station, or that the result applies to arbitrary
+environments. D-002 already showed that an open-loop evaluator-side schedule
+can survive, so this result demonstrates fixed-feedback sufficiency rather
+than thermal-signal necessity.
+
+### Surprises and disposition
+
+No implementation surprise or failure occurred. The controller reached 13
+cycles on every legal seed despite preserving different seeded headings. Seed
+`18142` ended at a hotter phase (`0.6000000000000002`) while still surviving
+the full horizon, illustrating phase alignment rather than a changed ecology.
+
+**Disposition:** `CONTINUING`.
