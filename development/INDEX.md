@@ -21,6 +21,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-003 | Fixed non-learning thermostatic shuttle | CONTINUING | [`D-003-thermostatic-shuttle.md`](D-003-thermostatic-shuttle.md) |
 | D-004 | Continuous-lifetime harness consolidation | CONTINUING | [`D-004-continuous-lifetime-harness.md`](D-004-continuous-lifetime-harness.md) |
 | D-005 | Minimal predictive thermal-overshoot adaptation | CONTINUING | [`D-005-minimal-predictive-thermal-overshoot.md`](D-005-minimal-predictive-thermal-overshoot.md) |
+| D-006 | Within-lifetime thermal consequence-shift adaptation | CONTINUING | [`D-006-within-lifetime-thermal-consequence-shift.md`](D-006-within-lifetime-thermal-consequence-shift.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 
