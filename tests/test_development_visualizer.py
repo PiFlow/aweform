@@ -10,6 +10,7 @@ from matplotlib.backend_bases import KeyEvent
 
 from aweform.d003 import run_d003_probe
 from aweform.d005 import run_d005_probe
+from aweform.d006 import run_d006_probe
 from aweform.development_visualizer import (
     DevelopmentVisualizationData,
     DevelopmentVisualizationFrame,
@@ -18,8 +19,10 @@ from aweform.development_visualizer import (
     DevelopmentVisualizationVisibility,
     adapt_d003_trace,
     adapt_d005_trace,
+    adapt_d006_trace,
     build_d003_development_visualization,
     build_d005_development_visualization,
+    build_d006_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
 )
@@ -101,6 +104,56 @@ def test_d005_visualization_runs_lifetime_before_adaptation() -> None:
     assert data.visibility.charging_contact == "CTRL + EVAL"
 
 
+def test_d006_adapter_preserves_completed_trace_fields() -> None:
+    result = run_d006_probe((18141,), horizon=5, collect_trace=True)
+    runs = result["results"]
+    assert isinstance(runs, list)
+    run = runs[0]
+    assert isinstance(run, dict)
+    predictive = run["predictive"]
+    assert isinstance(predictive, dict)
+    trace = predictive["trace"]
+    assert isinstance(trace, tuple)
+
+    data = adapt_d006_trace(predictive)
+
+    assert len(data.frames) == 5
+    for frame, entry in zip(data.frames, trace):
+        assert frame.transition_index == entry.transition_index
+        assert (frame.x, frame.y) == entry.position
+        assert frame.heading == entry.heading
+        assert frame.energy == entry.energy
+        assert frame.thermal == entry.thermal
+        assert frame.charging_contact == entry.charging_contact
+        assert frame.action == entry.action.name
+        assert frame.decision_mode == entry.controller_mode.value
+
+
+def test_d006_visualization_uses_shared_post_hoc_renderer() -> None:
+    data = build_d006_development_visualization(seed=18141, horizon=3)
+    assert data.source_label.startswith("D-006")
+    assert data.visibility.position_heading == "EVALUATOR ONLY"
+    assert data.visibility.thermal == "CTRL + EVAL"
+
+
+def test_d006_renderer_does_not_rerun_after_adaptation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    data = build_d006_development_visualization(seed=18141, horizon=3)
+    monkeypatch.setattr(
+        "aweform.d006.run_d006_probe",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("rendering must not rerun D-006")
+        ),
+    )
+    figure, animation = build_development_visualization_figure(data)
+    player = getattr(figure, "_aweform_player")
+    player.step_forward()
+    animation._func(1)
+    animation.event_source.stop()
+    plt.close(figure)
+
+
 def test_renderer_does_not_call_execution_apis_after_adaptation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -144,6 +197,11 @@ def test_seed_guard_and_unknown_source() -> None:
         build_development_visualization("d003", seed=50001, horizon=1)
     with pytest.raises(ValueError, match="unknown development visualization source"):
         build_development_visualization("d999", seed=18141, horizon=1)
+
+
+def test_d006_is_registered() -> None:
+    data = build_development_visualization("d006", seed=18141, horizon=1)
+    assert data.source_label.startswith("D-006")
 
 
 def test_player_controls_and_bounds() -> None:
