@@ -9,6 +9,7 @@ import pytest
 from matplotlib.backend_bases import KeyEvent
 
 from aweform.d003 import run_d003_probe
+from aweform.d005 import run_d005_probe
 from aweform.development_visualizer import (
     DevelopmentVisualizationData,
     DevelopmentVisualizationFrame,
@@ -16,7 +17,9 @@ from aweform.development_visualizer import (
     DevelopmentVisualizationRange,
     DevelopmentVisualizationVisibility,
     adapt_d003_trace,
+    adapt_d005_trace,
     build_d003_development_visualization,
+    build_d005_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
 )
@@ -30,6 +33,30 @@ def test_d003_adapter_preserves_completed_trace_fields() -> None:
     assert isinstance(trace, tuple)
 
     data = adapt_d003_trace(run)
+
+    assert len(data.frames) == 5
+    assert data.station_center == (0.5, 0.5)
+    for frame, entry in zip(data.frames, trace):
+        assert frame.transition_index == entry.transition_index
+        assert (frame.x, frame.y) == entry.position
+        assert frame.heading == entry.heading
+        assert frame.energy == entry.energy
+        assert frame.thermal == entry.thermal
+        assert frame.charging_contact == entry.charging_contact
+        assert frame.action == entry.action.name
+        assert frame.decision_mode == entry.controller_mode.value
+        assert frame.terminated == entry.terminated
+        assert frame.truncated == entry.truncated
+
+
+def test_d005_adapter_preserves_completed_trace_fields() -> None:
+    result = run_d005_probe((18141,), horizon=5, collect_trace=True)
+    run = result["results"][0]
+    assert isinstance(run, dict)
+    trace = run["trace"]
+    assert isinstance(trace, tuple)
+
+    data = adapt_d005_trace(run)
 
     assert len(data.frames) == 5
     assert data.station_center == (0.5, 0.5)
@@ -65,6 +92,13 @@ def test_renderer_consumes_only_neutral_data_and_does_not_show(
     assert player.frame_index == 2
     animation.event_source.stop()
     plt.close(figure)
+
+
+def test_d005_visualization_runs_lifetime_before_adaptation() -> None:
+    data = build_d005_development_visualization(seed=18141, horizon=3)
+    assert data.source_label.startswith("D-005")
+    assert data.visibility.thermal == "CTRL + EVAL"
+    assert data.visibility.charging_contact == "CTRL + EVAL"
 
 
 def test_renderer_does_not_call_execution_apis_after_adaptation(
@@ -109,7 +143,7 @@ def test_seed_guard_and_unknown_source() -> None:
     with pytest.raises(ValueError):
         build_development_visualization("d003", seed=50001, horizon=1)
     with pytest.raises(ValueError, match="unknown development visualization source"):
-        build_development_visualization("d005", seed=18141, horizon=1)
+        build_development_visualization("d999", seed=18141, horizon=1)
 
 
 def test_player_controls_and_bounds() -> None:

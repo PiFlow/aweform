@@ -20,11 +20,13 @@ Every source adapter must explicitly declare controller/organism versus
 evaluator visibility metadata; visibility from one developmental mechanism must
 never be inherited by another source.
 
-Currently the only registered source is `d003`:
+The registered development sources are `d003` and `d005`:
 
 ```text
 aweform-visualize --source d003 --seed 18141 --horizon 1000
+aweform-visualize --source d005 --seed 18141 --horizon 1000
 ```
 
-Future D-005/D-006/D-007 support should register an adapter that returns the
-same neutral model. It should not add another Matplotlib visualizer module.
+Both adapters return the same neutral model. New D-006/D-007 support should
+follow this adapter pattern and should not add another Matplotlib visualizer
+module.

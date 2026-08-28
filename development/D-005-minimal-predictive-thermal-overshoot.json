@@ -1,0 +1,487 @@
+{
+  "controller_constants": {
+    "alpha": 0.5,
+    "cool_return_threshold": 0.3,
+    "hot_depart_threshold": 0.6,
+    "initial_predicted_departure_thermal_overshoot": 0.0,
+    "return_half_turn_steps": 4
+  },
+  "controller_input_fields": [
+    "thermal_interoception",
+    "charging_contact"
+  ],
+  "cycle_definition": "return to CHARGE after completing DEPART -> COOL -> TURN_RETURN -> RETURN",
+  "development_seeds": [
+    18141,
+    18142,
+    18143
+  ],
+  "horizon": 1000,
+  "results": [
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 68,
+        "TURN_LEFT": 52,
+        "TURN_RIGHT": 0,
+        "WAIT": 880
+      },
+      "charging_contact_transitions": 513,
+      "completed_shuttle_cycles": 13,
+      "controller_input_fields": [
+        "thermal_interoception",
+        "charging_contact"
+      ],
+      "departure_start_thermal_values": [
+        0.6000000238418579,
+        0.6000000238418579,
+        0.5899999737739563,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995
+      ],
+      "energy_termination": false,
+      "final_energy": 8.400000000000006,
+      "final_prediction": 0.029997589575941674,
+      "final_thermal_state": 0.4600000000000001,
+      "initial_position": [
+        0.5,
+        0.5
+      ],
+      "initial_prediction": 0.0,
+      "learning_update_count": 14,
+      "learning_updates": [
+        {
+          "departure_start_thermal": 0.6000000238418579,
+          "observed_departure_thermal_overshoot": 0.019999980926513672,
+          "prediction_after": 0.009999990463256836,
+          "prediction_before": 0.0
+        },
+        {
+          "departure_start_thermal": 0.6000000238418579,
+          "observed_departure_thermal_overshoot": 0.029999971389770508,
+          "prediction_after": 0.019999980926513672,
+          "prediction_before": 0.009999990463256836
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.025000005960464478,
+          "prediction_before": 0.019999980926513672
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.02750001847743988,
+          "prediction_before": 0.025000005960464478
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.028750024735927582,
+          "prediction_before": 0.02750001847743988
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029375027865171432,
+          "prediction_before": 0.028750024735927582
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029687529429793358,
+          "prediction_before": 0.029375027865171432
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.02984378021210432,
+          "prediction_before": 0.029687529429793358
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029921905603259802,
+          "prediction_before": 0.02984378021210432
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029960968298837543,
+          "prediction_before": 0.029921905603259802
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029980499646626413,
+          "prediction_before": 0.029960968298837543
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029990265320520848,
+          "prediction_before": 0.029980499646626413
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029995148157468066,
+          "prediction_before": 0.029990265320520848
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029997589575941674,
+          "prediction_before": 0.029995148157468066
+        }
+      ],
+      "maximum_energy": 10.0,
+      "maximum_thermal_state": 0.6300000000000002,
+      "minimum_energy": 5.0,
+      "minimum_thermal_state": 0.20000000298023224,
+      "mode_entry_counts": {
+        "CHARGE": 14,
+        "COOL": 14,
+        "DEPART": 14,
+        "RETURN": 13,
+        "TURN_RETURN": 13
+      },
+      "mode_occupancy": {
+        "CHARGE": 460,
+        "COOL": 420,
+        "DEPART": 55,
+        "RETURN": 26,
+        "TURN_RETURN": 39
+      },
+      "off_contact_transitions": 487,
+      "seed": 18141,
+      "seeded_heading": 6.2517569980776315,
+      "station_center": [
+        0.5,
+        0.5
+      ],
+      "terminated": false,
+      "thermal_termination": false,
+      "transitions": 1000,
+      "truncated": true
+    },
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 54,
+        "TURN_LEFT": 52,
+        "TURN_RIGHT": 0,
+        "WAIT": 894
+      },
+      "charging_contact_transitions": 510,
+      "completed_shuttle_cycles": 13,
+      "controller_input_fields": [
+        "thermal_interoception",
+        "charging_contact"
+      ],
+      "departure_start_thermal_values": [
+        0.6000000238418579,
+        0.6000000238418579,
+        0.5899999737739563,
+        0.5899999737739563,
+        0.5899999737739563,
+        0.5899999737739563,
+        0.5899999737739563,
+        0.5899999737739563,
+        0.5899999737739563,
+        0.5899999737739563,
+        0.5899999737739563,
+        0.5899999737739563,
+        0.5899999737739563,
+        0.5899999737739563
+      ],
+      "energy_termination": false,
+      "final_energy": 7.800000000000008,
+      "final_prediction": 0.019998209463665262,
+      "final_thermal_state": 0.4,
+      "initial_position": [
+        0.5,
+        0.5
+      ],
+      "initial_prediction": 0.0,
+      "learning_update_count": 14,
+      "learning_updates": [
+        {
+          "departure_start_thermal": 0.6000000238418579,
+          "observed_departure_thermal_overshoot": 0.009999990463256836,
+          "prediction_after": 0.004999995231628418,
+          "prediction_before": 0.0
+        },
+        {
+          "departure_start_thermal": 0.6000000238418579,
+          "observed_departure_thermal_overshoot": 0.019999980926513672,
+          "prediction_after": 0.012499988079071045,
+          "prediction_before": 0.004999995231628418
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.020000040531158447,
+          "prediction_after": 0.016250014305114746,
+          "prediction_before": 0.012499988079071045
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.020000040531158447,
+          "prediction_after": 0.018125027418136597,
+          "prediction_before": 0.016250014305114746
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.020000040531158447,
+          "prediction_after": 0.019062533974647522,
+          "prediction_before": 0.018125027418136597
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.020000040531158447,
+          "prediction_after": 0.019531287252902985,
+          "prediction_before": 0.019062533974647522
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.020000040531158447,
+          "prediction_after": 0.019765663892030716,
+          "prediction_before": 0.019531287252902985
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.020000040531158447,
+          "prediction_after": 0.01988285221159458,
+          "prediction_before": 0.019765663892030716
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.020000040531158447,
+          "prediction_after": 0.019941446371376514,
+          "prediction_before": 0.01988285221159458
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.020000040531158447,
+          "prediction_after": 0.01997074345126748,
+          "prediction_before": 0.019941446371376514
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.020000040531158447,
+          "prediction_after": 0.019985391991212964,
+          "prediction_before": 0.01997074345126748
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.020000040531158447,
+          "prediction_after": 0.019992716261185706,
+          "prediction_before": 0.019985391991212964
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.020000040531158447,
+          "prediction_after": 0.019996378396172076,
+          "prediction_before": 0.019992716261185706
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.020000040531158447,
+          "prediction_after": 0.019998209463665262,
+          "prediction_before": 0.019996378396172076
+        }
+      ],
+      "maximum_energy": 10.0,
+      "maximum_thermal_state": 0.6200000000000002,
+      "minimum_energy": 5.0,
+      "minimum_thermal_state": 0.20000000298023224,
+      "mode_entry_counts": {
+        "CHARGE": 14,
+        "COOL": 14,
+        "DEPART": 14,
+        "RETURN": 13,
+        "TURN_RETURN": 13
+      },
+      "mode_occupancy": {
+        "CHARGE": 471,
+        "COOL": 423,
+        "DEPART": 41,
+        "RETURN": 26,
+        "TURN_RETURN": 39
+      },
+      "off_contact_transitions": 490,
+      "seed": 18142,
+      "seeded_heading": 0.376285001824293,
+      "station_center": [
+        0.5,
+        0.5
+      ],
+      "terminated": false,
+      "thermal_termination": false,
+      "transitions": 1000,
+      "truncated": true
+    },
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 68,
+        "TURN_LEFT": 52,
+        "TURN_RIGHT": 0,
+        "WAIT": 880
+      },
+      "charging_contact_transitions": 513,
+      "completed_shuttle_cycles": 13,
+      "controller_input_fields": [
+        "thermal_interoception",
+        "charging_contact"
+      ],
+      "departure_start_thermal_values": [
+        0.6000000238418579,
+        0.6000000238418579,
+        0.5899999737739563,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995,
+        0.5799999833106995
+      ],
+      "energy_termination": false,
+      "final_energy": 8.400000000000006,
+      "final_prediction": 0.029997589575941674,
+      "final_thermal_state": 0.4600000000000001,
+      "initial_position": [
+        0.5,
+        0.5
+      ],
+      "initial_prediction": 0.0,
+      "learning_update_count": 14,
+      "learning_updates": [
+        {
+          "departure_start_thermal": 0.6000000238418579,
+          "observed_departure_thermal_overshoot": 0.019999980926513672,
+          "prediction_after": 0.009999990463256836,
+          "prediction_before": 0.0
+        },
+        {
+          "departure_start_thermal": 0.6000000238418579,
+          "observed_departure_thermal_overshoot": 0.029999971389770508,
+          "prediction_after": 0.019999980926513672,
+          "prediction_before": 0.009999990463256836
+        },
+        {
+          "departure_start_thermal": 0.5899999737739563,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.025000005960464478,
+          "prediction_before": 0.019999980926513672
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.02750001847743988,
+          "prediction_before": 0.025000005960464478
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.028750024735927582,
+          "prediction_before": 0.02750001847743988
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029375027865171432,
+          "prediction_before": 0.028750024735927582
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029687529429793358,
+          "prediction_before": 0.029375027865171432
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.02984378021210432,
+          "prediction_before": 0.029687529429793358
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029921905603259802,
+          "prediction_before": 0.02984378021210432
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029960968298837543,
+          "prediction_before": 0.029921905603259802
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029980499646626413,
+          "prediction_before": 0.029960968298837543
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029990265320520848,
+          "prediction_before": 0.029980499646626413
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029995148157468066,
+          "prediction_before": 0.029990265320520848
+        },
+        {
+          "departure_start_thermal": 0.5799999833106995,
+          "observed_departure_thermal_overshoot": 0.030000030994415283,
+          "prediction_after": 0.029997589575941674,
+          "prediction_before": 0.029995148157468066
+        }
+      ],
+      "maximum_energy": 10.0,
+      "maximum_thermal_state": 0.6300000000000002,
+      "minimum_energy": 5.0,
+      "minimum_thermal_state": 0.20000000298023224,
+      "mode_entry_counts": {
+        "CHARGE": 14,
+        "COOL": 14,
+        "DEPART": 14,
+        "RETURN": 13,
+        "TURN_RETURN": 13
+      },
+      "mode_occupancy": {
+        "CHARGE": 460,
+        "COOL": 420,
+        "DEPART": 55,
+        "RETURN": 26,
+        "TURN_RETURN": 39
+      },
+      "off_contact_transitions": 487,
+      "seed": 18143,
+      "seeded_heading": 5.593233811248814,
+      "station_center": [
+        0.5,
+        0.5
+      ],
+      "terminated": false,
+      "thermal_termination": false,
+      "transitions": 1000,
+      "truncated": true
+    }
+  ]
+}
