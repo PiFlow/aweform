@@ -14,6 +14,7 @@ from aweform.development_visualizer import (
     DevelopmentVisualizationFrame,
     DevelopmentVisualizationPlayer,
     DevelopmentVisualizationRange,
+    DevelopmentVisualizationVisibility,
     adapt_d003_trace,
     build_d003_development_visualization,
     build_development_visualization,
@@ -150,11 +151,47 @@ def test_neutral_model_and_figure_construction_are_headless() -> None:
         energy_range=DevelopmentVisualizationRange(0.0, 10.0),
         thermal_range=DevelopmentVisualizationRange(0.0, 1.0),
         frames=(frame,),
+        visibility=DevelopmentVisualizationVisibility(
+            position_heading="SYNTHETIC EVALUATOR",
+            station_location="SYNTHETIC EVALUATOR",
+            energy="SYNTHETIC ORGANISM",
+            thermal="SYNTHETIC ORGANISM + EVALUATOR",
+            charging_contact="SYNTHETIC ORGANISM + EVALUATOR",
+            action_decision_mode="SYNTHETIC CONTROLLER STATE",
+        ),
     )
     figure, animation = build_development_visualization_figure(data)
     assert len(figure.axes) == 2
     animation.event_source.stop()
     plt.close(figure)
+
+
+def test_neutral_model_requires_explicit_visibility() -> None:
+    frame = DevelopmentVisualizationFrame(
+        transition_index=1,
+        x=0.5,
+        y=0.5,
+        heading=0.0,
+        action="WAIT",
+        decision_mode="CHARGE",
+        energy=5.0,
+        thermal=0.2,
+        charging_contact=True,
+        terminated=False,
+        truncated=True,
+    )
+    with pytest.raises(TypeError):
+        DevelopmentVisualizationData(
+            source_label="synthetic",
+            seed=1,
+            world_min=(0.0, 0.0),
+            world_max=(1.0, 1.0),
+            station_center=(0.5, 0.5),
+            charging_radius=0.1,
+            energy_range=DevelopmentVisualizationRange(0.0, 10.0),
+            thermal_range=DevelopmentVisualizationRange(0.0, 1.0),
+            frames=(frame,),
+        )
 
 
 def test_figure_keyboard_controls_drive_only_the_display_player() -> None:

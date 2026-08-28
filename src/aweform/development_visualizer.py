@@ -43,12 +43,12 @@ class DevelopmentVisualizationRange:
 class DevelopmentVisualizationVisibility:
     """Evaluator/organism visibility labels shown by the shared renderer."""
 
-    position_heading: str = "EVALUATOR ONLY"
-    station_location: str = "EVALUATOR ONLY"
-    energy: str = "EVALUATOR ONLY"
-    thermal: str = "CTRL + EVAL"
-    charging_contact: str = "CTRL + EVAL"
-    action_decision_mode: str = "ORGANISM-OWNED / CONTROLLER STATE SHOWN BY EVALUATOR"
+    position_heading: str
+    station_location: str
+    energy: str
+    thermal: str
+    charging_contact: str
+    action_decision_mode: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,9 +96,7 @@ class DevelopmentVisualizationData:
     energy_range: DevelopmentVisualizationRange
     thermal_range: DevelopmentVisualizationRange
     frames: tuple[DevelopmentVisualizationFrame, ...]
-    visibility: DevelopmentVisualizationVisibility = (
-        DevelopmentVisualizationVisibility()
-    )
+    visibility: DevelopmentVisualizationVisibility
 
     def __post_init__(self) -> None:
         if not self.source_label:
@@ -542,7 +540,16 @@ def adapt_d003_trace(
             D002_AMBIENT_THERMAL_STATE, D002_UPPER_THERMAL_FAILURE_BOUNDARY
         ),
         frames=tuple(frames),
-        visibility=DevelopmentVisualizationVisibility(),
+        visibility=DevelopmentVisualizationVisibility(
+            position_heading="EVALUATOR ONLY",
+            station_location="EVALUATOR ONLY",
+            energy="EVALUATOR ONLY",
+            thermal="CTRL + EVAL",
+            charging_contact="CTRL + EVAL",
+            action_decision_mode=(
+                "ORGANISM-OWNED / CONTROLLER STATE SHOWN BY EVALUATOR"
+            ),
+        ),
     )
 
 

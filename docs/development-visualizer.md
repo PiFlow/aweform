@@ -16,6 +16,9 @@ The view is evaluator-side: showing evaluator state does not imply that the
 organism could observe it. The D-003 view labels each quantity's visibility
 boundary explicitly. Playback is post-hoc and cannot alter lifetime causality,
 because all environment/controller execution finishes before rendering.
+Every source adapter must explicitly declare controller/organism versus
+evaluator visibility metadata; visibility from one developmental mechanism must
+never be inherited by another source.
 
 Currently the only registered source is `d003`:
 
