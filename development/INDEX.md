@@ -19,6 +19,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-001 | Current EXP-003 ecology degeneracy probe | CONTINUING | [`D-001-current-ecology-degeneracy.md`](D-001-current-ecology-degeneracy.md) |
 | D-002 | Minimal thermal ecology | CONTINUING | [`D-002-minimal-thermal-ecology.md`](D-002-minimal-thermal-ecology.md) |
 | D-003 | Fixed non-learning thermostatic shuttle | CONTINUING | [`D-003-thermostatic-shuttle.md`](D-003-thermostatic-shuttle.md) |
+| D-004 | Continuous-lifetime harness consolidation | CONTINUING | [`D-004-continuous-lifetime-harness.md`](D-004-continuous-lifetime-harness.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 

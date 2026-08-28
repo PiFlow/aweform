@@ -117,6 +117,31 @@ class D002ThermalStationEnv(gym.Env[np.ndarray, int]):
         """Return evaluator-side station state for development harnesses."""
         return self.base_env.station_center
 
+    def evaluator_set_geometry_and_observe(
+        self,
+        *,
+        body_position: Coordinate,
+        station_center: Coordinate,
+        heading: float | None = None,
+    ) -> np.ndarray:
+        """Set evaluator geometry and return the current six-channel observation.
+
+        This is an evaluator-only development-harness seam. It changes no
+        organism state other than the deliberately positioned geometry, does
+        not execute a transition, and does not reset or reseed either
+        environment state. The wrapped EXP-003 observation implementation is
+        intentionally encapsulated here so runners do not reach through its
+        private methods.
+        """
+        body = self.body
+        if body is None or self.station_center is None:
+            raise RuntimeError("D-002 environment must be reset before setup")
+        body.x, body.y = body_position
+        if heading is not None:
+            body.heading = heading
+        self.base_env.station_center = station_center
+        return self._with_thermal_signal(self.base_env._observation())
+
     def reset(
         self,
         *,

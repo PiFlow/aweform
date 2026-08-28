@@ -7,7 +7,7 @@ import json
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Final
+from typing import Final, Sequence
 
 import numpy as np
 
@@ -45,6 +45,34 @@ class D003ThermostaticObservation:
             raise ValueError("thermal must be finite and between 0.0 and 1.0")
         if not isinstance(self.charging_contact, bool):
             raise ValueError("charging_contact must be a bool")
+
+
+@dataclass(frozen=True, slots=True)
+class D003TraceEntry:
+    """Evaluator-only diagnostics captured after one lifetime transition."""
+
+    transition_index: int
+    action: Action
+    position: Coordinate
+    heading: float
+    energy: float
+    thermal: float
+    charging_contact: bool
+    controller_mode: D003Mode
+    terminated: bool
+    truncated: bool
+
+
+def partition_trace(
+    trace: Sequence[D003TraceEntry], *, window_size: int
+) -> tuple[tuple[D003TraceEntry, ...], ...]:
+    """Partition a completed evaluator trace without executing anything."""
+    if window_size <= 0:
+        raise ValueError("window_size must be positive")
+    return tuple(
+        tuple(trace[start : start + window_size])
+        for start in range(0, len(trace), window_size)
+    )
 
 
 class ThermostaticShuttleController:
@@ -119,34 +147,35 @@ def _prepare_post_contact_setup(
     *,
     position: Coordinate = (0.5, 0.5),
     station_center: Coordinate = (0.5, 0.5),
-) -> float:
+) -> tuple[float, np.ndarray]:
     """Place body and station for the probe while preserving seeded heading."""
     body = environment.body
     if body is None or environment.station_center is None:
         raise RuntimeError("D-002 environment must be reset before setup")
     seeded_heading = body.heading
-    body.x, body.y = position
-    environment.base_env.station_center = station_center
-    return seeded_heading
-
-
-def _refresh_observation(environment: D002ThermalStationEnv) -> np.ndarray:
-    """Read the positioned D-002 state without exposing it to the controller."""
-    return environment._with_thermal_signal(environment.base_env._observation())
+    observation = environment.evaluator_set_geometry_and_observe(
+        body_position=position,
+        station_center=station_center,
+    )
+    return seeded_heading, observation
 
 
 def _mode_counts() -> dict[str, int]:
     return {mode.name: 0 for mode in D003Mode}
 
 
-def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
+def _run_seed(
+    seed: int,
+    *,
+    horizon: int,
+    trace: list[D003TraceEntry] | None = None,
+) -> dict[str, object]:
     config = EXP003StationConfig(episode_horizon=horizon)
     environment = D002ThermalStationEnv(config=config)
     observation, info = environment.reset(seed=seed)
     if info != {}:
         raise RuntimeError("D-002 reset crossed the information boundary")
-    seeded_heading = _prepare_post_contact_setup(environment)
-    observation = _refresh_observation(environment)
+    seeded_heading, observation = _prepare_post_contact_setup(environment)
 
     controller = ThermostaticShuttleController()
     controller.reset()
@@ -191,6 +220,21 @@ def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
             charging_contact_transitions += 1
         else:
             off_contact_transitions += 1
+        if trace is not None:
+            trace.append(
+                D003TraceEntry(
+                    transition_index=telemetry.step_index,
+                    action=telemetry.action,
+                    position=environment.body.position,
+                    heading=environment.body.heading,
+                    energy=telemetry.energy_after,
+                    thermal=telemetry.thermal_after,
+                    charging_contact=telemetry.charging_contact_after,
+                    controller_mode=mode_before,
+                    terminated=terminated,
+                    truncated=truncated,
+                )
+            )
 
     if environment.last_transition is None or environment.body is None:
         raise RuntimeError("D-003 run ended without final telemetry")
@@ -225,9 +269,17 @@ def run_d003_probe(
     seeds: tuple[int, ...] = D003_DEFAULT_DEVELOPMENT_SEEDS,
     *,
     horizon: int = EXP003_HORIZON,
+    collect_trace: bool = False,
 ) -> dict[str, object]:
-    """Run the single descriptive D-003 probe on legal development seeds."""
+    """Run D-003, optionally retaining one evaluator trace per lifetime."""
     development_seeds = validate_exp003_development_seeds(seeds)
+    results: list[dict[str, object]] = []
+    for seed in development_seeds:
+        trace: list[D003TraceEntry] | None = [] if collect_trace else None
+        result = _run_seed(seed, horizon=horizon, trace=trace)
+        if trace is not None:
+            result["trace"] = tuple(trace)
+        results.append(result)
     return {
         "development_seeds": list(development_seeds),
         "horizon": horizon,
@@ -243,7 +295,7 @@ def run_d003_probe(
         "cycle_definition": (
             "return to CHARGE after completing DEPART -> COOL -> TURN_RETURN -> RETURN"
         ),
-        "results": [_run_seed(seed, horizon=horizon) for seed in development_seeds],
+        "results": results,
     }
 
 
