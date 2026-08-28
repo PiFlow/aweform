@@ -60,13 +60,86 @@ action, thermal mechanism, reward, checkpointing, serialization, save/resume,
 restart, or future-agent framework. It does not modify historical EXP-003 or
 the executed D-003 record at `34310d2c3f4198aadd74d030b610142d23d99e24`.
 
-## Execution status
+## Execution
 
-Pending the clean Commit B implementation and deterministic development-seed
-equivalence checks. Only legal development seeds `18141`, `18142`, and `18143`
-will be used. The known floating-point sensitivity around the inclusive `0.10`
-charging radius after nominally two `0.05` moves is retained as part of the
-existing D-003 regression target, not fixed by D-004.
+The deterministic infrastructure equivalence check was run from clean
+executable Commit B
+`60e2b8b86d64f93819d3f3c50b38bee53874322a`, using only legal development
+seeds `18141`, `18142`, and `18143`. No formal, reserved, calibration,
+confirmatory, acceptance, or otherwise reserved seed was used.
+
+The evaluator-only public seam is:
+
+```python
+environment.evaluator_set_geometry_and_observe(
+    body_position=...,
+    station_center=...,
+    heading=None,
+) -> np.ndarray
+```
+
+It is implemented on `D002ThermalStationEnv`. It positions evaluator geometry,
+preserves the current heading when `heading=None`, optionally sets an explicit
+diagnostic heading, and returns the current six-channel observation. It does
+not execute a transition, create reward, reset or reseed, touch controller
+state, or change energy, thermal state, transition index, or environment RNG.
+
+D-003 optionally collects one evaluator-only `D003TraceEntry` per existing
+transition. The trace contains transition index, action, post-transition
+position and heading, energy, thermal state, charging contact, controller mode,
+and termination flags. `partition_trace` slices the completed trace into
+post-hoc windows; it does not execute, reset, reseed, or expose window metadata
+to the controller.
+
+## Direct observations
+
+- The evaluator setup seam tests changed only requested geometry, preserved
+  heading with `None`, preserved energy, thermal state, transition index, and
+  RNG state, executed no action, and matched the legacy six-channel
+  observation exactly.
+- The refactored D-003 CLI output was an exact JSON match to the pre-change
+  D-003 baseline for all three development seeds.
+- Each seed produced 1000 transitions, no termination, horizon truncation, and
+  13 completed shuttle cycles.
+- Each uninterrupted trace contained 1000 entries. Partitioning into 100-step
+  windows produced 10 windows; partitioning into 137-step windows produced 8
+  windows. Flattening either partition reproduced the original trace exactly,
+  including action, controller mode, energy, thermal, contact, and terminal
+  fields.
+- Trace collection and post-hoc windowing caused one ordinary environment reset
+  and one ordinary controller reset at lifetime start, with no additional
+  reset/reseed at logging or window boundaries.
+
+The known floating-point sensitivity around the inclusive `0.10` charging
+radius after nominally two `0.05` moves is retained as part of the existing
+D-003 regression target. D-004 does not change charging radius, movement
+distance, contact comparison, geometry, or thresholds.
+
+## Engineering inference
+
+The exact CLI match and trace flattening checks show that the seam and
+post-hoc presentation partitions are causally inert relative to the existing
+D-003 execution. The trace is a compact evaluator representation suitable for
+future development-only visualization without adding a new organism channel,
+action, dynamic, learner, or checkpoint boundary.
+
+The initial implementation draft attempted to read position from D-002
+telemetry, which intentionally does not expose position. The draft failed its
+focused test, was corrected to read the already-validated evaluator body
+position after the transition, and was not included in Commit B. No mechanism
+or result was changed by that correction.
+
+## Scientific implication
+
+The V0.3 development harness can now position and observe the current ecology
+through an explicit evaluator-only seam, and evaluator logging/visualization
+windows can be derived from one continuous lifetime without altering organism
+causality.
+
+This is infrastructure equivalence, not confirmatory evidence. The result
+does not establish learning, plasticity, thermal-interoception necessity,
+generalization, consciousness, emotion, subjective experience, genuine life,
+or biological equivalence.
 
 ## Disposition
 
