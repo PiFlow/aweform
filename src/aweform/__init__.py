@@ -15,6 +15,18 @@ from .controllers import (
     HomeostaticController,
     PersistentExplorationController,
 )
+from .development_visualizer import (
+    DEVELOPMENT_VISUALIZATION_ADAPTERS,
+    DevelopmentVisualizationData,
+    DevelopmentVisualizationFrame,
+    DevelopmentVisualizationPlayer,
+    DevelopmentVisualizationRange,
+    DevelopmentVisualizationVisibility,
+    adapt_d003_trace,
+    build_d003_development_visualization,
+    build_development_visualization,
+    build_development_visualization_figure,
+)
 from .energy import EnergyConfig, EnergyState, advance_energy
 from .env import Action, AweformEnv, AweformEnvConfig, TransitionTelemetry
 from .exp001 import (
@@ -212,6 +224,12 @@ __all__ = [
     "DevelopmentBatchResult",
     "DevelopmentManifest",
     "DirectionalSignals",
+    "DEVELOPMENT_VISUALIZATION_ADAPTERS",
+    "DevelopmentVisualizationData",
+    "DevelopmentVisualizationFrame",
+    "DevelopmentVisualizationPlayer",
+    "DevelopmentVisualizationRange",
+    "DevelopmentVisualizationVisibility",
     "EnergyBlindController",
     "EnergyConfig",
     "EnergyState",
@@ -260,12 +278,16 @@ __all__ = [
     "TransitionRecord",
     "TransitionTelemetry",
     "advance_energy",
+    "adapt_d003_trace",
     "analyze_confirmatory_artifact",
     "has_resource_contact",
     "exp001_controller_observation",
     "build_exp001_visualization_figure",
     "build_exp001_visualization_frames",
     "build_exp001_resource_field_visualization",
+    "build_d003_development_visualization",
+    "build_development_visualization",
+    "build_development_visualization_figure",
     "format_exp001_diagnostic_text",
     "format_exp001_energy_visibility_label",
     "policy_rng_from_seed",
