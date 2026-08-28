@@ -18,10 +18,11 @@ from aweform.d003 import (
     RETURN_HALF_TURN_STEPS,
     D003Mode,
     D003ThermostaticObservation,
+    D003TraceEntry,
     ThermostaticShuttleController,
     _controller_observation,
     _prepare_post_contact_setup,
-    _refresh_observation,
+    partition_trace,
     run_d003_probe,
 )
 from aweform.env import Action
@@ -154,15 +155,79 @@ def test_harness_places_body_and_station_but_preserves_heading() -> None:
     environment.reset(seed=18141)
     assert environment.body is not None
     initial_heading = environment.body.heading
-    returned_heading = _prepare_post_contact_setup(environment)
+    returned_heading, positioned_observation = _prepare_post_contact_setup(environment)
     assert returned_heading == initial_heading
     assert environment.body.position == (0.5, 0.5)
     assert environment.body.heading == initial_heading
     assert environment.station_center == (0.5, 0.5)
-    projected = _controller_observation(_refresh_observation(environment))
+    projected = _controller_observation(positioned_observation)
     assert projected.thermal == pytest.approx(D002_INITIAL_THERMAL_STATE)
     assert projected.charging_contact is True
     assert not hasattr(projected, "heading")
+
+
+def test_trace_partitioning_is_post_hoc_and_preserves_the_lifetime() -> None:
+    result = run_d003_probe((18141,), collect_trace=True)
+    run = result["results"][0]
+    assert isinstance(run, dict)
+    trace = run["trace"]
+    assert isinstance(trace, tuple)
+    assert trace
+    assert all(isinstance(entry, D003TraceEntry) for entry in trace)
+
+    windows_100 = partition_trace(trace, window_size=100)
+    windows_137 = partition_trace(trace, window_size=137)
+    assert tuple(entry for window in windows_100 for entry in window) == trace
+    assert tuple(entry for window in windows_137 for entry in window) == trace
+    assert len(windows_100) != len(windows_137)
+    assert [entry.action for entry in trace] == [
+        entry.action for window in windows_137 for entry in window
+    ]
+    assert [entry.controller_mode for entry in trace] == [
+        entry.controller_mode for window in windows_100 for entry in window
+    ]
+    assert [entry.energy for entry in trace] == [
+        entry.energy for window in windows_137 for entry in window
+    ]
+    assert [entry.thermal for entry in trace] == [
+        entry.thermal for window in windows_100 for entry in window
+    ]
+    assert [entry.charging_contact for entry in trace] == [
+        entry.charging_contact for window in windows_137 for entry in window
+    ]
+
+
+def test_trace_collection_has_one_lifetime_reset_and_no_window_reset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    environment_reset_seeds: list[int | None] = []
+    controller_reset_calls = 0
+    original_environment_reset = D002ThermalStationEnv.reset
+    original_controller_reset = ThermostaticShuttleController.reset
+
+    def track_environment_reset(
+        environment: D002ThermalStationEnv,
+        *,
+        seed: int | None = None,
+        options: dict[str, object] | None = None,
+    ) -> tuple[np.ndarray, dict[str, object]]:
+        environment_reset_seeds.append(seed)
+        return original_environment_reset(environment, seed=seed, options=options)
+
+    def track_controller_reset(controller: ThermostaticShuttleController) -> None:
+        nonlocal controller_reset_calls
+        controller_reset_calls += 1
+        original_controller_reset(controller)
+
+    monkeypatch.setattr(D002ThermalStationEnv, "reset", track_environment_reset)
+    monkeypatch.setattr(ThermostaticShuttleController, "reset", track_controller_reset)
+    result = run_d003_probe((18141,), horizon=250, collect_trace=True)
+    trace = result["results"][0]["trace"]
+    partition_trace(trace, window_size=100)
+    partition_trace(trace, window_size=137)
+
+    assert environment_reset_seeds == [18141]
+    assert controller_reset_calls == 1
 
 
 def test_seed_guard_accepts_development_and_rejects_reserved_seed() -> None:

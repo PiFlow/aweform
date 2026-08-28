@@ -1,5 +1,6 @@
 """Focused tests for the D-002 minimal thermal ecology."""
 
+from copy import deepcopy
 from math import pi
 
 import numpy as np
@@ -77,6 +78,63 @@ def test_d002_first_five_observation_values_match_standalone_exp003() -> None:
         )
         if d002_terminated or exp003_terminated:
             break
+
+
+def test_evaluator_setup_seam_preserves_state_and_observation() -> None:
+    environment = D002ThermalStationEnv()
+    environment.reset(seed=18141)
+    assert environment.body is not None
+    assert environment.station_center is not None
+    initial_heading = environment.body.heading
+    initial_energy = environment.body.energy
+    initial_thermal = environment.thermal_state
+    initial_step_count = environment.base_env._step_count
+    initial_rng_state = deepcopy(
+        environment.base_env.random_streams.environment.bit_generator.state
+        if environment.base_env.random_streams is not None
+        else None
+    )
+
+    observation = environment.evaluator_set_geometry_and_observe(
+        body_position=(0.5, 0.5),
+        station_center=(0.5, 0.5),
+        heading=None,
+    )
+
+    assert environment.body.position == (0.5, 0.5)
+    assert environment.station_center == (0.5, 0.5)
+    assert environment.body.heading == initial_heading
+    assert environment.body.energy == initial_energy
+    assert environment.thermal_state == initial_thermal
+    assert environment.base_env._step_count == initial_step_count
+    assert environment.last_transition is None
+    assert environment.base_env.random_streams is not None
+    assert environment.base_env.random_streams.environment.bit_generator.state == (
+        initial_rng_state
+    )
+
+    legacy_observation = environment._with_thermal_signal(
+        environment.base_env._observation()
+    )
+    assert np.array_equal(observation, legacy_observation)
+
+
+def test_evaluator_setup_seam_accepts_explicit_heading_without_transition() -> None:
+    environment = D002ThermalStationEnv()
+    environment.reset(seed=18141)
+    assert environment.body is not None
+
+    observation = environment.evaluator_set_geometry_and_observe(
+        body_position=(0.25, 0.75),
+        station_center=(0.2, 0.8),
+        heading=pi,
+    )
+
+    assert observation.shape == (6,)
+    assert environment.body.position == (0.25, 0.75)
+    assert environment.body.heading == pi
+    assert environment.base_env._step_count == 0
+    assert environment.last_transition is None
 
 
 def test_off_contact_passively_cools_to_ambient_without_lower_failure() -> None:
