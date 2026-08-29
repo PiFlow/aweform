@@ -174,9 +174,9 @@ class D002ThermalStationEnv(gym.Env[np.ndarray, int]):
             raise RuntimeError("D-002 reward must remain exactly 0.0")
 
         thermal_before = self.thermal_state
-        thermal_input = (
-            D002_CHARGING_HEAT_PER_OFFERED_ENERGY * base_transition.harvested_energy
-        )
+        thermal_input = self._charging_heat_per_offered_energy(
+            base_transition.step_index
+        ) * base_transition.harvested_energy
         thermal_raw = (
             thermal_before + thermal_input - D002_PASSIVE_COOLING_PER_TRANSITION
         )
@@ -210,6 +210,16 @@ class D002ThermalStationEnv(gym.Env[np.ndarray, int]):
             truncated=truncated,
         )
         return self._with_thermal_signal(observation), 0.0, terminated, truncated, {}
+
+    def _charging_heat_per_offered_energy(self, transition_index: int) -> float:
+        """Return the historical charging heat contribution for one transition.
+
+        D-002 deliberately ignores the transition index and retains its
+        historical constant; D-006 overrides this method for its predeclared
+        regime schedule.
+        """
+        del transition_index
+        return D002_CHARGING_HEAT_PER_OFFERED_ENERGY
 
     def _with_thermal_signal(self, observation: np.ndarray) -> np.ndarray:
         if observation.shape != (5,):

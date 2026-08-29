@@ -654,12 +654,106 @@ def build_d005_development_visualization(
     return adapt_d005_trace(runs[0])
 
 
+def adapt_d006_trace(
+    run: Mapping[str, object],
+    *,
+    source_label: str = "D-006 within-lifetime thermal adaptation",
+) -> DevelopmentVisualizationData:
+    """Adapt one completed D-006 predictive evaluator trace.
+
+    Regime and prediction diagnostics remain in the trace/result record.  The
+    shared renderer intentionally displays only the existing neutral fields.
+    """
+    from .d002 import (
+        D002_AMBIENT_THERMAL_STATE,
+        D002_UPPER_THERMAL_FAILURE_BOUNDARY,
+    )
+    from .exp003 import EXP003StationConfig
+
+    seed = _require_int(run, "seed")
+    raw_trace = run.get("trace")
+    if not isinstance(raw_trace, tuple) or not raw_trace:
+        raise ValueError("D-006 result must contain a non-empty tuple trace")
+    config = EXP003StationConfig(episode_horizon=len(raw_trace))
+    station_center = _coordinate_from_sequence(
+        run.get("station_center"), "station_center"
+    )
+    frames: list[DevelopmentVisualizationFrame] = []
+    for entry in raw_trace:
+        transition_index = _require_int_attribute(entry, "transition_index")
+        position = getattr(entry, "position", None)
+        x, y = _coordinate_from_sequence(position, "trace position")
+        action = getattr(getattr(entry, "action", None), "name", None)
+        decision_mode = getattr(getattr(entry, "controller_mode", None), "value", None)
+        if not isinstance(action, str) or not isinstance(decision_mode, str):
+            raise ValueError("D-006 trace action and controller mode must be labelled")
+        frames.append(
+            DevelopmentVisualizationFrame(
+                transition_index=transition_index,
+                x=x,
+                y=y,
+                heading=_require_float_attribute(entry, "heading"),
+                action=action,
+                decision_mode=decision_mode,
+                energy=_require_float_attribute(entry, "energy"),
+                thermal=_require_float_attribute(entry, "thermal"),
+                charging_contact=_require_bool_attribute(entry, "charging_contact"),
+                terminated=_require_bool_attribute(entry, "terminated"),
+                truncated=_require_bool_attribute(entry, "truncated"),
+            )
+        )
+    return DevelopmentVisualizationData(
+        source_label=source_label,
+        seed=seed,
+        world_min=config.world_min,
+        world_max=config.world_max,
+        station_center=station_center,
+        charging_radius=config.charging_radius,
+        energy_range=DevelopmentVisualizationRange(
+            config.energy.failure_boundary, config.energy.maximum_energy
+        ),
+        thermal_range=DevelopmentVisualizationRange(
+            D002_AMBIENT_THERMAL_STATE, D002_UPPER_THERMAL_FAILURE_BOUNDARY
+        ),
+        frames=tuple(frames),
+        visibility=DevelopmentVisualizationVisibility(
+            position_heading="EVALUATOR ONLY",
+            station_location="EVALUATOR ONLY",
+            energy="EVALUATOR ONLY",
+            thermal="CTRL + EVAL",
+            charging_contact="CTRL + EVAL",
+            action_decision_mode=(
+                "ORGANISM-OWNED / CONTROLLER STATE SHOWN BY EVALUATOR"
+            ),
+        ),
+    )
+
+
+def build_d006_development_visualization(
+    *,
+    seed: int,
+    horizon: int = 1000,
+) -> DevelopmentVisualizationData:
+    """Run one D-006 lifetime, then adapt its completed predictive trace."""
+    from .d006 import run_d006_probe
+
+    result = run_d006_probe((seed,), horizon=horizon, collect_trace=True)
+    runs = result.get("results")
+    if not isinstance(runs, list) or len(runs) != 1 or not isinstance(runs[0], dict):
+        raise ValueError("D-006 probe returned an unexpected result shape")
+    predictive = runs[0].get("predictive")
+    if not isinstance(predictive, dict):
+        raise ValueError("D-006 predictive result was not a mapping")
+    return adapt_d006_trace(predictive)
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
 ] = {
     "d003": build_d003_development_visualization,
     "d005": build_d005_development_visualization,
+    "d006": build_d006_development_visualization,
 }
 
 
