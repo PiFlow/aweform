@@ -13,6 +13,7 @@ from .exp001_seed_policy import (
 )
 from .exp002_protocol import EXP002_CALIBRATION_SEEDS, EXP002_CONFIRMATORY_SEEDS
 
+EXP000_ACCEPTANCE_SEEDS = tuple(range(10001, 10101))
 EXP003_CALIBRATION_SEEDS = tuple(range(60001, 60201))
 EXP003_CONFIRMATORY_SEEDS = tuple(range(70001, 71001))
 
@@ -30,6 +31,7 @@ def validate_exp003_development_seeds(seeds: Sequence[int]) -> tuple[int, ...]:
 
     reserved = frozenset(
         (
+            *EXP000_ACCEPTANCE_SEEDS,
             *EXP001_CALIBRATION_SEEDS,
             *EXP001_CONFIRMATORY_SEEDS,
             *EXP002_CALIBRATION_SEEDS,
