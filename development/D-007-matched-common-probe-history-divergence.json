@@ -1,0 +1,624 @@
+{
+  "common_probe_observation": {
+    "charging_contact": true,
+    "thermal": 0.56
+  },
+  "controller_constants": {
+    "cool_return_threshold": 0.3,
+    "hot_depart_threshold": 0.6,
+    "return_half_turn_steps": 4
+  },
+  "controller_input_fields": [
+    "thermal_interoception",
+    "charging_contact"
+  ],
+  "controller_rng": false,
+  "controller_type": "PredictiveThermalOvershootController",
+  "development_seeds": [
+    18141,
+    18142,
+    18143
+  ],
+  "history_conditions": {
+    "mild": 0.04,
+    "strong": 0.06
+  },
+  "horizon": 1000,
+  "organism_boundary": {
+    "info": {},
+    "reward": 0.0
+  },
+  "plastic_state": {
+    "alpha": 0.5,
+    "dimension": 1,
+    "initial_value": 0.0,
+    "persistent_fields": [
+      "predicted_departure_thermal_overshoot"
+    ],
+    "update_inputs": [
+      "organism-visible thermal/contact consequence",
+      "retained departure state",
+      "current learned prediction"
+    ]
+  },
+  "results": [
+    {
+      "histories": {
+        "mild": {
+          "charging_heat_per_offered_energy": 0.04,
+          "common_probe": {
+            "action": "WAIT",
+            "action_changed_mode": false,
+            "environment_transitions_between_observation_and_action": 0,
+            "mode_after": "CHARGE",
+            "mode_before": "CHARGE",
+            "observation": {
+              "charging_contact": true,
+              "thermal": 0.56
+            },
+            "observe_consequence_called": false
+          },
+          "condition": "mild",
+          "controller_observe_consequence_calls": 519,
+          "departure_peak_thermal": null,
+          "departure_start_thermal": null,
+          "evaluator_only_final_state": {
+            "energy": 6.920000000000016,
+            "thermal": 0.2699999999999999
+          },
+          "initial_prediction": 0.0,
+          "learned_prediction": 0.029687529429793358,
+          "learning_update_count": 7,
+          "learning_updates": [
+            {
+              "departure_start_thermal": 0.6000000238418579,
+              "observed_departure_thermal_overshoot": 0.019999980926513672,
+              "prediction_after": 0.009999990463256836,
+              "prediction_before": 0.0,
+              "transition_index": 43
+            },
+            {
+              "departure_start_thermal": 0.6000000238418579,
+              "observed_departure_thermal_overshoot": 0.029999971389770508,
+              "prediction_after": 0.019999980926513672,
+              "prediction_before": 0.009999990463256836,
+              "transition_index": 118
+            },
+            {
+              "departure_start_thermal": 0.5899999737739563,
+              "observed_departure_thermal_overshoot": 0.030000030994415283,
+              "prediction_after": 0.025000005960464478,
+              "prediction_before": 0.019999980926513672,
+              "transition_index": 193
+            },
+            {
+              "departure_start_thermal": 0.5799999833106995,
+              "observed_departure_thermal_overshoot": 0.030000030994415283,
+              "prediction_after": 0.02750001847743988,
+              "prediction_before": 0.025000005960464478,
+              "transition_index": 266
+            },
+            {
+              "departure_start_thermal": 0.5799999833106995,
+              "observed_departure_thermal_overshoot": 0.030000030994415283,
+              "prediction_after": 0.028750024735927582,
+              "prediction_before": 0.02750001847743988,
+              "transition_index": 338
+            },
+            {
+              "departure_start_thermal": 0.5799999833106995,
+              "observed_departure_thermal_overshoot": 0.030000030994415283,
+              "prediction_after": 0.029375027865171432,
+              "prediction_before": 0.028750024735927582,
+              "transition_index": 410
+            },
+            {
+              "departure_start_thermal": 0.5799999833106995,
+              "observed_departure_thermal_overshoot": 0.030000030994415283,
+              "prediction_after": 0.029687529429793358,
+              "prediction_before": 0.029375027865171432,
+              "transition_index": 482
+            }
+          ],
+          "mode": "CHARGE",
+          "probe_ready": true,
+          "seeded_heading": 6.2517569980776315,
+          "terminated": false,
+          "termination_reason": "probe_ready_after_target_updates",
+          "transitions_to_probe_ready": 519,
+          "truncated": false,
+          "turns_remaining": 0
+        },
+        "strong": {
+          "charging_heat_per_offered_energy": 0.06,
+          "common_probe": {
+            "action": "MOVE_FORWARD",
+            "action_changed_mode": true,
+            "environment_transitions_between_observation_and_action": 0,
+            "mode_after": "DEPART",
+            "mode_before": "CHARGE",
+            "observation": {
+              "charging_contact": true,
+              "thermal": 0.56
+            },
+            "observe_consequence_called": false
+          },
+          "condition": "strong",
+          "controller_observe_consequence_calls": 396,
+          "departure_peak_thermal": null,
+          "departure_start_thermal": null,
+          "evaluator_only_final_state": {
+            "energy": 6.920000000000016,
+            "thermal": 0.29000000000000004
+          },
+          "initial_prediction": 0.0,
+          "learned_prediction": 0.059375002048909664,
+          "learning_update_count": 7,
+          "learning_updates": [
+            {
+              "departure_start_thermal": 0.6000000238418579,
+              "observed_departure_thermal_overshoot": 0.039999961853027344,
+              "prediction_after": 0.019999980926513672,
+              "prediction_before": 0.0,
+              "transition_index": 23
+            },
+            {
+              "departure_start_thermal": 0.5899999737739563,
+              "observed_departure_thermal_overshoot": 0.06000000238418579,
+              "prediction_after": 0.03999999165534973,
+              "prediction_before": 0.019999980926513672,
+              "transition_index": 82
+            },
+            {
+              "departure_start_thermal": 0.5699999928474426,
+              "observed_departure_thermal_overshoot": 0.06000000238418579,
+              "prediction_after": 0.04999999701976776,
+              "prediction_before": 0.03999999165534973,
+              "transition_index": 141
+            },
+            {
+              "departure_start_thermal": 0.550000011920929,
+              "observed_departure_thermal_overshoot": 0.06000000238418579,
+              "prediction_after": 0.054999999701976776,
+              "prediction_before": 0.04999999701976776,
+              "transition_index": 197
+            },
+            {
+              "departure_start_thermal": 0.550000011920929,
+              "observed_departure_thermal_overshoot": 0.06000000238418579,
+              "prediction_after": 0.057500001043081284,
+              "prediction_before": 0.054999999701976776,
+              "transition_index": 251
+            },
+            {
+              "departure_start_thermal": 0.550000011920929,
+              "observed_departure_thermal_overshoot": 0.06000000238418579,
+              "prediction_after": 0.05875000171363354,
+              "prediction_before": 0.057500001043081284,
+              "transition_index": 305
+            },
+            {
+              "departure_start_thermal": 0.550000011920929,
+              "observed_departure_thermal_overshoot": 0.06000000238418579,
+              "prediction_after": 0.059375002048909664,
+              "prediction_before": 0.05875000171363354,
+              "transition_index": 359
+            }
+          ],
+          "mode": "CHARGE",
+          "probe_ready": true,
+          "seeded_heading": 6.2517569980776315,
+          "terminated": false,
+          "termination_reason": "probe_ready_after_target_updates",
+          "transitions_to_probe_ready": 396,
+          "truncated": false,
+          "turns_remaining": 0
+        }
+      },
+      "matched_setup": {
+        "controller_input_fields": [
+          "thermal_interoception",
+          "charging_contact"
+        ],
+        "controller_type": "PredictiveThermalOvershootController",
+        "initial_position": [
+          0.5,
+          0.5
+        ],
+        "initial_prediction": 0.0,
+        "seeded_heading": 6.2517569980776315,
+        "station_center": [
+          0.5,
+          0.5
+        ]
+      },
+      "seed": 18141
+    },
+    {
+      "histories": {
+        "mild": {
+          "charging_heat_per_offered_energy": 0.04,
+          "common_probe": {
+            "action": "WAIT",
+            "action_changed_mode": false,
+            "environment_transitions_between_observation_and_action": 0,
+            "mode_after": "CHARGE",
+            "mode_before": "CHARGE",
+            "observation": {
+              "charging_contact": true,
+              "thermal": 0.56
+            },
+            "observe_consequence_called": false
+          },
+          "condition": "mild",
+          "controller_observe_consequence_calls": 513,
+          "departure_peak_thermal": null,
+          "departure_start_thermal": null,
+          "evaluator_only_final_state": {
+            "energy": 6.920000000000016,
+            "thermal": 0.2699999999999999
+          },
+          "initial_prediction": 0.0,
+          "learned_prediction": 0.019765663892030716,
+          "learning_update_count": 7,
+          "learning_updates": [
+            {
+              "departure_start_thermal": 0.6000000238418579,
+              "observed_departure_thermal_overshoot": 0.009999990463256836,
+              "prediction_after": 0.004999995231628418,
+              "prediction_before": 0.0,
+              "transition_index": 42
+            },
+            {
+              "departure_start_thermal": 0.6000000238418579,
+              "observed_departure_thermal_overshoot": 0.019999980926513672,
+              "prediction_after": 0.012499988079071045,
+              "prediction_before": 0.004999995231628418,
+              "transition_index": 115
+            },
+            {
+              "departure_start_thermal": 0.5899999737739563,
+              "observed_departure_thermal_overshoot": 0.020000040531158447,
+              "prediction_after": 0.016250014305114746,
+              "prediction_before": 0.012499988079071045,
+              "transition_index": 188
+            },
+            {
+              "departure_start_thermal": 0.5899999737739563,
+              "observed_departure_thermal_overshoot": 0.020000040531158447,
+              "prediction_after": 0.018125027418136597,
+              "prediction_before": 0.016250014305114746,
+              "transition_index": 260
+            },
+            {
+              "departure_start_thermal": 0.5899999737739563,
+              "observed_departure_thermal_overshoot": 0.020000040531158447,
+              "prediction_after": 0.019062533974647522,
+              "prediction_before": 0.018125027418136597,
+              "transition_index": 332
+            },
+            {
+              "departure_start_thermal": 0.5899999737739563,
+              "observed_departure_thermal_overshoot": 0.020000040531158447,
+              "prediction_after": 0.019531287252902985,
+              "prediction_before": 0.019062533974647522,
+              "transition_index": 404
+            },
+            {
+              "departure_start_thermal": 0.5899999737739563,
+              "observed_departure_thermal_overshoot": 0.020000040531158447,
+              "prediction_after": 0.019765663892030716,
+              "prediction_before": 0.019531287252902985,
+              "transition_index": 476
+            }
+          ],
+          "mode": "CHARGE",
+          "probe_ready": true,
+          "seeded_heading": 0.376285001824293,
+          "terminated": false,
+          "termination_reason": "probe_ready_after_target_updates",
+          "transitions_to_probe_ready": 513,
+          "truncated": false,
+          "turns_remaining": 0
+        },
+        "strong": {
+          "charging_heat_per_offered_energy": 0.06,
+          "common_probe": {
+            "action": "WAIT",
+            "action_changed_mode": false,
+            "environment_transitions_between_observation_and_action": 0,
+            "mode_after": "CHARGE",
+            "mode_before": "CHARGE",
+            "observation": {
+              "charging_contact": true,
+              "thermal": 0.56
+            },
+            "observe_consequence_called": false
+          },
+          "condition": "strong",
+          "controller_observe_consequence_calls": 393,
+          "departure_peak_thermal": null,
+          "departure_start_thermal": null,
+          "evaluator_only_final_state": {
+            "energy": 6.920000000000016,
+            "thermal": 0.29000000000000004
+          },
+          "initial_prediction": 0.0,
+          "learned_prediction": 0.039531270042061806,
+          "learning_update_count": 7,
+          "learning_updates": [
+            {
+              "departure_start_thermal": 0.6000000238418579,
+              "observed_departure_thermal_overshoot": 0.019999980926513672,
+              "prediction_after": 0.009999990463256836,
+              "prediction_before": 0.0,
+              "transition_index": 22
+            },
+            {
+              "departure_start_thermal": 0.6100000143051147,
+              "observed_departure_thermal_overshoot": 0.039999961853027344,
+              "prediction_after": 0.02499997615814209,
+              "prediction_before": 0.009999990463256836,
+              "transition_index": 79
+            },
+            {
+              "departure_start_thermal": 0.5899999737739563,
+              "observed_departure_thermal_overshoot": 0.04000002145767212,
+              "prediction_after": 0.032499998807907104,
+              "prediction_before": 0.02499997615814209,
+              "transition_index": 138
+            },
+            {
+              "departure_start_thermal": 0.5699999928474426,
+              "observed_departure_thermal_overshoot": 0.04000002145767212,
+              "prediction_after": 0.03625001013278961,
+              "prediction_before": 0.032499998807907104,
+              "transition_index": 194
+            },
+            {
+              "departure_start_thermal": 0.5699999928474426,
+              "observed_departure_thermal_overshoot": 0.04000002145767212,
+              "prediction_after": 0.038125015795230865,
+              "prediction_before": 0.03625001013278961,
+              "transition_index": 248
+            },
+            {
+              "departure_start_thermal": 0.5699999928474426,
+              "observed_departure_thermal_overshoot": 0.04000002145767212,
+              "prediction_after": 0.03906251862645149,
+              "prediction_before": 0.038125015795230865,
+              "transition_index": 302
+            },
+            {
+              "departure_start_thermal": 0.5699999928474426,
+              "observed_departure_thermal_overshoot": 0.04000002145767212,
+              "prediction_after": 0.039531270042061806,
+              "prediction_before": 0.03906251862645149,
+              "transition_index": 356
+            }
+          ],
+          "mode": "CHARGE",
+          "probe_ready": true,
+          "seeded_heading": 0.376285001824293,
+          "terminated": false,
+          "termination_reason": "probe_ready_after_target_updates",
+          "transitions_to_probe_ready": 393,
+          "truncated": false,
+          "turns_remaining": 0
+        }
+      },
+      "matched_setup": {
+        "controller_input_fields": [
+          "thermal_interoception",
+          "charging_contact"
+        ],
+        "controller_type": "PredictiveThermalOvershootController",
+        "initial_position": [
+          0.5,
+          0.5
+        ],
+        "initial_prediction": 0.0,
+        "seeded_heading": 0.376285001824293,
+        "station_center": [
+          0.5,
+          0.5
+        ]
+      },
+      "seed": 18142
+    },
+    {
+      "histories": {
+        "mild": {
+          "charging_heat_per_offered_energy": 0.04,
+          "common_probe": {
+            "action": "WAIT",
+            "action_changed_mode": false,
+            "environment_transitions_between_observation_and_action": 0,
+            "mode_after": "CHARGE",
+            "mode_before": "CHARGE",
+            "observation": {
+              "charging_contact": true,
+              "thermal": 0.56
+            },
+            "observe_consequence_called": false
+          },
+          "condition": "mild",
+          "controller_observe_consequence_calls": 519,
+          "departure_peak_thermal": null,
+          "departure_start_thermal": null,
+          "evaluator_only_final_state": {
+            "energy": 6.920000000000016,
+            "thermal": 0.2699999999999999
+          },
+          "initial_prediction": 0.0,
+          "learned_prediction": 0.029687529429793358,
+          "learning_update_count": 7,
+          "learning_updates": [
+            {
+              "departure_start_thermal": 0.6000000238418579,
+              "observed_departure_thermal_overshoot": 0.019999980926513672,
+              "prediction_after": 0.009999990463256836,
+              "prediction_before": 0.0,
+              "transition_index": 43
+            },
+            {
+              "departure_start_thermal": 0.6000000238418579,
+              "observed_departure_thermal_overshoot": 0.029999971389770508,
+              "prediction_after": 0.019999980926513672,
+              "prediction_before": 0.009999990463256836,
+              "transition_index": 118
+            },
+            {
+              "departure_start_thermal": 0.5899999737739563,
+              "observed_departure_thermal_overshoot": 0.030000030994415283,
+              "prediction_after": 0.025000005960464478,
+              "prediction_before": 0.019999980926513672,
+              "transition_index": 193
+            },
+            {
+              "departure_start_thermal": 0.5799999833106995,
+              "observed_departure_thermal_overshoot": 0.030000030994415283,
+              "prediction_after": 0.02750001847743988,
+              "prediction_before": 0.025000005960464478,
+              "transition_index": 266
+            },
+            {
+              "departure_start_thermal": 0.5799999833106995,
+              "observed_departure_thermal_overshoot": 0.030000030994415283,
+              "prediction_after": 0.028750024735927582,
+              "prediction_before": 0.02750001847743988,
+              "transition_index": 338
+            },
+            {
+              "departure_start_thermal": 0.5799999833106995,
+              "observed_departure_thermal_overshoot": 0.030000030994415283,
+              "prediction_after": 0.029375027865171432,
+              "prediction_before": 0.028750024735927582,
+              "transition_index": 410
+            },
+            {
+              "departure_start_thermal": 0.5799999833106995,
+              "observed_departure_thermal_overshoot": 0.030000030994415283,
+              "prediction_after": 0.029687529429793358,
+              "prediction_before": 0.029375027865171432,
+              "transition_index": 482
+            }
+          ],
+          "mode": "CHARGE",
+          "probe_ready": true,
+          "seeded_heading": 5.593233811248814,
+          "terminated": false,
+          "termination_reason": "probe_ready_after_target_updates",
+          "transitions_to_probe_ready": 519,
+          "truncated": false,
+          "turns_remaining": 0
+        },
+        "strong": {
+          "charging_heat_per_offered_energy": 0.06,
+          "common_probe": {
+            "action": "MOVE_FORWARD",
+            "action_changed_mode": true,
+            "environment_transitions_between_observation_and_action": 0,
+            "mode_after": "DEPART",
+            "mode_before": "CHARGE",
+            "observation": {
+              "charging_contact": true,
+              "thermal": 0.56
+            },
+            "observe_consequence_called": false
+          },
+          "condition": "strong",
+          "controller_observe_consequence_calls": 396,
+          "departure_peak_thermal": null,
+          "departure_start_thermal": null,
+          "evaluator_only_final_state": {
+            "energy": 6.920000000000016,
+            "thermal": 0.29000000000000004
+          },
+          "initial_prediction": 0.0,
+          "learned_prediction": 0.059375002048909664,
+          "learning_update_count": 7,
+          "learning_updates": [
+            {
+              "departure_start_thermal": 0.6000000238418579,
+              "observed_departure_thermal_overshoot": 0.039999961853027344,
+              "prediction_after": 0.019999980926513672,
+              "prediction_before": 0.0,
+              "transition_index": 23
+            },
+            {
+              "departure_start_thermal": 0.5899999737739563,
+              "observed_departure_thermal_overshoot": 0.06000000238418579,
+              "prediction_after": 0.03999999165534973,
+              "prediction_before": 0.019999980926513672,
+              "transition_index": 82
+            },
+            {
+              "departure_start_thermal": 0.5699999928474426,
+              "observed_departure_thermal_overshoot": 0.06000000238418579,
+              "prediction_after": 0.04999999701976776,
+              "prediction_before": 0.03999999165534973,
+              "transition_index": 141
+            },
+            {
+              "departure_start_thermal": 0.550000011920929,
+              "observed_departure_thermal_overshoot": 0.06000000238418579,
+              "prediction_after": 0.054999999701976776,
+              "prediction_before": 0.04999999701976776,
+              "transition_index": 197
+            },
+            {
+              "departure_start_thermal": 0.550000011920929,
+              "observed_departure_thermal_overshoot": 0.06000000238418579,
+              "prediction_after": 0.057500001043081284,
+              "prediction_before": 0.054999999701976776,
+              "transition_index": 251
+            },
+            {
+              "departure_start_thermal": 0.550000011920929,
+              "observed_departure_thermal_overshoot": 0.06000000238418579,
+              "prediction_after": 0.05875000171363354,
+              "prediction_before": 0.057500001043081284,
+              "transition_index": 305
+            },
+            {
+              "departure_start_thermal": 0.550000011920929,
+              "observed_departure_thermal_overshoot": 0.06000000238418579,
+              "prediction_after": 0.059375002048909664,
+              "prediction_before": 0.05875000171363354,
+              "transition_index": 359
+            }
+          ],
+          "mode": "CHARGE",
+          "probe_ready": true,
+          "seeded_heading": 5.593233811248814,
+          "terminated": false,
+          "termination_reason": "probe_ready_after_target_updates",
+          "transitions_to_probe_ready": 396,
+          "truncated": false,
+          "turns_remaining": 0
+        }
+      },
+      "matched_setup": {
+        "controller_input_fields": [
+          "thermal_interoception",
+          "charging_contact"
+        ],
+        "controller_type": "PredictiveThermalOvershootController",
+        "initial_position": [
+          0.5,
+          0.5
+        ],
+        "initial_prediction": 0.0,
+        "seeded_heading": 5.593233811248814,
+        "station_center": [
+          0.5,
+          0.5
+        ]
+      },
+      "seed": 18143
+    }
+  ],
+  "schema_version": 1,
+  "target_learning_updates": 7
+}
