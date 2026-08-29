@@ -1,0 +1,1287 @@
+{
+  "behaviour_policy": {
+    "action_selection": "D-003 controller alone selects every action",
+    "controller": "ThermostaticShuttleController",
+    "forced_actions": false,
+    "shadow_predictor_causal_effect": false
+  },
+  "development_seeds": [
+    18141,
+    18142,
+    18143
+  ],
+  "ecology": {
+    "charging_heat_per_offered_energy": 0.04,
+    "charging_radius": 0.1,
+    "environment": "D002ThermalStationEnv",
+    "passive_cooling_per_transition": 0.01,
+    "post_contact_setup": "D-003 evaluator-side setup",
+    "thermal_failure_boundary": 1.0
+  },
+  "experiment": "D-008",
+  "horizon": 1000,
+  "model": {
+    "actions": [
+      "WAIT",
+      "TURN_LEFT",
+      "TURN_RIGHT",
+      "MOVE_FORWARD"
+    ],
+    "features": [
+      "bias=1.0",
+      "thermal",
+      "charging_contact"
+    ],
+    "initial_weights": 0.0,
+    "learning_rate": 0.5,
+    "predicted_consequences": [
+      "delta_thermal",
+      "delta_charging_contact"
+    ],
+    "prediction_scored_before_update": true,
+    "type": "action-conditioned linear delta predictor",
+    "update": "weights += 0.5 * (observed_delta - dot(weights, x)) * x / dot(x, x)"
+  },
+  "organism_boundary": {
+    "info": {},
+    "reward": 0.0
+  },
+  "organism_information_boundary": {
+    "excluded": [
+      "energy",
+      "coordinates",
+      "station_center",
+      "distance",
+      "heading",
+      "controller_mode",
+      "transition_index",
+      "clock",
+      "horizon",
+      "seed_identity",
+      "reward",
+      "info",
+      "evaluator_telemetry",
+      "offered_station_energy",
+      "stored_energy_delta",
+      "thermal_input_truth",
+      "termination_metrics"
+    ],
+    "predict_inputs": [
+      "thermal",
+      "charging_contact",
+      "own_action"
+    ],
+    "update_inputs": [
+      "current thermal",
+      "current charging_contact",
+      "own action",
+      "next thermal",
+      "next charging_contact"
+    ]
+  },
+  "plastic_state": {
+    "dimension": 24,
+    "persistent_fields": [
+      "delta_thermal_weights[action][bias, thermal, charging_contact]",
+      "delta_charging_contact_weights[action][bias, thermal, charging_contact]"
+    ],
+    "reset": "all weights zero only at deliberate new-lifetime reset",
+    "rng": false,
+    "transient_fields": []
+  },
+  "results": [
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 64,
+        "TURN_LEFT": 52,
+        "TURN_RIGHT": 0,
+        "WAIT": 884
+      },
+      "checkpoints": {
+        "1000": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              1.0461469630574425,
+              -0.28704978774965567,
+              -1.3693837012524752
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              0.010299324932923041,
+              -0.0020026372868170634,
+              -0.009459912556135801
+            ],
+            "TURN_LEFT": [
+              -0.009299947874776013,
+              -0.002618853089827339,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              -0.008911151547148307,
+              -0.006371990091666401,
+              0.02095871995548745
+            ]
+          }
+        },
+        "250": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.6628551932102292,
+              -0.09850260131563296,
+              -0.7055479234019645
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              0.00707580528158633,
+              -2.1656916836082203e-06,
+              -0.004259448190315572
+            ],
+            "TURN_LEFT": [
+              -0.009295818294980888,
+              -0.002625161197164523,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              -0.0052992363848812655,
+              -0.008556267115753633,
+              0.01889252625074065
+            ]
+          }
+        },
+        "500": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.8100485059429948,
+              -0.2485008357958968,
+              -1.1754822385589878
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              0.008321672521121848,
+              -0.0014049389926318546,
+              -0.007995087325030894
+            ],
+            "TURN_LEFT": [
+              -0.009298647328468537,
+              -0.002623716133454652,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              -0.005697635018009934,
+              -0.007903556397255271,
+              0.021892105982224293
+            ]
+          }
+        },
+        "750": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.9546984669338825,
+              -0.2747151759724076,
+              -1.31045660827753
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              0.00952888113948057,
+              -0.00175930041874161,
+              -0.009035494307100416
+            ],
+            "TURN_LEFT": [
+              -0.00929920531783138,
+              -0.002621630956682095,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              -0.007152341598368573,
+              -0.007120358180539883,
+              0.022023603377113808
+            ]
+          }
+        }
+      },
+      "contact_action_contexts": {
+        "False": {
+          "MOVE_FORWARD": {
+            "contact_delta_target_counts": {
+              "+1": 13,
+              "-1": 0,
+              "0": 0
+            },
+            "count": 13,
+            "current_thermal_max": 0.25,
+            "current_thermal_min": 0.25,
+            "thermal_delta_max": 0.009999990463256836,
+            "thermal_delta_min": 0.009999990463256836
+          },
+          "TURN_LEFT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 52
+            },
+            "count": 52,
+            "current_thermal_max": 0.28999999165534973,
+            "current_thermal_min": 0.25999999046325684,
+            "thermal_delta_max": -0.009999990463256836,
+            "thermal_delta_min": -0.010000020265579224
+          },
+          "TURN_RIGHT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "count": 0,
+            "current_thermal_max": null,
+            "current_thermal_min": null,
+            "thermal_delta_max": null,
+            "thermal_delta_min": null
+          },
+          "WAIT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 428
+            },
+            "count": 428,
+            "current_thermal_max": 0.6200000047683716,
+            "current_thermal_min": 0.30000001192092896,
+            "thermal_delta_max": -0.009999990463256836,
+            "thermal_delta_min": -0.010000050067901611
+          }
+        },
+        "True": {
+          "MOVE_FORWARD": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 13,
+              "0": 38
+            },
+            "count": 51,
+            "current_thermal_max": 0.6299999952316284,
+            "current_thermal_min": 0.6000000238418579,
+            "thermal_delta_max": 0.009999990463256836,
+            "thermal_delta_min": -0.009999990463256836
+          },
+          "TURN_LEFT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "count": 0,
+            "current_thermal_max": null,
+            "current_thermal_min": null,
+            "thermal_delta_max": null,
+            "thermal_delta_min": null
+          },
+          "TURN_RIGHT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "count": 0,
+            "current_thermal_max": null,
+            "current_thermal_min": null,
+            "thermal_delta_max": null,
+            "thermal_delta_min": null
+          },
+          "WAIT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 456
+            },
+            "count": 456,
+            "current_thermal_max": 0.5899999737739563,
+            "current_thermal_min": 0.20000000298023224,
+            "thermal_delta_max": 0.010000050067901611,
+            "thermal_delta_min": 0.009999990463256836
+          }
+        }
+      },
+      "energy_termination": false,
+      "final_energy": 9.52000000000002,
+      "final_thermal_state": 0.33999999999999997,
+      "final_weights": {
+        "delta_charging_contact": {
+          "MOVE_FORWARD": [
+            1.0461469630574425,
+            -0.28704978774965567,
+            -1.3693837012524752
+          ],
+          "TURN_LEFT": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "TURN_RIGHT": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "WAIT": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "delta_thermal": {
+          "MOVE_FORWARD": [
+            0.010299324932923041,
+            -0.0020026372868170634,
+            -0.009459912556135801
+          ],
+          "TURN_LEFT": [
+            -0.009299947874776013,
+            -0.002618853089827339,
+            0.0
+          ],
+          "TURN_RIGHT": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "WAIT": [
+            -0.008911151547148307,
+            -0.006371990091666401,
+            0.02095871995548745
+          ]
+        }
+      },
+      "maximum_energy": 10.0,
+      "maximum_thermal_state": 0.6300000000000002,
+      "minimum_energy": 5.0,
+      "minimum_thermal_state": 0.20000000298023224,
+      "prediction_metrics": {
+        "overall": {
+          "learned_model_contact_delta_mae": 0.02430492984165993,
+          "learned_model_thermal_mae": 0.0008015421187418606,
+          "transition_count": 1000,
+          "zero_change_baseline_contact_delta_mae": 0.026,
+          "zero_change_baseline_thermal_mae": 0.009999999895691872
+        },
+        "windows": {
+          "Q1": {
+            "learned_model_contact_delta_mae": 0.02512176805898884,
+            "learned_model_thermal_mae": 0.0011178878788381857,
+            "transition_count": 250,
+            "zero_change_baseline_contact_delta_mae": 0.024,
+            "zero_change_baseline_thermal_mae": 0.009999999940395356
+          },
+          "Q2": {
+            "learned_model_contact_delta_mae": 0.02718313885317821,
+            "learned_model_thermal_mae": 0.0007697091269448011,
+            "transition_count": 250,
+            "zero_change_baseline_contact_delta_mae": 0.028,
+            "zero_change_baseline_thermal_mae": 0.00999999976158142
+          },
+          "Q3": {
+            "learned_model_contact_delta_mae": 0.02238616998945573,
+            "learned_model_thermal_mae": 0.000666436892650157,
+            "transition_count": 250,
+            "zero_change_baseline_contact_delta_mae": 0.024,
+            "zero_change_baseline_thermal_mae": 0.01
+          },
+          "Q4": {
+            "learned_model_contact_delta_mae": 0.022528642465016936,
+            "learned_model_thermal_mae": 0.000652134576534298,
+            "transition_count": 250,
+            "zero_change_baseline_contact_delta_mae": 0.028,
+            "zero_change_baseline_thermal_mae": 0.00999999988079071
+          }
+        }
+      },
+      "seed": 18141,
+      "seeded_heading": 6.2517569980776315,
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_termination": false,
+      "transitions": 1000,
+      "truncated": true
+    },
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 51,
+        "TURN_LEFT": 52,
+        "TURN_RIGHT": 0,
+        "WAIT": 897
+      },
+      "checkpoints": {
+        "1000": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              1.0411381761120277,
+              -0.27651727066546944,
+              -1.405610542745879
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              0.010232155643211999,
+              -0.0018272038570733098,
+              -0.010230249699380578
+            ],
+            "TURN_LEFT": [
+              -0.009299947874776013,
+              -0.002618853089827339,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              -0.008177758687597297,
+              -0.006044780212093712,
+              0.021683449502591188
+            ]
+          }
+        },
+        "250": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.660993765985372,
+              -0.09279554374100064,
+              -0.7060566444725925
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              0.007054276190874032,
+              -3.172631362491753e-05,
+              -0.004637143549427446
+            ],
+            "TURN_LEFT": [
+              -0.009295818294980888,
+              -0.002625161197164523,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              -0.005114420915103895,
+              -0.008305488143718114,
+              0.019100694405619484
+            ]
+          }
+        },
+        "500": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.8001352261307665,
+              -0.24350961062360277,
+              -1.1938936714904762
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              0.008225364877365478,
+              -0.001377790345255516,
+              -0.008569059618101563
+            ],
+            "TURN_LEFT": [
+              -0.009298647328468537,
+              -0.002623716133454652,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              -0.006153903122464484,
+              -0.008014113842659135,
+              0.02186158870051129
+            ]
+          }
+        },
+        "750": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              1.002883945507429,
+              -0.25354781198220416,
+              -1.3393778909036267
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              0.009897773968996118,
+              -0.0015502035807982149,
+              -0.00972279799776129
+            ],
+            "TURN_LEFT": [
+              -0.009299391030968069,
+              -0.002620936213885466,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              -0.00872285642087453,
+              -0.007542660446162905,
+              0.02102504707079534
+            ]
+          }
+        }
+      },
+      "contact_action_contexts": {
+        "False": {
+          "MOVE_FORWARD": {
+            "contact_delta_target_counts": {
+              "+1": 13,
+              "-1": 0,
+              "0": 0
+            },
+            "count": 13,
+            "current_thermal_max": 0.25,
+            "current_thermal_min": 0.25,
+            "thermal_delta_max": 0.009999990463256836,
+            "thermal_delta_min": 0.009999990463256836
+          },
+          "TURN_LEFT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 52
+            },
+            "count": 52,
+            "current_thermal_max": 0.28999999165534973,
+            "current_thermal_min": 0.25999999046325684,
+            "thermal_delta_max": -0.009999990463256836,
+            "thermal_delta_min": -0.010000020265579224
+          },
+          "TURN_RIGHT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "count": 0,
+            "current_thermal_max": null,
+            "current_thermal_min": null,
+            "thermal_delta_max": null,
+            "thermal_delta_min": null
+          },
+          "WAIT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 415
+            },
+            "count": 415,
+            "current_thermal_max": 0.6100000143051147,
+            "current_thermal_min": 0.30000001192092896,
+            "thermal_delta_max": -0.009999990463256836,
+            "thermal_delta_min": -0.010000050067901611
+          }
+        },
+        "True": {
+          "MOVE_FORWARD": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 13,
+              "0": 25
+            },
+            "count": 38,
+            "current_thermal_max": 0.6200000047683716,
+            "current_thermal_min": 0.6000000238418579,
+            "thermal_delta_max": 0.009999990463256836,
+            "thermal_delta_min": -0.009999990463256836
+          },
+          "TURN_LEFT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "count": 0,
+            "current_thermal_max": null,
+            "current_thermal_min": null,
+            "thermal_delta_max": null,
+            "thermal_delta_min": null
+          },
+          "TURN_RIGHT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "count": 0,
+            "current_thermal_max": null,
+            "current_thermal_min": null,
+            "thermal_delta_max": null,
+            "thermal_delta_min": null
+          },
+          "WAIT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 482
+            },
+            "count": 482,
+            "current_thermal_max": 0.5899999737739563,
+            "current_thermal_min": 0.20000000298023224,
+            "thermal_delta_max": 0.010000050067901611,
+            "thermal_delta_min": 0.009999990463256836
+          }
+        }
+      },
+      "energy_termination": false,
+      "final_energy": 10.0,
+      "final_thermal_state": 0.6000000000000002,
+      "final_weights": {
+        "delta_charging_contact": {
+          "MOVE_FORWARD": [
+            1.0411381761120277,
+            -0.27651727066546944,
+            -1.405610542745879
+          ],
+          "TURN_LEFT": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "TURN_RIGHT": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "WAIT": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "delta_thermal": {
+          "MOVE_FORWARD": [
+            0.010232155643211999,
+            -0.0018272038570733098,
+            -0.010230249699380578
+          ],
+          "TURN_LEFT": [
+            -0.009299947874776013,
+            -0.002618853089827339,
+            0.0
+          ],
+          "TURN_RIGHT": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "WAIT": [
+            -0.008177758687597297,
+            -0.006044780212093712,
+            0.021683449502591188
+          ]
+        }
+      },
+      "maximum_energy": 10.0,
+      "maximum_thermal_state": 0.6200000000000002,
+      "minimum_energy": 5.0,
+      "minimum_thermal_state": 0.20000000298023224,
+      "prediction_metrics": {
+        "overall": {
+          "learned_model_contact_delta_mae": 0.02325182502790384,
+          "learned_model_thermal_mae": 0.000764633365134197,
+          "transition_count": 1000,
+          "zero_change_baseline_contact_delta_mae": 0.026,
+          "zero_change_baseline_thermal_mae": 0.010000000163912772
+        },
+        "windows": {
+          "Q1": {
+            "learned_model_contact_delta_mae": 0.025056711819900872,
+            "learned_model_thermal_mae": 0.0010825473628284438,
+            "transition_count": 250,
+            "zero_change_baseline_contact_delta_mae": 0.024,
+            "zero_change_baseline_thermal_mae": 0.010000000178813934
+          },
+          "Q2": {
+            "learned_model_contact_delta_mae": 0.026037744482148108,
+            "learned_model_thermal_mae": 0.000729902755578543,
+            "transition_count": 250,
+            "zero_change_baseline_contact_delta_mae": 0.028,
+            "zero_change_baseline_thermal_mae": 0.01000000011920929
+          },
+          "Q3": {
+            "learned_model_contact_delta_mae": 0.021459305754385215,
+            "learned_model_thermal_mae": 0.0006455614945683982,
+            "transition_count": 250,
+            "zero_change_baseline_contact_delta_mae": 0.028,
+            "zero_change_baseline_thermal_mae": 0.01000000011920929
+          },
+          "Q4": {
+            "learned_model_contact_delta_mae": 0.020453538055181155,
+            "learned_model_thermal_mae": 0.0006005218475614013,
+            "transition_count": 250,
+            "zero_change_baseline_contact_delta_mae": 0.024,
+            "zero_change_baseline_thermal_mae": 0.010000000238418578
+          }
+        }
+      },
+      "seed": 18142,
+      "seeded_heading": 0.376285001824293,
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_termination": false,
+      "transitions": 1000,
+      "truncated": true
+    },
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 64,
+        "TURN_LEFT": 52,
+        "TURN_RIGHT": 0,
+        "WAIT": 884
+      },
+      "checkpoints": {
+        "1000": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              1.0461469630574425,
+              -0.28704978774965567,
+              -1.3693837012524752
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              0.010299324932923041,
+              -0.0020026372868170634,
+              -0.009459912556135801
+            ],
+            "TURN_LEFT": [
+              -0.009299947874776013,
+              -0.002618853089827339,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              -0.008911151547148307,
+              -0.006371990091666401,
+              0.02095871995548745
+            ]
+          }
+        },
+        "250": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.6628551932102292,
+              -0.09850260131563296,
+              -0.7055479234019645
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              0.00707580528158633,
+              -2.1656916836082203e-06,
+              -0.004259448190315572
+            ],
+            "TURN_LEFT": [
+              -0.009295818294980888,
+              -0.002625161197164523,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              -0.0052992363848812655,
+              -0.008556267115753633,
+              0.01889252625074065
+            ]
+          }
+        },
+        "500": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.8100485059429948,
+              -0.2485008357958968,
+              -1.1754822385589878
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              0.008321672521121848,
+              -0.0014049389926318546,
+              -0.007995087325030894
+            ],
+            "TURN_LEFT": [
+              -0.009298647328468537,
+              -0.002623716133454652,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              -0.005697635018009934,
+              -0.007903556397255271,
+              0.021892105982224293
+            ]
+          }
+        },
+        "750": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.9546984669338825,
+              -0.2747151759724076,
+              -1.31045660827753
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              0.00952888113948057,
+              -0.00175930041874161,
+              -0.009035494307100416
+            ],
+            "TURN_LEFT": [
+              -0.00929920531783138,
+              -0.002621630956682095,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              -0.007152341598368573,
+              -0.007120358180539883,
+              0.022023603377113808
+            ]
+          }
+        }
+      },
+      "contact_action_contexts": {
+        "False": {
+          "MOVE_FORWARD": {
+            "contact_delta_target_counts": {
+              "+1": 13,
+              "-1": 0,
+              "0": 0
+            },
+            "count": 13,
+            "current_thermal_max": 0.25,
+            "current_thermal_min": 0.25,
+            "thermal_delta_max": 0.009999990463256836,
+            "thermal_delta_min": 0.009999990463256836
+          },
+          "TURN_LEFT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 52
+            },
+            "count": 52,
+            "current_thermal_max": 0.28999999165534973,
+            "current_thermal_min": 0.25999999046325684,
+            "thermal_delta_max": -0.009999990463256836,
+            "thermal_delta_min": -0.010000020265579224
+          },
+          "TURN_RIGHT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "count": 0,
+            "current_thermal_max": null,
+            "current_thermal_min": null,
+            "thermal_delta_max": null,
+            "thermal_delta_min": null
+          },
+          "WAIT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 428
+            },
+            "count": 428,
+            "current_thermal_max": 0.6200000047683716,
+            "current_thermal_min": 0.30000001192092896,
+            "thermal_delta_max": -0.009999990463256836,
+            "thermal_delta_min": -0.010000050067901611
+          }
+        },
+        "True": {
+          "MOVE_FORWARD": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 13,
+              "0": 38
+            },
+            "count": 51,
+            "current_thermal_max": 0.6299999952316284,
+            "current_thermal_min": 0.6000000238418579,
+            "thermal_delta_max": 0.009999990463256836,
+            "thermal_delta_min": -0.009999990463256836
+          },
+          "TURN_LEFT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "count": 0,
+            "current_thermal_max": null,
+            "current_thermal_min": null,
+            "thermal_delta_max": null,
+            "thermal_delta_min": null
+          },
+          "TURN_RIGHT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "count": 0,
+            "current_thermal_max": null,
+            "current_thermal_min": null,
+            "thermal_delta_max": null,
+            "thermal_delta_min": null
+          },
+          "WAIT": {
+            "contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 456
+            },
+            "count": 456,
+            "current_thermal_max": 0.5899999737739563,
+            "current_thermal_min": 0.20000000298023224,
+            "thermal_delta_max": 0.010000050067901611,
+            "thermal_delta_min": 0.009999990463256836
+          }
+        }
+      },
+      "energy_termination": false,
+      "final_energy": 9.52000000000002,
+      "final_thermal_state": 0.33999999999999997,
+      "final_weights": {
+        "delta_charging_contact": {
+          "MOVE_FORWARD": [
+            1.0461469630574425,
+            -0.28704978774965567,
+            -1.3693837012524752
+          ],
+          "TURN_LEFT": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "TURN_RIGHT": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "WAIT": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "delta_thermal": {
+          "MOVE_FORWARD": [
+            0.010299324932923041,
+            -0.0020026372868170634,
+            -0.009459912556135801
+          ],
+          "TURN_LEFT": [
+            -0.009299947874776013,
+            -0.002618853089827339,
+            0.0
+          ],
+          "TURN_RIGHT": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "WAIT": [
+            -0.008911151547148307,
+            -0.006371990091666401,
+            0.02095871995548745
+          ]
+        }
+      },
+      "maximum_energy": 10.0,
+      "maximum_thermal_state": 0.6300000000000002,
+      "minimum_energy": 5.0,
+      "minimum_thermal_state": 0.20000000298023224,
+      "prediction_metrics": {
+        "overall": {
+          "learned_model_contact_delta_mae": 0.02430492984165993,
+          "learned_model_thermal_mae": 0.0008015421187418606,
+          "transition_count": 1000,
+          "zero_change_baseline_contact_delta_mae": 0.026,
+          "zero_change_baseline_thermal_mae": 0.009999999895691872
+        },
+        "windows": {
+          "Q1": {
+            "learned_model_contact_delta_mae": 0.02512176805898884,
+            "learned_model_thermal_mae": 0.0011178878788381857,
+            "transition_count": 250,
+            "zero_change_baseline_contact_delta_mae": 0.024,
+            "zero_change_baseline_thermal_mae": 0.009999999940395356
+          },
+          "Q2": {
+            "learned_model_contact_delta_mae": 0.02718313885317821,
+            "learned_model_thermal_mae": 0.0007697091269448011,
+            "transition_count": 250,
+            "zero_change_baseline_contact_delta_mae": 0.028,
+            "zero_change_baseline_thermal_mae": 0.00999999976158142
+          },
+          "Q3": {
+            "learned_model_contact_delta_mae": 0.02238616998945573,
+            "learned_model_thermal_mae": 0.000666436892650157,
+            "transition_count": 250,
+            "zero_change_baseline_contact_delta_mae": 0.024,
+            "zero_change_baseline_thermal_mae": 0.01
+          },
+          "Q4": {
+            "learned_model_contact_delta_mae": 0.022528642465016936,
+            "learned_model_thermal_mae": 0.000652134576534298,
+            "transition_count": 250,
+            "zero_change_baseline_contact_delta_mae": 0.028,
+            "zero_change_baseline_thermal_mae": 0.00999999988079071
+          }
+        }
+      },
+      "seed": 18143,
+      "seeded_heading": 5.593233811248814,
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_termination": false,
+      "transitions": 1000,
+      "truncated": true
+    }
+  ],
+  "schema_version": 1,
+  "summary_windows": {
+    "Q1": "transitions 1-250",
+    "Q2": "transitions 251-500",
+    "Q3": "transitions 501-750",
+    "Q4": "transitions 751-1000"
+  },
+  "title": "Minimal action-conditioned one-step consequence model"
+}
