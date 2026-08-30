@@ -155,6 +155,7 @@ def test_d011_is_registered_and_builds_neutral_beacon_data() -> None:
     assert data.probe_distance == pytest.approx(0.1)
     assert data.sensor_angle == pytest.approx(0.7853981633974483)
     assert data.thermal_threshold == pytest.approx(0.60)
+    assert data.visibility.energy == "CTRL + EVAL"
     assert all(
         None not in (frame.beacon_left, frame.beacon_forward, frame.beacon_right)
         for frame in data.frames
@@ -242,6 +243,29 @@ def test_shared_renderer_draws_beacons_and_preserves_non_beacon_sources() -> Non
     assert "BEACON R — CTRL + EVAL" in beacon_text
     assert "HOT_DEPART_THRESHOLD" in beacon_text
     assert "not literal RF beams" in beacon_text
+    assert beacon_data.visibility.energy == "CTRL + EVAL"
+    frame = beacon_data.frames[0]
+    expected_signals = (
+        frame.beacon_left,
+        frame.beacon_forward,
+        frame.beacon_right,
+    )
+    assert all(signal is not None for signal in expected_signals)
+    beacon_fill_y_positions = (0.37 - 0.025, 0.27 - 0.025, 0.17 - 0.025)
+    for y, signal in zip(beacon_fill_y_positions, expected_signals, strict=True):
+        if signal is None:
+            raise AssertionError("expected a beacon signal")
+        matching = [
+            patch
+            for patch in beacon_figure.axes[1].patches
+            if patch.get_y() == pytest.approx(y)
+            and patch.get_facecolor() != pytest.approx((0.88, 0.88, 0.88, 1.0))
+        ]
+        assert len(matching) == 1
+        assert matching[0].get_width() == pytest.approx(0.62 * signal)
+        assert f"{signal:.3f}" in [
+            text.get_text() for text in beacon_figure.axes[1].texts
+        ]
     assert sum(
         line.get_label().endswith("directional probe")
         for line in beacon_figure.axes[0].lines

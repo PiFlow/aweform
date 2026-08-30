@@ -359,6 +359,7 @@ def build_development_visualization_figure(
     )
     del energy_background, thermal_background
     beacon_gauges: list[tuple[Rectangle, Rectangle, Text]] = []
+    beacon_range = DevelopmentVisualizationRange(0.0, 1.0)
     if beacon_values_available:
         beacon_gauges = [
             _make_gauge(
@@ -366,7 +367,7 @@ def build_development_visualization_figure(
                 y=y,
                 label=label,
                 visibility="CTRL + EVAL",
-                value_range=DevelopmentVisualizationRange(0.0, 1.0),
+                value_range=beacon_range,
                 color=color,
             )
             for y, label, color in (
@@ -449,6 +450,19 @@ def build_development_visualization_figure(
         )
         energy_value.set_text(f"{frame.energy:.3f} / {data.energy_range.upper:g}")
         thermal_value.set_text(f"{frame.thermal:.3f} / {data.thermal_range.upper:g}")
+        beacon_signals = (
+            frame.beacon_left,
+            frame.beacon_forward,
+            frame.beacon_right,
+        )
+        if beacon_gauges:
+            for (_background, fill, value), signal in zip(
+                beacon_gauges, beacon_signals, strict=True
+            ):
+                if signal is None:
+                    raise RuntimeError("beacon gauge requires a directional signal")
+                fill.set_width(_gauge_fraction(signal, beacon_range) * 0.62)
+                value.set_text(f"{signal:.3f}")
         rendered: list[Artist] = [
             trajectory_line,
             body_marker,
@@ -467,11 +481,7 @@ def build_development_visualization_figure(
             if data.probe_distance is None or data.sensor_angle is None:
                 raise RuntimeError("directional probes require neutral probe metadata")
             endpoints = _probe_endpoints(frame, data)
-            signals = (
-                frame.beacon_left,
-                frame.beacon_forward,
-                frame.beacon_right,
-            )
+            signals = beacon_signals
             if any(signal is None for signal in signals):
                 raise RuntimeError("directional probe lines require beacon values")
             for line, endpoint, signal in zip(
@@ -1002,7 +1012,7 @@ def build_d011_development_visualization(
         visibility=DevelopmentVisualizationVisibility(
             position_heading="EVALUATOR ONLY",
             station_location="EVALUATOR ONLY",
-            energy="EVALUATOR ONLY",
+            energy="CTRL + EVAL",
             thermal="CTRL + EVAL",
             charging_contact="CTRL + EVAL",
             action_decision_mode=(
