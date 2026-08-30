@@ -1,0 +1,5507 @@
+{
+  "authoritative_base_sha": "539d91dfaf6b881b398d06c4637eb1c91f7a2174",
+  "development_seeds": [
+    18344,
+    18345,
+    18346
+  ],
+  "ecology": {
+    "charging_heat_per_offered_energy": 0.04,
+    "charging_radius": 0.1,
+    "environment": "D002ThermalStationEnv",
+    "passive_cooling_per_transition": 0.01,
+    "post_contact_setup": "unchanged D-011 setup",
+    "thermal_failure_boundary": 1.0
+  },
+  "evaluator_only": {
+    "geometry_passed_to_learner": false,
+    "metrics": [
+      "behavior/viability summaries",
+      "pre-update learned and zero-change MAE",
+      "action/context support and visible ranges",
+      "complete weight checkpoints and final state"
+    ],
+    "mode_passed_to_learner": false,
+    "prediction_causal_effect_on_behavior": false
+  },
+  "executed_commit_sha": "b41c4424ff3b6bb257cbd3a1b9fa8d5daf4a32cf",
+  "experiment": "D-013",
+  "horizon": 1000,
+  "learner": {
+    "actions": [
+      "WAIT",
+      "TURN_LEFT",
+      "TURN_RIGHT",
+      "MOVE_FORWARD"
+    ],
+    "buffer": false,
+    "extra_plastic_state": false,
+    "feature_dimension": 7,
+    "history": false,
+    "initial_weights": 0.0,
+    "learning_rate": 0.5,
+    "optimizer_state": false,
+    "outputs": [
+      "delta_energy",
+      "delta_thermal",
+      "delta_charging_contact"
+    ],
+    "plastic_state_dimension": 84,
+    "plastic_state_order": "action, output, feature",
+    "prediction_scored_before_update": true,
+    "reset": "all 84 weights zero only at deliberate new-lifetime reset",
+    "rng": false,
+    "type": "action-conditioned linear one-step delta predictor",
+    "update": "weights += 0.5 * (observed_delta - dot(weights, x)) * x / dot(x, x)"
+  },
+  "lifetime": "one uninterrupted lifetime per seed",
+  "organism_boundary": {
+    "info": {},
+    "reward": 0.0
+  },
+  "organism_visible": {
+    "controller_mode_is_learner_input": false,
+    "evaluator_geometry_is_learner_input": false,
+    "feature_vector": [
+      "bias=1.0",
+      "energy",
+      "beacon.left",
+      "beacon.forward",
+      "beacon.right",
+      "float(charging_contact)",
+      "thermal"
+    ],
+    "future_observation_is_learner_input": false,
+    "observation_type": "D011Observation",
+    "policy_rng_is_learner_input": false
+  },
+  "prediction_targets": [
+    "next.energy - current.energy",
+    "next.thermal - current.thermal",
+    "float(next.charging_contact) - float(current.charging_contact)"
+  ],
+  "programmed": {
+    "charging_radius": 0.1,
+    "controller": "unchanged D011Controller",
+    "counterfactual_action_selection": false,
+    "d011_action_logic_unchanged": true,
+    "forced_actions": false,
+    "hot_depart_threshold": 0.6,
+    "low_energy_seek_threshold": 0.5,
+    "model_guided_action": false,
+    "no_resets_within_lifetime": true,
+    "policy_rng": "unchanged D-011 organism-owned policy stream",
+    "reward_driven": false,
+    "runner_reuses": [
+      "d011._controller_observation",
+      "d011._prepare_post_contact_setup"
+    ]
+  },
+  "results": [
+    {
+      "accidental_away_contacts": 0,
+      "action_context_support": {
+        "False": {
+          "MOVE_FORWARD": {
+            "current_charging_contact_counts": {
+              "False": 348,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.9897856116294861,
+                "min": 0.08865499496459961
+              },
+              "beacon.left": {
+                "max": 0.9670872688293457,
+                "min": 0.08913663774728775
+              },
+              "beacon.right": {
+                "max": 0.9701048135757446,
+                "min": 0.09673378616571426
+              },
+              "charging_contact": {
+                "max": 0.0,
+                "min": 0.0
+              },
+              "energy": {
+                "max": 0.9800000190734863,
+                "min": 0.04800000041723251
+              },
+              "thermal": {
+                "max": 0.6200000047683716,
+                "min": 0.07000000029802322
+              }
+            },
+            "execution_count": 348,
+            "observed_contact_delta_target_counts": {
+              "+1": 11,
+              "-1": 0,
+              "0": 337
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 2.270421694014499,
+                "learned_mae": 0.07176620297172268,
+                "status": "visited",
+                "transition_count": 348,
+                "zero_change_baseline_mae": 0.031609195402298854
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.2006214344335509,
+                "learned_mae": 0.004075843636781628,
+                "status": "visited",
+                "transition_count": 348,
+                "zero_change_baseline_mae": 0.02031609258646595
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.1837349043234996,
+                "learned_mae": 0.001837349253924601,
+                "status": "visited",
+                "transition_count": 348,
+                "zero_change_baseline_mae": 0.010000001146704301
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 2.8055006662490802,
+                "learned_mae": 0.0895372553058217,
+                "status": "visited",
+                "transition_count": 94,
+                "zero_change_baseline_mae": 0.031914893617021274
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.23875088663252486,
+                "learned_mae": 0.0048512150989018475,
+                "status": "visited",
+                "transition_count": 94,
+                "zero_change_baseline_mae": 0.02031915008704713
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.207125323066211,
+                "learned_mae": 0.002071253422413405,
+                "status": "visited",
+                "transition_count": 94,
+                "zero_change_baseline_mae": 0.01000000092577427
+              }
+            },
+            "status": "visited"
+          },
+          "TURN_LEFT": {
+            "current_charging_contact_counts": {
+              "False": 64,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.9701048135757446,
+                "min": 0.08865499496459961
+              },
+              "beacon.left": {
+                "max": 0.9751421809196472,
+                "min": 0.08913663774728775
+              },
+              "beacon.right": {
+                "max": 0.8850753307342529,
+                "min": 0.08865499496459961
+              },
+              "charging_contact": {
+                "max": 0.0,
+                "min": 0.0
+              },
+              "energy": {
+                "max": 0.9599999785423279,
+                "min": 0.08399999886751175
+              },
+              "thermal": {
+                "max": 0.6000000238418579,
+                "min": 0.09000000357627869
+              }
+            },
+            "execution_count": 64,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 64
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 64,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.07867013537688622,
+                "learned_mae": 0.0009440415045108414,
+                "status": "visited",
+                "transition_count": 64,
+                "zero_change_baseline_mae": 0.011999998474493623
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.07867035962684044,
+                "learned_mae": 0.0007867036061595144,
+                "status": "visited",
+                "transition_count": 64,
+                "zero_change_baseline_mae": 0.010000000125728548
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 18,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.033825017189941214,
+                "learned_mae": 0.0004059001468035146,
+                "status": "visited",
+                "transition_count": 18,
+                "zero_change_baseline_mae": 0.011999998241662979
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.03382529573216544,
+                "learned_mae": 0.0003382529847636244,
+                "status": "visited",
+                "transition_count": 18,
+                "zero_change_baseline_mae": 0.010000000811285444
+              }
+            },
+            "status": "visited"
+          },
+          "TURN_RIGHT": {
+            "current_charging_contact_counts": {
+              "False": 83,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.9670872688293457,
+                "min": 0.11917245388031006
+              },
+              "beacon.left": {
+                "max": 0.8144504427909851,
+                "min": 0.11688452214002609
+              },
+              "beacon.right": {
+                "max": 0.9854881167411804,
+                "min": 0.12366317212581635
+              },
+              "charging_contact": {
+                "max": 0.0,
+                "min": 0.0
+              },
+              "energy": {
+                "max": 0.9599999785423279,
+                "min": 0.05999999865889549
+              },
+              "thermal": {
+                "max": 0.6100000143051147,
+                "min": 0.07999999821186066
+              }
+            },
+            "execution_count": 83,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 83
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 83,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.0856389057632007,
+                "learned_mae": 0.0010276669492002908,
+                "status": "visited",
+                "transition_count": 83,
+                "zero_change_baseline_mae": 0.012000000934643918
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.08563903087504988,
+                "learned_mae": 0.0008563900301563714,
+                "status": "visited",
+                "transition_count": 83,
+                "zero_change_baseline_mae": 0.009999996746879026
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 23,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.06332140267212076,
+                "learned_mae": 0.0007598566489322891,
+                "status": "visited",
+                "transition_count": 23,
+                "zero_change_baseline_mae": 0.011999997107878975
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.06332130151894914,
+                "learned_mae": 0.0006332128010421868,
+                "status": "visited",
+                "transition_count": 23,
+                "zero_change_baseline_mae": 0.009999996618084286
+              }
+            },
+            "status": "visited"
+          },
+          "WAIT": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": null,
+                "min": null
+              },
+              "beacon.left": {
+                "max": null,
+                "min": null
+              },
+              "beacon.right": {
+                "max": null,
+                "min": null
+              },
+              "charging_contact": {
+                "max": null,
+                "min": null
+              },
+              "energy": {
+                "max": null,
+                "min": null
+              },
+              "thermal": {
+                "max": null,
+                "min": null
+              }
+            },
+            "execution_count": 0,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "status": "untested"
+          }
+        },
+        "True": {
+          "MOVE_FORWARD": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 40
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.9903932809829712,
+                "min": 0.6097561120986938
+              },
+              "beacon.left": {
+                "max": 0.9805038571357727,
+                "min": 0.6241472959518433
+              },
+              "beacon.right": {
+                "max": 0.9910016655921936,
+                "min": 0.6467158198356628
+              },
+              "charging_contact": {
+                "max": 1.0,
+                "min": 1.0
+              },
+              "energy": {
+                "max": 1.0,
+                "min": 1.0
+              },
+              "thermal": {
+                "max": 0.6299999952316284,
+                "min": 0.6000000238418579
+              }
+            },
+            "execution_count": 40,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 11,
+              "0": 29
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.3499710855004359,
+                "learned_mae": 0.3712420485126199,
+                "status": "visited",
+                "transition_count": 40,
+                "zero_change_baseline_mae": 0.275
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 1.534810143211154,
+                "learned_mae": 0.00844144773726177,
+                "status": "visited",
+                "transition_count": 40,
+                "zero_change_baseline_mae": 0.00549999475479126
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 1.0322295757237585,
+                "learned_mae": 0.010322285913129234,
+                "status": "visited",
+                "transition_count": 40,
+                "zero_change_baseline_mae": 0.009999990463256836
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.476320233085319,
+                "learned_mae": 0.4026327908414506,
+                "status": "visited",
+                "transition_count": 11,
+                "zero_change_baseline_mae": 0.2727272727272727
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 1.2560114820712898,
+                "learned_mae": 0.0068509651867930815,
+                "status": "visited",
+                "transition_count": 11,
+                "zero_change_baseline_mae": 0.005454540252685547
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.8524011594923804,
+                "learned_mae": 0.008524003465792874,
+                "status": "visited",
+                "transition_count": 11,
+                "zero_change_baseline_mae": 0.009999990463256836
+              }
+            },
+            "status": "visited"
+          },
+          "TURN_LEFT": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": null,
+                "min": null
+              },
+              "beacon.left": {
+                "max": null,
+                "min": null
+              },
+              "beacon.right": {
+                "max": null,
+                "min": null
+              },
+              "charging_contact": {
+                "max": null,
+                "min": null
+              },
+              "energy": {
+                "max": null,
+                "min": null
+              },
+              "thermal": {
+                "max": null,
+                "min": null
+              }
+            },
+            "execution_count": 0,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "status": "untested"
+          },
+          "TURN_RIGHT": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": null,
+                "min": null
+              },
+              "beacon.left": {
+                "max": null,
+                "min": null
+              },
+              "beacon.right": {
+                "max": null,
+                "min": null
+              },
+              "charging_contact": {
+                "max": null,
+                "min": null
+              },
+              "energy": {
+                "max": null,
+                "min": null
+              },
+              "thermal": {
+                "max": null,
+                "min": null
+              }
+            },
+            "execution_count": 0,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "status": "untested"
+          },
+          "WAIT": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 465
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.9907972812652588,
+                "min": 0.8620689511299133
+              },
+              "beacon.left": {
+                "max": 0.9805038571357727,
+                "min": 0.8094252943992615
+              },
+              "beacon.right": {
+                "max": 0.9910016655921936,
+                "min": 0.8427989482879639
+              },
+              "charging_contact": {
+                "max": 1.0,
+                "min": 1.0
+              },
+              "energy": {
+                "max": 1.0,
+                "min": 0.07800000160932541
+              },
+              "thermal": {
+                "max": 0.5899999737739563,
+                "min": 0.07999999821186066
+              }
+            },
+            "execution_count": 465,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 465
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 465,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.1985570383027948,
+                "learned_mae": 0.003602208987004068,
+                "status": "visited",
+                "transition_count": 465,
+                "zero_change_baseline_mae": 0.018141935525401946
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.009601834005243847,
+                "learned_mae": 9.601834479095145e-05,
+                "status": "visited",
+                "transition_count": 465,
+                "zero_change_baseline_mae": 0.010000000493500822
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 104,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.1745727345829395,
+                "learned_mae": 0.0030617371927477615,
+                "status": "visited",
+                "transition_count": 104,
+                "zero_change_baseline_mae": 0.017538461547631484
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.004177063149153992,
+                "learned_mae": 4.177063474733239e-05,
+                "status": "visited",
+                "transition_count": 104,
+                "zero_change_baseline_mae": 0.010000000779445354
+              }
+            },
+            "status": "visited"
+          }
+        }
+      },
+      "action_counts": {
+        "MOVE_FORWARD": 388,
+        "TURN_LEFT": 64,
+        "TURN_RIGHT": 83,
+        "WAIT": 465
+      },
+      "action_support": {
+        "MOVE_FORWARD": {
+          "current_charging_contact_counts": {
+            "False": 348,
+            "True": 40
+          },
+          "current_visible_channel_ranges": {
+            "beacon.forward": {
+              "max": 0.9903932809829712,
+              "min": 0.08865499496459961
+            },
+            "beacon.left": {
+              "max": 0.9805038571357727,
+              "min": 0.08913663774728775
+            },
+            "beacon.right": {
+              "max": 0.9910016655921936,
+              "min": 0.09673378616571426
+            },
+            "charging_contact": {
+              "max": 1.0,
+              "min": 0.0
+            },
+            "energy": {
+              "max": 1.0,
+              "min": 0.04800000041723251
+            },
+            "thermal": {
+              "max": 0.6299999952316284,
+              "min": 0.07000000029802322
+            }
+          },
+          "execution_count": 388,
+          "observed_contact_delta_target_counts": {
+            "+1": 11,
+            "-1": 11,
+            "0": 366
+          },
+          "overall_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": 1.810196389757466,
+              "learned_mae": 0.10264000148109344,
+              "status": "visited",
+              "transition_count": 388,
+              "zero_change_baseline_mae": 0.05670103092783505
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.24088497841066478,
+              "learned_mae": 0.004525905915181643,
+              "status": "visited",
+              "transition_count": 388,
+              "zero_change_baseline_mae": 0.01878865982031392
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.27120849796963153,
+              "learned_mae": 0.0027120849919869327,
+              "status": "visited",
+              "transition_count": 388,
+              "zero_change_baseline_mae": 0.010000000045317965
+            }
+          },
+          "q4_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": 2.140910449667198,
+              "learned_mae": 0.12233773998098274,
+              "status": "visited",
+              "transition_count": 105,
+              "zero_change_baseline_mae": 0.05714285714285714
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.26973341249002597,
+              "learned_mae": 0.00506071272715712,
+              "status": "visited",
+              "transition_count": 105,
+              "zero_change_baseline_mae": 0.01876190524725687
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.2747255854695791,
+              "learned_mae": 0.0027472558079103026,
+              "status": "visited",
+              "transition_count": 105,
+              "zero_change_baseline_mae": 0.009999999829701015
+            }
+          },
+          "status": "visited"
+        },
+        "TURN_LEFT": {
+          "current_charging_contact_counts": {
+            "False": 64,
+            "True": 0
+          },
+          "current_visible_channel_ranges": {
+            "beacon.forward": {
+              "max": 0.9701048135757446,
+              "min": 0.08865499496459961
+            },
+            "beacon.left": {
+              "max": 0.9751421809196472,
+              "min": 0.08913663774728775
+            },
+            "beacon.right": {
+              "max": 0.8850753307342529,
+              "min": 0.08865499496459961
+            },
+            "charging_contact": {
+              "max": 0.0,
+              "min": 0.0
+            },
+            "energy": {
+              "max": 0.9599999785423279,
+              "min": 0.08399999886751175
+            },
+            "thermal": {
+              "max": 0.6000000238418579,
+              "min": 0.09000000357627869
+            }
+          },
+          "execution_count": 64,
+          "observed_contact_delta_target_counts": {
+            "+1": 0,
+            "-1": 0,
+            "0": 64
+          },
+          "overall_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 64,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.07867013537688622,
+              "learned_mae": 0.0009440415045108414,
+              "status": "visited",
+              "transition_count": 64,
+              "zero_change_baseline_mae": 0.011999998474493623
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.07867035962684044,
+              "learned_mae": 0.0007867036061595144,
+              "status": "visited",
+              "transition_count": 64,
+              "zero_change_baseline_mae": 0.010000000125728548
+            }
+          },
+          "q4_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 18,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.033825017189941214,
+              "learned_mae": 0.0004059001468035146,
+              "status": "visited",
+              "transition_count": 18,
+              "zero_change_baseline_mae": 0.011999998241662979
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.03382529573216544,
+              "learned_mae": 0.0003382529847636244,
+              "status": "visited",
+              "transition_count": 18,
+              "zero_change_baseline_mae": 0.010000000811285444
+            }
+          },
+          "status": "visited"
+        },
+        "TURN_RIGHT": {
+          "current_charging_contact_counts": {
+            "False": 83,
+            "True": 0
+          },
+          "current_visible_channel_ranges": {
+            "beacon.forward": {
+              "max": 0.9670872688293457,
+              "min": 0.11917245388031006
+            },
+            "beacon.left": {
+              "max": 0.8144504427909851,
+              "min": 0.11688452214002609
+            },
+            "beacon.right": {
+              "max": 0.9854881167411804,
+              "min": 0.12366317212581635
+            },
+            "charging_contact": {
+              "max": 0.0,
+              "min": 0.0
+            },
+            "energy": {
+              "max": 0.9599999785423279,
+              "min": 0.05999999865889549
+            },
+            "thermal": {
+              "max": 0.6100000143051147,
+              "min": 0.07999999821186066
+            }
+          },
+          "execution_count": 83,
+          "observed_contact_delta_target_counts": {
+            "+1": 0,
+            "-1": 0,
+            "0": 83
+          },
+          "overall_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 83,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.0856389057632007,
+              "learned_mae": 0.0010276669492002908,
+              "status": "visited",
+              "transition_count": 83,
+              "zero_change_baseline_mae": 0.012000000934643918
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.08563903087504988,
+              "learned_mae": 0.0008563900301563714,
+              "status": "visited",
+              "transition_count": 83,
+              "zero_change_baseline_mae": 0.009999996746879026
+            }
+          },
+          "q4_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 23,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.06332140267212076,
+              "learned_mae": 0.0007598566489322891,
+              "status": "visited",
+              "transition_count": 23,
+              "zero_change_baseline_mae": 0.011999997107878975
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.06332130151894914,
+              "learned_mae": 0.0006332128010421868,
+              "status": "visited",
+              "transition_count": 23,
+              "zero_change_baseline_mae": 0.009999996618084286
+            }
+          },
+          "status": "visited"
+        },
+        "WAIT": {
+          "current_charging_contact_counts": {
+            "False": 0,
+            "True": 465
+          },
+          "current_visible_channel_ranges": {
+            "beacon.forward": {
+              "max": 0.9907972812652588,
+              "min": 0.8620689511299133
+            },
+            "beacon.left": {
+              "max": 0.9805038571357727,
+              "min": 0.8094252943992615
+            },
+            "beacon.right": {
+              "max": 0.9910016655921936,
+              "min": 0.8427989482879639
+            },
+            "charging_contact": {
+              "max": 1.0,
+              "min": 1.0
+            },
+            "energy": {
+              "max": 1.0,
+              "min": 0.07800000160932541
+            },
+            "thermal": {
+              "max": 0.5899999737739563,
+              "min": 0.07999999821186066
+            }
+          },
+          "execution_count": 465,
+          "observed_contact_delta_target_counts": {
+            "+1": 0,
+            "-1": 0,
+            "0": 465
+          },
+          "overall_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 465,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.1985570383027948,
+              "learned_mae": 0.003602208987004068,
+              "status": "visited",
+              "transition_count": 465,
+              "zero_change_baseline_mae": 0.018141935525401946
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.009601834005243847,
+              "learned_mae": 9.601834479095145e-05,
+              "status": "visited",
+              "transition_count": 465,
+              "zero_change_baseline_mae": 0.010000000493500822
+            }
+          },
+          "q4_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 104,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.1745727345829395,
+              "learned_mae": 0.0030617371927477615,
+              "status": "visited",
+              "transition_count": 104,
+              "zero_change_baseline_mae": 0.017538461547631484
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.004177063149153992,
+              "learned_mae": 4.177063474733239e-05,
+              "status": "visited",
+              "transition_count": 104,
+              "zero_change_baseline_mae": 0.010000000779445354
+            }
+          },
+          "status": "visited"
+        }
+      },
+      "away_entries": 11,
+      "checkpoints": {
+        "1000": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              -0.2379485593832419,
+              -0.17098292870510115,
+              0.2799566549664937,
+              0.33662822296310096,
+              0.3539404359787814,
+              -0.7047996957702317,
+              -0.11907277555953559
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_energy": {
+            "MOVE_FORWARD": [
+              -0.03349880387796621,
+              -0.007844548726353385,
+              0.015890911708885506,
+              0.016316173837981666,
+              0.018534747193769838,
+              0.001862131449991806,
+              -0.007032638076629328
+            ],
+            "TURN_LEFT": [
+              -0.008158793704917738,
+              -0.0036577613343559317,
+              -0.0008626119161187903,
+              -0.0007704173141962954,
+              -0.0005200538604482765,
+              0.0,
+              -0.0026710885846455987
+            ],
+            "TURN_RIGHT": [
+              -0.008942616441123506,
+              -0.0035042678944622657,
+              -0.000868970431953899,
+              -0.0009499642384787873,
+              -0.0009777486823363815,
+              0.0,
+              -0.002609349241142408
+            ],
+            "WAIT": [
+              0.012808045171749103,
+              -0.03709019016996826,
+              0.011541137736760148,
+              0.01230071369608757,
+              0.01175741955286301,
+              0.012808045171749103,
+              -0.008194020555574189
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              -0.01725011245344777,
+              -0.0019341815801523369,
+              0.006832874743699895,
+              0.0072768474441124685,
+              0.008001721096117933,
+              0.004968953927776201,
+              -0.002677153843776911
+            ],
+            "TURN_LEFT": [
+              -0.006798998143035278,
+              -0.003048135125746242,
+              -0.000718845604218309,
+              -0.0006420155594092269,
+              -0.0004333789931511775,
+              0.0,
+              -0.0022259077554601693
+            ],
+            "TURN_RIGHT": [
+              -0.007452185678499064,
+              -0.0029202183434043887,
+              -0.000724142171888684,
+              -0.000791637980376396,
+              -0.0008147923052716653,
+              0.0,
+              -0.0021744555061559458
+            ],
+            "WAIT": [
+              0.0021739138761478305,
+              0.0005021118453870583,
+              0.0018697717280565954,
+              0.001884491223449481,
+              0.001888574257299831,
+              0.0021739138761478305,
+              0.0002759535643917049
+            ]
+          }
+        },
+        "250": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.1368812970802456,
+              -0.12184669118555866,
+              0.1300203774086584,
+              0.1718046665235534,
+              0.14701828774964631,
+              -0.4045025447845647,
+              -0.058952057602014905
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_energy": {
+            "MOVE_FORWARD": [
+              -0.00919659742541826,
+              -0.017067752187209323,
+              0.006888944948094706,
+              0.008954268060914896,
+              0.006597330388230733,
+              -0.003305684519890042,
+              -0.010402600000902044
+            ],
+            "TURN_LEFT": [
+              -0.00675353415203774,
+              -0.002932450134284539,
+              -0.001973381451145665,
+              -0.0019359844827615868,
+              -0.0015398564251842056,
+              0.0,
+              -0.0021389465315835208
+            ],
+            "TURN_RIGHT": [
+              -0.007379786004177104,
+              -0.005110207038428213,
+              -0.001269900557018058,
+              -0.0011239879660811393,
+              -0.0012583863299489501,
+              0.0,
+              -0.0034051455727146817
+            ],
+            "WAIT": [
+              0.007700901399107984,
+              -0.009724150210205552,
+              0.006613569848940699,
+              0.007291422814515961,
+              0.007304249382125487,
+              0.007700901399107984,
+              -0.0016965613843180228
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              -0.0061941143923381035,
+              -0.008125951075039507,
+              0.003218821166508653,
+              0.004145117313584142,
+              0.0028605635968251384,
+              0.0008471786941138509,
+              -0.005177232823522784
+            ],
+            "TURN_LEFT": [
+              -0.005627945579771386,
+              -0.002443706450140855,
+              -0.0016444879032063426,
+              -0.0016133227001127123,
+              -0.0012832142658939234,
+              0.0,
+              -0.0017824542201690802
+            ],
+            "TURN_RIGHT": [
+              -0.006149819741882583,
+              -0.0042585000548358036,
+              -0.001058249196376455,
+              -0.0009366556936345326,
+              -0.0010486535003493215,
+              0.0,
+              -0.002837617914063043
+            ],
+            "WAIT": [
+              0.002151096976004661,
+              0.0009696535930886171,
+              0.0018407569057584863,
+              0.0018615099507817681,
+              0.0018751009376746966,
+              0.002151096976004661,
+              0.0004032061067809091
+            ]
+          }
+        },
+        "500": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.023005841298139533,
+              -0.27007411755354,
+              0.16039391891125723,
+              0.20578307643436436,
+              0.1706614212462137,
+              -0.5878910750202349,
+              -0.1527716295399565
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_energy": {
+            "MOVE_FORWARD": [
+              -0.016548070168425365,
+              -0.01898246078268527,
+              0.011770094868974755,
+              0.013520850528496895,
+              0.011327018366598171,
+              0.0011596612869758517,
+              -0.012164909331464439
+            ],
+            "TURN_LEFT": [
+              -0.006924748507645588,
+              -0.002987202710583443,
+              -0.0010785120365069142,
+              -0.0010543150931440193,
+              -0.0007839345873542366,
+              0.0,
+              -0.0022131049204371926
+            ],
+            "TURN_RIGHT": [
+              -0.008148277236950023,
+              -0.0042918777506765335,
+              -0.0009344751458189038,
+              -0.000892920766939778,
+              -0.0009434207196993966,
+              0.0,
+              -0.0029996316018314467
+            ],
+            "WAIT": [
+              0.005894692692576823,
+              -0.02344444798723907,
+              0.005323083657958142,
+              0.005560635475883061,
+              0.005333451455382985,
+              0.005894692692576823,
+              -0.005577047480782177
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              -0.009672508577782749,
+              -0.007952093584382971,
+              0.005676397562809166,
+              0.006587127948839674,
+              0.005422548892611193,
+              0.004212865742652477,
+              -0.005457446415358455
+            ],
+            "TURN_LEFT": [
+              -0.0057706250927658945,
+              -0.0024893373260668995,
+              -0.0008987606341222225,
+              -0.0008785961488838029,
+              -0.0006532791315281482,
+              0.0,
+              -0.0018442550939717357
+            ],
+            "TURN_RIGHT": [
+              -0.006790234234741441,
+              -0.0035765591573071686,
+              -0.000778730575015125,
+              -0.0007441024855977802,
+              -0.000786184879857333,
+              0.0,
+              -0.0024996900614174876
+            ],
+            "WAIT": [
+              0.002076541863873721,
+              0.000727105687128775,
+              0.0017834021794777659,
+              0.0017904075033257484,
+              0.0017976490552926712,
+              0.002076541863873721,
+              0.00032603333853685294
+            ]
+          }
+        },
+        "750": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              -0.13493345286391645,
+              -0.277700540099448,
+              0.24351330940324378,
+              0.28156889673656704,
+              0.24841619057875092,
+              -0.6515625834567929,
+              -0.17086583952724405
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_energy": {
+            "MOVE_FORWARD": [
+              -0.029276233167568447,
+              -0.0171301460443187,
+              0.014384463676145385,
+              0.014735877124907811,
+              0.013572711190622568,
+              0.0020928105521077897,
+              -0.0120789530655993
+            ],
+            "TURN_LEFT": [
+              -0.008647929313857832,
+              -0.003976076713852265,
+              -0.0011830516658687196,
+              -0.0010931432965527537,
+              -0.0008211942634456939,
+              0.0,
+              -0.0028836321509663663
+            ],
+            "TURN_RIGHT": [
+              -0.008651817118972718,
+              -0.0042966545580455946,
+              -0.0009559354136322449,
+              -0.0009568190147911895,
+              -0.0010286282540471591,
+              0.0,
+              -0.0030444956133097033
+            ],
+            "WAIT": [
+              0.0080810993795917,
+              -0.032972237972065374,
+              0.007244010900255667,
+              0.007666700329001983,
+              0.007387281762181128,
+              0.0080810993795917,
+              -0.00781936559507774
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              -0.015521517759790986,
+              -0.006394584481119663,
+              0.006422019955481946,
+              0.0067244775499734595,
+              0.0060444218695260565,
+              0.005048551971124515,
+              -0.0050641005909098265
+            ],
+            "TURN_LEFT": [
+              -0.007206607732322372,
+              -0.003313397639393921,
+              -0.0009858783764753413,
+              -0.0009109541879211209,
+              -0.0006843301374379178,
+              0.0,
+              -0.0024030269652042524
+            ],
+            "TURN_RIGHT": [
+              -0.007209846577363023,
+              -0.0035805345490937317,
+              -0.0007966133390898908,
+              -0.0007973510266618562,
+              -0.0008571912114684984,
+              0.0,
+              -0.0025370736462067543
+            ],
+            "WAIT": [
+              0.002113754090459118,
+              0.0005853471287449468,
+              0.0018159762351436168,
+              0.0018253804430495733,
+              0.0018321743908909086,
+              0.002113754090459118,
+              0.0002922729762361738
+            ]
+          }
+        }
+      },
+      "completed_autonomous_regulation_cycles": 11,
+      "demonstrated_failed_seek_episodes": 0,
+      "energy_termination": false,
+      "evaluator_only": {
+        "passed_to_learner": false,
+        "seeded_heading": 3.5694925857097775,
+        "station_position": [
+          0.5,
+          0.5
+        ],
+        "trajectory_geometry_collected": false
+      },
+      "final_energy": 5.420000000000025,
+      "final_normalized_energy": 0.5419999957084656,
+      "final_thermal_state": 0.29999999999999777,
+      "final_weights": {
+        "delta_charging_contact": {
+          "MOVE_FORWARD": [
+            -0.2379485593832419,
+            -0.17098292870510115,
+            0.2799566549664937,
+            0.33662822296310096,
+            0.3539404359787814,
+            -0.7047996957702317,
+            -0.11907277555953559
+          ],
+          "TURN_LEFT": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "TURN_RIGHT": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "WAIT": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "delta_energy": {
+          "MOVE_FORWARD": [
+            -0.03349880387796621,
+            -0.007844548726353385,
+            0.015890911708885506,
+            0.016316173837981666,
+            0.018534747193769838,
+            0.001862131449991806,
+            -0.007032638076629328
+          ],
+          "TURN_LEFT": [
+            -0.008158793704917738,
+            -0.0036577613343559317,
+            -0.0008626119161187903,
+            -0.0007704173141962954,
+            -0.0005200538604482765,
+            0.0,
+            -0.0026710885846455987
+          ],
+          "TURN_RIGHT": [
+            -0.008942616441123506,
+            -0.0035042678944622657,
+            -0.000868970431953899,
+            -0.0009499642384787873,
+            -0.0009777486823363815,
+            0.0,
+            -0.002609349241142408
+          ],
+          "WAIT": [
+            0.012808045171749103,
+            -0.03709019016996826,
+            0.011541137736760148,
+            0.01230071369608757,
+            0.01175741955286301,
+            0.012808045171749103,
+            -0.008194020555574189
+          ]
+        },
+        "delta_thermal": {
+          "MOVE_FORWARD": [
+            -0.01725011245344777,
+            -0.0019341815801523369,
+            0.006832874743699895,
+            0.0072768474441124685,
+            0.008001721096117933,
+            0.004968953927776201,
+            -0.002677153843776911
+          ],
+          "TURN_LEFT": [
+            -0.006798998143035278,
+            -0.003048135125746242,
+            -0.000718845604218309,
+            -0.0006420155594092269,
+            -0.0004333789931511775,
+            0.0,
+            -0.0022259077554601693
+          ],
+          "TURN_RIGHT": [
+            -0.007452185678499064,
+            -0.0029202183434043887,
+            -0.000724142171888684,
+            -0.000791637980376396,
+            -0.0008147923052716653,
+            0.0,
+            -0.0021744555061559458
+          ],
+          "WAIT": [
+            0.0021739138761478305,
+            0.0005021118453870583,
+            0.0018697717280565954,
+            0.001884491223449481,
+            0.001888574257299831,
+            0.0021739138761478305,
+            0.0002759535643917049
+          ]
+        }
+      },
+      "horizon_censored_seek_episodes": 0,
+      "low_energy_seek_entries": 11,
+      "maximum_energy": 10.0,
+      "maximum_normalized_energy": 1.0,
+      "maximum_thermal_state": 0.6299999952316284,
+      "minimum_energy": 0.4800000000000223,
+      "minimum_normalized_energy": 0.04800000041723251,
+      "minimum_thermal_state": 0.07000000029802322,
+      "mode_entry_counts": {
+        "AWAY": 11,
+        "CHARGE": 12,
+        "DEPART": 11,
+        "SEEK": 11
+      },
+      "mode_occupancy": {
+        "AWAY": 293,
+        "CHARGE": 465,
+        "DEPART": 40,
+        "SEEK": 202
+      },
+      "prediction_metrics": {
+        "overall": {
+          "targets": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": 1.8101963897574664,
+              "learned_mae": 0.03982432057466426,
+              "status": "visited",
+              "transition_count": 1000,
+              "zero_change_baseline_mae": 0.022
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.20450507062146234,
+              "learned_mae": 0.0035767936871196884,
+              "status": "visited",
+              "transition_count": 1000,
+              "zero_change_baseline_mae": 0.01749000000953674
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.12183669123314168,
+              "learned_mae": 0.0012183669105159086,
+              "status": "visited",
+              "transition_count": 1000,
+              "zero_change_baseline_mae": 0.009999999985098838
+            }
+          },
+          "transition_count": 1000
+        },
+        "windows": {
+          "Q1": {
+            "targets": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.492961344467682,
+                "learned_mae": 0.035831072267224366,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.024
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.22231922650980138,
+                "learned_mae": 0.003772312647503458,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.016968000054359438
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.13458302573748787,
+                "learned_mae": 0.0013458302573748787,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.01
+              }
+            },
+            "transition_count": 250
+          },
+          "Q2": {
+            "targets": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.5677201205072704,
+                "learned_mae": 0.03135440241014541,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.02
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.19169489379213736,
+                "learned_mae": 0.003295618608681398,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.017191999971866607
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.11430147858691299,
+                "learned_mae": 0.00114301478586913,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.01
+              }
+            },
+            "transition_count": 250
+          },
+          "Q3": {
+            "targets": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 2.036497841463728,
+                "learned_mae": 0.040729956829274556,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.02
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.2005215380008446,
+                "learned_mae": 0.0037409298524332148,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.018656000196933746
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.11307887895835805,
+                "learned_mae": 0.0011307887828435543,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.009999999940395356
+              }
+            },
+            "transition_count": 250
+          },
+          "Q4": {
+            "targets": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 2.1409104496671976,
+                "learned_mae": 0.05138185079201275,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.024
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.20405469421450156,
+                "learned_mae": 0.003498313639860681,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.017143999814987182
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.12538338159760803,
+                "learned_mae": 0.0012538338159760803,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.01
+              }
+            },
+            "transition_count": 250
+          }
+        }
+      },
+      "seed": 18344,
+      "successful_charging_contact_reacquisitions": 11,
+      "successful_physical_charger_exits": 11,
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_termination": false,
+      "thermal_triggered_departures": 11,
+      "transitions": 1000,
+      "truncated": true
+    },
+    {
+      "accidental_away_contacts": 0,
+      "action_context_support": {
+        "False": {
+          "MOVE_FORWARD": {
+            "current_charging_contact_counts": {
+              "False": 359,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.9937061667442322,
+                "min": 0.08761802315711975
+              },
+              "beacon.left": {
+                "max": 0.97276371717453,
+                "min": 0.09174146503210068
+              },
+              "beacon.right": {
+                "max": 0.9614987373352051,
+                "min": 0.09174146503210068
+              },
+              "charging_contact": {
+                "max": 0.0,
+                "min": 0.0
+              },
+              "energy": {
+                "max": 0.9800000190734863,
+                "min": 0.15600000321865082
+              },
+              "thermal": {
+                "max": 0.6200000047683716,
+                "min": 0.14000000059604645
+              }
+            },
+            "execution_count": 359,
+            "observed_contact_delta_target_counts": {
+              "+1": 11,
+              "-1": 0,
+              "0": 348
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 2.3019855520956702,
+                "learned_mae": 0.07053437624805675,
+                "status": "visited",
+                "transition_count": 359,
+                "zero_change_baseline_mae": 0.03064066852367688
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.19832446572323634,
+                "learned_mae": 0.004027257194374904,
+                "status": "visited",
+                "transition_count": 359,
+                "zero_change_baseline_mae": 0.020306406371440728
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.18219029811164628,
+                "learned_mae": 0.0018219029678069065,
+                "status": "visited",
+                "transition_count": 359,
+                "zero_change_baseline_mae": 0.009999999926946954
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 2.804697518702591,
+                "learned_mae": 0.08951162293731674,
+                "status": "visited",
+                "transition_count": 94,
+                "zero_change_baseline_mae": 0.031914893617021274
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.2397918588208829,
+                "learned_mae": 0.004872366712014752,
+                "status": "visited",
+                "transition_count": 94,
+                "zero_change_baseline_mae": 0.020319149849262644
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.21249309836603555,
+                "learned_mae": 0.0021249310793258736,
+                "status": "visited",
+                "transition_count": 94,
+                "zero_change_baseline_mae": 0.010000000450205295
+              }
+            },
+            "status": "visited"
+          },
+          "TURN_LEFT": {
+            "current_charging_contact_counts": {
+              "False": 68,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.9614987373352051,
+                "min": 0.08761802315711975
+              },
+              "beacon.left": {
+                "max": 0.9861862063407898,
+                "min": 0.09174146503210068
+              },
+              "beacon.right": {
+                "max": 0.8085721135139465,
+                "min": 0.08761802315711975
+              },
+              "charging_contact": {
+                "max": 0.0,
+                "min": 0.0
+              },
+              "energy": {
+                "max": 0.9599999785423279,
+                "min": 0.20000000298023224
+              },
+              "thermal": {
+                "max": 0.6100000143051147,
+                "min": 0.17000000178813934
+              }
+            },
+            "execution_count": 68,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 68
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 68,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.07968982528964277,
+                "learned_mae": 0.0009562780602218763,
+                "status": "visited",
+                "transition_count": 68,
+                "zero_change_baseline_mae": 0.012000001966953278
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.07968944379227356,
+                "learned_mae": 0.0007968946209320856,
+                "status": "visited",
+                "transition_count": 68,
+                "zero_change_baseline_mae": 0.010000002296531902
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 9,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.08100786766702903,
+                "learned_mae": 0.0009720943701578235,
+                "status": "visited",
+                "transition_count": 9,
+                "zero_change_baseline_mae": 0.011999999483426413
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.08100643043416987,
+                "learned_mae": 0.000810064336530762,
+                "status": "visited",
+                "transition_count": 9,
+                "zero_change_baseline_mae": 0.010000000397364298
+              }
+            },
+            "status": "visited"
+          },
+          "TURN_RIGHT": {
+            "current_charging_contact_counts": {
+              "False": 63,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.97276371717453,
+                "min": 0.08761802315711975
+              },
+              "beacon.left": {
+                "max": 0.8226122260093689,
+                "min": 0.08761802315711975
+              },
+              "beacon.right": {
+                "max": 0.9807345271110535,
+                "min": 0.09428379684686661
+              },
+              "charging_contact": {
+                "max": 0.0,
+                "min": 0.0
+              },
+              "energy": {
+                "max": 0.9800000190734863,
+                "min": 0.1679999977350235
+              },
+              "thermal": {
+                "max": 0.6200000047683716,
+                "min": 0.15000000596046448
+              }
+            },
+            "execution_count": 63,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 63
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 63,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.11188778563285472,
+                "learned_mae": 0.0013426537138333321,
+                "status": "visited",
+                "transition_count": 63,
+                "zero_change_baseline_mae": 0.012000002558269197
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.11188782434636944,
+                "learned_mae": 0.0011188782085306591,
+                "status": "visited",
+                "transition_count": 63,
+                "zero_change_baseline_mae": 0.009999999687785194
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 18,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.08133245460577238,
+                "learned_mae": 0.00097598927859418,
+                "status": "visited",
+                "transition_count": 18,
+                "zero_change_baseline_mae": 0.011999997827741835
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.08133294467832382,
+                "learned_mae": 0.0008133292771094936,
+                "status": "visited",
+                "transition_count": 18,
+                "zero_change_baseline_mae": 0.009999997913837433
+              }
+            },
+            "status": "visited"
+          },
+          "WAIT": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": null,
+                "min": null
+              },
+              "beacon.left": {
+                "max": null,
+                "min": null
+              },
+              "beacon.right": {
+                "max": null,
+                "min": null
+              },
+              "charging_contact": {
+                "max": null,
+                "min": null
+              },
+              "energy": {
+                "max": null,
+                "min": null
+              },
+              "thermal": {
+                "max": null,
+                "min": null
+              }
+            },
+            "execution_count": 0,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "status": "untested"
+          }
+        },
+        "True": {
+          "MOVE_FORWARD": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 43
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.9872315526008606,
+                "min": 0.649534285068512
+              },
+              "beacon.left": {
+                "max": 0.9937661290168762,
+                "min": 0.6444229483604431
+              },
+              "beacon.right": {
+                "max": 0.9878236055374146,
+                "min": 0.6420184373855591
+              },
+              "charging_contact": {
+                "max": 1.0,
+                "min": 1.0
+              },
+              "energy": {
+                "max": 1.0,
+                "min": 1.0
+              },
+              "thermal": {
+                "max": 0.6299999952316284,
+                "min": 0.6000000238418579
+              }
+            },
+            "execution_count": 43,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 12,
+              "0": 31
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.3625690650855775,
+                "learned_mae": 0.38025183211690533,
+                "status": "visited",
+                "transition_count": 43,
+                "zero_change_baseline_mae": 0.27906976744186046
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 1.4931422126167266,
+                "learned_mae": 0.008333809052904267,
+                "status": "visited",
+                "transition_count": 43,
+                "zero_change_baseline_mae": 0.005581390026003816
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 1.0280877556219128,
+                "learned_mae": 0.010280867751610252,
+                "status": "visited",
+                "transition_count": 43,
+                "zero_change_baseline_mae": 0.009999990463256836
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.5195387565278775,
+                "learned_mae": 0.3798846891319694,
+                "status": "visited",
+                "transition_count": 12,
+                "zero_change_baseline_mae": 0.25
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 1.0746266094650812,
+                "learned_mae": 0.0053731279231064195,
+                "status": "visited",
+                "transition_count": 12,
+                "zero_change_baseline_mae": 0.004999995231628418
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.7849539607453487,
+                "learned_mae": 0.007849532121549168,
+                "status": "visited",
+                "transition_count": 12,
+                "zero_change_baseline_mae": 0.009999990463256836
+              }
+            },
+            "status": "visited"
+          },
+          "TURN_LEFT": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": null,
+                "min": null
+              },
+              "beacon.left": {
+                "max": null,
+                "min": null
+              },
+              "beacon.right": {
+                "max": null,
+                "min": null
+              },
+              "charging_contact": {
+                "max": null,
+                "min": null
+              },
+              "energy": {
+                "max": null,
+                "min": null
+              },
+              "thermal": {
+                "max": null,
+                "min": null
+              }
+            },
+            "execution_count": 0,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "status": "untested"
+          },
+          "TURN_RIGHT": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": null,
+                "min": null
+              },
+              "beacon.left": {
+                "max": null,
+                "min": null
+              },
+              "beacon.right": {
+                "max": null,
+                "min": null
+              },
+              "charging_contact": {
+                "max": null,
+                "min": null
+              },
+              "energy": {
+                "max": null,
+                "min": null
+              },
+              "thermal": {
+                "max": null,
+                "min": null
+              }
+            },
+            "execution_count": 0,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "status": "untested"
+          },
+          "WAIT": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 467
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.9872315526008606,
+                "min": 0.8620689511299133
+              },
+              "beacon.left": {
+                "max": 0.9937661290168762,
+                "min": 0.8280845284461975
+              },
+              "beacon.right": {
+                "max": 0.9878236055374146,
+                "min": 0.7971144318580627
+              },
+              "charging_contact": {
+                "max": 1.0,
+                "min": 1.0
+              },
+              "energy": {
+                "max": 1.0,
+                "min": 0.1860000044107437
+              },
+              "thermal": {
+                "max": 0.5899999737739563,
+                "min": 0.15000000596046448
+              }
+            },
+            "execution_count": 467,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 467
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 467,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.20984115251162858,
+                "learned_mae": 0.00380410108049873,
+                "status": "visited",
+                "transition_count": 467,
+                "zero_change_baseline_mae": 0.018128479733201624
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.009581041536498311,
+                "learned_mae": 9.581042121024324e-05,
+                "status": "visited",
+                "transition_count": 467,
+                "zero_change_baseline_mae": 0.010000000610086086
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 117,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.1897936169729867,
+                "learned_mae": 0.003610945219104598,
+                "status": "visited",
+                "transition_count": 117,
+                "zero_change_baseline_mae": 0.01902564099201789
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.004595430370411811,
+                "learned_mae": 4.595430670072933e-05,
+                "status": "visited",
+                "transition_count": 117,
+                "zero_change_baseline_mae": 0.010000000652085003
+              }
+            },
+            "status": "visited"
+          }
+        }
+      },
+      "action_counts": {
+        "MOVE_FORWARD": 402,
+        "TURN_LEFT": 68,
+        "TURN_RIGHT": 63,
+        "WAIT": 467
+      },
+      "action_support": {
+        "MOVE_FORWARD": {
+          "current_charging_contact_counts": {
+            "False": 359,
+            "True": 43
+          },
+          "current_visible_channel_ranges": {
+            "beacon.forward": {
+              "max": 0.9937061667442322,
+              "min": 0.08761802315711975
+            },
+            "beacon.left": {
+              "max": 0.9937661290168762,
+              "min": 0.09174146503210068
+            },
+            "beacon.right": {
+              "max": 0.9878236055374146,
+              "min": 0.09174146503210068
+            },
+            "charging_contact": {
+              "max": 1.0,
+              "min": 0.0
+            },
+            "energy": {
+              "max": 1.0,
+              "min": 0.15600000321865082
+            },
+            "thermal": {
+              "max": 0.6299999952316284,
+              "min": 0.14000000059604645
+            }
+          },
+          "execution_count": 402,
+          "observed_contact_delta_target_counts": {
+            "+1": 11,
+            "-1": 12,
+            "0": 379
+          },
+          "overall_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": 1.8118552110469266,
+              "learned_mae": 0.10366335784596845,
+              "status": "visited",
+              "transition_count": 402,
+              "zero_change_baseline_mae": 0.05721393034825871
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.23959351977223864,
+              "learned_mae": 0.004487908263819593,
+              "status": "visited",
+              "transition_count": 402,
+              "zero_change_baseline_mae": 0.018731342433993495
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.272671790480164,
+              "learned_mae": 0.0027267176088605,
+              "status": "visited",
+              "transition_count": 402,
+              "zero_change_baseline_mae": 0.009999998914661691
+            }
+          },
+          "q4_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": 2.1621181376152334,
+              "learned_mae": 0.12238404552539058,
+              "status": "visited",
+              "transition_count": 106,
+              "zero_change_baseline_mae": 0.05660377358490566
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.2652182733089889,
+              "learned_mae": 0.0049290566604402244,
+              "status": "visited",
+              "transition_count": 106,
+              "zero_change_baseline_mae": 0.018584905930285184
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.27729993105145523,
+              "learned_mae": 0.0027729991218417194,
+              "status": "visited",
+              "transition_count": 106,
+              "zero_change_baseline_mae": 0.009999999319607357
+            }
+          },
+          "status": "visited"
+        },
+        "TURN_LEFT": {
+          "current_charging_contact_counts": {
+            "False": 68,
+            "True": 0
+          },
+          "current_visible_channel_ranges": {
+            "beacon.forward": {
+              "max": 0.9614987373352051,
+              "min": 0.08761802315711975
+            },
+            "beacon.left": {
+              "max": 0.9861862063407898,
+              "min": 0.09174146503210068
+            },
+            "beacon.right": {
+              "max": 0.8085721135139465,
+              "min": 0.08761802315711975
+            },
+            "charging_contact": {
+              "max": 0.0,
+              "min": 0.0
+            },
+            "energy": {
+              "max": 0.9599999785423279,
+              "min": 0.20000000298023224
+            },
+            "thermal": {
+              "max": 0.6100000143051147,
+              "min": 0.17000000178813934
+            }
+          },
+          "execution_count": 68,
+          "observed_contact_delta_target_counts": {
+            "+1": 0,
+            "-1": 0,
+            "0": 68
+          },
+          "overall_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 68,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.07968982528964277,
+              "learned_mae": 0.0009562780602218763,
+              "status": "visited",
+              "transition_count": 68,
+              "zero_change_baseline_mae": 0.012000001966953278
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.07968944379227356,
+              "learned_mae": 0.0007968946209320856,
+              "status": "visited",
+              "transition_count": 68,
+              "zero_change_baseline_mae": 0.010000002296531902
+            }
+          },
+          "q4_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 9,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.08100786766702903,
+              "learned_mae": 0.0009720943701578235,
+              "status": "visited",
+              "transition_count": 9,
+              "zero_change_baseline_mae": 0.011999999483426413
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.08100643043416987,
+              "learned_mae": 0.000810064336530762,
+              "status": "visited",
+              "transition_count": 9,
+              "zero_change_baseline_mae": 0.010000000397364298
+            }
+          },
+          "status": "visited"
+        },
+        "TURN_RIGHT": {
+          "current_charging_contact_counts": {
+            "False": 63,
+            "True": 0
+          },
+          "current_visible_channel_ranges": {
+            "beacon.forward": {
+              "max": 0.97276371717453,
+              "min": 0.08761802315711975
+            },
+            "beacon.left": {
+              "max": 0.8226122260093689,
+              "min": 0.08761802315711975
+            },
+            "beacon.right": {
+              "max": 0.9807345271110535,
+              "min": 0.09428379684686661
+            },
+            "charging_contact": {
+              "max": 0.0,
+              "min": 0.0
+            },
+            "energy": {
+              "max": 0.9800000190734863,
+              "min": 0.1679999977350235
+            },
+            "thermal": {
+              "max": 0.6200000047683716,
+              "min": 0.15000000596046448
+            }
+          },
+          "execution_count": 63,
+          "observed_contact_delta_target_counts": {
+            "+1": 0,
+            "-1": 0,
+            "0": 63
+          },
+          "overall_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 63,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.11188778563285472,
+              "learned_mae": 0.0013426537138333321,
+              "status": "visited",
+              "transition_count": 63,
+              "zero_change_baseline_mae": 0.012000002558269197
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.11188782434636944,
+              "learned_mae": 0.0011188782085306591,
+              "status": "visited",
+              "transition_count": 63,
+              "zero_change_baseline_mae": 0.009999999687785194
+            }
+          },
+          "q4_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 18,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.08133245460577238,
+              "learned_mae": 0.00097598927859418,
+              "status": "visited",
+              "transition_count": 18,
+              "zero_change_baseline_mae": 0.011999997827741835
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.08133294467832382,
+              "learned_mae": 0.0008133292771094936,
+              "status": "visited",
+              "transition_count": 18,
+              "zero_change_baseline_mae": 0.009999997913837433
+            }
+          },
+          "status": "visited"
+        },
+        "WAIT": {
+          "current_charging_contact_counts": {
+            "False": 0,
+            "True": 467
+          },
+          "current_visible_channel_ranges": {
+            "beacon.forward": {
+              "max": 0.9872315526008606,
+              "min": 0.8620689511299133
+            },
+            "beacon.left": {
+              "max": 0.9937661290168762,
+              "min": 0.8280845284461975
+            },
+            "beacon.right": {
+              "max": 0.9878236055374146,
+              "min": 0.7971144318580627
+            },
+            "charging_contact": {
+              "max": 1.0,
+              "min": 1.0
+            },
+            "energy": {
+              "max": 1.0,
+              "min": 0.1860000044107437
+            },
+            "thermal": {
+              "max": 0.5899999737739563,
+              "min": 0.15000000596046448
+            }
+          },
+          "execution_count": 467,
+          "observed_contact_delta_target_counts": {
+            "+1": 0,
+            "-1": 0,
+            "0": 467
+          },
+          "overall_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 467,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.20984115251162858,
+              "learned_mae": 0.00380410108049873,
+              "status": "visited",
+              "transition_count": 467,
+              "zero_change_baseline_mae": 0.018128479733201624
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.009581041536498311,
+              "learned_mae": 9.581042121024324e-05,
+              "status": "visited",
+              "transition_count": 467,
+              "zero_change_baseline_mae": 0.010000000610086086
+            }
+          },
+          "q4_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 117,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.1897936169729867,
+              "learned_mae": 0.003610945219104598,
+              "status": "visited",
+              "transition_count": 117,
+              "zero_change_baseline_mae": 0.01902564099201789
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.004595430370411811,
+              "learned_mae": 4.595430670072933e-05,
+              "status": "visited",
+              "transition_count": 117,
+              "zero_change_baseline_mae": 0.010000000652085003
+            }
+          },
+          "status": "visited"
+        }
+      },
+      "away_entries": 12,
+      "checkpoints": {
+        "1000": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              -0.10695663640280514,
+              -0.08538010823043289,
+              0.3572142017141994,
+              0.38437291510208843,
+              0.36535165844636625,
+              -0.7112056299477412,
+              -0.06533126974726886
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_energy": {
+            "MOVE_FORWARD": [
+              -0.025593563056782086,
+              -0.003799374187133246,
+              0.01961870645384576,
+              0.018685230805196736,
+              0.01940183954251778,
+              0.002402544008222827,
+              -0.004265366120831876
+            ],
+            "TURN_LEFT": [
+              -0.008334200138615208,
+              -0.0031141748168260312,
+              -0.001005099370500155,
+              -0.0008121811252878103,
+              -0.00045134584266695284,
+              0.0,
+              -0.002343395179678027
+            ],
+            "TURN_RIGHT": [
+              -0.007628103081603918,
+              -0.0036197523815915057,
+              -0.0010873303224633866,
+              -0.0010553957686767858,
+              -0.000958775638144986,
+              0.0,
+              -0.002610959488966285
+            ],
+            "WAIT": [
+              0.009805003799362748,
+              -0.039623590679864325,
+              0.009069865156776859,
+              0.009333499696170602,
+              0.008699403315543421,
+              0.009805003799362748,
+              -0.009266914669717768
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              -0.013636187199207539,
+              -8.643886557969924e-05,
+              0.008814965217015096,
+              0.008660772160890137,
+              0.00861219120278025,
+              0.005400078115034173,
+              -0.0014442892560414737
+            ],
+            "TURN_LEFT": [
+              -0.006945155290654963,
+              -0.0025951384424558683,
+              -0.0008375820360457572,
+              -0.000676817673071072,
+              -0.0003761227248911041,
+              0.0,
+              -0.001952823975340547
+            ],
+            "TURN_RIGHT": [
+              -0.006356765347855681,
+              -0.003016468577545849,
+              -0.0009061065527879192,
+              -0.0008794943755184425,
+              -0.0007989790393250112,
+              0.0,
+              -0.0021758049971850515
+            ],
+            "WAIT": [
+              0.00210955936705209,
+              0.0005110528125843985,
+              0.0018192051854738387,
+              0.001824231351628339,
+              0.0018227675942820327,
+              0.00210955936705209,
+              0.0002706390789960223
+            ]
+          }
+        },
+        "250": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.08388476516931695,
+              -0.13903219819514515,
+              0.06676890691133865,
+              0.08159627115731244,
+              0.052890208178100535,
+              -0.38625546871723737,
+              -0.07354319165663964
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_energy": {
+            "MOVE_FORWARD": [
+              -0.008204976184595283,
+              -0.01616839905328227,
+              0.005097337879394801,
+              0.006055122935193859,
+              0.003347569746557645,
+              -0.002315333829658996,
+              -0.0096947655266257
+            ],
+            "TURN_LEFT": [
+              -0.007775544875041942,
+              -0.0038864319913063466,
+              -0.0008999993332444294,
+              -0.0008053247273436864,
+              -0.0007240897539126195,
+              0.0,
+              -0.002731600493501211
+            ],
+            "TURN_RIGHT": [
+              -0.0057733111672120885,
+              -0.0028214453607803103,
+              -0.00242097974971194,
+              -0.002707077289709427,
+              -0.002620450998057678,
+              0.0,
+              -0.001981937240187232
+            ],
+            "WAIT": [
+              0.003160411691089851,
+              -0.012426665151343035,
+              0.0030129116936309427,
+              0.0029134800556770584,
+              0.0026124890201033187,
+              0.003160411691089851,
+              -0.0029958915953377436
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              -0.004716303974372825,
+              -0.007424160852556482,
+              0.002718114810078901,
+              0.0032198366549398075,
+              0.0017591424474954552,
+              0.0010559010259159553,
+              -0.004576458484733457
+            ],
+            "TURN_LEFT": [
+              -0.006479615651406791,
+              -0.0032386858691981395,
+              -0.000749998599574934,
+              -0.0006711034839485147,
+              -0.0006034073483379376,
+              0.0,
+              -0.0022763290205182357
+            ],
+            "TURN_RIGHT": [
+              -0.004811095943750634,
+              -0.0023512092684824606,
+              -0.0020174833089503475,
+              -0.0022558968814429914,
+              -0.002183708219159346,
+              0.0,
+              -0.0016516173759663446
+            ],
+            "WAIT": [
+              0.002036208066809699,
+              0.0009048044255532456,
+              0.0017534878341781768,
+              0.0017542034549560808,
+              0.0017552979736895503,
+              0.002036208066809699,
+              0.0003709972619567507
+            ]
+          }
+        },
+        "500": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.0656642772662561,
+              -0.22723811202109273,
+              0.19449733889749118,
+              0.23472476092393715,
+              0.1810405689432499,
+              -0.5859682773789927,
+              -0.12698299355224327
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_energy": {
+            "MOVE_FORWARD": [
+              -0.013452814458876677,
+              -0.017489228273990496,
+              0.01357573068446968,
+              0.015339760438834366,
+              0.012118312681644023,
+              0.0011161276050239467,
+              -0.011031039613750687
+            ],
+            "TURN_LEFT": [
+              -0.008230284149406476,
+              -0.0037972905573682254,
+              -0.0009834713463477281,
+              -0.0008246879490995776,
+              -0.0006680343149132849,
+              0.0,
+              -0.002717857314234717
+            ],
+            "TURN_RIGHT": [
+              -0.007511931075978463,
+              -0.0039749965703387916,
+              -0.0022833259961767102,
+              -0.00243636267371804,
+              -0.0023432712815901337,
+              0.0,
+              -0.002775941276822104
+            ],
+            "WAIT": [
+              0.005657521724164799,
+              -0.022643353016104057,
+              0.005336711319893685,
+              0.005340309351300916,
+              0.004860662119041309,
+              0.005657521724164799,
+              -0.005350898675803249
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              -0.007726919589227536,
+              -0.007271500570295326,
+              0.006769682064958194,
+              0.007717532464437993,
+              0.005953356964764786,
+              0.004250818914336242,
+              -0.004900399564144246
+            ],
+            "TURN_LEFT": [
+              -0.0068585628851813895,
+              -0.003164399965693894,
+              -0.0008195591085408423,
+              -0.0006872401342086407,
+              -0.000556695036627624,
+              0.0,
+              -0.002264875344906948
+            ],
+            "TURN_RIGHT": [
+              -0.006259936936273967,
+              -0.003312493596215165,
+              -0.0019027719200537282,
+              -0.002030301874949429,
+              -0.0019527261719201382,
+              0.0,
+              -0.0023132820164197734
+            ],
+            "WAIT": [
+              0.0020596331087651912,
+              0.0007563072816328042,
+              0.0017748340390540357,
+              0.0017763212063958088,
+              0.001776025494502009,
+              0.0020596331087651912,
+              0.00033167265847105137
+            ]
+          }
+        },
+        "750": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              -0.02316250910386984,
+              -0.21621914943942178,
+              0.28219108301390156,
+              0.3209997956048154,
+              0.2817616796206189,
+              -0.6669170302074632,
+              -0.12849708509734842
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_energy": {
+            "MOVE_FORWARD": [
+              -0.020674366251044615,
+              -0.013153557064599874,
+              0.01754640415555753,
+              0.01806080881516999,
+              0.0166080932623532,
+              0.002943447928437433,
+              -0.009110292603870883
+            ],
+            "TURN_LEFT": [
+              -0.007805453330794561,
+              -0.0032014099708959497,
+              -0.0007429817256039491,
+              -0.000540782719768544,
+              -0.00031584906341357804,
+              0.0,
+              -0.002349183991632597
+            ],
+            "TURN_RIGHT": [
+              -0.008036868896624492,
+              -0.004175517915503559,
+              -0.0018836535509310158,
+              -0.0019151901497147417,
+              -0.0018267798596239792,
+              0.0,
+              -0.0029453534865943763
+            ],
+            "WAIT": [
+              0.007919100879753862,
+              -0.03171121877659737,
+              0.007326879415884895,
+              0.007499077374140848,
+              0.006995533742007427,
+              0.007919100879753862,
+              -0.007433136746522321
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              -0.011241359613992101,
+              -0.004600747302092578,
+              0.008242736413960863,
+              0.008635190854320907,
+              0.0076964585406776725,
+              0.005585054741465933,
+              -0.0037130014708213438
+            ],
+            "TURN_LEFT": [
+              -0.006504556298083409,
+              -0.00266784788271108,
+              -0.000619156714926714,
+              -0.0004506583096324237,
+              -0.00026321369738668414,
+              0.0,
+              -0.001957657359741606
+            ],
+            "TURN_RIGHT": [
+              -0.006697392248662754,
+              -0.0034795998917087874,
+              -0.0015697100855153574,
+              -0.0015959906866636541,
+              -0.001522316864648307,
+              0.0,
+              -0.0024544621306027267
+            ],
+            "WAIT": [
+              0.00209090697588522,
+              0.0006316704823956022,
+              0.0018019510305734548,
+              0.0018060994796891292,
+              0.001805917605062977,
+              0.00209090697588522,
+              0.00030140597336726356
+            ]
+          }
+        }
+      },
+      "completed_autonomous_regulation_cycles": 11,
+      "demonstrated_failed_seek_episodes": 0,
+      "energy_termination": false,
+      "evaluator_only": {
+        "passed_to_learner": false,
+        "seeded_heading": 0.6934183255924584,
+        "station_position": [
+          0.5,
+          0.5
+        ],
+        "trajectory_geometry_collected": false
+      },
+      "final_energy": 5.240000000000018,
+      "final_normalized_energy": 0.5239999890327454,
+      "final_thermal_state": 0.37999999999999834,
+      "final_weights": {
+        "delta_charging_contact": {
+          "MOVE_FORWARD": [
+            -0.10695663640280514,
+            -0.08538010823043289,
+            0.3572142017141994,
+            0.38437291510208843,
+            0.36535165844636625,
+            -0.7112056299477412,
+            -0.06533126974726886
+          ],
+          "TURN_LEFT": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "TURN_RIGHT": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "WAIT": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "delta_energy": {
+          "MOVE_FORWARD": [
+            -0.025593563056782086,
+            -0.003799374187133246,
+            0.01961870645384576,
+            0.018685230805196736,
+            0.01940183954251778,
+            0.002402544008222827,
+            -0.004265366120831876
+          ],
+          "TURN_LEFT": [
+            -0.008334200138615208,
+            -0.0031141748168260312,
+            -0.001005099370500155,
+            -0.0008121811252878103,
+            -0.00045134584266695284,
+            0.0,
+            -0.002343395179678027
+          ],
+          "TURN_RIGHT": [
+            -0.007628103081603918,
+            -0.0036197523815915057,
+            -0.0010873303224633866,
+            -0.0010553957686767858,
+            -0.000958775638144986,
+            0.0,
+            -0.002610959488966285
+          ],
+          "WAIT": [
+            0.009805003799362748,
+            -0.039623590679864325,
+            0.009069865156776859,
+            0.009333499696170602,
+            0.008699403315543421,
+            0.009805003799362748,
+            -0.009266914669717768
+          ]
+        },
+        "delta_thermal": {
+          "MOVE_FORWARD": [
+            -0.013636187199207539,
+            -8.643886557969924e-05,
+            0.008814965217015096,
+            0.008660772160890137,
+            0.00861219120278025,
+            0.005400078115034173,
+            -0.0014442892560414737
+          ],
+          "TURN_LEFT": [
+            -0.006945155290654963,
+            -0.0025951384424558683,
+            -0.0008375820360457572,
+            -0.000676817673071072,
+            -0.0003761227248911041,
+            0.0,
+            -0.001952823975340547
+          ],
+          "TURN_RIGHT": [
+            -0.006356765347855681,
+            -0.003016468577545849,
+            -0.0009061065527879192,
+            -0.0008794943755184425,
+            -0.0007989790393250112,
+            0.0,
+            -0.0021758049971850515
+          ],
+          "WAIT": [
+            0.00210955936705209,
+            0.0005110528125843985,
+            0.0018192051854738387,
+            0.001824231351628339,
+            0.0018227675942820327,
+            0.00210955936705209,
+            0.0002706390789960223
+          ]
+        }
+      },
+      "horizon_censored_seek_episodes": 0,
+      "low_energy_seek_entries": 11,
+      "maximum_energy": 10.0,
+      "maximum_normalized_energy": 1.0,
+      "maximum_thermal_state": 0.6299999952316284,
+      "minimum_energy": 1.5600000000000223,
+      "minimum_normalized_energy": 0.15600000321865082,
+      "minimum_thermal_state": 0.14000000059604645,
+      "mode_entry_counts": {
+        "AWAY": 12,
+        "CHARGE": 12,
+        "DEPART": 12,
+        "SEEK": 11
+      },
+      "mode_occupancy": {
+        "AWAY": 317,
+        "CHARGE": 468,
+        "DEPART": 43,
+        "SEEK": 172
+      },
+      "prediction_metrics": {
+        "overall": {
+          "targets": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": 1.8118552110469268,
+              "learned_mae": 0.04167266985407932,
+              "status": "visited",
+              "transition_count": 1000,
+              "zero_change_baseline_mae": 0.023
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.21233312961602413,
+              "learned_mae": 0.0037302684187149764,
+              "status": "visited",
+              "transition_count": 1000,
+              "zero_change_baseline_mae": 0.01756799998879433
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.12655621087137522,
+              "learned_mae": 0.0012655621068279176,
+              "status": "visited",
+              "transition_count": 1000,
+              "zero_change_baseline_mae": 0.009999999985098838
+            }
+          },
+          "transition_count": 1000
+        },
+        "windows": {
+          "Q1": {
+            "targets": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.5382277278893828,
+                "learned_mae": 0.030764554557787656,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.02
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.20085711457433045,
+                "learned_mae": 0.00336154468177534,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.016736000061035157
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.12007004262027551,
+                "learned_mae": 0.0012007004333594873,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.010000000059604644
+              }
+            },
+            "transition_count": 250
+          },
+          "Q2": {
+            "targets": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.5541626924529452,
+                "learned_mae": 0.037299904618870686,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.024
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.2114827926804045,
+                "learned_mae": 0.0037356320319566374,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.017663999915122987
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.12760450075951815,
+                "learned_mae": 0.0012760450075951816,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.01
+              }
+            },
+            "transition_count": 250
+          },
+          "Q3": {
+            "targets": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.9473077057038868,
+                "learned_mae": 0.04673538493689328,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.024
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.22137971767820572,
+                "learned_mae": 0.003938787949175837,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.01779200005531311
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.1300522719093179,
+                "learned_mae": 0.001300522719093179,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.01
+              }
+            },
+            "transition_count": 250
+          },
+          "Q4": {
+            "targets": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 2.1621181376152334,
+                "learned_mae": 0.0518908353027656,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.024
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.21488434891296698,
+                "learned_mae": 0.0038851090119520685,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.018079999923706055
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.12849802825819803,
+                "learned_mae": 0.0012849802672638218,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.00999999988079071
+              }
+            },
+            "transition_count": 250
+          }
+        }
+      },
+      "seed": 18345,
+      "successful_charging_contact_reacquisitions": 11,
+      "successful_physical_charger_exits": 12,
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_termination": false,
+      "thermal_triggered_departures": 12,
+      "transitions": 1000,
+      "truncated": true
+    },
+    {
+      "accidental_away_contacts": 0,
+      "action_context_support": {
+        "False": {
+          "MOVE_FORWARD": {
+            "current_charging_contact_counts": {
+              "False": 372,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.9993612766265869,
+                "min": 0.0875447541475296
+              },
+              "beacon.left": {
+                "max": 0.9443022012710571,
+                "min": 0.0875447541475296
+              },
+              "beacon.right": {
+                "max": 0.96504145860672,
+                "min": 0.09298315644264221
+              },
+              "charging_contact": {
+                "max": 0.0,
+                "min": 0.0
+              },
+              "energy": {
+                "max": 0.9800000190734863,
+                "min": 0.1599999964237213
+              },
+              "thermal": {
+                "max": 0.6200000047683716,
+                "min": 0.14000000059604645
+              }
+            },
+            "execution_count": 372,
+            "observed_contact_delta_target_counts": {
+              "+1": 11,
+              "-1": 0,
+              "0": 361
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 2.3903767691620326,
+                "learned_mae": 0.07068318403436118,
+                "status": "visited",
+                "transition_count": 372,
+                "zero_change_baseline_mae": 0.02956989247311828
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.1964153312057336,
+                "learned_mae": 0.003986386582135095,
+                "status": "visited",
+                "transition_count": 372,
+                "zero_change_baseline_mae": 0.020295699717857503
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.18030795011435719,
+                "learned_mae": 0.0018030795800140886,
+                "status": "visited",
+                "transition_count": 372,
+                "zero_change_baseline_mae": 0.010000000437421183
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 3.496804132526365,
+                "learned_mae": 0.07770675850058589,
+                "status": "visited",
+                "transition_count": 90,
+                "zero_change_baseline_mae": 0.022222222222222223
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.205732023406512,
+                "learned_mae": 0.004160358985768402,
+                "status": "visited",
+                "transition_count": 90,
+                "zero_change_baseline_mae": 0.020222223632865483
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.18330382720255553,
+                "learned_mae": 0.0018330383145146202,
+                "status": "visited",
+                "transition_count": 90,
+                "zero_change_baseline_mae": 0.010000000231795841
+              }
+            },
+            "status": "visited"
+          },
+          "TURN_LEFT": {
+            "current_charging_contact_counts": {
+              "False": 69,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.96504145860672,
+                "min": 0.0875447541475296
+              },
+              "beacon.left": {
+                "max": 0.9831347465515137,
+                "min": 0.09110140800476074
+              },
+              "beacon.right": {
+                "max": 0.8127304911613464,
+                "min": 0.0875447541475296
+              },
+              "charging_contact": {
+                "max": 0.0,
+                "min": 0.0
+              },
+              "energy": {
+                "max": 0.9800000190734863,
+                "min": 0.1720000058412552
+              },
+              "thermal": {
+                "max": 0.6200000047683716,
+                "min": 0.15000000596046448
+              }
+            },
+            "execution_count": 69,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 69
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 69,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.08430601291289336,
+                "learned_mae": 0.0010116721478177213,
+                "status": "visited",
+                "transition_count": 69,
+                "zero_change_baseline_mae": 0.011999999915344128
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.08430616623048898,
+                "learned_mae": 0.0008430615137385168,
+                "status": "visited",
+                "transition_count": 69,
+                "zero_change_baseline_mae": 0.00999999823777572
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 21,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.07493735783893896,
+                "learned_mae": 0.0008992481490086411,
+                "status": "visited",
+                "transition_count": 21,
+                "zero_change_baseline_mae": 0.011999998064268203
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.07493759597428906,
+                "learned_mae": 0.0007493759363462636,
+                "status": "visited",
+                "transition_count": 21,
+                "zero_change_baseline_mae": 0.009999999687785194
+              }
+            },
+            "status": "visited"
+          },
+          "TURN_RIGHT": {
+            "current_charging_contact_counts": {
+              "False": 55,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.9343847632408142,
+                "min": 0.0875447541475296
+              },
+              "beacon.left": {
+                "max": 0.7540532946586609,
+                "min": 0.0877322405576706
+              },
+              "beacon.right": {
+                "max": 0.9553239345550537,
+                "min": 0.09298315644264221
+              },
+              "charging_contact": {
+                "max": 0.0,
+                "min": 0.0
+              },
+              "energy": {
+                "max": 0.8799999952316284,
+                "min": 0.18000000715255737
+              },
+              "thermal": {
+                "max": 0.5699999928474426,
+                "min": 0.1599999964237213
+              }
+            },
+            "execution_count": 55,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 55
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 55,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.07736631979905728,
+                "learned_mae": 0.0009283957277537141,
+                "status": "visited",
+                "transition_count": 55,
+                "zero_change_baseline_mae": 0.011999998580325733
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.0773663187556046,
+                "learned_mae": 0.0007736632252856164,
+                "status": "visited",
+                "transition_count": 55,
+                "zero_change_baseline_mae": 0.010000000487674366
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 22,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.04707675865832299,
+                "learned_mae": 0.0005649210689525026,
+                "status": "visited",
+                "transition_count": 22,
+                "zero_change_baseline_mae": 0.011999999257651243
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.047076891169213646,
+                "learned_mae": 0.0004707689091412261,
+                "status": "visited",
+                "transition_count": 22,
+                "zero_change_baseline_mae": 0.00999999994581396
+              }
+            },
+            "status": "visited"
+          },
+          "WAIT": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": null,
+                "min": null
+              },
+              "beacon.left": {
+                "max": null,
+                "min": null
+              },
+              "beacon.right": {
+                "max": null,
+                "min": null
+              },
+              "charging_contact": {
+                "max": null,
+                "min": null
+              },
+              "energy": {
+                "max": null,
+                "min": null
+              },
+              "thermal": {
+                "max": null,
+                "min": null
+              }
+            },
+            "execution_count": 0,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "status": "untested"
+          }
+        },
+        "True": {
+          "MOVE_FORWARD": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 45
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.9918240308761597,
+                "min": 0.6231300830841064
+              },
+              "beacon.left": {
+                "max": 0.986979603767395,
+                "min": 0.6185681223869324
+              },
+              "beacon.right": {
+                "max": 0.9905481338500977,
+                "min": 0.6480529308319092
+              },
+              "charging_contact": {
+                "max": 1.0,
+                "min": 1.0
+              },
+              "energy": {
+                "max": 1.0,
+                "min": 1.0
+              },
+              "thermal": {
+                "max": 0.6299999952316284,
+                "min": 0.6000000238418579
+              }
+            },
+            "execution_count": 45,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 12,
+              "0": 33
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.3713022912984647,
+                "learned_mae": 0.36568061101292393,
+                "status": "visited",
+                "transition_count": 45,
+                "zero_change_baseline_mae": 0.26666666666666666
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 1.465636269782372,
+                "learned_mae": 0.007816719317561088,
+                "status": "visited",
+                "transition_count": 45,
+                "zero_change_baseline_mae": 0.005333328247070312
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.9894384091702342,
+                "learned_mae": 0.009894374655682357,
+                "status": "visited",
+                "transition_count": 45,
+                "zero_change_baseline_mae": 0.009999990463256836
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.5467292098488148,
+                "learned_mae": 0.3866823024622037,
+                "status": "visited",
+                "transition_count": 12,
+                "zero_change_baseline_mae": 0.25
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 1.163730987784746,
+                "learned_mae": 0.005818649389821958,
+                "status": "visited",
+                "transition_count": 12,
+                "zero_change_baseline_mae": 0.004999995231628418
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.7997457416556035,
+                "learned_mae": 0.007997449789586301,
+                "status": "visited",
+                "transition_count": 12,
+                "zero_change_baseline_mae": 0.009999990463256836
+              }
+            },
+            "status": "visited"
+          },
+          "TURN_LEFT": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": null,
+                "min": null
+              },
+              "beacon.left": {
+                "max": null,
+                "min": null
+              },
+              "beacon.right": {
+                "max": null,
+                "min": null
+              },
+              "charging_contact": {
+                "max": null,
+                "min": null
+              },
+              "energy": {
+                "max": null,
+                "min": null
+              },
+              "thermal": {
+                "max": null,
+                "min": null
+              }
+            },
+            "execution_count": 0,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "status": "untested"
+          },
+          "TURN_RIGHT": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 0
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": null,
+                "min": null
+              },
+              "beacon.left": {
+                "max": null,
+                "min": null
+              },
+              "beacon.right": {
+                "max": null,
+                "min": null
+              },
+              "charging_contact": {
+                "max": null,
+                "min": null
+              },
+              "energy": {
+                "max": null,
+                "min": null
+              },
+              "thermal": {
+                "max": null,
+                "min": null
+              }
+            },
+            "execution_count": 0,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 0
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": null,
+                "status": "untested",
+                "transition_count": 0,
+                "zero_change_baseline_mae": null
+              }
+            },
+            "status": "untested"
+          },
+          "WAIT": {
+            "current_charging_contact_counts": {
+              "False": 0,
+              "True": 459
+            },
+            "current_visible_channel_ranges": {
+              "beacon.forward": {
+                "max": 0.9918240308761597,
+                "min": 0.8620689511299133
+              },
+              "beacon.left": {
+                "max": 0.986979603767395,
+                "min": 0.8201695680618286
+              },
+              "beacon.right": {
+                "max": 0.9905481338500977,
+                "min": 0.8247395753860474
+              },
+              "charging_contact": {
+                "max": 1.0,
+                "min": 1.0
+              },
+              "energy": {
+                "max": 1.0,
+                "min": 0.1899999976158142
+              },
+              "thermal": {
+                "max": 0.5899999737739563,
+                "min": 0.15000000596046448
+              }
+            },
+            "execution_count": 459,
+            "observed_contact_delta_target_counts": {
+              "+1": 0,
+              "-1": 0,
+              "0": 459
+            },
+            "overall_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 459,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.2105931129572503,
+                "learned_mae": 0.0038769320372905917,
+                "status": "visited",
+                "transition_count": 459,
+                "zero_change_baseline_mae": 0.01840958606313776
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.009781766461771783,
+                "learned_mae": 9.781767072755707e-05,
+                "status": "visited",
+                "transition_count": 459,
+                "zero_change_baseline_mae": 0.010000000624615122
+              }
+            },
+            "q4_target_metrics": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": null,
+                "learned_mae": 0.0,
+                "status": "visited",
+                "transition_count": 105,
+                "zero_change_baseline_mae": 0.0
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.1877580208126143,
+                "learned_mae": 0.002875379967559679,
+                "status": "visited",
+                "transition_count": 105,
+                "zero_change_baseline_mae": 0.015314285670007978
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.004104933227277533,
+                "learned_mae": 4.104933506903918e-05,
+                "status": "visited",
+                "transition_count": 105,
+                "zero_change_baseline_mae": 0.01000000068119594
+              }
+            },
+            "status": "visited"
+          }
+        }
+      },
+      "action_counts": {
+        "MOVE_FORWARD": 417,
+        "TURN_LEFT": 69,
+        "TURN_RIGHT": 55,
+        "WAIT": 459
+      },
+      "action_support": {
+        "MOVE_FORWARD": {
+          "current_charging_contact_counts": {
+            "False": 372,
+            "True": 45
+          },
+          "current_visible_channel_ranges": {
+            "beacon.forward": {
+              "max": 0.9993612766265869,
+              "min": 0.0875447541475296
+            },
+            "beacon.left": {
+              "max": 0.986979603767395,
+              "min": 0.0875447541475296
+            },
+            "beacon.right": {
+              "max": 0.9905481338500977,
+              "min": 0.09298315644264221
+            },
+            "charging_contact": {
+              "max": 1.0,
+              "min": 0.0
+            },
+            "energy": {
+              "max": 1.0,
+              "min": 0.1599999964237213
+            },
+            "thermal": {
+              "max": 0.6299999952316284,
+              "min": 0.14000000059604645
+            }
+          },
+          "execution_count": 417,
+          "observed_contact_delta_target_counts": {
+            "+1": 11,
+            "-1": 12,
+            "0": 394
+          },
+          "overall_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": 1.8586857372332153,
+              "learned_mae": 0.10251743874427806,
+              "status": "visited",
+              "transition_count": 417,
+              "zero_change_baseline_mae": 0.05515587529976019
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.2355183776973474,
+              "learned_mae": 0.004399731841353728,
+              "status": "visited",
+              "transition_count": 417,
+              "zero_change_baseline_mae": 0.018681055314535146
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.26762410901073824,
+              "learned_mae": 0.002676240919114983,
+              "status": "visited",
+              "transition_count": 417,
+              "zero_change_baseline_mae": 0.009999999361072513
+            }
+          },
+          "q4_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": 2.3267591789198363,
+              "learned_mae": 0.1140568224960704,
+              "status": "visited",
+              "transition_count": 102,
+              "zero_change_baseline_mae": 0.049019607843137254
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.23630642814766797,
+              "learned_mae": 0.004355451974480586,
+              "status": "visited",
+              "transition_count": 102,
+              "zero_change_baseline_mae": 0.018431373232719945
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.25582634286411715,
+              "learned_mae": 0.0025582631939348173,
+              "status": "visited",
+              "transition_count": 102,
+              "zero_change_baseline_mae": 0.009999999082555958
+            }
+          },
+          "status": "visited"
+        },
+        "TURN_LEFT": {
+          "current_charging_contact_counts": {
+            "False": 69,
+            "True": 0
+          },
+          "current_visible_channel_ranges": {
+            "beacon.forward": {
+              "max": 0.96504145860672,
+              "min": 0.0875447541475296
+            },
+            "beacon.left": {
+              "max": 0.9831347465515137,
+              "min": 0.09110140800476074
+            },
+            "beacon.right": {
+              "max": 0.8127304911613464,
+              "min": 0.0875447541475296
+            },
+            "charging_contact": {
+              "max": 0.0,
+              "min": 0.0
+            },
+            "energy": {
+              "max": 0.9800000190734863,
+              "min": 0.1720000058412552
+            },
+            "thermal": {
+              "max": 0.6200000047683716,
+              "min": 0.15000000596046448
+            }
+          },
+          "execution_count": 69,
+          "observed_contact_delta_target_counts": {
+            "+1": 0,
+            "-1": 0,
+            "0": 69
+          },
+          "overall_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 69,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.08430601291289336,
+              "learned_mae": 0.0010116721478177213,
+              "status": "visited",
+              "transition_count": 69,
+              "zero_change_baseline_mae": 0.011999999915344128
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.08430616623048898,
+              "learned_mae": 0.0008430615137385168,
+              "status": "visited",
+              "transition_count": 69,
+              "zero_change_baseline_mae": 0.00999999823777572
+            }
+          },
+          "q4_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 21,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.07493735783893896,
+              "learned_mae": 0.0008992481490086411,
+              "status": "visited",
+              "transition_count": 21,
+              "zero_change_baseline_mae": 0.011999998064268203
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.07493759597428906,
+              "learned_mae": 0.0007493759363462636,
+              "status": "visited",
+              "transition_count": 21,
+              "zero_change_baseline_mae": 0.009999999687785194
+            }
+          },
+          "status": "visited"
+        },
+        "TURN_RIGHT": {
+          "current_charging_contact_counts": {
+            "False": 55,
+            "True": 0
+          },
+          "current_visible_channel_ranges": {
+            "beacon.forward": {
+              "max": 0.9343847632408142,
+              "min": 0.0875447541475296
+            },
+            "beacon.left": {
+              "max": 0.7540532946586609,
+              "min": 0.0877322405576706
+            },
+            "beacon.right": {
+              "max": 0.9553239345550537,
+              "min": 0.09298315644264221
+            },
+            "charging_contact": {
+              "max": 0.0,
+              "min": 0.0
+            },
+            "energy": {
+              "max": 0.8799999952316284,
+              "min": 0.18000000715255737
+            },
+            "thermal": {
+              "max": 0.5699999928474426,
+              "min": 0.1599999964237213
+            }
+          },
+          "execution_count": 55,
+          "observed_contact_delta_target_counts": {
+            "+1": 0,
+            "-1": 0,
+            "0": 55
+          },
+          "overall_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 55,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.07736631979905728,
+              "learned_mae": 0.0009283957277537141,
+              "status": "visited",
+              "transition_count": 55,
+              "zero_change_baseline_mae": 0.011999998580325733
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.0773663187556046,
+              "learned_mae": 0.0007736632252856164,
+              "status": "visited",
+              "transition_count": 55,
+              "zero_change_baseline_mae": 0.010000000487674366
+            }
+          },
+          "q4_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 22,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.04707675865832299,
+              "learned_mae": 0.0005649210689525026,
+              "status": "visited",
+              "transition_count": 22,
+              "zero_change_baseline_mae": 0.011999999257651243
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.047076891169213646,
+              "learned_mae": 0.0004707689091412261,
+              "status": "visited",
+              "transition_count": 22,
+              "zero_change_baseline_mae": 0.00999999994581396
+            }
+          },
+          "status": "visited"
+        },
+        "WAIT": {
+          "current_charging_contact_counts": {
+            "False": 0,
+            "True": 459
+          },
+          "current_visible_channel_ranges": {
+            "beacon.forward": {
+              "max": 0.9918240308761597,
+              "min": 0.8620689511299133
+            },
+            "beacon.left": {
+              "max": 0.986979603767395,
+              "min": 0.8201695680618286
+            },
+            "beacon.right": {
+              "max": 0.9905481338500977,
+              "min": 0.8247395753860474
+            },
+            "charging_contact": {
+              "max": 1.0,
+              "min": 1.0
+            },
+            "energy": {
+              "max": 1.0,
+              "min": 0.1899999976158142
+            },
+            "thermal": {
+              "max": 0.5899999737739563,
+              "min": 0.15000000596046448
+            }
+          },
+          "execution_count": 459,
+          "observed_contact_delta_target_counts": {
+            "+1": 0,
+            "-1": 0,
+            "0": 459
+          },
+          "overall_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 459,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.2105931129572503,
+              "learned_mae": 0.0038769320372905917,
+              "status": "visited",
+              "transition_count": 459,
+              "zero_change_baseline_mae": 0.01840958606313776
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.009781766461771783,
+              "learned_mae": 9.781767072755707e-05,
+              "status": "visited",
+              "transition_count": 459,
+              "zero_change_baseline_mae": 0.010000000624615122
+            }
+          },
+          "q4_target_metrics": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": null,
+              "learned_mae": 0.0,
+              "status": "visited",
+              "transition_count": 105,
+              "zero_change_baseline_mae": 0.0
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.1877580208126143,
+              "learned_mae": 0.002875379967559679,
+              "status": "visited",
+              "transition_count": 105,
+              "zero_change_baseline_mae": 0.015314285670007978
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.004104933227277533,
+              "learned_mae": 4.104933506903918e-05,
+              "status": "visited",
+              "transition_count": 105,
+              "zero_change_baseline_mae": 0.01000000068119594
+            }
+          },
+          "status": "visited"
+        }
+      },
+      "away_entries": 12,
+      "checkpoints": {
+        "1000": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              -0.26587903273389096,
+              -0.09435639488662947,
+              0.3288330245285138,
+              0.3407891013438197,
+              0.3151565907436007,
+              -0.7207523585467349,
+              -0.08723447244177661
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_energy": {
+            "MOVE_FORWARD": [
+              -0.03349613143048632,
+              -0.0043609182395297486,
+              0.017232534164521165,
+              0.01631893664427218,
+              0.01714233408121763,
+              0.0019904369254612362,
+              -0.005669210797107654
+            ],
+            "TURN_LEFT": [
+              -0.00848740970319165,
+              -0.003850252165989035,
+              -0.0007606297661263454,
+              -0.0006676841609577031,
+              -0.0003843985417096912,
+              0.0,
+              -0.002689687284741036
+            ],
+            "TURN_RIGHT": [
+              -0.008522073857034237,
+              -0.0040531240549074084,
+              -0.001293682146962608,
+              -0.0011423799533776522,
+              -0.0009087603060133695,
+              0.0,
+              -0.0028591337030140465
+            ],
+            "WAIT": [
+              0.00979834148650368,
+              -0.039376805190214186,
+              0.008859556527714413,
+              0.009365367576579974,
+              0.008971807543445587,
+              0.00979834148650368,
+              -0.00912354490548767
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              -0.017093013772088956,
+              -0.0001683467406118107,
+              0.007735662030244092,
+              0.007740303218050003,
+              0.007862692694378887,
+              0.005223649554447536,
+              -0.002019445445521129
+            ],
+            "TURN_LEFT": [
+              -0.007072850571301201,
+              -0.003208552288939851,
+              -0.0006338566749187919,
+              -0.0005564008457622251,
+              -0.0003203290105615708,
+              0.0,
+              -0.0022414117423712517
+            ],
+            "TURN_RIGHT": [
+              -0.00710173619763608,
+              -0.003377607029334306,
+              -0.0010780665179526425,
+              -0.0009519838192980512,
+              -0.0007573019581935347,
+              0.0,
+              -0.00238261412967084
+            ],
+            "WAIT": [
+              0.002124584602733339,
+              0.0005176547587502842,
+              0.001828124838742929,
+              0.0018377378058312185,
+              0.0018408822989206882,
+              0.002124584602733339,
+              0.0002757932094030591
+            ]
+          }
+        },
+        "250": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.12099038569484855,
+              -0.12696234140969093,
+              0.13576695252305232,
+              0.1714706523764405,
+              0.145888679855321,
+              -0.39942581415717376,
+              -0.06520972748598503
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_energy": {
+            "MOVE_FORWARD": [
+              -0.008420334906178004,
+              -0.016899527535129345,
+              0.004945100606008435,
+              0.008160514897373121,
+              0.0068940375701172,
+              -0.003360763928997394,
+              -0.01020666073837548
+            ],
+            "TURN_LEFT": [
+              -0.008019924110742703,
+              -0.004966835540252699,
+              -0.0009983098930410727,
+              -0.0008915406723307666,
+              -0.0008350895656856534,
+              0.0,
+              -0.003285649902992223
+            ],
+            "TURN_RIGHT": [
+              -0.007700969913009026,
+              -0.004390735995023537,
+              -0.0014630385088275162,
+              -0.0012381023369099839,
+              -0.0010416541438002718,
+              0.0,
+              -0.002960012415756118
+            ],
+            "WAIT": [
+              0.00901534788015843,
+              -0.00919500414758406,
+              0.007797124395035228,
+              0.008487334672512586,
+              0.008536204148278664,
+              0.00901534788015843,
+              -0.0014710426146773703
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              -0.0055302684087208155,
+              -0.008044426216299265,
+              0.001996447632425416,
+              0.0036527991577101964,
+              0.003033261026894558,
+              0.0006527424190923485,
+              -0.005031697593883153
+            ],
+            "TURN_LEFT": [
+              -0.006683263888874185,
+              -0.004139028185817532,
+              -0.0008319239721805682,
+              -0.0007429493197103954,
+              -0.0006959054646320313,
+              0.0,
+              -0.002738040411314749
+            ],
+            "TURN_RIGHT": [
+              -0.006417479326336935,
+              -0.0036589506675173025,
+              -0.0012191969795093546,
+              -0.0010317523155418437,
+              -0.000868046682878673,
+              0.0,
+              -0.002466679565944578
+            ],
+            "WAIT": [
+              0.0021825660083121387,
+              0.000983757886553778,
+              0.001872202425490318,
+              0.0018910995768823251,
+              0.0019026003321327464,
+              0.0021825660083121387,
+              0.00040795522108089295
+            ]
+          }
+        },
+        "500": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              0.07361581526578623,
+              -0.18326950278631793,
+              0.21289777193299586,
+              0.24486458101445818,
+              0.19228984767621257,
+              -0.5887811078436226,
+              -0.10110973550908198
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_energy": {
+            "MOVE_FORWARD": [
+              -0.01256295894558736,
+              -0.01488764379676454,
+              0.013361261014054222,
+              0.01582537494522207,
+              0.01358936176609029,
+              0.0009804488325228973,
+              -0.00952497825321939
+            ],
+            "TURN_LEFT": [
+              -0.008244518550071257,
+              -0.0048943804931659415,
+              -0.0010143709736308724,
+              -0.0008984063027817277,
+              -0.0008203882119770256,
+              0.0,
+              -0.0032596957431085456
+            ],
+            "TURN_RIGHT": [
+              -0.007959802102334115,
+              -0.004289861921966766,
+              -0.0015325949150291592,
+              -0.0013537067913424242,
+              -0.0011606148878544615,
+              0.0,
+              -0.0029304965119880803
+            ],
+            "WAIT": [
+              0.005655187342314125,
+              -0.022661209393110247,
+              0.005152590534562508,
+              0.005354336061672749,
+              0.005085379483025341,
+              0.005655187342314125,
+              -0.005334796666016121
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              -0.007236347368296661,
+              -0.006000054019036167,
+              0.006406372247255617,
+              0.007830798188677152,
+              0.006696731455163933,
+              0.004136872691618578,
+              -0.004158513649680208
+            ],
+            "TURN_LEFT": [
+              -0.006870435146825381,
+              -0.004078653895723949,
+              -0.0008453114658460314,
+              -0.0007486734072237061,
+              -0.0006836564822675347,
+              0.0,
+              -0.0027164153461076285
+            ],
+            "TURN_RIGHT": [
+              -0.006633165322905081,
+              -0.0035748874350500937,
+              -0.0012771571266519666,
+              -0.0011280847372487734,
+              -0.0009671758197354728,
+              0.0,
+              -0.002442081551862811
+            ],
+            "WAIT": [
+              0.0020605612549254994,
+              0.0007551366799773105,
+              0.001772529394838721,
+              0.0017762710003781182,
+              0.0017799752996991772,
+              0.0020605612549254994,
+              0.00033231492668084605
+            ]
+          }
+        },
+        "750": {
+          "delta_charging_contact": {
+            "MOVE_FORWARD": [
+              -0.1785878380107004,
+              -0.21875883611144162,
+              0.30109967404997523,
+              0.3122117385246804,
+              0.25250037097462436,
+              -0.6863767146785382,
+              -0.14686983253880892
+            ],
+            "TURN_LEFT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "TURN_RIGHT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "WAIT": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "delta_energy": {
+            "MOVE_FORWARD": [
+              -0.03046747211852656,
+              -0.013962205958361961,
+              0.01612429657105973,
+              0.016154433288866964,
+              0.014752869353912932,
+              0.0017877942968730365,
+              -0.010820534120702878
+            ],
+            "TURN_LEFT": [
+              -0.007434838119178699,
+              -0.004141570659298095,
+              -0.0008742509840766678,
+              -0.000764264106996931,
+              -0.0006596819900778896,
+              0.0,
+              -0.0027749775725479306
+            ],
+            "TURN_RIGHT": [
+              -0.008298620230771592,
+              -0.004454294503643834,
+              -0.0013580196042986632,
+              -0.001110572010508532,
+              -0.000852704121443029,
+              0.0,
+              -0.0030624325999707015
+            ],
+            "WAIT": [
+              0.009729438194064839,
+              -0.032617586033546336,
+              0.008941443409826789,
+              0.009323980487395914,
+              0.00881086142986419,
+              0.009729438194064839,
+              -0.007275686442228438
+            ]
+          },
+          "delta_thermal": {
+            "MOVE_FORWARD": [
+              -0.016236863613380444,
+              -0.005094617057663115,
+              0.007121605715036972,
+              0.007425647382714597,
+              0.00665018943903505,
+              0.005158866221077245,
+              -0.004659849228413426
+            ],
+            "TURN_LEFT": [
+              -0.006195693385849672,
+              -0.0034513056795693322,
+              -0.000728542792786776,
+              -0.0006368858669147257,
+              -0.000549732250855466,
+              0.0,
+              -0.002312479215902127
+            ],
+            "TURN_RIGHT": [
+              -0.006915513431788341,
+              -0.003711914439859191,
+              -0.0011316781436643778,
+              -0.000925473032680546,
+              -0.0007105843073421789,
+              0.0,
+              -0.002552028162773911
+            ],
+            "WAIT": [
+              0.0020914944954939806,
+              0.0006186525298805395,
+              0.0018019537438187716,
+              0.0018063566001679501,
+              0.0018074493024000972,
+              0.0020914944954939806,
+              0.0003018456110351337
+            ]
+          }
+        }
+      },
+      "completed_autonomous_regulation_cycles": 11,
+      "demonstrated_failed_seek_episodes": 0,
+      "energy_termination": false,
+      "evaluator_only": {
+        "passed_to_learner": false,
+        "seeded_heading": 3.1382457574727707,
+        "station_position": [
+          0.5,
+          0.5
+        ],
+        "trajectory_geometry_collected": false
+      },
+      "final_energy": 3.3200000000000234,
+      "final_normalized_energy": 0.3319999873638153,
+      "final_thermal_state": 0.259999999999998,
+      "final_weights": {
+        "delta_charging_contact": {
+          "MOVE_FORWARD": [
+            -0.26587903273389096,
+            -0.09435639488662947,
+            0.3288330245285138,
+            0.3407891013438197,
+            0.3151565907436007,
+            -0.7207523585467349,
+            -0.08723447244177661
+          ],
+          "TURN_LEFT": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "TURN_RIGHT": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "WAIT": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "delta_energy": {
+          "MOVE_FORWARD": [
+            -0.03349613143048632,
+            -0.0043609182395297486,
+            0.017232534164521165,
+            0.01631893664427218,
+            0.01714233408121763,
+            0.0019904369254612362,
+            -0.005669210797107654
+          ],
+          "TURN_LEFT": [
+            -0.00848740970319165,
+            -0.003850252165989035,
+            -0.0007606297661263454,
+            -0.0006676841609577031,
+            -0.0003843985417096912,
+            0.0,
+            -0.002689687284741036
+          ],
+          "TURN_RIGHT": [
+            -0.008522073857034237,
+            -0.0040531240549074084,
+            -0.001293682146962608,
+            -0.0011423799533776522,
+            -0.0009087603060133695,
+            0.0,
+            -0.0028591337030140465
+          ],
+          "WAIT": [
+            0.00979834148650368,
+            -0.039376805190214186,
+            0.008859556527714413,
+            0.009365367576579974,
+            0.008971807543445587,
+            0.00979834148650368,
+            -0.00912354490548767
+          ]
+        },
+        "delta_thermal": {
+          "MOVE_FORWARD": [
+            -0.017093013772088956,
+            -0.0001683467406118107,
+            0.007735662030244092,
+            0.007740303218050003,
+            0.007862692694378887,
+            0.005223649554447536,
+            -0.002019445445521129
+          ],
+          "TURN_LEFT": [
+            -0.007072850571301201,
+            -0.003208552288939851,
+            -0.0006338566749187919,
+            -0.0005564008457622251,
+            -0.0003203290105615708,
+            0.0,
+            -0.0022414117423712517
+          ],
+          "TURN_RIGHT": [
+            -0.00710173619763608,
+            -0.003377607029334306,
+            -0.0010780665179526425,
+            -0.0009519838192980512,
+            -0.0007573019581935347,
+            0.0,
+            -0.00238261412967084
+          ],
+          "WAIT": [
+            0.002124584602733339,
+            0.0005176547587502842,
+            0.001828124838742929,
+            0.0018377378058312185,
+            0.0018408822989206882,
+            0.002124584602733339,
+            0.0002757932094030591
+          ]
+        }
+      },
+      "horizon_censored_seek_episodes": 1,
+      "low_energy_seek_entries": 12,
+      "maximum_energy": 10.0,
+      "maximum_normalized_energy": 1.0,
+      "maximum_thermal_state": 0.6299999952316284,
+      "minimum_energy": 1.6000000000000214,
+      "minimum_normalized_energy": 0.1599999964237213,
+      "minimum_thermal_state": 0.14000000059604645,
+      "mode_entry_counts": {
+        "AWAY": 12,
+        "CHARGE": 12,
+        "DEPART": 12,
+        "SEEK": 12
+      },
+      "mode_occupancy": {
+        "AWAY": 318,
+        "CHARGE": 460,
+        "DEPART": 45,
+        "SEEK": 177
+      },
+      "prediction_metrics": {
+        "overall": {
+          "targets": {
+            "delta_charging_contact": {
+              "learned_baseline_mae_ratio": 1.8586857372332153,
+              "learned_mae": 0.04274977195636395,
+              "status": "visited",
+              "transition_count": 1000,
+              "zero_change_baseline_mae": 0.023
+            },
+            "delta_energy": {
+              "learned_baseline_mae_ratio": 0.21068745088566848,
+              "learned_mae": 0.003735067126186759,
+              "status": "visited",
+              "transition_count": 1000,
+              "zero_change_baseline_mae": 0.017727999985218047
+            },
+            "delta_thermal": {
+              "learned_baseline_mae_ratio": 0.12616135053733174,
+              "learned_mae": 0.0012616134959735643,
+              "status": "visited",
+              "transition_count": 1000,
+              "zero_change_baseline_mae": 0.009999999925494194
+            }
+          },
+          "transition_count": 1000
+        },
+        "windows": {
+          "Q1": {
+            "targets": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.5160611418467183,
+                "learned_mae": 0.03638546740432124,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.024
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.22631806485156503,
+                "learned_mae": 0.0038618914879804925,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.01706400012969971
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.1340150121276429,
+                "learned_mae": 0.001340150121276429,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.01
+              }
+            },
+            "transition_count": 250
+          },
+          "Q2": {
+            "targets": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.6377791995862083,
+                "learned_mae": 0.032755583991724166,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.02
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.1817207516496444,
+                "learned_mae": 0.003185201312732258,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.017527999877929686
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.1080030828046982,
+                "learned_mae": 0.0010800308087345258,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.009999999821186066
+              }
+            },
+            "transition_count": 250
+          },
+          "Q3": {
+            "targets": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 1.9758161732504878,
+                "learned_mae": 0.05532285285101366,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.028
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.23558125674015237,
+                "learned_mae": 0.004783241813486603,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.02030399990081787
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.1460885707371381,
+                "learned_mae": 0.0014608857073713812,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.01
+              }
+            },
+            "transition_count": 250
+          },
+          "Q4": {
+            "targets": {
+              "delta_charging_contact": {
+                "learned_baseline_mae_ratio": 2.326759178919836,
+                "learned_mae": 0.04653518357839672,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.02
+              },
+              "delta_energy": {
+                "learned_baseline_mae_ratio": 0.1941766910746458,
+                "learned_mae": 0.003109933890547692,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.016016000032424926
+              },
+              "delta_thermal": {
+                "learned_baseline_mae_ratio": 0.11653873604044161,
+                "learned_mae": 0.001165387346511916,
+                "status": "visited",
+                "transition_count": 250,
+                "zero_change_baseline_mae": 0.00999999988079071
+              }
+            },
+            "transition_count": 250
+          }
+        }
+      },
+      "seed": 18346,
+      "successful_charging_contact_reacquisitions": 11,
+      "successful_physical_charger_exits": 12,
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_termination": false,
+      "thermal_triggered_departures": 12,
+      "transitions": 1000,
+      "truncated": true
+    }
+  ],
+  "schema_version": 1,
+  "seed_policy": {
+    "canonical_validator": "validate_exp003_development_seeds",
+    "exact_declared_seeds": [
+      18344,
+      18345,
+      18346
+    ],
+    "formal_reservation_guard_preserved": true
+  },
+  "title": "Full-observation shadow viability consequence learner"
+}
