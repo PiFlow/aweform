@@ -243,6 +243,16 @@ def test_d013_matches_unchanged_d011_behavioral_invariants() -> None:
     assert d013_run["evaluator_only"]["passed_to_learner"] is False
 
 
+def test_runner_distinguishes_horizon_censored_seek_from_demonstrated_failure() -> None:
+    result = d013.run_d013_probe((18346,), horizon=1000)
+    run = result["results"][0]
+    assert isinstance(run, dict)
+    assert run["low_energy_seek_entries"] == 12
+    assert run["successful_charging_contact_reacquisitions"] == 11
+    assert run["demonstrated_failed_seek_episodes"] == 0
+    assert run["horizon_censored_seek_episodes"] == 1
+
+
 def test_runner_records_all_targets_and_weight_checkpoints() -> None:
     result = d013.run_d013_probe((18344,), horizon=1000)
     run = result["results"][0]
@@ -253,7 +263,7 @@ def test_runner_records_all_targets_and_weight_checkpoints() -> None:
     )
     assert set(run["checkpoints"]) == {"250", "500", "750", "1000"}
     assert len(flatten(run["final_weights"])) == 84
-    assert run["evaluator_only"]["geometry_collected"] is False
+    assert run["evaluator_only"]["trajectory_geometry_collected"] is False
     assert run["evaluator_only"]["passed_to_learner"] is False
     assert result["organism_visible"]["controller_mode_is_learner_input"] is False
     assert result["organism_visible"]["policy_rng_is_learner_input"] is False

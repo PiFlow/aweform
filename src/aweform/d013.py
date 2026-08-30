@@ -531,7 +531,10 @@ def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
         next_observation = d011._controller_observation(observation)
         update = predictor.observe_transition(current, action, next_observation)
 
-        # Evaluator telemetry is read only after the causal learner update.
+        # Inherited evaluator-side post-contact setup and seeded geometry were
+        # established before the lifetime loop. No per-transition geometry
+        # trajectory is collected. Per-transition evaluator telemetry used for
+        # summaries is read only after the causal learner update.
         telemetry = environment.last_transition
         body = environment.body
         if telemetry is None or body is None:
@@ -637,7 +640,10 @@ def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
         "low_energy_seek_entries": low_energy_seek_entries,
         "successful_charging_contact_reacquisitions": successful_reacquisitions,
         "completed_autonomous_regulation_cycles": completed_cycles,
-        "failed_seek_episodes": int(active_seek),
+        "demonstrated_failed_seek_episodes": int(
+            active_seek and terminated and not truncated
+        ),
+        "horizon_censored_seek_episodes": int(active_seek and truncated),
         "accidental_away_contacts": accidental_away_contacts,
         "prediction_metrics": {
             "windows": {
@@ -663,7 +669,7 @@ def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
         "final_weights": predictor.weight_snapshot(),
         "checkpoints": checkpoints,
         "evaluator_only": {
-            "geometry_collected": False,
+            "trajectory_geometry_collected": False,
             "seeded_heading": seeded_heading,
             "station_position": [
                 environment.station_center[0],
