@@ -215,8 +215,10 @@ def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
     mode_entry_counts[controller.mode.name] = 1
     action_counts = {action.name: 0 for action in Action}
     transitions = 0
-    minimum_energy = float(observation[0])
-    maximum_energy = float(observation[0])
+    minimum_energy = config.initial_energy
+    maximum_energy = config.initial_energy
+    minimum_normalized_energy = float(observation[0])
+    maximum_normalized_energy = float(observation[0])
     minimum_thermal = float(observation[5])
     maximum_thermal = float(observation[5])
     thermal_departures = 0
@@ -265,8 +267,14 @@ def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
             raise RuntimeError("D-011 transition telemetry is unavailable")
         transitions += 1
 
-        minimum_energy = min(minimum_energy, float(observation[0]))
-        maximum_energy = max(maximum_energy, float(observation[0]))
+        minimum_energy = min(minimum_energy, telemetry.energy_after)
+        maximum_energy = max(maximum_energy, telemetry.energy_after)
+        minimum_normalized_energy = min(
+            minimum_normalized_energy, float(observation[0])
+        )
+        maximum_normalized_energy = max(
+            maximum_normalized_energy, float(observation[0])
+        )
         minimum_thermal = min(minimum_thermal, float(observation[5]))
         maximum_thermal = max(maximum_thermal, float(observation[5]))
         position_after = body.position
@@ -297,12 +305,14 @@ def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
             active_seek_episode = {
                 "entry_transition": transitions,
                 "energy_at_entry": current.energy,
+                "physical_energy_at_entry": telemetry.energy_before,
                 "thermal_at_entry": current.thermal,
                 "contact_at_entry": current.charging_contact,
                 "distance_at_entry": true_distance,
                 "reacquisition_transition": None,
                 "transitions_to_reacquisition": None,
                 "energy_at_reacquisition": None,
+                "physical_energy_at_reacquisition": None,
                 "thermal_at_reacquisition": None,
                 "failed": False,
             }
@@ -337,7 +347,10 @@ def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
             active_seek_episode["transitions_to_reacquisition"] = (
                 transitions - entry_transition
             )
-            active_seek_episode["energy_at_reacquisition"] = telemetry.energy_after
+            active_seek_episode["energy_at_reacquisition"] = float(observation[0])
+            active_seek_episode["physical_energy_at_reacquisition"] = (
+                telemetry.energy_after
+            )
             active_seek_episode["thermal_at_reacquisition"] = telemetry.thermal_after
             active_seek_episode["failed"] = False
             successful_reacquisitions += 1
@@ -379,6 +392,9 @@ def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
         "minimum_energy": minimum_energy,
         "maximum_energy": maximum_energy,
         "final_energy": environment.body.energy,
+        "minimum_normalized_energy": minimum_normalized_energy,
+        "maximum_normalized_energy": maximum_normalized_energy,
+        "final_normalized_energy": float(observation[0]),
         "minimum_thermal_state": minimum_thermal,
         "maximum_thermal_state": maximum_thermal,
         "final_thermal_state": environment.thermal_state,
