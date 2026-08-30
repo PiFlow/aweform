@@ -25,6 +25,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-007 | Matched common-probe history divergence | CONTINUING | [`D-007-matched-common-probe-history-divergence.md`](D-007-matched-common-probe-history-divergence.md) |
 | D-008 | Minimal action-conditioned one-step consequence model | CONTINUING | [`D-008-minimal-action-conditioned-consequence-model.md`](D-008-minimal-action-conditioned-consequence-model.md) |
 | D-009 | Bounded overlapping action-experience acquisition | CONTINUING | [`D-009-bounded-overlapping-action-experience-acquisition.md`](D-009-bounded-overlapping-action-experience-acquisition.md) |
+| D-010 | Visited-support consequence-aliasing census | CONTINUING | [`D-010-visited-support-consequence-aliasing.md`](D-010-visited-support-consequence-aliasing.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 
