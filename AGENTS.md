@@ -60,6 +60,24 @@ In particular, no task implicitly authorizes:
 - Do not add dependencies or abstractions solely for anticipated future stages.
 - Make obvious minimal engineering choices independently. Ask only when a genuine project-defining ambiguity remains.
 
+## Canonical development visualizer
+
+`src/aweform/development_visualizer.py` is the canonical reusable post-hoc visualizer for new Aweform developmental stages. Its intended architecture is:
+
+`development-specific runner/adapter -> DevelopmentVisualizationData -> shared Matplotlib renderer`
+
+When Flow or a reviewer asks to visualize a current or future `D-NNN` stage:
+
+- first inspect and reuse `development_visualizer.py` and the existing `aweform-visualize` CLI;
+- add or patch the smallest stage adapter and, only when needed, generic optional fields in the neutral visualization model/shared renderer;
+- preserve existing source adapters and their rendering semantics unless the task explicitly requires a compatible shared improvement;
+- do **not** create a new stage-specific visualizer module, renderer, or CLI merely because the new stage has additional diagnostics;
+- create a separate visualizer only if the canonical architecture genuinely cannot represent the requested view and the task explicitly authorizes that architectural exception.
+
+Historical experiment-specific visualizers may remain for reproducibility, but they are not the default pattern for new D-lane visualization work. Prefer commands of the form:
+
+`uv run aweform-visualize --source <stage> --seed <legal-development-seed> --horizon <n>`
+
 ## Development lane
 
 Ordinary `D-NNN` work is intentionally lightweight. Several meaningful iterations in one evening should be normal.
