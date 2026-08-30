@@ -115,10 +115,13 @@ class DevelopmentVisualizationData:
     sensor_angle: float | None = None
     thermal_threshold: float | None = None
     thermal_threshold_label: str | None = None
+    energy_label: str = "ENERGY"
 
     def __post_init__(self) -> None:
         if not self.source_label:
             raise ValueError("source_label must be non-empty")
+        if not self.energy_label:
+            raise ValueError("energy_label must be non-empty")
         if isinstance(self.seed, bool) or not isinstance(self.seed, int):
             raise ValueError("seed must be an integer")
         _validate_coordinate("world_min", self.world_min)
@@ -309,24 +312,15 @@ def build_development_visualization_figure(
     world_axis.legend(loc="lower left", fontsize=8)
 
     diagnostic_axis.set_xlim(0.0, 1.0)
-    diagnostic_axis.set_ylim(0.0, 1.2 if beacon_values_available else 1.0)
+    diagnostic_axis.set_ylim(-0.34, 1.15 if beacon_values_available else 1.0)
     diagnostic_axis.axis("off")
     diagnostic_axis.set_title("EVALUATOR DIAGNOSTICS", loc="left")
-    diagnostic_axis.text(
-        0.02,
-        0.97,
-        "DEVELOPMENT / EVALUATOR VIEW\nNOT CONFIRMATORY EVIDENCE",
-        va="top",
-        fontsize=10,
-        color="tab:red",
-        weight="bold",
-    )
     if beacon_values_available:
-        top_y = (1.10, 1.04, 0.98, 0.92, 0.86)
-        energy_y, thermal_y = 0.71, 0.55
+        top_y = (1.06, 0.99, 0.92, 0.85, 0.78)
+        energy_y, thermal_y = 0.61, 0.47
     else:
-        top_y = (0.82, 0.76, 0.70, 0.64, 0.58)
-        energy_y, thermal_y = 0.44, 0.30
+        top_y = (0.86, 0.79, 0.72, 0.65, 0.58)
+        energy_y, thermal_y = 0.41, 0.25
     transition_text = diagnostic_axis.text(
         0.02, top_y[0], "", family="monospace", fontsize=11
     )
@@ -346,9 +340,11 @@ def build_development_visualization_figure(
     energy_background, energy_fill, energy_value = _make_gauge(
         diagnostic_axis,
         y=energy_y,
-        label="ENERGY",
+        label=data.energy_label,
         visibility=data.visibility.energy,
         value_range=data.energy_range,
+        color="tab:blue",
+        label_above_bar=data.energy_label != "ENERGY",
     )
     thermal_background, thermal_fill, thermal_value = _make_gauge(
         diagnostic_axis,
@@ -371,9 +367,9 @@ def build_development_visualization_figure(
                 color=color,
             )
             for y, label, color in (
-                (0.37, "BEACON L", "#6a3d9a"),
-                (0.27, "BEACON F", "#1f78b4"),
-                (0.17, "BEACON R", "#e31a1c"),
+                (0.30, "BEACON L", "#6a3d9a"),
+                (0.20, "BEACON F", "#1f78b4"),
+                (0.10, "BEACON R", "#e31a1c"),
             )
         ]
     threshold_marker: Line2D | None = None
@@ -389,15 +385,14 @@ def build_development_visualization_figure(
         )[0]
         diagnostic_axis.text(
             threshold_x,
-            thermal_y + 0.065,
+            thermal_y + 0.08,
             data.thermal_threshold_label,
             ha="center",
             va="bottom",
             fontsize=7,
             color="tab:red",
-            rotation=90,
         )
-    metadata_y = 0.07 if beacon_values_available else 0.16
+    metadata_y = -0.04
     diagnostic_axis.text(
         0.02,
         metadata_y,
@@ -415,7 +410,7 @@ def build_development_visualization_figure(
     )
     diagnostic_axis.text(
         0.02,
-        0.02,
+        -0.28,
         "SPACE play/pause   ←/→ step while paused   R restart",
         fontsize=8,
         color="0.35",
@@ -578,6 +573,7 @@ def _make_gauge(
     visibility: str,
     value_range: DevelopmentVisualizationRange,
     color: str | None = None,
+    label_above_bar: bool = False,
 ) -> tuple[Rectangle, Rectangle, Text]:
     """Create a gauge using display coordinates normalized to the diagnostic axis."""
     background = Rectangle(
@@ -602,14 +598,32 @@ def _make_gauge(
     )
     axis.add_patch(background)
     axis.add_patch(fill)
-    axis.text(
-        0.02,
-        y + 0.015,
-        f"{label} — {visibility}\n{value_range.lower:g} → {value_range.upper:g}",
-        va="center",
-        fontsize=9,
-        family="monospace",
-    )
+    if label_above_bar:
+        axis.text(
+            0.02,
+            y + 0.085,
+            f"{label} — {visibility}",
+            va="bottom",
+            fontsize=9,
+            family="monospace",
+        )
+        axis.text(
+            0.02,
+            y - 0.015,
+            f"{value_range.lower:g} → {value_range.upper:g}",
+            va="top",
+            fontsize=9,
+            family="monospace",
+        )
+    else:
+        axis.text(
+            0.02,
+            y + 0.015,
+            f"{label} — {visibility}\n{value_range.lower:g} → {value_range.upper:g}",
+            va="center",
+            fontsize=9,
+            family="monospace",
+        )
     value = axis.text(
         0.94,
         y + 0.015,
@@ -927,12 +941,34 @@ def build_d006_development_visualization(
     return adapt_d006_trace(predictive)
 
 
-def build_d011_development_visualization(
+def _validate_d011_visualization_seed(seed: int) -> None:
+    from . import d011
+
+    d011._validate_d011_development_seeds((seed,))
+
+
+def _validate_d012_visualization_seed(seed: int) -> None:
+    """Validate one D-012 visualization seed without invoking its census guard."""
+    from .d012 import D012_DEFAULT_DEVELOPMENT_SEEDS
+    from .exp003_seed_policy import validate_exp003_development_seeds
+
+    validate_exp003_development_seeds((seed,))
+    if seed not in D012_DEFAULT_DEVELOPMENT_SEEDS:
+        raise ValueError(
+            "D-012 visualization requires a seed from its declared development "
+            f"range {D012_DEFAULT_DEVELOPMENT_SEEDS[0]}–"
+            f"{D012_DEFAULT_DEVELOPMENT_SEEDS[-1]}; got {seed}"
+        )
+
+
+def _build_d011_family_development_visualization(
     *,
     seed: int,
-    horizon: int = 1000,
+    horizon: int,
+    source_label: str,
+    validate_seed: Callable[[int], None],
 ) -> DevelopmentVisualizationData:
-    """Replay one legal D-011 lifetime into the neutral visualization model."""
+    """Replay a D-011-compatible lifetime through one shared controller path."""
     from . import d011
     from .d002 import (
         D002_AMBIENT_THERMAL_STATE,
@@ -942,7 +978,7 @@ def build_d011_development_visualization(
     from .d003 import HOT_DEPART_THRESHOLD
     from .exp003 import EXP003StationConfig
 
-    d011._validate_d011_development_seeds((seed,))
+    validate_seed(seed)
     if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon <= 0:
         raise ValueError("horizon must be a positive integer")
 
@@ -995,14 +1031,14 @@ def build_d011_development_visualization(
         )
 
     return DevelopmentVisualizationData(
-        source_label="D-011 fixed thermal-beacon reacquisition",
+        source_label=source_label,
         seed=seed,
         world_min=config.world_min,
         world_max=config.world_max,
         station_center=environment.station_center,
         charging_radius=config.charging_radius,
         energy_range=DevelopmentVisualizationRange(
-            config.energy.failure_boundary, config.energy.maximum_energy
+            0.0, 1.0
         ),
         thermal_range=DevelopmentVisualizationRange(
             D002_AMBIENT_THERMAL_STATE,
@@ -1022,7 +1058,36 @@ def build_d011_development_visualization(
         probe_distance=config.probe_distance,
         sensor_angle=config.sensor_angle,
         thermal_threshold=HOT_DEPART_THRESHOLD,
-        thermal_threshold_label="HOT_DEPART_THRESHOLD",
+        thermal_threshold_label="HOT DEPART = 0.60",
+        energy_label="ENERGY (NORMALIZED)",
+    )
+
+
+def build_d011_development_visualization(
+    *,
+    seed: int,
+    horizon: int = 1000,
+) -> DevelopmentVisualizationData:
+    """Replay one legal D-011 lifetime into the neutral visualization model."""
+    return _build_d011_family_development_visualization(
+        seed=seed,
+        horizon=horizon,
+        source_label="D-011 fixed thermal-beacon reacquisition",
+        validate_seed=_validate_d011_visualization_seed,
+    )
+
+
+def build_d012_development_visualization(
+    *,
+    seed: int,
+    horizon: int = 1000,
+) -> DevelopmentVisualizationData:
+    """Replay one legal D-012 seed using the unchanged D-011 controller path."""
+    return _build_d011_family_development_visualization(
+        seed=seed,
+        horizon=horizon,
+        source_label="D-012 D-011 thermal-beacon reacquisition",
+        validate_seed=_validate_d012_visualization_seed,
     )
 
 
@@ -1034,6 +1099,7 @@ DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     "d005": build_d005_development_visualization,
     "d006": build_d006_development_visualization,
     "d011": build_d011_development_visualization,
+    "d012": build_d012_development_visualization,
 }
 
 

@@ -2,7 +2,7 @@
 
 import sys
 from collections import Counter
-from dataclasses import fields
+from dataclasses import fields, replace
 
 import matplotlib
 
@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import pytest
 from matplotlib.backend_bases import KeyEvent
 
-from aweform import d011
+from aweform import d011, d012
 from aweform.d003 import run_d003_probe
 from aweform.d005 import run_d005_probe
 from aweform.d006 import run_d006_probe
@@ -30,6 +30,7 @@ from aweform.development_visualizer import (
     build_d005_development_visualization,
     build_d006_development_visualization,
     build_d011_development_visualization,
+    build_d012_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
 )
@@ -154,12 +155,63 @@ def test_d011_is_registered_and_builds_neutral_beacon_data() -> None:
     assert len(data.frames) == 40
     assert data.probe_distance == pytest.approx(0.1)
     assert data.sensor_angle == pytest.approx(0.7853981633974483)
+    assert data.energy_range.lower == pytest.approx(0.0)
+    assert data.energy_range.upper == pytest.approx(1.0)
+    assert data.energy_label == "ENERGY (NORMALIZED)"
     assert data.thermal_threshold == pytest.approx(0.60)
     assert data.visibility.energy == "CTRL + EVAL"
     assert all(
         None not in (frame.beacon_left, frame.beacon_forward, frame.beacon_right)
         for frame in data.frames
     )
+
+
+def test_d012_is_registered_and_builds_one_declared_seed() -> None:
+    assert DEVELOPMENT_VISUALIZATION_ADAPTERS["d012"] is (
+        build_d012_development_visualization
+    )
+    data = build_development_visualization("d012", seed=18144, horizon=2)
+
+    assert data.source_label.startswith("D-012")
+    assert data.seed == 18144
+    assert data.energy_range == DevelopmentVisualizationRange(0.0, 1.0)
+    assert data.energy_label == "ENERGY (NORMALIZED)"
+
+
+def test_d012_visualization_uses_shared_d011_controller_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    selected: list[str] = []
+    original_act = d011.D011Controller.act
+
+    def recording_act(
+        controller: d011.D011Controller, observation: d011.D011Observation
+    ) -> Action:
+        action = original_act(controller, observation)
+        selected.append(action.name)
+        return action
+
+    monkeypatch.setattr(d011.D011Controller, "act", recording_act)
+    data = build_d012_development_visualization(seed=18144, horizon=20)
+
+    assert selected == [frame.action for frame in data.frames]
+
+
+def test_d012_visualization_does_not_call_exact_census_validator(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        d012,
+        "_validate_d012_development_seeds",
+        lambda _seeds: (_ for _ in ()).throw(
+            AssertionError(
+                "single-seed visualization must not run the census validator"
+            )
+        ),
+    )
+
+    data = build_d012_development_visualization(seed=18144, horizon=1)
+    assert data.seed == 18144
 
 
 def test_d011_adapter_actions_are_selected_by_d011_controller(
@@ -214,6 +266,12 @@ def test_d011_rejects_reserved_and_non_d011_seeds(seed: int) -> None:
         build_d011_development_visualization(seed=seed, horizon=1)
 
 
+@pytest.mark.parametrize("seed", (18141, 50001))
+def test_d012_rejects_non_d012_and_reserved_seeds(seed: int) -> None:
+    with pytest.raises(ValueError):
+        build_d012_development_visualization(seed=seed, horizon=1)
+
+
 def test_d011_replay_does_not_read_d008_prediction_state(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -241,7 +299,8 @@ def test_shared_renderer_draws_beacons_and_preserves_non_beacon_sources() -> Non
     assert "BEACON L — CTRL + EVAL" in beacon_text
     assert "BEACON F — CTRL + EVAL" in beacon_text
     assert "BEACON R — CTRL + EVAL" in beacon_text
-    assert "HOT_DEPART_THRESHOLD" in beacon_text
+    assert "HOT DEPART = 0.60" in beacon_text
+    assert "DEVELOPMENT / EVALUATOR VIEW" not in beacon_text
     assert "not literal RF beams" in beacon_text
     assert beacon_data.visibility.energy == "CTRL + EVAL"
     frame = beacon_data.frames[0]
@@ -251,7 +310,7 @@ def test_shared_renderer_draws_beacons_and_preserves_non_beacon_sources() -> Non
         frame.beacon_right,
     )
     assert all(signal is not None for signal in expected_signals)
-    beacon_fill_y_positions = (0.37 - 0.025, 0.27 - 0.025, 0.17 - 0.025)
+    beacon_fill_y_positions = (0.30 - 0.025, 0.20 - 0.025, 0.10 - 0.025)
     for y, signal in zip(beacon_fill_y_positions, expected_signals, strict=True):
         if signal is None:
             raise AssertionError("expected a beacon signal")
@@ -309,6 +368,74 @@ def test_d006_renderer_does_not_rerun_after_adaptation(
     player = getattr(figure, "_aweform_player")
     player.step_forward()
     animation._func(1)
+    animation.event_source.stop()
+    plt.close(figure)
+
+
+def test_d011_normalized_energy_renders_as_normalized_gauge_and_text() -> None:
+    data = build_d011_development_visualization(seed=18141, horizon=1)
+    data = replace(
+        data,
+        frames=(replace(data.frames[0], energy=0.86),),
+    )
+    figure, animation = build_development_visualization_figure(data)
+    diagnostic_axis = figure.axes[1]
+    rendered_text = "\n".join(text.get_text() for text in diagnostic_axis.texts)
+
+    assert "ENERGY (NORMALIZED) — CTRL + EVAL" in rendered_text
+    assert "0.860 / 1" in rendered_text
+    energy_fills = [
+        patch
+        for patch in diagnostic_axis.patches
+        if patch.get_y() == pytest.approx(0.61 - 0.025)
+        and patch.get_facecolor() != pytest.approx((0.88, 0.88, 0.88, 1.0))
+    ]
+    assert len(energy_fills) == 1
+    assert energy_fills[0].get_width() == pytest.approx(0.62 * 0.86)
+
+    animation.event_source.stop()
+    plt.close(figure)
+
+
+def test_renderer_keeps_provenance_header_once_and_separates_diagnostics() -> None:
+    data = build_d011_development_visualization(seed=18141, horizon=1)
+    figure, animation = build_development_visualization_figure(data)
+    warning = "DEVELOPMENT / EVALUATOR VIEW"
+    assert sum(warning in text.get_text() for text in figure.texts) == 1
+    assert warning not in "\n".join(
+        text.get_text() for text in figure.axes[1].texts
+    )
+
+    diagnostic_texts = {text.get_text(): text for text in figure.axes[1].texts}
+    top_labels = (
+        "transition: 1",
+        "action: ",
+        "decision mode: ",
+        "charging contact: ",
+        "status: ",
+    )
+    top_positions = [
+        next(
+            text.get_position()[1]
+            for label, text in diagnostic_texts.items()
+            if label.startswith(prefix)
+        )
+        for prefix in top_labels
+    ]
+    assert all(
+        first - second >= 0.06
+        for first, second in zip(top_positions, top_positions[1:])
+    )
+    metadata = next(
+        text
+        for text in figure.axes[1].texts
+        if text.get_text().startswith("POSITION /")
+    )
+    footer = next(
+        text for text in figure.axes[1].texts if text.get_text().startswith("SPACE ")
+    )
+    assert metadata.get_position()[1] - footer.get_position()[1] >= 0.20
+
     animation.event_source.stop()
     plt.close(figure)
 
