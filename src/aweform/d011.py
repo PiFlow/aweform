@@ -272,7 +272,10 @@ def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
         position_after = body.position
         true_distance = _distance(position_after, station)
 
-        if mode_before is D011Mode.DEPART and not telemetry.charging_contact_after:
+        if (
+            telemetry.charging_contact_before
+            and not telemetry.charging_contact_after
+        ):
             charger_exits += 1
             cycle_has_exit = True
         if (

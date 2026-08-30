@@ -155,6 +155,14 @@ def test_runner_preserves_reward_info_and_reports_nonlearning_boundary() -> None
     assert run["transitions"] == 2
 
 
+def test_physical_charger_exit_counts_only_the_contact_boundary_crossing() -> None:
+    result = d011.run_d011_probe((18141,), horizon=250)
+    run = result["results"][0]
+    assert isinstance(run, dict)
+    assert run["successful_physical_charger_exits"] == run["away_entries"]
+    assert run["successful_physical_charger_exits"] > 0
+
+
 def test_development_seed_restrictions_are_enforced() -> None:
     with pytest.raises(ValueError, match="reserved for a formal experiment"):
         d011.run_d011_probe((50001,), horizon=1)
