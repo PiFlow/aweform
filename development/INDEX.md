@@ -27,6 +27,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-009 | Bounded overlapping action-experience acquisition | CONTINUING | [`D-009-bounded-overlapping-action-experience-acquisition.md`](D-009-bounded-overlapping-action-experience-acquisition.md) |
 | D-010 | Visited-support consequence-aliasing census | CONTINUING | [`D-010-visited-support-consequence-aliasing.md`](D-010-visited-support-consequence-aliasing.md) |
 | D-011 | Fixed non-learning thermal-beacon autonomous reacquisition | CONTINUING | [`D-011-fixed-non-learning-thermal-beacon-autonomous-reacquisition.md`](D-011-fixed-non-learning-thermal-beacon-autonomous-reacquisition.md) |
+| D-012 | D-011 broad-seed robustness census | CONTINUING | [`D-012-d011-broad-seed-robustness-census.md`](D-012-d011-broad-seed-robustness-census.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 
