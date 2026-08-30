@@ -1,5 +1,9 @@
 """Focused tests for the canonical post-hoc development visualizer."""
 
+import sys
+from collections import Counter
+from dataclasses import fields
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -8,10 +12,12 @@ import matplotlib.pyplot as plt
 import pytest
 from matplotlib.backend_bases import KeyEvent
 
+from aweform import d011
 from aweform.d003 import run_d003_probe
 from aweform.d005 import run_d005_probe
 from aweform.d006 import run_d006_probe
 from aweform.development_visualizer import (
+    DEVELOPMENT_VISUALIZATION_ADAPTERS,
     DevelopmentVisualizationData,
     DevelopmentVisualizationFrame,
     DevelopmentVisualizationPlayer,
@@ -23,9 +29,11 @@ from aweform.development_visualizer import (
     build_d003_development_visualization,
     build_d005_development_visualization,
     build_d006_development_visualization,
+    build_d011_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
 )
+from aweform.env import Action
 
 
 def test_d003_adapter_preserves_completed_trace_fields() -> None:
@@ -134,6 +142,157 @@ def test_d006_visualization_uses_shared_post_hoc_renderer() -> None:
     assert data.source_label.startswith("D-006")
     assert data.visibility.position_heading == "EVALUATOR ONLY"
     assert data.visibility.thermal == "CTRL + EVAL"
+
+
+def test_d011_is_registered_and_builds_neutral_beacon_data() -> None:
+    assert DEVELOPMENT_VISUALIZATION_ADAPTERS["d011"] is (
+        build_d011_development_visualization
+    )
+    data = build_development_visualization("d011", seed=18141, horizon=40)
+
+    assert data.source_label.startswith("D-011")
+    assert len(data.frames) == 40
+    assert data.probe_distance == pytest.approx(0.1)
+    assert data.sensor_angle == pytest.approx(0.7853981633974483)
+    assert data.thermal_threshold == pytest.approx(0.60)
+    assert data.visibility.energy == "CTRL + EVAL"
+    assert all(
+        None not in (frame.beacon_left, frame.beacon_forward, frame.beacon_right)
+        for frame in data.frames
+    )
+
+
+def test_d011_adapter_actions_are_selected_by_d011_controller(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    selected: list[str] = []
+    original_act = d011.D011Controller.act
+
+    def recording_act(
+        controller: d011.D011Controller, observation: d011.D011Observation
+    ) -> Action:
+        action = original_act(controller, observation)
+        selected.append(action.name)
+        return action
+
+    monkeypatch.setattr(d011.D011Controller, "act", recording_act)
+    data = build_d011_development_visualization(seed=18141, horizon=40)
+
+    assert selected == [frame.action for frame in data.frames]
+
+
+def test_d011_replay_matches_merged_probe_invariants() -> None:
+    data = build_d011_development_visualization(seed=18141, horizon=80)
+    result = d011.run_d011_probe((18141,), horizon=80)
+    run = result["results"][0]
+    assert isinstance(run, dict)
+    action_counts = run["action_counts"]
+    assert isinstance(action_counts, dict)
+
+    assert Counter(frame.action for frame in data.frames) == action_counts
+    assert data.frames[-1].energy == pytest.approx(run["final_normalized_energy"])
+    assert data.frames[-1].thermal == pytest.approx(run["final_thermal_state"])
+
+
+def test_d011_geometry_stays_outside_organism_observation() -> None:
+    assert {field.name for field in fields(d011.D011Observation)} == {
+        "energy",
+        "beacon",
+        "thermal",
+    }
+    data = build_d011_development_visualization(seed=18141, horizon=2)
+    assert data.station_center == (0.5, 0.5)
+    assert not hasattr(d011.D011Observation, "station_center")
+    assert not hasattr(d011.D011Observation, "true_distance")
+    assert isinstance(data.frames[0].x, float)
+    assert isinstance(data.frames[0].heading, float)
+
+
+@pytest.mark.parametrize("seed", (50001, 42, 18144))
+def test_d011_rejects_reserved_and_non_d011_seeds(seed: int) -> None:
+    with pytest.raises(ValueError):
+        build_d011_development_visualization(seed=seed, horizon=1)
+
+
+def test_d011_replay_does_not_read_d008_prediction_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    baseline = build_d011_development_visualization(seed=18141, horizon=20)
+
+    class ForbiddenPrediction:
+        def __getattribute__(self, name: str) -> object:
+            raise AssertionError(f"forbidden learner read: {name}")
+
+    monkeypatch.setitem(sys.modules, "aweform.d008", ForbiddenPrediction())
+    adversarial = build_d011_development_visualization(seed=18141, horizon=20)
+    assert [frame.action for frame in adversarial.frames] == [
+        frame.action for frame in baseline.frames
+    ]
+
+
+def test_shared_renderer_draws_beacons_and_preserves_non_beacon_sources() -> None:
+    beacon_data = build_d011_development_visualization(seed=18141, horizon=3)
+    beacon_figure, beacon_animation = build_development_visualization_figure(
+        beacon_data
+    )
+    beacon_text = "\n".join(
+        text.get_text() for axis in beacon_figure.axes for text in axis.texts
+    )
+    assert "BEACON L — CTRL + EVAL" in beacon_text
+    assert "BEACON F — CTRL + EVAL" in beacon_text
+    assert "BEACON R — CTRL + EVAL" in beacon_text
+    assert "HOT_DEPART_THRESHOLD" in beacon_text
+    assert "not literal RF beams" in beacon_text
+    assert beacon_data.visibility.energy == "CTRL + EVAL"
+    frame = beacon_data.frames[0]
+    expected_signals = (
+        frame.beacon_left,
+        frame.beacon_forward,
+        frame.beacon_right,
+    )
+    assert all(signal is not None for signal in expected_signals)
+    beacon_fill_y_positions = (0.37 - 0.025, 0.27 - 0.025, 0.17 - 0.025)
+    for y, signal in zip(beacon_fill_y_positions, expected_signals, strict=True):
+        if signal is None:
+            raise AssertionError("expected a beacon signal")
+        matching = [
+            patch
+            for patch in beacon_figure.axes[1].patches
+            if patch.get_y() == pytest.approx(y)
+            and patch.get_facecolor() != pytest.approx((0.88, 0.88, 0.88, 1.0))
+        ]
+        assert len(matching) == 1
+        assert matching[0].get_width() == pytest.approx(0.62 * signal)
+        assert f"{signal:.3f}" in [
+            text.get_text() for text in beacon_figure.axes[1].texts
+        ]
+    assert sum(
+        line.get_label().endswith("directional probe")
+        for line in beacon_figure.axes[0].lines
+    ) == 3
+    beacon_animation.event_source.stop()
+    plt.close(beacon_figure)
+
+    for builder in (
+        build_d003_development_visualization,
+        build_d005_development_visualization,
+        build_d006_development_visualization,
+    ):
+        data = builder(seed=18141, horizon=1)
+        assert all(
+            frame.beacon_left is None
+            and frame.beacon_forward is None
+            and frame.beacon_right is None
+            for frame in data.frames
+        )
+        figure, animation = build_development_visualization_figure(data)
+        assert not any(
+            "BEACON" in text.get_text()
+            for axis in figure.axes
+            for text in axis.texts
+        )
+        animation.event_source.stop()
+        plt.close(figure)
 
 
 def test_d006_renderer_does_not_rerun_after_adaptation(
