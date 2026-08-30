@@ -29,7 +29,7 @@ def test_d012_rejects_formal_and_non_declared_seed_sets() -> None:
         d012.run_d012_census((18144,), horizon=1)
 
 
-def test_d012_small_horizon_preserves_each_d011_record_and_boundary() -> None:
+def test_d012_small_horizon_preserves_each_d011_summary_and_boundary() -> None:
     result = d012.run_d012_census(horizon=2)
     assert result["experiment"] == "D-012"
     assert result["executed_commit_sha"] is None
@@ -47,11 +47,21 @@ def test_d012_small_horizon_preserves_each_d011_record_and_boundary() -> None:
     assert first["seed"] == 18144
     assert first["transitions"] == 2
     assert "seek_episodes" in first
+    assert "seek_distance_trajectory" not in first["evaluator_only_navigation"]
+    assert first["seek_outcome_summary"] == {
+        "demonstrated_failure": 0,
+        "horizon_censored": 0,
+        "resolved": 0,
+    }
     aggregate = result["aggregate"]
     assert isinstance(aggregate, dict)
     assert aggregate["seed_count"] == 200
     assert aggregate["total_transitions"] == 400
     assert aggregate["surviving_to_horizon_count"] == 200
+    assert aggregate["resolved_seek_success_count"] == 0
+    assert aggregate["resolved_seek_episode_count"] == 0
+    assert aggregate["total_horizon_censored_seek_episodes"] == 0
+    assert aggregate["total_demonstrated_failed_seek_episodes"] == 0
 
 
 def test_d012_aggregation_is_deterministic_and_nonlearning() -> None:

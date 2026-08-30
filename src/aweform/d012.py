@@ -120,6 +120,44 @@ def _seek_latencies(run: dict[str, object]) -> list[int]:
     return latencies
 
 
+def _seek_outcome_summary(run: dict[str, object]) -> dict[str, int]:
+    """Classify SEEK episodes without treating horizon censoring as failure."""
+    resolved = 0
+    horizon_censored = 0
+    demonstrated_failure = 0
+    horizon_censored_lifetime = _bool_field(
+        run, "truncated"
+    ) and not _bool_field(run, "terminated")
+    for item in _list(run.get("seek_episodes"), name="seek_episodes"):
+        episode = _mapping(item, name="seek episode")
+        reacquisition_transition = episode.get("reacquisition_transition")
+        if reacquisition_transition is not None:
+            resolved += 1
+        elif horizon_censored_lifetime:
+            horizon_censored += 1
+        else:
+            demonstrated_failure += 1
+    return {
+        "resolved": resolved,
+        "horizon_censored": horizon_censored,
+        "demonstrated_failure": demonstrated_failure,
+    }
+
+
+def _compact_d011_result(run: dict[str, object]) -> dict[str, object]:
+    """Keep D-011 summaries while omitting its large per-transition geometry log."""
+    compacted = dict(run)
+    navigation = _mapping(
+        run.get("evaluator_only_navigation"),
+        name="evaluator_only_navigation",
+    )
+    compact_navigation = dict(navigation)
+    compact_navigation.pop("seek_distance_trajectory", None)
+    compacted["evaluator_only_navigation"] = compact_navigation
+    compacted["seek_outcome_summary"] = _seek_outcome_summary(run)
+    return compacted
+
+
 def _aggregate(results: Sequence[dict[str, object]]) -> dict[str, object]:
     seed_count = len(results)
     transitions = [_int_field(run, "transitions") for run in results]
@@ -147,9 +185,6 @@ def _aggregate(results: Sequence[dict[str, object]]) -> dict[str, object]:
         _int_field(run, "completed_autonomous_regulation_cycles")
         for run in results
     ]
-    failed_seek_counts = [
-        _int_field(run, "failed_seek_episodes") for run in results
-    ]
     low_energy_seek_entries = [
         _int_field(run, "low_energy_seek_entries") for run in results
     ]
@@ -171,6 +206,11 @@ def _aggregate(results: Sequence[dict[str, object]]) -> dict[str, object]:
     mode_totals: dict[str, int] = {}
     mode_entry_totals: dict[str, int] = {}
     all_seek_latencies: list[int] = []
+    seek_outcome_totals = {
+        "resolved": 0,
+        "horizon_censored": 0,
+        "demonstrated_failure": 0,
+    }
     for run in results:
         action_counts = _mapping(run.get("action_counts"), name="action_counts")
         for name, value in action_counts.items():
@@ -186,14 +226,20 @@ def _aggregate(results: Sequence[dict[str, object]]) -> dict[str, object]:
                     raise RuntimeError(f"D-011 {source} value is not an integer")
                 target[name] = target.get(name, 0) + value
         all_seek_latencies.extend(_seek_latencies(run))
+        for outcome, count in _seek_outcome_summary(run).items():
+            seek_outcome_totals[outcome] += count
 
     total_transitions = sum(transitions)
     total_low_energy_seek_entries = sum(low_energy_seek_entries)
     total_successful_reacquisitions = sum(successful_reacquisitions)
-    successful_reacquisition_rate: float | None = None
-    if total_low_energy_seek_entries:
-        successful_reacquisition_rate = (
-            total_successful_reacquisitions / total_low_energy_seek_entries
+    resolved_seek_episode_count = (
+        seek_outcome_totals["resolved"]
+        + seek_outcome_totals["demonstrated_failure"]
+    )
+    resolved_seek_success_rate: float | None = None
+    if resolved_seek_episode_count:
+        resolved_seek_success_rate = (
+            total_successful_reacquisitions / resolved_seek_episode_count
         )
 
     return {
@@ -215,13 +261,25 @@ def _aggregate(results: Sequence[dict[str, object]]) -> dict[str, object]:
             if seed_count
             else 0.0
         ),
-        "failed_seek_seed_count": sum(count > 0 for count in failed_seek_counts),
-        "total_failed_seek_episodes": sum(failed_seek_counts),
         "low_energy_seek_entry_count": total_low_energy_seek_entries,
         "successful_reacquisition_count": total_successful_reacquisitions,
-        "successful_reacquisition_rate_where_seek_occurred": (
-            successful_reacquisition_rate
+        "horizon_censored_seek_seed_count": sum(
+            _seek_outcome_summary(run)["horizon_censored"] > 0
+            for run in results
         ),
+        "total_horizon_censored_seek_episodes": seek_outcome_totals[
+            "horizon_censored"
+        ],
+        "demonstrated_failed_seek_seed_count": sum(
+            _seek_outcome_summary(run)["demonstrated_failure"] > 0
+            for run in results
+        ),
+        "total_demonstrated_failed_seek_episodes": seek_outcome_totals[
+            "demonstrated_failure"
+        ],
+        "resolved_seek_episode_count": resolved_seek_episode_count,
+        "resolved_seek_success_count": total_successful_reacquisitions,
+        "resolved_seek_success_rate": resolved_seek_success_rate,
         "minimum_of_minimum_raw_energy": min(minimum_raw_energy),
         "minimum_of_minimum_normalized_energy": min(minimum_normalized_energy),
         "median_minimum_raw_energy": float(median(minimum_raw_energy)),
@@ -302,10 +360,11 @@ def run_d012_census(
         },
         "evaluator_only": {
             "aggregation": True,
-            "per_seed_d011_records": True,
+            "per_seed_d011_summary_records": True,
+            "omits_per_transition_seek_geometry": True,
             "passed_to_controller": False,
         },
-        "results": results,
+        "results": [_compact_d011_result(run) for run in results],
         "aggregate": _aggregate(results),
     }
 
