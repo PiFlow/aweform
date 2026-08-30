@@ -128,7 +128,10 @@ every seed completed at least one cycle, and every resolved SEEK episode
 reacquired the charger (`2173/2173`); 45 final SEEK episodes were censored by
 the finite horizon rather than demonstrated failures. This does not establish
 universal robustness or success beyond the declared horizon. D-012 does not
-justify adding a learner or tuning D-011.
+authorize learned action selection, model-guided control, counterfactual
+action choice, or a larger learner. It does support using unchanged D-011 as
+the fixed behavioural scaffold for the next explicitly authorized
+SHADOW-ONLY learning stage.
 
 No claim is made about universal robustness, learned navigation, optimality,
 arbitrary initial charger discovery, noise/occlusion robustness, consciousness,
@@ -136,7 +139,9 @@ emotion, genuine life, or evidence-lane confirmation.
 
 ## Next
 
-Inspect the 45 horizon-censored SEEK terminal controller/environment states as
-a descriptive causal audit. Keep the D-011 controller as the fixed reference
-if a later shadow-learning experiment is explicitly authorized; do not
-implement that learner in D-012.
+Use unchanged D-011 as the fixed behavioural scaffold for the next
+SHADOW-ONLY learning stage, if that stage is explicitly authorized. D-012
+does not authorize learned action selection, model-guided control,
+counterfactual action choice, or a larger learner. Inspection of the 45
+horizon-censored terminal states remains optional diagnostic work; ordinary
+endpoint censoring is not a required causal-audit gate before shadow learning.

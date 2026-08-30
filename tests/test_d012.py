@@ -85,3 +85,27 @@ def test_d012_aggregation_is_deterministic_and_nonlearning() -> None:
 def test_d012_executed_sha_is_explicitly_validated() -> None:
     with pytest.raises(ValueError, match="40-character lowercase SHA"):
         d012.run_d012_census(horizon=1, executed_commit_sha="not-a-sha")
+
+
+def test_d012_distinguishes_horizon_censoring_from_demonstrated_failure() -> None:
+    censored_run = {
+        "truncated": True,
+        "terminated": False,
+        "seek_episodes": [{"reacquisition_transition": None}],
+    }
+    assert d012._seek_outcome_summary(censored_run) == {
+        "resolved": 0,
+        "horizon_censored": 1,
+        "demonstrated_failure": 0,
+    }
+
+    resolved_run = {
+        "truncated": True,
+        "terminated": False,
+        "seek_episodes": [{"reacquisition_transition": 7}],
+    }
+    assert d012._seek_outcome_summary(resolved_run) == {
+        "resolved": 1,
+        "horizon_censored": 0,
+        "demonstrated_failure": 0,
+    }
