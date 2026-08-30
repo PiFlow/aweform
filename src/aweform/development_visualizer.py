@@ -19,6 +19,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, Rectangle
 from matplotlib.text import Text
 
@@ -66,6 +67,9 @@ class DevelopmentVisualizationFrame:
     charging_contact: bool
     terminated: bool
     truncated: bool
+    beacon_left: float | None = None
+    beacon_forward: float | None = None
+    beacon_right: float | None = None
 
     def __post_init__(self) -> None:
         if self.transition_index <= 0:
@@ -81,6 +85,16 @@ class DevelopmentVisualizationFrame:
             self.truncated, bool
         ):
             raise ValueError("termination flags must be bools")
+        beacon_values = (self.beacon_left, self.beacon_forward, self.beacon_right)
+        if any(value is not None for value in beacon_values) and not all(
+            value is not None for value in beacon_values
+        ):
+            raise ValueError("directional beacon values must be complete or absent")
+        for value in beacon_values:
+            if value is not None and (
+                not math.isfinite(value) or not 0.0 <= value <= 1.0
+            ):
+                raise ValueError("directional beacon values must be in [0.0, 1.0]")
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,6 +111,10 @@ class DevelopmentVisualizationData:
     thermal_range: DevelopmentVisualizationRange
     frames: tuple[DevelopmentVisualizationFrame, ...]
     visibility: DevelopmentVisualizationVisibility
+    probe_distance: float | None = None
+    sensor_angle: float | None = None
+    thermal_threshold: float | None = None
+    thermal_threshold_label: str | None = None
 
     def __post_init__(self) -> None:
         if not self.source_label:
@@ -125,6 +143,23 @@ class DevelopmentVisualizationData:
                 raise ValueError("station visualizations require a finite radius")
             if self.charging_radius < 0:
                 raise ValueError("charging_radius must be non-negative")
+        if (self.probe_distance is None) != (self.sensor_angle is None):
+            raise ValueError("probe_distance and sensor_angle must be paired")
+        for name in ("probe_distance", "sensor_angle"):
+            value = getattr(self, name)
+            if value is not None and (not math.isfinite(value) or value < 0.0):
+                raise ValueError(f"{name} must be finite and non-negative")
+        if self.thermal_threshold is not None:
+            if not math.isfinite(self.thermal_threshold):
+                raise ValueError("thermal_threshold must be finite")
+            if not self.thermal_range.lower <= self.thermal_threshold <= (
+                self.thermal_range.upper
+            ):
+                raise ValueError("thermal_threshold must be inside thermal_range")
+            if not self.thermal_threshold_label:
+                raise ValueError("thermal_threshold_label is required with threshold")
+        elif self.thermal_threshold_label is not None:
+            raise ValueError("thermal_threshold_label requires thermal_threshold")
 
 
 class DevelopmentVisualizationPlayer:
@@ -252,10 +287,29 @@ def build_development_visualization_figure(
     heading_arrow = world_axis.quiver(
         [], [], [], [], angles="xy", scale_units="xy", scale=5, color="tab:orange"
     )
+    beacon_values_available = _has_directional_beacon(data)
+    probe_lines: list[Line2D] = []
+    if beacon_values_available and data.probe_distance is not None:
+        probe_lines = [
+            world_axis.plot([], [], color=color, linewidth=1.2, label=label)[0]
+            for color, label in (
+                ("#6a3d9a", "left directional probe"),
+                ("#1f78b4", "forward directional probe"),
+                ("#e31a1c", "right directional probe"),
+            )
+        ]
+        world_axis.text(
+            0.02,
+            0.97,
+            "directional probes = idealized beacon display\n(not literal RF beams)",
+            transform=world_axis.transAxes,
+            va="top",
+            fontsize=8,
+        )
     world_axis.legend(loc="lower left", fontsize=8)
 
     diagnostic_axis.set_xlim(0.0, 1.0)
-    diagnostic_axis.set_ylim(0.0, 1.0)
+    diagnostic_axis.set_ylim(0.0, 1.2 if beacon_values_available else 1.0)
     diagnostic_axis.axis("off")
     diagnostic_axis.set_title("EVALUATOR DIAGNOSTICS", loc="left")
     diagnostic_axis.text(
@@ -267,32 +321,85 @@ def build_development_visualization_figure(
         color="tab:red",
         weight="bold",
     )
+    if beacon_values_available:
+        top_y = (1.10, 1.04, 0.98, 0.92, 0.86)
+        energy_y, thermal_y = 0.71, 0.55
+    else:
+        top_y = (0.82, 0.76, 0.70, 0.64, 0.58)
+        energy_y, thermal_y = 0.44, 0.30
     transition_text = diagnostic_axis.text(
-        0.02, 0.82, "", family="monospace", fontsize=11
+        0.02, top_y[0], "", family="monospace", fontsize=11
     )
-    action_text = diagnostic_axis.text(0.02, 0.76, "", family="monospace", fontsize=11)
-    mode_text = diagnostic_axis.text(0.02, 0.70, "", family="monospace", fontsize=11)
-    contact_text = diagnostic_axis.text(0.02, 0.64, "", family="monospace", fontsize=11)
-    status_text = diagnostic_axis.text(0.02, 0.58, "", family="monospace", fontsize=11)
+    action_text = diagnostic_axis.text(
+        0.02, top_y[1], "", family="monospace", fontsize=11
+    )
+    mode_text = diagnostic_axis.text(
+        0.02, top_y[2], "", family="monospace", fontsize=11
+    )
+    contact_text = diagnostic_axis.text(
+        0.02, top_y[3], "", family="monospace", fontsize=11
+    )
+    status_text = diagnostic_axis.text(
+        0.02, top_y[4], "", family="monospace", fontsize=11
+    )
 
     energy_background, energy_fill, energy_value = _make_gauge(
         diagnostic_axis,
-        y=0.44,
+        y=energy_y,
         label="ENERGY",
         visibility=data.visibility.energy,
         value_range=data.energy_range,
     )
     thermal_background, thermal_fill, thermal_value = _make_gauge(
         diagnostic_axis,
-        y=0.30,
+        y=thermal_y,
         label="THERMAL",
         visibility=data.visibility.thermal,
         value_range=data.thermal_range,
     )
     del energy_background, thermal_background
+    beacon_gauges: list[tuple[Rectangle, Rectangle, Text]] = []
+    if beacon_values_available:
+        beacon_gauges = [
+            _make_gauge(
+                diagnostic_axis,
+                y=y,
+                label=label,
+                visibility="CTRL + EVAL",
+                value_range=DevelopmentVisualizationRange(0.0, 1.0),
+                color=color,
+            )
+            for y, label, color in (
+                (0.37, "BEACON L", "#6a3d9a"),
+                (0.27, "BEACON F", "#1f78b4"),
+                (0.17, "BEACON R", "#e31a1c"),
+            )
+        ]
+    threshold_marker: Line2D | None = None
+    if data.thermal_threshold is not None:
+        threshold_x = 0.30 + _gauge_fraction(
+            data.thermal_threshold, data.thermal_range
+        ) * 0.62
+        threshold_marker = diagnostic_axis.plot(
+            [threshold_x, threshold_x],
+            [thermal_y - 0.055, thermal_y + 0.055],
+            color="tab:red",
+            linewidth=1.5,
+        )[0]
+        diagnostic_axis.text(
+            threshold_x,
+            thermal_y + 0.065,
+            data.thermal_threshold_label,
+            ha="center",
+            va="bottom",
+            fontsize=7,
+            color="tab:red",
+            rotation=90,
+        )
+    metadata_y = 0.07 if beacon_values_available else 0.16
     diagnostic_axis.text(
         0.02,
-        0.16,
+        metadata_y,
         "POSITION / HEADING: "
         f"{data.visibility.position_heading}\n"
         "STATION LOCATION: "
@@ -342,7 +449,7 @@ def build_development_visualization_figure(
         )
         energy_value.set_text(f"{frame.energy:.3f} / {data.energy_range.upper:g}")
         thermal_value.set_text(f"{frame.thermal:.3f} / {data.thermal_range.upper:g}")
-        return (
+        rendered: list[Artist] = [
             trajectory_line,
             body_marker,
             heading_arrow,
@@ -355,7 +462,33 @@ def build_development_visualization_figure(
             thermal_fill,
             energy_value,
             thermal_value,
-        )
+        ]
+        if probe_lines:
+            if data.probe_distance is None or data.sensor_angle is None:
+                raise RuntimeError("directional probes require neutral probe metadata")
+            endpoints = _probe_endpoints(frame, data)
+            signals = (
+                frame.beacon_left,
+                frame.beacon_forward,
+                frame.beacon_right,
+            )
+            if any(signal is None for signal in signals):
+                raise RuntimeError("directional probe lines require beacon values")
+            for line, endpoint, signal in zip(
+                probe_lines, endpoints, signals, strict=True
+            ):
+                if signal is None:
+                    raise RuntimeError("directional probe signal unexpectedly absent")
+                line.set_data([frame.x, endpoint[0]], [frame.y, endpoint[1]])
+                line.set_alpha(0.15 + 0.85 * signal)
+                line.set_linewidth(0.8 + 2.0 * signal)
+                rendered.append(line)
+        for background, fill, value in beacon_gauges:
+            del background
+            rendered.extend((fill, value))
+        if threshold_marker is not None:
+            rendered.append(threshold_marker)
+        return tuple(rendered)
 
     render(0)
 
@@ -434,6 +567,7 @@ def _make_gauge(
     label: str,
     visibility: str,
     value_range: DevelopmentVisualizationRange,
+    color: str | None = None,
 ) -> tuple[Rectangle, Rectangle, Text]:
     """Create a gauge using display coordinates normalized to the diagnostic axis."""
     background = Rectangle(
@@ -447,7 +581,13 @@ def _make_gauge(
         (0.30, y - 0.025),
         0.0,
         0.055,
-        facecolor="tab:blue" if label == "ENERGY" else "tab:orange",
+        facecolor=(
+            color
+            if color is not None
+            else "tab:blue"
+            if label == "ENERGY"
+            else "tab:orange"
+        ),
         edgecolor="none",
     )
     axis.add_patch(background)
@@ -480,6 +620,36 @@ def _gauge_fraction(value: float, value_range: DevelopmentVisualizationRange) ->
             (value - value_range.lower) / (value_range.upper - value_range.lower),
         ),
     )
+
+
+def _has_directional_beacon(data: DevelopmentVisualizationData) -> bool:
+    """Return whether every neutral frame carries optional L/F/R values."""
+    return bool(data.frames) and all(
+        frame.beacon_left is not None
+        and frame.beacon_forward is not None
+        and frame.beacon_right is not None
+        for frame in data.frames
+    )
+
+
+def _probe_endpoints(
+    frame: DevelopmentVisualizationFrame, data: DevelopmentVisualizationData
+) -> tuple[Coordinate, Coordinate, Coordinate]:
+    """Return idealized directional probe endpoints for evaluator drawing."""
+    if data.probe_distance is None or data.sensor_angle is None:
+        raise ValueError("directional probe metadata is unavailable")
+    angles = (
+        frame.heading + data.sensor_angle,
+        frame.heading,
+        frame.heading - data.sensor_angle,
+    )
+    return tuple(
+        (
+            frame.x + data.probe_distance * math.cos(angle),
+            frame.y + data.probe_distance * math.sin(angle),
+        )
+        for angle in angles
+    )  # type: ignore[return-value]
 
 
 def adapt_d003_trace(
@@ -747,6 +917,105 @@ def build_d006_development_visualization(
     return adapt_d006_trace(predictive)
 
 
+def build_d011_development_visualization(
+    *,
+    seed: int,
+    horizon: int = 1000,
+) -> DevelopmentVisualizationData:
+    """Replay one legal D-011 lifetime into the neutral visualization model."""
+    from . import d011
+    from .d002 import (
+        D002_AMBIENT_THERMAL_STATE,
+        D002_UPPER_THERMAL_FAILURE_BOUNDARY,
+        D002ThermalStationEnv,
+    )
+    from .d003 import HOT_DEPART_THRESHOLD
+    from .exp003 import EXP003StationConfig
+
+    d011._validate_d011_development_seeds((seed,))
+    if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon <= 0:
+        raise ValueError("horizon must be a positive integer")
+
+    config = EXP003StationConfig(episode_horizon=horizon)
+    environment = D002ThermalStationEnv(config=config)
+    observation, info = environment.reset(seed=seed)
+    if info != {}:
+        raise RuntimeError("D-002 reset crossed the information boundary")
+    _, observation = d011._prepare_post_contact_setup(environment)
+    random_streams = environment.base_env.random_streams
+    if random_streams is None:
+        raise RuntimeError("D-002 policy RNG is unavailable after reset")
+    controller = d011.D011Controller(random_streams.policy)
+    controller.reset()
+    if environment.body is None or environment.station_center is None:
+        raise RuntimeError("D-011 evaluator geometry is unavailable after setup")
+
+    frames: list[DevelopmentVisualizationFrame] = []
+    terminated = False
+    truncated = False
+    while not (terminated or truncated):
+        visible = d011._controller_observation(observation)
+        mode_before = controller.mode
+        action = controller.act(visible)
+        observation, reward, terminated, truncated, info = environment.step(action)
+        if reward != 0.0 or info != {}:
+            raise RuntimeError("D-011 replay crossed the reward/info boundary")
+        telemetry = environment.last_transition
+        body = environment.body
+        if telemetry is None or body is None:
+            raise RuntimeError("D-011 transition telemetry is unavailable")
+        next_visible = d011._controller_observation(observation)
+        frames.append(
+            DevelopmentVisualizationFrame(
+                transition_index=telemetry.step_index,
+                x=body.x,
+                y=body.y,
+                heading=body.heading,
+                action=action.name,
+                decision_mode=mode_before.value,
+                energy=next_visible.energy,
+                thermal=next_visible.thermal,
+                charging_contact=next_visible.charging_contact,
+                terminated=terminated,
+                truncated=truncated,
+                beacon_left=next_visible.beacon.left,
+                beacon_forward=next_visible.beacon.forward,
+                beacon_right=next_visible.beacon.right,
+            )
+        )
+
+    return DevelopmentVisualizationData(
+        source_label="D-011 fixed thermal-beacon reacquisition",
+        seed=seed,
+        world_min=config.world_min,
+        world_max=config.world_max,
+        station_center=environment.station_center,
+        charging_radius=config.charging_radius,
+        energy_range=DevelopmentVisualizationRange(
+            config.energy.failure_boundary, config.energy.maximum_energy
+        ),
+        thermal_range=DevelopmentVisualizationRange(
+            D002_AMBIENT_THERMAL_STATE,
+            D002_UPPER_THERMAL_FAILURE_BOUNDARY,
+        ),
+        frames=tuple(frames),
+        visibility=DevelopmentVisualizationVisibility(
+            position_heading="EVALUATOR ONLY",
+            station_location="EVALUATOR ONLY",
+            energy="EVALUATOR ONLY",
+            thermal="CTRL + EVAL",
+            charging_contact="CTRL + EVAL",
+            action_decision_mode=(
+                "ORGANISM-OWNED / CONTROLLER STATE SHOWN BY EVALUATOR"
+            ),
+        ),
+        probe_distance=config.probe_distance,
+        sensor_angle=config.sensor_angle,
+        thermal_threshold=HOT_DEPART_THRESHOLD,
+        thermal_threshold_label="HOT_DEPART_THRESHOLD",
+    )
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
@@ -754,6 +1023,7 @@ DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     "d003": build_d003_development_visualization,
     "d005": build_d005_development_visualization,
     "d006": build_d006_development_visualization,
+    "d011": build_d011_development_visualization,
 }
 
 
