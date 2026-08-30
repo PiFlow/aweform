@@ -9,6 +9,14 @@
 - **horizon:** `1000`
 - **disposition:** `CONTINUING`
 
+## Execution-provenance note
+
+Substantive D-009 execution remains tied to
+`3127a70a00b67bb5d97b3852dc5615887329635e`. The D-009 executable source and
+committed JSON result are unchanged. A later test-only/record repair removed
+non-durable Git-topology tests after CI exposed them; no substantive
+development seeds were rerun for that CI-only repair.
+
 ## Scientific question
 
 Can a minimal fixed sampling scaffold create direct experience of both `WAIT`
@@ -265,7 +273,23 @@ Observed result:
   observed consequence.
 
 Therefore the result does not cleanly satisfy branch A's requirement that
-learned predictions be interpretable within support. It supports branch D:
+learned predictions be interpretable within support. The observations establish
+overlap/support acquisition, but do not establish branch D outright. Branch A
+and model-guided action selection are not yet justified. No same-visible-
+state/action variability was observed at the exact sampled target.
+
+The poor final `MOVE_FORWARD` contact query remains unresolved among at least:
+
+- broader hidden-state aliasing or partial observability;
+- linear function-class inadequacy;
+- online-LMS interference or learning dynamics;
+- support/context imbalance.
+
+Therefore the next candidate question is the smallest diagnostic that
+distinguishes these explanations. Branch B remains open if broader
+same-visible-state/action variability is found. Branch D becomes warranted if
+observation/state sufficiency is established and the tiny learner/model
+remains inadequate:
 
 > adequate support + apparently stable consequence at the sampled state + an
 > inadequate simple predictor → evaluate whether model representation/capacity

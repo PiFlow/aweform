@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import inspect
-import subprocess
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -20,49 +18,9 @@ from aweform.d003 import (
 from aweform.env import Action
 from aweform.exp003 import EXP003_CHARGING_RADIUS
 
-AUTHORITATIVE_SHA = "dd37b551fc6310b189193d34340719ef98776f06"
-
 
 def observation(thermal: float, contact: bool) -> D003ThermostaticObservation:
     return D003ThermostaticObservation(thermal, contact)
-
-
-def test_branch_starts_at_exact_authoritative_main() -> None:
-    head = subprocess.run(
-        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
-    ).stdout.strip()
-    origin_main = subprocess.run(
-        ["git", "rev-parse", "origin/main"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
-    merge_base = subprocess.run(
-        ["git", "merge-base", "HEAD", "origin/main"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
-    assert origin_main == AUTHORITATIVE_SHA
-    assert merge_base == AUTHORITATIVE_SHA
-    assert head != ""
-    assert subprocess.run(
-        ["git", "merge-base", "--is-ancestor", AUTHORITATIVE_SHA, "HEAD"],
-        check=False,
-    ).returncode == 0
-
-
-@pytest.mark.parametrize(
-    "path", ["src/aweform/d002.py", "src/aweform/d003.py", "src/aweform/d008.py"]
-)
-def test_historical_sources_are_unchanged(path: str) -> None:
-    expected = subprocess.run(
-        ["git", "show", f"{AUTHORITATIVE_SHA}:{path}"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout
-    assert Path(path).read_text(encoding="utf-8") == expected
 
 
 def test_reuses_d008_predictor_and_preserves_ecology() -> None:
