@@ -3,8 +3,9 @@
 - **id:** D-013
 - **date:** 2026-08-30
 - **authoritative_base_sha:** \`539d91dfaf6b881b398d06c4637eb1c91f7a2174\`
-- **commit_a_sha:** \`f208b916b4551d405d41e738f82d9609d3c40af6\`
-- **executed_commit_sha:** \`f208b916b4551d405d41e738f82d9609d3c40af6\`
+- **prior_executed_commit_sha:** \`f208b91d372307ea8e647e67ba5480c06b37a480\`
+- **accepted_executable_commit_sha:** \`b41c4424ff3b6bb257cbd3a1b9fa8d5daf4a32cf\`
+- **accepted_executed_commit_sha:** \`b41c4424ff3b6bb257cbd3a1b9fa8d5daf4a32cf\`
 - **development_seeds:** \`18344, 18345, 18346\`
 - **horizon:** \`1000\` transitions per lifetime
 - **disposition:** \`CONTINUING\`
@@ -23,17 +24,32 @@ evidence, or authorization for a larger/world-model architecture.
 
 ## Provenance and execution
 
-The actual GitHub \`main\` ref was verified before implementation as
-\`539d91dfaf6b881b398d06c4637eb1c91f7a2174\`. Commit A was made from that tree
-after the implementation and focused tests passed. The one substantive run
-was then executed from clean Commit A using exactly the three declared seeds
-and horizon above. No executable or test files changed after that execution;
-the JSON artifact is the machine-readable result from that exact SHA:
+The prior record incorrectly named the nonexistent SHA
+\`f208b916b4551d405d41e738f82d9609d3c40af6\`. The actual prior executable
+commit was \`f208b91d372307ea8e647e67ba5480c06b37a480\`. Its Git parent was PR
+#65 HEAD \`0d7ce425f9fac937ddc0891cde6bea0d29060a35\`, while the authoritative
+base was \`539d91dfaf6b881b398d06c4637eb1c91f7a2174\`. Those two parent trees
+were identical at \`0d69456d72de65a11e85db7faec876aa2df82526\`; history was not
+rewritten.
+
+The prior artifact is invalidated only because of reporting/provenance
+defects: its executed SHA did not exist, its SEEK summary counted a final
+horizon-censored SEEK as failure, and its geometry field used overly broad
+terminology. The learner, controller, ecology, thresholds, features, targets,
+LMS rule, seeds, horizon, action selection, prediction metrics, and scientific
+hypothesis were not changed. The repair executable commit was made only after
+the reporting fix and focused regression test passed. The accepted rerun was
+then executed from that clean commit exactly once using the three declared
+seeds and horizon above; its exact SHA is recorded in this record and the JSON
+artifact:
 
 [D-013-full-observation-shadow-viability-consequence-learner.json](D-013-full-observation-shadow-viability-consequence-learner.json)
 
-Before Commit A, focused tests also exercised shorter and one-seed diagnostic
-runs. Those produced no artifact and were not used as the substantive result.
+The prior execution remains preserved by the prior record commit
+\`68c29ec58cb6a776c22cf8603a5e903d03672036\` and Git history; it is not hidden
+or rewritten. Before the repair executable commit, focused tests also
+exercised shorter and one-seed diagnostic runs. Those produced no artifact and
+were not used as the accepted substantive result.
 
 ## Programmed scaffold
 
@@ -103,8 +119,11 @@ weights_new = weights_old + 0.5 * error * x / normalizer
 Only the three output vectors for the physically executed action updated.
 Predictions were formed before \`environment.step(action)\`, scored against the
 typed next observation after the transition, and then used for the visible
-transition update. Evaluator telemetry and geometry were read only after the
-plastic update and were not learner inputs.
+transition update. Inherited evaluator-side post-contact setup / seeded
+geometry was established before the lifetime loop and none of it entered the
+learner. Per-transition evaluator telemetry used for summaries was read only
+after the learner update. No per-transition geometry trajectory was collected
+for D-013.
 
 Controller mode, policy RNG state, evaluator coordinates, true distance,
 heading, station position, seed identity, transition index, horizon, reward,
@@ -113,7 +132,8 @@ were absent from learner inputs and learned state.
 
 ## Direct observations
 
-**Source:** exact JSON artifact generated from clean Commit A.
+**Source:** exact JSON artifact generated from the accepted repaired executable
+commit and rerun.
 
 All three lifetimes reached 1000 transitions and ended by horizon truncation;
 none terminated for energy or thermal failure. Maximum thermal was
@@ -140,7 +160,9 @@ uneven: \`WAIT\` occurred only with current contact true (\`465\`, \`467\`, \`45
 per-action six-channel ranges, contact target counts, context cells, Q1–Q4
 metrics, checkpoints, and final 84-weight snapshots are preserved in the
 artifact. Zero-observation context cells are marked \`untested\`; no performance
-value is fabricated for them.
+value is fabricated for them. The repaired SEEK semantics report zero
+demonstrated failed SEEK episodes and one horizon-censored SEEK episode for
+seed 18346.
 
 Pooled contact-delta target counts were \`33\` for \`+1\`, \`35\` for \`-1\`, and
 \`2932\` for \`0\`, out of 3000 transitions. Thus contact-change learning was

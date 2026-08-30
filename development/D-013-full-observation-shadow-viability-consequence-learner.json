@@ -24,7 +24,7 @@
     "mode_passed_to_learner": false,
     "prediction_causal_effect_on_behavior": false
   },
-  "executed_commit_sha": "f208b916b4551d405d41e738f82d9609d3c40af6",
+  "executed_commit_sha": "b41c4424ff3b6bb257cbd3a1b9fa8d5daf4a32cf",
   "experiment": "D-013",
   "horizon": 1000,
   "learner": {
@@ -1602,17 +1602,17 @@
         }
       },
       "completed_autonomous_regulation_cycles": 11,
+      "demonstrated_failed_seek_episodes": 0,
       "energy_termination": false,
       "evaluator_only": {
-        "geometry_collected": false,
         "passed_to_learner": false,
         "seeded_heading": 3.5694925857097775,
         "station_position": [
           0.5,
           0.5
-        ]
+        ],
+        "trajectory_geometry_collected": false
       },
-      "failed_seek_episodes": 0,
       "final_energy": 5.420000000000025,
       "final_normalized_energy": 0.5419999957084656,
       "final_thermal_state": 0.29999999999999777,
@@ -1732,6 +1732,7 @@
           ]
         }
       },
+      "horizon_censored_seek_episodes": 0,
       "low_energy_seek_entries": 11,
       "maximum_energy": 10.0,
       "maximum_normalized_energy": 1.0,
@@ -3399,17 +3400,17 @@
         }
       },
       "completed_autonomous_regulation_cycles": 11,
+      "demonstrated_failed_seek_episodes": 0,
       "energy_termination": false,
       "evaluator_only": {
-        "geometry_collected": false,
         "passed_to_learner": false,
         "seeded_heading": 0.6934183255924584,
         "station_position": [
           0.5,
           0.5
-        ]
+        ],
+        "trajectory_geometry_collected": false
       },
-      "failed_seek_episodes": 0,
       "final_energy": 5.240000000000018,
       "final_normalized_energy": 0.5239999890327454,
       "final_thermal_state": 0.37999999999999834,
@@ -3529,6 +3530,7 @@
           ]
         }
       },
+      "horizon_censored_seek_episodes": 0,
       "low_energy_seek_entries": 11,
       "maximum_energy": 10.0,
       "maximum_normalized_energy": 1.0,
@@ -5196,17 +5198,17 @@
         }
       },
       "completed_autonomous_regulation_cycles": 11,
+      "demonstrated_failed_seek_episodes": 0,
       "energy_termination": false,
       "evaluator_only": {
-        "geometry_collected": false,
         "passed_to_learner": false,
         "seeded_heading": 3.1382457574727707,
         "station_position": [
           0.5,
           0.5
-        ]
+        ],
+        "trajectory_geometry_collected": false
       },
-      "failed_seek_episodes": 1,
       "final_energy": 3.3200000000000234,
       "final_normalized_energy": 0.3319999873638153,
       "final_thermal_state": 0.259999999999998,
@@ -5326,6 +5328,7 @@
           ]
         }
       },
+      "horizon_censored_seek_episodes": 1,
       "low_energy_seek_entries": 12,
       "maximum_energy": 10.0,
       "maximum_normalized_energy": 1.0,
