@@ -1,0 +1,714 @@
+{
+  "authoritative_base_sha": "8a62f0931de40dc85d26ec1ddbd3c1003fa1b723",
+  "development_seeds": [
+    18347,
+    18348,
+    18349
+  ],
+  "evaluator_only": {
+    "departure_event_context_passed_to_controller": false,
+    "fields": [
+      "run summaries",
+      "departure event summaries",
+      "termination/censoring classifications"
+    ]
+  },
+  "executed_commit_sha": "6e552dc40610d789dc0b54384c594d6ac029233f",
+  "experiment": "D-014",
+  "horizon": 1000,
+  "learned": {
+    "learner_prediction_read": false,
+    "status": "none"
+  },
+  "lifetime": "one uninterrupted lifetime per seed",
+  "organism_boundary": {
+    "info": {},
+    "reward": 0.0
+  },
+  "organism_visible": {
+    "controller_departure_inputs": [
+      "energy",
+      "charging_contact",
+      "thermal"
+    ],
+    "learned": "none",
+    "observation_fields": [
+      "energy",
+      "beacon.left",
+      "beacon.forward",
+      "beacon.right",
+      "charging_contact",
+      "thermal"
+    ],
+    "observation_type": "D011Observation"
+  },
+  "programmed": {
+    "controller": "D014Controller",
+    "d011_remainder_unchanged": true,
+    "departure_rule": "full normalized energy OR hot thermal, whichever first",
+    "ecology_unchanged": true,
+    "full_energy_threshold": 1.0,
+    "hot_depart_threshold": 0.6,
+    "inherits": "D011Controller",
+    "learning": false,
+    "low_energy_seek_threshold": 0.5,
+    "model_guided_action": false,
+    "no_resets_within_lifetime": true
+  },
+  "results": [
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 540,
+        "TURN_LEFT": 76,
+        "TURN_RIGHT": 93,
+        "WAIT": 291
+      },
+      "away_entries": 15,
+      "charger_departure_events": [
+        {
+          "charging_contact": true,
+          "decision_index": 14,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.33000001311302185,
+          "transition_index": 14,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 70,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.17000000178813934,
+          "transition_index": 70,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 144,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.2199999988079071,
+          "transition_index": 144,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 219,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.23000000417232513,
+          "transition_index": 219,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 293,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.23000000417232513,
+          "transition_index": 293,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 364,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 364,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 440,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.23000000417232513,
+          "transition_index": 440,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 512,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.2199999988079071,
+          "transition_index": 512,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 587,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.2199999988079071,
+          "transition_index": 587,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 655,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 655,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 715,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.18000000715255737,
+          "transition_index": 715,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 787,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.2199999988079071,
+          "transition_index": 787,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 845,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.18000000715255737,
+          "transition_index": 845,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 906,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.1899999976158142,
+          "transition_index": 906,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 976,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 976,
+          "trigger_category": "full_only"
+        }
+      ],
+      "completed_autonomous_regulation_cycles": 14,
+      "demonstrated_failed_seek_episodes": 0,
+      "departure_trigger_counts": {
+        "both": 0,
+        "full_only": 15,
+        "thermal_only": 0
+      },
+      "energy_termination": false,
+      "evaluator_only": {
+        "departure_event_context_is_evaluator_only": true,
+        "passed_to_controller": false,
+        "post_contact_setup": {
+          "body_position": [
+            0.5,
+            0.5
+          ],
+          "seeded_heading_preserved": true,
+          "station_position": [
+            0.5,
+            0.5
+          ]
+        },
+        "seeded_heading": 4.923083719311524
+      },
+      "final_normalized_energy": 0.5680000185966492,
+      "final_thermal_state": 0.019999999552965164,
+      "horizon_censored_seek_episodes": 0,
+      "low_energy_seek_entries": 14,
+      "maximum_thermal_state": 0.3499999940395355,
+      "minimum_normalized_energy": 0.11599999666213989,
+      "mode_entry_counts": {
+        "AWAY": 15,
+        "CHARGE": 15,
+        "DEPART": 15,
+        "SEEK": 14
+      },
+      "mode_occupancy": {
+        "AWAY": 387,
+        "CHARGE": 292,
+        "DEPART": 57,
+        "SEEK": 264
+      },
+      "seed": 18347,
+      "successful_charging_contact_reacquisitions": 14,
+      "successful_physical_charger_exits": 15,
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_termination": false,
+      "transitions": 1000,
+      "truncated": true
+    },
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 520,
+        "TURN_LEFT": 100,
+        "TURN_RIGHT": 86,
+        "WAIT": 294
+      },
+      "away_entries": 15,
+      "charger_departure_events": [
+        {
+          "charging_contact": true,
+          "decision_index": 14,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.33000001311302185,
+          "transition_index": 14,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 97,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.25,
+          "transition_index": 97,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 166,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 166,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 242,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.23000000417232513,
+          "transition_index": 242,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 302,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.18000000715255737,
+          "transition_index": 302,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 377,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.23000000417232513,
+          "transition_index": 377,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 427,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.15000000596046448,
+          "transition_index": 427,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 502,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.23000000417232513,
+          "transition_index": 502,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 566,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20000000298023224,
+          "transition_index": 566,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 631,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20000000298023224,
+          "transition_index": 631,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 724,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.23999999463558197,
+          "transition_index": 724,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 786,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.1899999976158142,
+          "transition_index": 786,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 861,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.23000000417232513,
+          "transition_index": 861,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 932,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.2199999988079071,
+          "transition_index": 932,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 994,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.1899999976158142,
+          "transition_index": 994,
+          "trigger_category": "full_only"
+        }
+      ],
+      "completed_autonomous_regulation_cycles": 14,
+      "demonstrated_failed_seek_episodes": 0,
+      "departure_trigger_counts": {
+        "both": 0,
+        "full_only": 15,
+        "thermal_only": 0
+      },
+      "energy_termination": false,
+      "evaluator_only": {
+        "departure_event_context_is_evaluator_only": true,
+        "passed_to_controller": false,
+        "post_contact_setup": {
+          "body_position": [
+            0.5,
+            0.5
+          ],
+          "seeded_heading_preserved": true,
+          "station_position": [
+            0.5,
+            0.5
+          ]
+        },
+        "seeded_heading": 1.1322414677792194
+      },
+      "final_normalized_energy": 0.9200000166893005,
+      "final_thermal_state": 0.18000000715255737,
+      "horizon_censored_seek_episodes": 0,
+      "low_energy_seek_entries": 14,
+      "maximum_thermal_state": 0.3400000035762787,
+      "minimum_normalized_energy": 0.035999998450279236,
+      "mode_entry_counts": {
+        "AWAY": 15,
+        "CHARGE": 15,
+        "DEPART": 15,
+        "SEEK": 14
+      },
+      "mode_occupancy": {
+        "AWAY": 381,
+        "CHARGE": 295,
+        "DEPART": 55,
+        "SEEK": 269
+      },
+      "seed": 18348,
+      "successful_charging_contact_reacquisitions": 14,
+      "successful_physical_charger_exits": 16,
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_termination": false,
+      "transitions": 1000,
+      "truncated": true
+    },
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 528,
+        "TURN_LEFT": 83,
+        "TURN_RIGHT": 95,
+        "WAIT": 294
+      },
+      "away_entries": 16,
+      "charger_departure_events": [
+        {
+          "charging_contact": true,
+          "decision_index": 14,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.33000001311302185,
+          "transition_index": 14,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 74,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.1899999976158142,
+          "transition_index": 74,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 130,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.17000000178813934,
+          "transition_index": 130,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 203,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 203,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 274,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 274,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 335,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.18000000715255737,
+          "transition_index": 335,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 398,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.1899999976158142,
+          "transition_index": 398,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 468,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 468,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 540,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 540,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 597,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.17000000178813934,
+          "transition_index": 597,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 663,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20000000298023224,
+          "transition_index": 663,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 729,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 729,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 793,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20000000298023224,
+          "transition_index": 793,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 863,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 863,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 928,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20000000298023224,
+          "transition_index": 928,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 994,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20000000298023224,
+          "transition_index": 994,
+          "trigger_category": "full_only"
+        }
+      ],
+      "completed_autonomous_regulation_cycles": 15,
+      "demonstrated_failed_seek_episodes": 0,
+      "departure_trigger_counts": {
+        "both": 0,
+        "full_only": 16,
+        "thermal_only": 0
+      },
+      "energy_termination": false,
+      "evaluator_only": {
+        "departure_event_context_is_evaluator_only": true,
+        "passed_to_controller": false,
+        "post_contact_setup": {
+          "body_position": [
+            0.5,
+            0.5
+          ],
+          "seeded_heading_preserved": true,
+          "station_position": [
+            0.5,
+            0.5
+          ]
+        },
+        "seeded_heading": 3.1652692340464834
+      },
+      "final_normalized_energy": 0.9079999923706055,
+      "final_thermal_state": 0.17000000178813934,
+      "horizon_censored_seek_episodes": 0,
+      "low_energy_seek_entries": 15,
+      "maximum_thermal_state": 0.3499999940395355,
+      "minimum_normalized_energy": 0.1720000058412552,
+      "mode_entry_counts": {
+        "AWAY": 16,
+        "CHARGE": 16,
+        "DEPART": 16,
+        "SEEK": 15
+      },
+      "mode_occupancy": {
+        "AWAY": 400,
+        "CHARGE": 295,
+        "DEPART": 60,
+        "SEEK": 245
+      },
+      "seed": 18349,
+      "successful_charging_contact_reacquisitions": 15,
+      "successful_physical_charger_exits": 16,
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_termination": false,
+      "transitions": 1000,
+      "truncated": true
+    }
+  ],
+  "schema_version": 1,
+  "seed_policy": {
+    "canonical_validator": "validate_exp003_development_seeds",
+    "exact_declared_seeds": [
+      18347,
+      18348,
+      18349
+    ],
+    "formal_reservation_guard_preserved": true
+  },
+  "title": "Full-charge-or-thermal departure scaffold correction"
+}
