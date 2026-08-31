@@ -1,0 +1,2300 @@
+{
+  "authoritative_base_sha": "185c480f34bea3db536fd80a95dea9603f5e0d1f",
+  "development_seeds": [
+    18353,
+    18354,
+    18355
+  ],
+  "ecology": {
+    "charging_radius": 0.1,
+    "environment": "D002ThermalStationEnv",
+    "post_contact_setup": "unchanged D-011 setup"
+  },
+  "evaluator_only": {
+    "actual_coordinates_for_reconstruction_scoring_only": true,
+    "actual_displacement": true,
+    "actual_next_contact_event_label": true,
+    "clipping_classification": true,
+    "confusion_and_error_metrics": true,
+    "passed_to_controller": false,
+    "passed_to_learner": false,
+    "post_hoc_achieved_displacement_check": true,
+    "reconstructed_relative_geometry": true,
+    "viability_and_cycle_summaries": true
+  },
+  "executed_commit_sha": "ccbfe7d60afde0653a49905028450a537770802f",
+  "experiment": "D-016",
+  "horizon": 1000,
+  "learned": {
+    "learner_instantiated": false,
+    "status": "none"
+  },
+  "lifetime": "one uninterrupted lifetime per seed",
+  "organism_boundary": {
+    "info": {},
+    "reward": 0.0
+  },
+  "organism_visible": {
+    "analytic_decoder_uses_energy_or_thermal": false,
+    "channels": [
+      "normalized_energy",
+      "normalized_thermal",
+      "beacon.left",
+      "beacon.forward",
+      "beacon.right",
+      "charging_contact"
+    ],
+    "coordinates_or_evaluator_telemetry": false,
+    "observation_type": "D011Observation",
+    "own_executed_action": true
+  },
+  "programmed": {
+    "analytic_inverse": "evaluator-only L/F/R algebraic reconstruction",
+    "beacon_transformation": "unchanged EXP003 directional beacon",
+    "contact_decoder": "evaluator-only nominal kinematic decoder",
+    "controller": "D014Controller",
+    "counterfactual_action_selection": false,
+    "ecology": "unchanged D002/EXP003",
+    "forced_actions": false,
+    "geometry_numerical_tolerance": 1e-06,
+    "inherits": "D011Controller",
+    "metric_definitions": "pre-action prediction, post-action scoring",
+    "model_guided_action": false,
+    "movement_tolerance": 1e-12,
+    "no_learner": true
+  },
+  "results": [
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 541,
+        "TURN_LEFT": 69,
+        "TURN_RIGHT": 95,
+        "WAIT": 295
+      },
+      "away_entries": 16,
+      "charger_departure_events": [
+        {
+          "charging_contact": true,
+          "decision_index": 14,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.33000001311302185,
+          "transition_index": 14,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 75,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.1899999976158142,
+          "transition_index": 75,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 136,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.1899999976158142,
+          "transition_index": 136,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 201,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20000000298023224,
+          "transition_index": 201,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 267,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 267,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 326,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.1899999976158142,
+          "transition_index": 326,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 381,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.17000000178813934,
+          "transition_index": 381,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 451,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 451,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 523,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.2199999988079071,
+          "transition_index": 523,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 579,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.17000000178813934,
+          "transition_index": 579,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 637,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.18000000715255737,
+          "transition_index": 637,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 710,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.2199999988079071,
+          "transition_index": 710,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 782,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 782,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 856,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.2199999988079071,
+          "transition_index": 856,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 919,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.1899999976158142,
+          "transition_index": 919,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 986,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20000000298023224,
+          "transition_index": 986,
+          "trigger_category": "full_only"
+        }
+      ],
+      "completed_autonomous_regulation_cycles": 15,
+      "demonstrated_failed_seek_episodes": 0,
+      "departure_trigger_counts": {
+        "both": 0,
+        "full_only": 16,
+        "thermal_only": 0
+      },
+      "energy_termination": false,
+      "evaluator_only": {
+        "coordinates_used_after_beacon_reconstruction_only": true,
+        "passed_to_controller": false,
+        "post_contact_setup": {
+          "body_position": [
+            0.5,
+            0.5
+          ],
+          "seeded_heading_preserved": true,
+          "station_position": [
+            0.5,
+            0.5
+          ]
+        },
+        "seeded_heading": 5.43989186379081
+      },
+      "final_normalized_energy": 0.7480000257492065,
+      "final_thermal_state": 0.09000000357627869,
+      "horizon_censored_seek_episodes": 0,
+      "low_energy_seek_entries": 15,
+      "maximum_thermal_state": 0.3499999940395355,
+      "minimum_normalized_energy": 0.15199999511241913,
+      "mode_entry_counts": {
+        "AWAY": 16,
+        "CHARGE": 16,
+        "DEPART": 16,
+        "SEEK": 15
+      },
+      "mode_occupancy": {
+        "AWAY": 405,
+        "CHARGE": 296,
+        "DEPART": 59,
+        "SEEK": 240
+      },
+      "observability": {
+        "action_current_contact_breakdown": {
+          "False": {
+            "MOVE_FORWARD": {
+              "accuracy": 1.0,
+              "actual_event_counts": {
+                "contact_entry": 15,
+                "contact_exit": 0,
+                "contact_unchanged": 467
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 15,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 467
+                }
+              },
+              "correct": 482,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 15,
+                "contact_exit": 0,
+                "contact_unchanged": 467
+              },
+              "total": 482
+            },
+            "TURN_LEFT": {
+              "accuracy": 1.0,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 69
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 69
+                }
+              },
+              "correct": 69,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 69
+              },
+              "total": 69
+            },
+            "TURN_RIGHT": {
+              "accuracy": 1.0,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 95
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 95
+                }
+              },
+              "correct": 95,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 95
+              },
+              "total": 95
+            },
+            "WAIT": {
+              "accuracy": null,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                }
+              },
+              "correct": 0,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "total": 0
+            }
+          },
+          "True": {
+            "MOVE_FORWARD": {
+              "accuracy": 0.9830508474576272,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 16,
+                "contact_unchanged": 43
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 16,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 1,
+                  "contact_unchanged": 42
+                }
+              },
+              "correct": 58,
+              "errors": 1,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 1,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 17,
+                "contact_unchanged": 42
+              },
+              "total": 59
+            },
+            "TURN_LEFT": {
+              "accuracy": null,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                }
+              },
+              "correct": 0,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "total": 0
+            },
+            "TURN_RIGHT": {
+              "accuracy": null,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                }
+              },
+              "correct": 0,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "total": 0
+            },
+            "WAIT": {
+              "accuracy": 1.0,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 295
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 295
+                }
+              },
+              "correct": 295,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 295
+              },
+              "total": 295
+            }
+          }
+        },
+        "beacon_reconstruction": {
+          "by_actual_event": {
+            "contact_entry": {
+              "radial": {
+                "count": 15,
+                "max": 5.885955628448514e-08,
+                "mean": 2.8882517696023532e-08,
+                "median": 2.612567473470051e-08,
+                "min": 8.602104056842919e-09,
+                "status": "visited"
+              },
+              "x": {
+                "count": 15,
+                "max": 6.152402762249487e-08,
+                "mean": 3.06586187927745e-08,
+                "median": 2.7374218364295544e-08,
+                "min": 8.638804172012016e-09,
+                "status": "visited"
+              },
+              "y": {
+                "count": 15,
+                "max": 1.252754147640367e-08,
+                "mean": 4.340456240931566e-09,
+                "median": 3.550702554568942e-09,
+                "min": 1.3542382493181293e-10,
+                "status": "visited"
+              }
+            },
+            "contact_exit": {
+              "radial": {
+                "count": 16,
+                "max": 9.528805305913934e-08,
+                "mean": 3.2637731403779846e-08,
+                "median": 2.8874490874686298e-08,
+                "min": 2.620638706041234e-10,
+                "status": "visited"
+              },
+              "x": {
+                "count": 16,
+                "max": 9.528805305913934e-08,
+                "mean": 3.804453057101864e-08,
+                "median": 3.3741640613482726e-08,
+                "min": 3.6805274800100207e-10,
+                "status": "visited"
+              },
+              "y": {
+                "count": 16,
+                "max": 2.7578538397410313e-08,
+                "mean": 1.0917736325358207e-08,
+                "median": 8.3748430508763e-09,
+                "min": 2.0816681711721685e-17,
+                "status": "visited"
+              }
+            },
+            "contact_unchanged": {
+              "radial": {
+                "count": 969,
+                "max": 4.7196610108990456e-07,
+                "mean": 6.567061729969775e-08,
+                "median": 2.9112403487907557e-08,
+                "min": 0.0,
+                "status": "visited"
+              },
+              "x": {
+                "count": 969,
+                "max": 5.615505235534446e-07,
+                "mean": 8.432119232530709e-08,
+                "median": 3.7413633365013244e-08,
+                "min": 0.0,
+                "status": "visited"
+              },
+              "y": {
+                "count": 969,
+                "max": 1.3580980084970662e-07,
+                "mean": 1.9996818959233746e-08,
+                "median": 1.014759196116266e-08,
+                "min": 0.0,
+                "status": "visited"
+              }
+            }
+          },
+          "overall": {
+            "radial": {
+              "count": 1000,
+              "max": 4.7196610108990456e-07,
+              "mean": 6.459026963130796e-08,
+              "median": 2.8858919823293583e-08,
+              "min": 0.0,
+              "status": "visited"
+            },
+            "x": {
+              "count": 1000,
+              "max": 5.615505235534446e-07,
+              "mean": 8.27758271342505e-08,
+              "median": 3.7413633365013244e-08,
+              "min": 0.0,
+              "status": "visited"
+            },
+            "y": {
+              "count": 1000,
+              "max": 1.3580980084970662e-07,
+              "mean": 1.9616708196317206e-08,
+              "median": 9.999039821823041e-09,
+              "min": 0.0,
+              "status": "visited"
+            }
+          }
+        },
+        "evaluator_only": true,
+        "exact_visible_state_aliasing": {
+          "aliased_keys": 0,
+          "key_definition": "exact float L/F/R + bool contact + action",
+          "records": [],
+          "repeated_keys": 20,
+          "unique_keys": 704
+        },
+        "mismatch_diagnostics": {
+          "achieved_displacement_substitution_resolves": 0,
+          "mismatches_with_clipping": 0,
+          "mismatches_without_clipping": 1,
+          "other_cause_mismatches": 0,
+          "reconstruction_numerical_error_mismatches": 1,
+          "records": [
+            {
+              "achieved_displacement_prediction": false,
+              "achieved_displacement_resolves_mismatch": false,
+              "action": "MOVE_FORWARD",
+              "actual_event": "contact_unchanged",
+              "actual_geometry_nominal_prediction": true,
+              "actual_next_contact": true,
+              "attribution": "reconstruction_numerical_error",
+              "clipped_reduced_movement": false,
+              "current_charging_contact": true,
+              "nominal_margin": 1.6403639613304932e-08,
+              "predicted_next_contact": false,
+              "realized_displacement": 0.049999999999999975,
+              "realized_forward_displacement": 0.049999999999999975,
+              "reconstruction_numerical_error": true,
+              "transition": 15
+            }
+          ],
+          "total_nominal_prediction_mismatches": 1
+        },
+        "nominal_next_contact_prediction": {
+          "accuracy": 0.999,
+          "actual_event_counts": {
+            "contact_entry": 15,
+            "contact_exit": 16,
+            "contact_unchanged": 969
+          },
+          "confusion": {
+            "contact_entry": {
+              "contact_entry": 15,
+              "contact_exit": 0,
+              "contact_unchanged": 0
+            },
+            "contact_exit": {
+              "contact_entry": 0,
+              "contact_exit": 16,
+              "contact_unchanged": 0
+            },
+            "contact_unchanged": {
+              "contact_entry": 0,
+              "contact_exit": 1,
+              "contact_unchanged": 968
+            }
+          },
+          "correct": 999,
+          "errors": 1,
+          "false_entry_predictions": 0,
+          "false_exit_predictions": 1,
+          "missed_entries": 0,
+          "missed_exits": 0,
+          "predicted_event_counts": {
+            "contact_entry": 15,
+            "contact_exit": 17,
+            "contact_unchanged": 968
+          },
+          "total": 1000
+        },
+        "realized_motion": {
+          "actual_displacement": {
+            "count": 541,
+            "max": 0.05000000000000005,
+            "mean": 0.043160625101961676,
+            "median": 0.05,
+            "min": 0.0,
+            "status": "visited"
+          },
+          "actual_forward_displacement": {
+            "count": 541,
+            "max": 0.05000000000000005,
+            "mean": 0.04169937235972455,
+            "median": 0.05000000000000001,
+            "min": 0.0,
+            "status": "visited"
+          },
+          "clipped_reduced_moves": 144,
+          "full_nominal_moves": 397,
+          "nominal_movement_distance": 0.05
+        },
+        "signed_boundary_margin_by_actual_event": {
+          "contact_entry": {
+            "count": 15,
+            "max": -0.0028553641362160376,
+            "mean": -0.024285179449793585,
+            "median": -0.02204941862072296,
+            "min": -0.049120706970093256,
+            "status": "visited"
+          },
+          "contact_exit": {
+            "count": 16,
+            "max": 0.0499999047119469,
+            "mean": 0.029061236259177062,
+            "median": 0.035880119910425806,
+            "min": 0.001984694390660527,
+            "status": "visited"
+          },
+          "contact_unchanged": {
+            "count": 969,
+            "max": 0.6570287558088497,
+            "mean": 0.1925449593694142,
+            "median": 0.16258809624150364,
+            "min": -0.1,
+            "status": "visited"
+          }
+        }
+      },
+      "seed": 18353,
+      "successful_charging_contact_reacquisitions": 15,
+      "successful_physical_charger_exits": 16,
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_termination": false,
+      "transitions": 1000,
+      "truncated": true
+    },
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 544,
+        "TURN_LEFT": 80,
+        "TURN_RIGHT": 78,
+        "WAIT": 298
+      },
+      "away_entries": 15,
+      "charger_departure_events": [
+        {
+          "charging_contact": true,
+          "decision_index": 14,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.33000001311302185,
+          "transition_index": 14,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 78,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20000000298023224,
+          "transition_index": 78,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 135,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.18000000715255737,
+          "transition_index": 135,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 195,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.1899999976158142,
+          "transition_index": 195,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 258,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20000000298023224,
+          "transition_index": 258,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 332,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.2199999988079071,
+          "transition_index": 332,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 395,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.1899999976158142,
+          "transition_index": 395,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 465,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20999999344348907,
+          "transition_index": 465,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 529,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20000000298023224,
+          "transition_index": 529,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 601,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.2199999988079071,
+          "transition_index": 601,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 662,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.1899999976158142,
+          "transition_index": 662,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 734,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.2199999988079071,
+          "transition_index": 734,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 800,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20000000298023224,
+          "transition_index": 800,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 878,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.23000000417232513,
+          "transition_index": 878,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 937,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.17000000178813934,
+          "transition_index": 937,
+          "trigger_category": "full_only"
+        }
+      ],
+      "completed_autonomous_regulation_cycles": 15,
+      "demonstrated_failed_seek_episodes": 0,
+      "departure_trigger_counts": {
+        "both": 0,
+        "full_only": 15,
+        "thermal_only": 0
+      },
+      "energy_termination": false,
+      "evaluator_only": {
+        "coordinates_used_after_beacon_reconstruction_only": true,
+        "passed_to_controller": false,
+        "post_contact_setup": {
+          "body_position": [
+            0.5,
+            0.5
+          ],
+          "seeded_heading_preserved": true,
+          "station_position": [
+            0.5,
+            0.5
+          ]
+        },
+        "seeded_heading": 4.486446984427299
+      },
+      "final_normalized_energy": 0.9259999990463257,
+      "final_thermal_state": 0.18000000715255737,
+      "horizon_censored_seek_episodes": 0,
+      "low_energy_seek_entries": 15,
+      "maximum_thermal_state": 0.3400000035762787,
+      "minimum_normalized_energy": 0.11999999731779099,
+      "mode_entry_counts": {
+        "AWAY": 15,
+        "CHARGE": 16,
+        "DEPART": 15,
+        "SEEK": 15
+      },
+      "mode_occupancy": {
+        "AWAY": 393,
+        "CHARGE": 298,
+        "DEPART": 55,
+        "SEEK": 254
+      },
+      "observability": {
+        "action_current_contact_breakdown": {
+          "False": {
+            "MOVE_FORWARD": {
+              "accuracy": 1.0,
+              "actual_event_counts": {
+                "contact_entry": 15,
+                "contact_exit": 0,
+                "contact_unchanged": 474
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 15,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 474
+                }
+              },
+              "correct": 489,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 15,
+                "contact_exit": 0,
+                "contact_unchanged": 474
+              },
+              "total": 489
+            },
+            "TURN_LEFT": {
+              "accuracy": 1.0,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 80
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 80
+                }
+              },
+              "correct": 80,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 80
+              },
+              "total": 80
+            },
+            "TURN_RIGHT": {
+              "accuracy": 1.0,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 78
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 78
+                }
+              },
+              "correct": 78,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 78
+              },
+              "total": 78
+            },
+            "WAIT": {
+              "accuracy": null,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                }
+              },
+              "correct": 0,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "total": 0
+            }
+          },
+          "True": {
+            "MOVE_FORWARD": {
+              "accuracy": 1.0,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 15,
+                "contact_unchanged": 40
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 15,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 40
+                }
+              },
+              "correct": 55,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 15,
+                "contact_unchanged": 40
+              },
+              "total": 55
+            },
+            "TURN_LEFT": {
+              "accuracy": null,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                }
+              },
+              "correct": 0,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "total": 0
+            },
+            "TURN_RIGHT": {
+              "accuracy": null,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                }
+              },
+              "correct": 0,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "total": 0
+            },
+            "WAIT": {
+              "accuracy": 1.0,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 298
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 298
+                }
+              },
+              "correct": 298,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 298
+              },
+              "total": 298
+            }
+          }
+        },
+        "beacon_reconstruction": {
+          "by_actual_event": {
+            "contact_entry": {
+              "radial": {
+                "count": 15,
+                "max": 4.3469090743597505e-08,
+                "mean": 2.396246313318695e-08,
+                "median": 2.3918559410862628e-08,
+                "min": 2.580732016976839e-09,
+                "status": "visited"
+              },
+              "x": {
+                "count": 15,
+                "max": 4.462714335573548e-08,
+                "mean": 2.5253297706676984e-08,
+                "median": 2.4727579830963187e-08,
+                "min": 1.2821928796480364e-09,
+                "status": "visited"
+              },
+              "y": {
+                "count": 15,
+                "max": 1.208922841694493e-08,
+                "mean": 4.9827330698970496e-09,
+                "median": 4.594697358695221e-09,
+                "min": 2.498631718195199e-10,
+                "status": "visited"
+              }
+            },
+            "contact_exit": {
+              "radial": {
+                "count": 15,
+                "max": 6.543396573188698e-08,
+                "mean": 2.728765965455867e-08,
+                "median": 3.093571289414232e-08,
+                "min": 5.53527668145648e-10,
+                "status": "visited"
+              },
+              "x": {
+                "count": 15,
+                "max": 7.49320088339056e-08,
+                "mean": 2.9595444872576593e-08,
+                "median": 2.8132282600679126e-08,
+                "min": 9.3801290346196e-10,
+                "status": "visited"
+              },
+              "y": {
+                "count": 15,
+                "max": 2.5282832986917025e-08,
+                "mean": 9.479003017000738e-09,
+                "median": 1.0490466231805051e-08,
+                "min": 2.7755575615628914e-17,
+                "status": "visited"
+              }
+            },
+            "contact_unchanged": {
+              "radial": {
+                "count": 970,
+                "max": 6.881180910633944e-07,
+                "mean": 6.864443536405023e-08,
+                "median": 3.45133905274575e-08,
+                "min": 0.0,
+                "status": "visited"
+              },
+              "x": {
+                "count": 970,
+                "max": 7.04768009285317e-07,
+                "mean": 9.112839630879453e-08,
+                "median": 4.1686096116655413e-08,
+                "min": 0.0,
+                "status": "visited"
+              },
+              "y": {
+                "count": 970,
+                "max": 1.4466538270085927e-07,
+                "mean": 2.2376387269117702e-08,
+                "median": 1.17012513844994e-08,
+                "min": 0.0,
+                "status": "visited"
+              }
+            }
+          },
+          "overall": {
+            "radial": {
+              "count": 1000,
+              "max": 6.881180910633944e-07,
+              "mean": 6.735385414494491e-08,
+              "median": 3.4095410342271926e-08,
+              "min": 0.0,
+              "status": "visited"
+            },
+            "x": {
+              "count": 1000,
+              "max": 7.04768009285317e-07,
+              "mean": 8.921727555821949e-08,
+              "median": 4.156620655310084e-08,
+              "min": 0.0,
+              "status": "visited"
+            },
+            "y": {
+              "count": 1000,
+              "max": 1.4466538270085927e-07,
+              "mean": 2.1922021692347638e-08,
+              "median": 1.1399871595318967e-08,
+              "min": 0.0,
+              "status": "visited"
+            }
+          }
+        },
+        "evaluator_only": true,
+        "exact_visible_state_aliasing": {
+          "aliased_keys": 0,
+          "key_definition": "exact float L/F/R + bool contact + action",
+          "records": [],
+          "repeated_keys": 42,
+          "unique_keys": 675
+        },
+        "mismatch_diagnostics": {
+          "achieved_displacement_substitution_resolves": 0,
+          "mismatches_with_clipping": 0,
+          "mismatches_without_clipping": 0,
+          "other_cause_mismatches": 0,
+          "reconstruction_numerical_error_mismatches": 0,
+          "records": [],
+          "total_nominal_prediction_mismatches": 0
+        },
+        "nominal_next_contact_prediction": {
+          "accuracy": 1.0,
+          "actual_event_counts": {
+            "contact_entry": 15,
+            "contact_exit": 15,
+            "contact_unchanged": 970
+          },
+          "confusion": {
+            "contact_entry": {
+              "contact_entry": 15,
+              "contact_exit": 0,
+              "contact_unchanged": 0
+            },
+            "contact_exit": {
+              "contact_entry": 0,
+              "contact_exit": 15,
+              "contact_unchanged": 0
+            },
+            "contact_unchanged": {
+              "contact_entry": 0,
+              "contact_exit": 0,
+              "contact_unchanged": 970
+            }
+          },
+          "correct": 1000,
+          "errors": 0,
+          "false_entry_predictions": 0,
+          "false_exit_predictions": 0,
+          "missed_entries": 0,
+          "missed_exits": 0,
+          "predicted_event_counts": {
+            "contact_entry": 15,
+            "contact_exit": 15,
+            "contact_unchanged": 970
+          },
+          "total": 1000
+        },
+        "realized_motion": {
+          "actual_displacement": {
+            "count": 544,
+            "max": 0.05000000000000002,
+            "mean": 0.042886922743657484,
+            "median": 0.049999999999999975,
+            "min": 0.0,
+            "status": "visited"
+          },
+          "actual_forward_displacement": {
+            "count": 544,
+            "max": 0.050000000000000024,
+            "mean": 0.04131385536312493,
+            "median": 0.04999999999999997,
+            "min": 0.0,
+            "status": "visited"
+          },
+          "clipped_reduced_moves": 123,
+          "full_nominal_moves": 421,
+          "nominal_movement_distance": 0.05
+        },
+        "signed_boundary_margin_by_actual_event": {
+          "contact_entry": {
+            "count": 15,
+            "max": -0.0018154897264682779,
+            "mean": -0.020873984291371186,
+            "median": -0.02090265828778605,
+            "min": -0.04303751732173437,
+            "status": "visited"
+          },
+          "contact_exit": {
+            "count": 15,
+            "max": 0.04264171232774072,
+            "mean": 0.026237256034662464,
+            "median": 0.030175884641171352,
+            "min": 1.6403639613304932e-08,
+            "status": "visited"
+          },
+          "contact_unchanged": {
+            "count": 970,
+            "max": 0.6499535036775713,
+            "mean": 0.20946097471538233,
+            "median": 0.178503108775739,
+            "min": -0.1,
+            "status": "visited"
+          }
+        }
+      },
+      "seed": 18354,
+      "successful_charging_contact_reacquisitions": 15,
+      "successful_physical_charger_exits": 15,
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_termination": false,
+      "transitions": 1000,
+      "truncated": true
+    },
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 508,
+        "TURN_LEFT": 91,
+        "TURN_RIGHT": 105,
+        "WAIT": 296
+      },
+      "away_entries": 14,
+      "charger_departure_events": [
+        {
+          "charging_contact": true,
+          "decision_index": 14,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.33000001311302185,
+          "transition_index": 14,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 62,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.17000000178813934,
+          "transition_index": 62,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 147,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.25,
+          "transition_index": 147,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 207,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.1899999976158142,
+          "transition_index": 207,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 284,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.23000000417232513,
+          "transition_index": 284,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 345,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.18000000715255737,
+          "transition_index": 345,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 403,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.18000000715255737,
+          "transition_index": 403,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 486,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.25,
+          "transition_index": 486,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 563,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.23000000417232513,
+          "transition_index": 563,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 619,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.17000000178813934,
+          "transition_index": 619,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 701,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.23999999463558197,
+          "transition_index": 701,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 781,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.23999999463558197,
+          "transition_index": 781,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 848,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.20000000298023224,
+          "transition_index": 848,
+          "trigger_category": "full_only"
+        },
+        {
+          "charging_contact": true,
+          "decision_index": 922,
+          "energy": 1.0,
+          "full_energy_condition": true,
+          "hot_thermal_condition": false,
+          "thermal": 0.2199999988079071,
+          "transition_index": 922,
+          "trigger_category": "full_only"
+        }
+      ],
+      "completed_autonomous_regulation_cycles": 14,
+      "demonstrated_failed_seek_episodes": 0,
+      "departure_trigger_counts": {
+        "both": 0,
+        "full_only": 14,
+        "thermal_only": 0
+      },
+      "energy_termination": false,
+      "evaluator_only": {
+        "coordinates_used_after_beacon_reconstruction_only": true,
+        "passed_to_controller": false,
+        "post_contact_setup": {
+          "body_position": [
+            0.5,
+            0.5
+          ],
+          "seeded_heading_preserved": true,
+          "station_position": [
+            0.5,
+            0.5
+          ]
+        },
+        "seeded_heading": 3.511288074999875
+      },
+      "final_normalized_energy": 1.0,
+      "final_thermal_state": 0.23999999463558197,
+      "horizon_censored_seek_episodes": 0,
+      "low_energy_seek_entries": 14,
+      "maximum_thermal_state": 0.3400000035762787,
+      "minimum_normalized_energy": 0.024000000208616257,
+      "mode_entry_counts": {
+        "AWAY": 14,
+        "CHARGE": 15,
+        "DEPART": 14,
+        "SEEK": 14
+      },
+      "mode_occupancy": {
+        "AWAY": 367,
+        "CHARGE": 296,
+        "DEPART": 52,
+        "SEEK": 285
+      },
+      "observability": {
+        "action_current_contact_breakdown": {
+          "False": {
+            "MOVE_FORWARD": {
+              "accuracy": 1.0,
+              "actual_event_counts": {
+                "contact_entry": 14,
+                "contact_exit": 0,
+                "contact_unchanged": 442
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 14,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 442
+                }
+              },
+              "correct": 456,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 14,
+                "contact_exit": 0,
+                "contact_unchanged": 442
+              },
+              "total": 456
+            },
+            "TURN_LEFT": {
+              "accuracy": 1.0,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 91
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 91
+                }
+              },
+              "correct": 91,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 91
+              },
+              "total": 91
+            },
+            "TURN_RIGHT": {
+              "accuracy": 1.0,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 105
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 105
+                }
+              },
+              "correct": 105,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 105
+              },
+              "total": 105
+            },
+            "WAIT": {
+              "accuracy": null,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                }
+              },
+              "correct": 0,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "total": 0
+            }
+          },
+          "True": {
+            "MOVE_FORWARD": {
+              "accuracy": 0.9807692307692307,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 14,
+                "contact_unchanged": 38
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 14,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 1,
+                  "contact_unchanged": 37
+                }
+              },
+              "correct": 51,
+              "errors": 1,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 1,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 15,
+                "contact_unchanged": 37
+              },
+              "total": 52
+            },
+            "TURN_LEFT": {
+              "accuracy": null,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                }
+              },
+              "correct": 0,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "total": 0
+            },
+            "TURN_RIGHT": {
+              "accuracy": null,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                }
+              },
+              "correct": 0,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 0
+              },
+              "total": 0
+            },
+            "WAIT": {
+              "accuracy": 1.0,
+              "actual_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 296
+              },
+              "confusion": {
+                "contact_entry": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_exit": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 0
+                },
+                "contact_unchanged": {
+                  "contact_entry": 0,
+                  "contact_exit": 0,
+                  "contact_unchanged": 296
+                }
+              },
+              "correct": 296,
+              "errors": 0,
+              "false_entry_predictions": 0,
+              "false_exit_predictions": 0,
+              "missed_entries": 0,
+              "missed_exits": 0,
+              "predicted_event_counts": {
+                "contact_entry": 0,
+                "contact_exit": 0,
+                "contact_unchanged": 296
+              },
+              "total": 296
+            }
+          }
+        },
+        "beacon_reconstruction": {
+          "by_actual_event": {
+            "contact_entry": {
+              "radial": {
+                "count": 14,
+                "max": 5.32989381796245e-08,
+                "mean": 1.5515949256567866e-08,
+                "median": 9.300889648733435e-09,
+                "min": 2.4863974212863127e-09,
+                "status": "visited"
+              },
+              "x": {
+                "count": 14,
+                "max": 5.390601878763057e-08,
+                "mean": 1.628327272918633e-08,
+                "median": 9.521356009178916e-09,
+                "min": 2.4863974212863127e-09,
+                "status": "visited"
+              },
+              "y": {
+                "count": 14,
+                "max": 6.921288410455251e-09,
+                "mean": 3.0572627980816692e-09,
+                "median": 3.079070821226937e-09,
+                "min": 1.0408340855860843e-16,
+                "status": "visited"
+              }
+            },
+            "contact_exit": {
+              "radial": {
+                "count": 14,
+                "max": 9.528805305913934e-08,
+                "mean": 3.7743909265887584e-08,
+                "median": 1.9162644825099218e-08,
+                "min": 2.2472367022796647e-09,
+                "status": "visited"
+              },
+              "x": {
+                "count": 14,
+                "max": 1.1451429290931792e-07,
+                "mean": 4.00218713685658e-08,
+                "median": 2.6165125101285103e-08,
+                "min": 1.130575119634436e-09,
+                "status": "visited"
+              },
+              "y": {
+                "count": 14,
+                "max": 2.455604731360639e-08,
+                "mean": 9.344614432447797e-09,
+                "median": 5.215220828108658e-09,
+                "min": 1.0408340855860843e-17,
+                "status": "visited"
+              }
+            },
+            "contact_unchanged": {
+              "radial": {
+                "count": 972,
+                "max": 6.864250025051533e-07,
+                "mean": 7.318686448745083e-08,
+                "median": 3.030195334929875e-08,
+                "min": 0.0,
+                "status": "visited"
+              },
+              "x": {
+                "count": 972,
+                "max": 7.478097588942134e-07,
+                "mean": 8.922232132079606e-08,
+                "median": 3.679633738679078e-08,
+                "min": 0.0,
+                "status": "visited"
+              },
+              "y": {
+                "count": 972,
+                "max": 1.4769959267441068e-07,
+                "mean": 2.0503975400041126e-08,
+                "median": 9.642586069891212e-09,
+                "min": 0.0,
+                "status": "visited"
+              }
+            }
+          },
+          "overall": {
+            "radial": {
+              "count": 1000,
+              "max": 6.864250025051533e-07,
+              "mean": 7.188327030111657e-08,
+              "median": 2.9170180590454287e-08,
+              "min": 0.0,
+              "status": "visited"
+            },
+            "x": {
+              "count": 1000,
+              "max": 7.478097588942134e-07,
+              "mean": 8.75123683411823e-08,
+              "median": 3.679633738679078e-08,
+              "min": 0.0,
+              "status": "visited"
+            },
+            "y": {
+              "count": 1000,
+              "max": 1.4769959267441068e-07,
+              "mean": 2.0103490370067386e-08,
+              "median": 9.56279881669797e-09,
+              "min": 0.0,
+              "status": "visited"
+            }
+          }
+        },
+        "evaluator_only": true,
+        "exact_visible_state_aliasing": {
+          "aliased_keys": 1,
+          "key_definition": "exact float L/F/R + bool contact + action",
+          "records": [
+            {
+              "action": "MOVE_FORWARD",
+              "beacon_forward": 0.7352941036224365,
+              "beacon_left": 0.761535108089447,
+              "beacon_right": 0.761535108089447,
+              "current_charging_contact": true,
+              "next_contact_counts": {
+                "False": 1,
+                "True": 1
+              },
+              "sample_count": 2
+            }
+          ],
+          "repeated_keys": 55,
+          "unique_keys": 672
+        },
+        "mismatch_diagnostics": {
+          "achieved_displacement_substitution_resolves": 0,
+          "mismatches_with_clipping": 0,
+          "mismatches_without_clipping": 1,
+          "other_cause_mismatches": 0,
+          "reconstruction_numerical_error_mismatches": 1,
+          "records": [
+            {
+              "achieved_displacement_prediction": false,
+              "achieved_displacement_resolves_mismatch": false,
+              "action": "MOVE_FORWARD",
+              "actual_event": "contact_unchanged",
+              "actual_geometry_nominal_prediction": true,
+              "actual_next_contact": true,
+              "attribution": "reconstruction_numerical_error",
+              "clipped_reduced_movement": false,
+              "current_charging_contact": true,
+              "nominal_margin": 1.6403639613304932e-08,
+              "predicted_next_contact": false,
+              "realized_displacement": 0.049999999999999954,
+              "realized_forward_displacement": 0.049999999999999954,
+              "reconstruction_numerical_error": true,
+              "transition": 65
+            }
+          ],
+          "total_nominal_prediction_mismatches": 1
+        },
+        "nominal_next_contact_prediction": {
+          "accuracy": 0.999,
+          "actual_event_counts": {
+            "contact_entry": 14,
+            "contact_exit": 14,
+            "contact_unchanged": 972
+          },
+          "confusion": {
+            "contact_entry": {
+              "contact_entry": 14,
+              "contact_exit": 0,
+              "contact_unchanged": 0
+            },
+            "contact_exit": {
+              "contact_entry": 0,
+              "contact_exit": 14,
+              "contact_unchanged": 0
+            },
+            "contact_unchanged": {
+              "contact_entry": 0,
+              "contact_exit": 1,
+              "contact_unchanged": 971
+            }
+          },
+          "correct": 999,
+          "errors": 1,
+          "false_entry_predictions": 0,
+          "false_exit_predictions": 1,
+          "missed_entries": 0,
+          "missed_exits": 0,
+          "predicted_event_counts": {
+            "contact_entry": 14,
+            "contact_exit": 15,
+            "contact_unchanged": 971
+          },
+          "total": 1000
+        },
+        "realized_motion": {
+          "actual_displacement": {
+            "count": 508,
+            "max": 0.05000000000000006,
+            "mean": 0.04284308913664552,
+            "median": 0.05,
+            "min": 0.0,
+            "status": "visited"
+          },
+          "actual_forward_displacement": {
+            "count": 508,
+            "max": 0.05000000000000006,
+            "mean": 0.04056021258731346,
+            "median": 0.05,
+            "min": 0.0,
+            "status": "visited"
+          },
+          "clipped_reduced_moves": 128,
+          "full_nominal_moves": 380,
+          "nominal_movement_distance": 0.05
+        },
+        "signed_boundary_margin_by_actual_event": {
+          "contact_entry": {
+            "count": 14,
+            "max": -2.486397462919676e-09,
+            "mean": -0.02686665231499031,
+            "median": -0.03291158040785117,
+            "min": -0.03763767744330383,
+            "status": "visited"
+          },
+          "contact_exit": {
+            "count": 14,
+            "max": 0.0499999047119469,
+            "mean": 0.0286389766809528,
+            "median": 0.035110264136758176,
+            "min": 1.6403639613304932e-08,
+            "status": "visited"
+          },
+          "contact_unchanged": {
+            "count": 972,
+            "max": 0.6539453345553677,
+            "mean": 0.2061603798731254,
+            "median": 0.16744260486273374,
+            "min": -0.1,
+            "status": "visited"
+          }
+        }
+      },
+      "seed": 18355,
+      "successful_charging_contact_reacquisitions": 14,
+      "successful_physical_charger_exits": 14,
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_termination": false,
+      "transitions": 1000,
+      "truncated": true
+    }
+  ],
+  "schema_version": 1,
+  "seed_policy": {
+    "canonical_validator": "validate_exp003_development_seeds",
+    "exact_declared_seeds": [
+      18353,
+      18354,
+      18355
+    ],
+    "formal_reservation_guard_preserved": true
+  },
+  "title": "Current-beacon contact-transition observability audit"
+}
