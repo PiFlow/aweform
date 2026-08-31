@@ -1191,6 +1191,13 @@ def _validate_d014_visualization_seed(seed: int) -> None:
     _validate_d014_development_seeds((seed,))
 
 
+def _validate_d015_visualization_seed(seed: int) -> None:
+    """Validate one D-015 visualization seed against both seed guards."""
+    from .d015 import _validate_d015_development_seeds
+
+    _validate_d015_development_seeds((seed,))
+
+
 def _build_d011_family_development_visualization(
     *,
     seed: int,
@@ -1408,6 +1415,45 @@ def build_d014_development_visualization(
     )
 
 
+def build_d015_reference_development_visualization(
+    *,
+    seed: int,
+    horizon: int = 1000,
+) -> DevelopmentVisualizationData:
+    """Replay the corrected D-014 controller without a shadow learner."""
+    from . import d014
+
+    return _build_d011_family_development_visualization(
+        seed=seed,
+        horizon=horizon,
+        source_label=(
+            "D-015 reference — D-014Controller, no shadow learner"
+        ),
+        validate_seed=_validate_d015_visualization_seed,
+        controller_factory=d014.D014Controller,
+    )
+
+
+def build_d015_development_visualization(
+    *,
+    seed: int,
+    horizon: int = 1000,
+) -> DevelopmentVisualizationData:
+    """Replay D-014 with D-013's evaluator-only causal shadow learner."""
+    from . import d014
+
+    return _build_d011_family_development_visualization(
+        seed=seed,
+        horizon=horizon,
+        source_label=(
+            "D-015 shadow learner — SHADOW ONLY — ZERO BEHAVIOURAL INFLUENCE"
+        ),
+        validate_seed=_validate_d015_visualization_seed,
+        controller_factory=d014.D014Controller,
+        with_shadow_learner=True,
+    )
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
@@ -1420,6 +1466,8 @@ DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     "d013-reference": build_d013_reference_development_visualization,
     "d013": build_d013_development_visualization,
     "d014": build_d014_development_visualization,
+    "d015-reference": build_d015_reference_development_visualization,
+    "d015": build_d015_development_visualization,
 }
 
 
