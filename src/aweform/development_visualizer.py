@@ -21,7 +21,7 @@ from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
-from matplotlib.patches import Circle, Rectangle
+from matplotlib.patches import Circle, Polygon, Rectangle
 from matplotlib.text import Text
 
 from . import d011
@@ -150,6 +150,36 @@ class DevelopmentConsequencePredictionFrame:
 
 
 @dataclass(frozen=True, slots=True)
+class DevelopmentShadowGeometry:
+    """Optional evaluator-only shadow morphology for a shared replay."""
+
+    body_length: float
+    body_width: float
+    rear_contact_plus: Coordinate
+    rear_contact_minus: Coordinate
+    front_midpoint: Coordinate
+    dock_orientation: float
+    dock_contact_plus: Coordinate
+    dock_contact_minus: Coordinate
+
+    def __post_init__(self) -> None:
+        for name in ("body_length", "body_width"):
+            value = getattr(self, name)
+            if not math.isfinite(value) or value <= 0.0:
+                raise ValueError(f"{name} must be finite and positive")
+        if not math.isfinite(self.dock_orientation):
+            raise ValueError("dock_orientation must be finite")
+        for name in (
+            "rear_contact_plus",
+            "rear_contact_minus",
+            "front_midpoint",
+            "dock_contact_plus",
+            "dock_contact_minus",
+        ):
+            _validate_coordinate(name, getattr(self, name))
+
+
+@dataclass(frozen=True, slots=True)
 class DevelopmentVisualizationData:
     """All neutral data required by the shared development renderer."""
 
@@ -171,6 +201,7 @@ class DevelopmentVisualizationData:
     consequence_predictions: (
         tuple[DevelopmentConsequencePredictionFrame, ...] | None
     ) = None
+    shadow_geometry: DevelopmentShadowGeometry | None = None
 
     def __post_init__(self) -> None:
         if not self.source_label:
@@ -358,6 +389,60 @@ def build_development_visualization_figure(
             linestyle="None",
             label="station centre",
         )
+
+    shadow_body: Polygon | None = None
+    shadow_front_direction: Line2D | None = None
+    shadow_rear_contacts: Line2D | None = None
+    shadow_front_midpoint: Line2D | None = None
+    shadow_dock_contacts: Line2D | None = None
+    shadow_overlay_label: Text | None = None
+    if data.shadow_geometry is not None:
+        shadow = data.shadow_geometry
+        shadow_body = Polygon(
+            _shadow_body_corners(
+                (0.0, 0.0), 0.0, shadow.body_length, shadow.body_width
+            ),
+            closed=True,
+            facecolor="tab:purple",
+            edgecolor="tab:purple",
+            alpha=0.18,
+            linewidth=1.5,
+            label="shadow body footprint",
+        )
+        world_axis.add_patch(shadow_body)
+        shadow_front_direction = world_axis.plot(
+            [], [], color="tab:orange", linewidth=2.0, label="shadow front direction"
+        )[0]
+        shadow_rear_contacts = world_axis.plot(
+            [], [], marker="s", markersize=5, linestyle="None", color="tab:red",
+            label="shadow rear contacts",
+        )[0]
+        shadow_front_midpoint = world_axis.plot(
+            [], [], marker="x", markersize=7, linestyle="None", color="#e377c2",
+            label="front midpoint comparator",
+        )[0]
+        shadow_dock_contacts = world_axis.plot(
+            [shadow.dock_contact_plus[0], shadow.dock_contact_minus[0]],
+            [shadow.dock_contact_plus[1], shadow.dock_contact_minus[1]],
+            marker="D",
+            markersize=4,
+            color="tab:green",
+            linewidth=2.0,
+            label="one audit orientation dock contacts",
+        )[0]
+        shadow_overlay_label = world_axis.text(
+            0.02,
+            0.03,
+            "EVALUATOR-ONLY SHADOW MORPHOLOGY\n"
+            "DOES NOT CONTROL CHARGING OR BEHAVIOUR\n"
+            f"ONE AUDIT ORIENTATION: phi={shadow.dock_orientation:g}",
+            transform=world_axis.transAxes,
+            va="bottom",
+            fontsize=8,
+            color="tab:purple",
+            bbox={"facecolor": "white", "alpha": 0.8, "edgecolor": "tab:purple"},
+        )
+        world_axis.legend(loc="lower left", fontsize=8)
 
     trajectory_line, *_ = world_axis.plot(
         [], [], color="tab:blue", alpha=0.5, linewidth=1.8, label="trajectory"
@@ -669,6 +754,52 @@ def build_development_visualization_figure(
             rendered.extend((fill, value))
         if threshold_marker is not None:
             rendered.append(threshold_marker)
+        if data.shadow_geometry is not None:
+            shadow = data.shadow_geometry
+            if (
+                shadow_body is None
+                or shadow_front_direction is None
+                or shadow_rear_contacts is None
+                or shadow_front_midpoint is None
+                or shadow_dock_contacts is None
+            ):
+                raise RuntimeError("shadow geometry artists are incomplete")
+            shadow_body.set_xy(
+                _shadow_body_corners(
+                    (frame.x, frame.y),
+                    frame.heading,
+                    shadow.body_length,
+                    shadow.body_width,
+                )
+            )
+            front = _translate_and_rotate(
+                (frame.x, frame.y), frame.heading, shadow.front_midpoint
+            )
+            rear_plus = _translate_and_rotate(
+                (frame.x, frame.y), frame.heading, shadow.rear_contact_plus
+            )
+            rear_minus = _translate_and_rotate(
+                (frame.x, frame.y), frame.heading, shadow.rear_contact_minus
+            )
+            shadow_front_direction.set_data(
+                [frame.x, frame.x + 0.07 * math.cos(frame.heading)],
+                [frame.y, frame.y + 0.07 * math.sin(frame.heading)],
+            )
+            shadow_rear_contacts.set_data(
+                [rear_plus[0], rear_minus[0]], [rear_plus[1], rear_minus[1]]
+            )
+            shadow_front_midpoint.set_data([front[0]], [front[1]])
+            rendered.extend(
+                (
+                    shadow_body,
+                    shadow_front_direction,
+                    shadow_rear_contacts,
+                    shadow_front_midpoint,
+                    shadow_dock_contacts,
+                )
+            )
+            if shadow_overlay_label is not None:
+                rendered.append(shadow_overlay_label)
         if learner_axes:
             predictions = data.consequence_predictions
             if predictions is None:
@@ -762,6 +893,29 @@ def build_development_visualization_figure(
     setattr(figure, "_aweform_learner_axes", tuple(learner_axes))
     setattr(figure, "_aweform_learner_lines", tuple(learner_lines))
     return figure, animation
+
+
+def _translate_and_rotate(
+    origin: Coordinate, heading: float, local: Coordinate
+) -> Coordinate:
+    """Transform one body-frame point into world coordinates for display."""
+    return (
+        origin[0] + local[0] * math.cos(heading) - local[1] * math.sin(heading),
+        origin[1] + local[0] * math.sin(heading) + local[1] * math.cos(heading),
+    )
+
+
+def _shadow_body_corners(
+    center: Coordinate, heading: float, length: float, width: float
+) -> list[Coordinate]:
+    """Return display corners in the current body frame."""
+    local_corners = (
+        (-length / 2.0, -width / 2.0),
+        (length / 2.0, -width / 2.0),
+        (length / 2.0, width / 2.0),
+        (-length / 2.0, width / 2.0),
+    )
+    return [_translate_and_rotate(center, heading, point) for point in local_corners]
 
 
 def _set_animation_running(animation: FuncAnimation, running: bool) -> None:
@@ -1208,6 +1362,7 @@ def _build_d011_family_development_visualization(
         [np.random.Generator], d011.D011Controller
     ] = d011.D011Controller,
     with_shadow_learner: bool = False,
+    with_d017_shadow: bool = False,
 ) -> DevelopmentVisualizationData:
     """Replay a D-011-compatible lifetime through one shared controller path."""
     from . import d011, d013
@@ -1239,6 +1394,29 @@ def _build_d011_family_development_visualization(
     )
     if environment.body is None or environment.station_center is None:
         raise RuntimeError("D-011 evaluator geometry is unavailable after setup")
+    shadow_geometry: DevelopmentShadowGeometry | None = None
+    if with_d017_shadow:
+        from . import d017
+
+        dock_plus, dock_minus = d017.shadow_dock_contacts_world(
+            environment.station_center, 0.0
+        )
+        shadow_geometry = DevelopmentShadowGeometry(
+            body_length=d017.D017_BODY_LENGTH,
+            body_width=d017.D017_BODY_WIDTH,
+            rear_contact_plus=(
+                d017.D017_REAR_X,
+                d017.D017_CONTACT_LATERAL_OFFSET,
+            ),
+            rear_contact_minus=(
+                d017.D017_REAR_X,
+                -d017.D017_CONTACT_LATERAL_OFFSET,
+            ),
+            front_midpoint=(d017.D017_FRONT_X, 0.0),
+            dock_orientation=0.0,
+            dock_contact_plus=dock_plus,
+            dock_contact_minus=dock_minus,
+        )
 
     frames: list[DevelopmentVisualizationFrame] = []
     consequence_predictions: list[DevelopmentConsequencePredictionFrame] = []
@@ -1332,6 +1510,7 @@ def _build_d011_family_development_visualization(
         consequence_predictions=(
             tuple(consequence_predictions) if predictor is not None else None
         ),
+        shadow_geometry=shadow_geometry,
     )
 
 
@@ -1454,6 +1633,34 @@ def build_d015_development_visualization(
     )
 
 
+def _validate_d017_visualization_seed(seed: int) -> None:
+    """Validate one D-017 visualization seed against both seed guards."""
+    from .d017 import _validate_d017_development_seeds
+
+    _validate_d017_development_seeds((seed,))
+
+
+def build_d017_development_visualization(
+    *,
+    seed: int,
+    horizon: int = 1000,
+) -> DevelopmentVisualizationData:
+    """Replay D-014 with the optional evaluator-only D-017 shadow overlay."""
+    from . import d014
+
+    return _build_d011_family_development_visualization(
+        seed=seed,
+        horizon=horizon,
+        source_label=(
+            "D-017 rear-docking pose audit — "
+            "EVALUATOR-ONLY SHADOW MORPHOLOGY"
+        ),
+        validate_seed=_validate_d017_visualization_seed,
+        controller_factory=d014.D014Controller,
+        with_d017_shadow=True,
+    )
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
@@ -1468,6 +1675,7 @@ DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     "d014": build_d014_development_visualization,
     "d015-reference": build_d015_reference_development_visualization,
     "d015": build_d015_development_visualization,
+    "d017": build_d017_development_visualization,
 }
 
 
