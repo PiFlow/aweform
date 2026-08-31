@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Callable, Final, Mapping, Sequence
 
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.animation import FuncAnimation
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
@@ -22,6 +23,8 @@ from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, Rectangle
 from matplotlib.text import Text
+
+from . import d011
 
 Coordinate = tuple[float, float]
 
@@ -1181,12 +1184,22 @@ def _validate_d013_visualization_seed(seed: int) -> None:
         )
 
 
+def _validate_d014_visualization_seed(seed: int) -> None:
+    """Validate one D-014 visualization seed against both seed guards."""
+    from .d014 import _validate_d014_development_seeds
+
+    _validate_d014_development_seeds((seed,))
+
+
 def _build_d011_family_development_visualization(
     *,
     seed: int,
     horizon: int,
     source_label: str,
     validate_seed: Callable[[int], None],
+    controller_factory: Callable[
+        [np.random.Generator], d011.D011Controller
+    ] = d011.D011Controller,
     with_shadow_learner: bool = False,
 ) -> DevelopmentVisualizationData:
     """Replay a D-011-compatible lifetime through one shared controller path."""
@@ -1212,7 +1225,7 @@ def _build_d011_family_development_visualization(
     random_streams = environment.base_env.random_streams
     if random_streams is None:
         raise RuntimeError("D-002 policy RNG is unavailable after reset")
-    controller = d011.D011Controller(random_streams.policy)
+    controller = controller_factory(random_streams.policy)
     controller.reset()
     predictor = (
         d013.D013ActionConsequencePredictor() if with_shadow_learner else None
@@ -1326,6 +1339,7 @@ def build_d011_development_visualization(
         horizon=horizon,
         source_label="D-011 fixed thermal-beacon reacquisition",
         validate_seed=_validate_d011_visualization_seed,
+        controller_factory=d011.D011Controller,
     )
 
 
@@ -1340,6 +1354,7 @@ def build_d012_development_visualization(
         horizon=horizon,
         source_label="D-012 D-011 thermal-beacon reacquisition",
         validate_seed=_validate_d012_visualization_seed,
+        controller_factory=d011.D011Controller,
     )
 
 
@@ -1356,6 +1371,7 @@ def build_d013_reference_development_visualization(
             "D-013 reference — unchanged D-011 controller, no shadow learner"
         ),
         validate_seed=_validate_d013_visualization_seed,
+        controller_factory=d011.D011Controller,
     )
 
 
@@ -1370,7 +1386,25 @@ def build_d013_development_visualization(
         horizon=horizon,
         source_label="D-013 shadow learner — evaluator-only consequences",
         validate_seed=_validate_d013_visualization_seed,
+        controller_factory=d011.D011Controller,
         with_shadow_learner=True,
+    )
+
+
+def build_d014_development_visualization(
+    *,
+    seed: int,
+    horizon: int = 1000,
+) -> DevelopmentVisualizationData:
+    """Replay one legal D-014 lifetime with the corrected controller."""
+    from . import d014
+
+    return _build_d011_family_development_visualization(
+        seed=seed,
+        horizon=horizon,
+        source_label="D-014 full-charge-or-thermal departure scaffold",
+        validate_seed=_validate_d014_visualization_seed,
+        controller_factory=d014.D014Controller,
     )
 
 
@@ -1385,6 +1419,7 @@ DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     "d012": build_d012_development_visualization,
     "d013-reference": build_d013_reference_development_visualization,
     "d013": build_d013_development_visualization,
+    "d014": build_d014_development_visualization,
 }
 
 

@@ -21,7 +21,7 @@ evaluator visibility metadata; visibility from one developmental mechanism must
 never be inherited by another source.
 
 The registered development sources are `d003`, `d005`, `d006`, `d011`,
-`d012`, `d013-reference`, and `d013`:
+`d012`, `d013-reference`, `d013`, and `d014`:
 
 ```text
 uv run aweform-visualize --source d003 --seed 18141 --horizon 1000
@@ -43,6 +43,12 @@ uv run aweform-visualize \
 uv run aweform-visualize \
   --source d013 \
   --seed 18344 \
+  --horizon 1000 \
+  --interval-ms 60
+
+uv run aweform-visualize \
+  --source d014 \
+  --seed 18347 \
   --horizon 1000 \
   --interval-ms 60
 ```
@@ -73,3 +79,9 @@ at the current playback transition. It is not confirmatory evidence. For the
 same seed and horizon, `d013-reference` and `d013` therefore have identical
 physical trajectories, charging behaviour, thermal/energy history, and
 controller actions; only `d013` adds the shadow-learning diagnostics.
+
+D-014 replays the unchanged D-002 ecology and D-011 remainder with
+`D014Controller`. While in contact and charging, it begins departure when
+either normalized energy is fully charged (`energy >= 1.0`) or the existing
+hot-depart thermal threshold (`0.60`) is reached first. It has no learner or
+consequence diagnostics and uses the ordinary two-panel evaluator view.
