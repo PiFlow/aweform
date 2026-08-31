@@ -246,6 +246,8 @@ class DevelopmentVisualizationData:
                 raise ValueError("station visualizations require a finite radius")
             if self.charging_radius < 0:
                 raise ValueError("charging_radius must be non-negative")
+        if self.shadow_geometry is not None and self.station_center is None:
+            raise ValueError("shadow geometry requires station_center")
         if (self.probe_distance is None) != (self.sensor_angle is None):
             raise ValueError("probe_distance and sensor_angle must be paired")
         for name in ("probe_distance", "sensor_angle"):
@@ -395,9 +397,12 @@ def build_development_visualization_figure(
     shadow_rear_contacts: Line2D | None = None
     shadow_front_midpoint: Line2D | None = None
     shadow_dock_contacts: Line2D | None = None
+    shadow_dock_axis: Line2D | None = None
     shadow_overlay_label: Text | None = None
     if data.shadow_geometry is not None:
         shadow = data.shadow_geometry
+        if data.station_center is None:
+            raise RuntimeError("shadow geometry has no station center")
         shadow_body = Polygon(
             _shadow_body_corners(
                 (0.0, 0.0), 0.0, shadow.body_length, shadow.body_width
@@ -429,6 +434,22 @@ def build_development_visualization_figure(
             color="tab:green",
             linewidth=2.0,
             label="one audit orientation dock contacts",
+        )[0]
+        shadow_dock_axis = world_axis.plot(
+            [
+                data.station_center[0],
+                data.station_center[0]
+                + 0.07 * math.cos(shadow.dock_orientation),
+            ],
+            [
+                data.station_center[1],
+                data.station_center[1]
+                + 0.07 * math.sin(shadow.dock_orientation),
+            ],
+            color="tab:green",
+            linestyle="--",
+            linewidth=1.2,
+            label="one audit orientation outward axis",
         )[0]
         shadow_overlay_label = world_axis.text(
             0.02,
@@ -762,6 +783,7 @@ def build_development_visualization_figure(
                 or shadow_rear_contacts is None
                 or shadow_front_midpoint is None
                 or shadow_dock_contacts is None
+                or shadow_dock_axis is None
             ):
                 raise RuntimeError("shadow geometry artists are incomplete")
             shadow_body.set_xy(
@@ -796,6 +818,7 @@ def build_development_visualization_figure(
                     shadow_rear_contacts,
                     shadow_front_midpoint,
                     shadow_dock_contacts,
+                    shadow_dock_axis,
                 )
             )
             if shadow_overlay_label is not None:
