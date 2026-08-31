@@ -4,7 +4,6 @@
 - **date:** 2026-08-31
 - **authoritative_base_sha:** `8a62f0931de40dc85d26ec1ddbd3c1003fa1b723`
 - **accepted_executable_sha:** `6e552dc40610d789dc0b54384c594d6ac029233f`
-- **record_commit_sha:** pending until this record and artifact are committed
 - **development_seeds:** `18347, 18348, 18349`
 - **horizon:** `1000` transitions per lifetime
 - **disposition:** `CONTINUING`
@@ -43,14 +42,16 @@ their exact old scaffolds.
 - The D-002 thermal station ecology, energy/thermal dynamics, charging radius,
   beacon, action definitions, post-contact setup, policy RNG semantics, and
   horizon are unchanged.
+- The inherited D-011 controller phase and explorer-owned policy RNG state are
+  organism-owned/programmed internal causal state, not sensory observation
+  channels.
 
 **ORGANISM-VISIBLE**
 
 - normalized energy;
 - normalized thermal state;
 - beacon left / forward / right;
-- physical charging contact;
-- inherited D-011 controller phase and explorer-owned policy RNG state.
+- physical charging contact.
 
 No new sensory input, coordinates, true distance, heading-to-station, horizon,
 seed identity, evaluator telemetry, or future information was added.
@@ -122,9 +123,10 @@ and transition index, current normalized energy and thermal signal, contact,
 both condition booleans, and the non-exclusive category. In this run all 46
 departures were `full_only`; no thermal-only or both-condition departure was
 observed. Seed 18348 had one additional physical contact-boundary exit beyond
-its 15 D-014 departures, a descriptive accidental AWAY contact consistent with
-the inherited D-011 distinction between accidental contact and SEEK
-reacquisition.
+its 15 recorded CHARGE -> DEPART events. An inherited accidental AWAY contact
+is consistent with this count difference, but the preserved D-014 artifact
+does not classify the mode of that extra exit, so that explanation is not
+treated as a direct artifact-backed observation.
 
 ## Reading and limitations
 
