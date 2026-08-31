@@ -251,15 +251,30 @@ The narrow result is mixed rather than a pass/fail claim:
 - The result is not exact sufficiency. Two false exits arise from float32
   reconstruction at a raw margin of `1.64e-8`, and one exact visible-state
   key/action alias has two next-contact outcomes.
-- The two observed prediction mismatches are not concentrated on clipped
-  movement; post-hoc achieved displacement did not resolve them. Therefore
-  this run does not support attributing the observed mismatch to missing
-  realized self-motion information.
-- The aliasing is consistent with a hidden world-boundary/realized-motion
-  variable, but that is an inference, not established by the stored alias
-  record. The current evidence is insufficient to claim universal
-  observability, real-world IR sufficiency, noise robustness, robot sufficiency,
-  or that the D-013 learner should learn the exact inverse.
+- The exact alias directly demonstrates that the current float32 visible
+  representation is not strictly sufficient at this microscopic contact
+  boundary. Slightly different underlying continuous relative geometries can
+  quantize to the same visible float32 L/F/R values while falling on opposite
+  sides of the next-contact threshold.
+- This is a very local representation ambiguity, not evidence of a large
+  practical deficiency: the observed ambiguity is at a nominal margin of only
+  approximately `1.64e-8`, while all 44 entries and all 45 exits were predicted
+  correctly.
+- D-016 provides no observed support for attributing the contact-prediction
+  errors to missing realized self-motion or clipping. There were 395
+  reduced/clipped `MOVE_FORWARD` transitions, but zero observed nominal
+  contact-prediction mismatches coincided with clipping; both observed
+  mismatches were un-clipped, and achieved-displacement substitution resolved
+  neither. The JSON artifact's stored programmed attribution labels remain
+  `reconstruction numerical error`; in this prose those labels describe the
+  nominal decoder's float32 reconstruction classification, not a hidden
+  realized-motion cause.
+- Therefore D-016 does **not** scientifically justify adding proprioception or
+  wheel encoders for the current charger-contact problem. A later
+  proprioceptive body may still be justified by a new developmental problem
+  involving realized self-motion. The current evidence is also insufficient to
+  claim universal observability, real-world IR sufficiency, noise robustness,
+  robot sufficiency, or that the D-013 learner should learn the exact inverse.
 
 The appropriate developmental disposition is to preserve the representation
 diagnostic and its numerical/aliasing limitations. D-016 does not add
@@ -269,7 +284,7 @@ genuine-life, or emergent-intelligence claim is made.
 
 ## Validation and integrity
 
-- `uv run pytest -q`: `702 passed`, 8 existing Matplotlib warnings.
+- `uv run pytest -q`: `703 passed`, 8 warnings.
 - `uv run ruff check .`: clean.
 - `uv run mypy src --strict`: clean.
 - `git diff --check`: clean at validation checkpoints.
