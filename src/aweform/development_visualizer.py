@@ -26,6 +26,28 @@ from matplotlib.text import Text
 Coordinate = tuple[float, float]
 
 
+def _cumulative_mean_series(values: Sequence[float]) -> tuple[float, ...]:
+    """Return the prefix mean at each position in a non-empty sequence."""
+    if not values:
+        raise ValueError("cumulative mean series requires at least one value")
+    total = 0.0
+    means: list[float] = []
+    for index, value in enumerate(values, start=1):
+        total += value
+        means.append(total / index)
+    return tuple(means)
+
+
+def _mae_axis_upper_bound(
+    learned_mae: Sequence[float], baseline_mae: Sequence[float]
+) -> float:
+    """Return a target-specific MAE upper bound with modest headroom."""
+    largest_mae = max((*learned_mae, *baseline_mae), default=0.0)
+    if largest_mae == 0.0:
+        return 1.0e-6
+    return largest_mae * 1.1
+
+
 @dataclass(frozen=True, slots=True)
 class DevelopmentVisualizationRange:
     """Inclusive numeric range used by a diagnostic gauge."""
@@ -98,6 +120,33 @@ class DevelopmentVisualizationFrame:
 
 
 @dataclass(frozen=True, slots=True)
+class DevelopmentConsequencePredictionFrame:
+    """Evaluator-only one-step prediction and observed consequence values."""
+
+    transition_index: int
+    predicted_delta_energy: float
+    observed_delta_energy: float
+    predicted_delta_thermal: float
+    observed_delta_thermal: float
+    predicted_delta_charging_contact: float
+    observed_delta_charging_contact: float
+
+    def __post_init__(self) -> None:
+        if self.transition_index <= 0:
+            raise ValueError("transition_index must be positive")
+        for name in (
+            "predicted_delta_energy",
+            "observed_delta_energy",
+            "predicted_delta_thermal",
+            "observed_delta_thermal",
+            "predicted_delta_charging_contact",
+            "observed_delta_charging_contact",
+        ):
+            if not math.isfinite(getattr(self, name)):
+                raise ValueError(f"{name} must be finite")
+
+
+@dataclass(frozen=True, slots=True)
 class DevelopmentVisualizationData:
     """All neutral data required by the shared development renderer."""
 
@@ -116,6 +165,9 @@ class DevelopmentVisualizationData:
     thermal_threshold: float | None = None
     thermal_threshold_label: str | None = None
     energy_label: str = "ENERGY"
+    consequence_predictions: (
+        tuple[DevelopmentConsequencePredictionFrame, ...] | None
+    ) = None
 
     def __post_init__(self) -> None:
         if not self.source_label:
@@ -137,6 +189,20 @@ class DevelopmentVisualizationData:
             for index, frame in enumerate(self.frames, start=1)
         ):
             raise ValueError("frames must contain one ordered entry per transition")
+        if self.consequence_predictions is not None:
+            if len(self.consequence_predictions) != len(self.frames):
+                raise ValueError(
+                    "consequence predictions must align one-to-one with frames"
+                )
+            if any(
+                prediction.transition_index != frame.transition_index
+                for prediction, frame in zip(
+                    self.consequence_predictions, self.frames, strict=True
+                )
+            ):
+                raise ValueError(
+                    "consequence prediction indices must align with frames"
+                )
         if self.station_center is None:
             if self.charging_radius is not None:
                 raise ValueError("charging_radius requires station_center")
@@ -228,13 +294,28 @@ def build_development_visualization_figure(
     if interval_ms <= 0:
         raise ValueError("interval_ms must be positive")
 
-    figure, axes = plt.subplots(
-        1,
-        2,
-        figsize=(13, 7),
-        gridspec_kw={"width_ratios": (1.35, 0.85)},
-    )
-    world_axis, diagnostic_axis = axes
+    has_consequence_predictions = data.consequence_predictions is not None
+    learner_axes: list[Axes] = []
+    if has_consequence_predictions:
+        figure = plt.figure(figsize=(18, 8), constrained_layout=True)
+        grid = figure.add_gridspec(
+            3,
+            3,
+            width_ratios=(1.35, 0.85, 1.25),
+            hspace=0.85,
+            wspace=0.35,
+        )
+        world_axis = figure.add_subplot(grid[:, 0])
+        diagnostic_axis = figure.add_subplot(grid[:, 1])
+        learner_axes = [figure.add_subplot(grid[index, 2]) for index in range(3)]
+    else:
+        figure, axes = plt.subplots(
+            1,
+            2,
+            figsize=(13, 7),
+            gridspec_kw={"width_ratios": (1.35, 0.85)},
+        )
+        world_axis, diagnostic_axis = axes
     world_axis.set_xlim(data.world_min[0], data.world_max[0])
     world_axis.set_ylim(data.world_min[1], data.world_max[1])
     world_axis.set_aspect("equal", adjustable="box")
@@ -374,6 +455,9 @@ def build_development_visualization_figure(
         ]
     threshold_marker: Line2D | None = None
     if data.thermal_threshold is not None:
+        threshold_label = data.thermal_threshold_label
+        if threshold_label is None:
+            raise RuntimeError("thermal threshold label is missing")
         threshold_x = 0.30 + _gauge_fraction(
             data.thermal_threshold, data.thermal_range
         ) * 0.62
@@ -386,7 +470,7 @@ def build_development_visualization_figure(
         diagnostic_axis.text(
             threshold_x,
             thermal_y + 0.08,
-            data.thermal_threshold_label,
+            threshold_label,
             ha="center",
             va="bottom",
             fontsize=7,
@@ -415,6 +499,95 @@ def build_development_visualization_figure(
         fontsize=8,
         color="0.35",
     )
+
+    learner_lines: list[tuple[Line2D, Line2D]] = []
+    learner_stats: list[Text] = []
+    if learner_axes:
+        predictions = data.consequence_predictions
+        if predictions is None:
+            raise RuntimeError("learner axes require consequence predictions")
+        target_specs: tuple[
+            tuple[
+                str,
+                Callable[[DevelopmentConsequencePredictionFrame], float],
+                Callable[[DevelopmentConsequencePredictionFrame], float],
+            ],
+            ...,
+        ] = (
+            (
+                "ENERGY Δ",
+                lambda item: item.predicted_delta_energy,
+                lambda item: item.observed_delta_energy,
+            ),
+            (
+                "THERMAL Δ",
+                lambda item: item.predicted_delta_thermal,
+                lambda item: item.observed_delta_thermal,
+            ),
+            (
+                "CONTACT Δ",
+                lambda item: item.predicted_delta_charging_contact,
+                lambda item: item.observed_delta_charging_contact,
+            ),
+        )
+        cumulative_mae_series: list[tuple[tuple[float, ...], tuple[float, ...]]] = []
+        for index, (axis, (title, predicted_value, observed_value)) in enumerate(
+            zip(learner_axes, target_specs, strict=True)
+        ):
+            learned_errors = tuple(
+                abs(predicted_value(item) - observed_value(item))
+                for item in predictions
+            )
+            baseline_errors = tuple(
+                abs(observed_value(item)) for item in predictions
+            )
+            learned_mae = _cumulative_mean_series(learned_errors)
+            baseline_mae = _cumulative_mean_series(baseline_errors)
+            cumulative_mae_series.append((learned_mae, baseline_mae))
+            axis.set_xlim(0.5, max(1.5, len(predictions) + 0.5))
+            axis.set_ylim(0.0, _mae_axis_upper_bound(learned_mae, baseline_mae))
+            axis.grid(True, alpha=0.25)
+            axis.set_ylabel("MAE", fontsize=8)
+            axis.set_xlabel("transition", fontsize=8)
+            if index == 0:
+                axis.set_title(
+                    "SHADOW ONLY — ZERO BEHAVIOURAL INFLUENCE\n" + title,
+                    fontsize=9,
+                )
+                axis.text(
+                    0.0,
+                    1.08,
+                    "cumulative pre-update MAE through current transition",
+                    transform=axis.transAxes,
+                    fontsize=7,
+                    va="bottom",
+                )
+            else:
+                axis.set_title(title, fontsize=9)
+            learned_line = axis.plot(
+                [], [], color="tab:blue", linewidth=1.5, label="learned MAE"
+            )[0]
+            baseline_line = axis.plot(
+                [],
+                [],
+                color="0.35",
+                linestyle="--",
+                linewidth=1.2,
+                label="zero-change baseline MAE",
+            )[0]
+            axis.legend(fontsize=7, loc="lower right", framealpha=0.75)
+            stats = axis.text(
+                0.02,
+                0.97,
+                "",
+                transform=axis.transAxes,
+                va="top",
+                fontsize=7,
+                family="monospace",
+                bbox={"facecolor": "white", "alpha": 0.75, "edgecolor": "none"},
+            )
+            learner_lines.append((learned_line, baseline_line))
+            learner_stats.append(stats)
 
     player = DevelopmentVisualizationPlayer(len(data.frames))
 
@@ -493,6 +666,37 @@ def build_development_visualization_figure(
             rendered.extend((fill, value))
         if threshold_marker is not None:
             rendered.append(threshold_marker)
+        if learner_axes:
+            predictions = data.consequence_predictions
+            if predictions is None:
+                raise RuntimeError("learner axes require consequence predictions")
+            visible_predictions = predictions[: frame_index + 1]
+            transition_numbers = [
+                item.transition_index for item in visible_predictions
+            ]
+            for (learned_line, baseline_line), stats, (
+                learned_mae_series,
+                baseline_mae_series,
+            ), (_title, predicted_value, observed_value) in zip(
+                learner_lines,
+                learner_stats,
+                cumulative_mae_series,
+                target_specs,
+                strict=True,
+            ):
+                visible_learned_mae = learned_mae_series[: frame_index + 1]
+                visible_baseline_mae = baseline_mae_series[: frame_index + 1]
+                current = visible_predictions[-1]
+                learned_line.set_data(transition_numbers, visible_learned_mae)
+                baseline_line.set_data(transition_numbers, visible_baseline_mae)
+                stats.set_text(
+                    f"learned MAE: {visible_learned_mae[-1]:.5f}\n"
+                    "zero-change baseline MAE: "
+                    f"{visible_baseline_mae[-1]:.5f}\n"
+                    f"current predicted Δ: {predicted_value(current):.5f}\n"
+                    f"current observed Δ: {observed_value(current):.5f}"
+                )
+                rendered.extend((learned_line, baseline_line, stats))
         return tuple(rendered)
 
     render(0)
@@ -548,9 +752,12 @@ def build_development_visualization_figure(
         "DEVELOPMENT / EVALUATOR VIEW — NOT CONFIRMATORY EVIDENCE",
         fontsize=12,
     )
-    figure.tight_layout(rect=(0.0, 0.0, 1.0, 0.91))
+    if not learner_axes:
+        figure.tight_layout(rect=(0.0, 0.0, 1.0, 0.91))
     setattr(figure, "_aweform_player", player)
     setattr(figure, "_aweform_animation", animation)
+    setattr(figure, "_aweform_learner_axes", tuple(learner_axes))
+    setattr(figure, "_aweform_learner_lines", tuple(learner_lines))
     return figure, animation
 
 
@@ -961,15 +1168,29 @@ def _validate_d012_visualization_seed(seed: int) -> None:
         )
 
 
+def _validate_d013_visualization_seed(seed: int) -> None:
+    """Validate one D-013 visualization seed against both seed guards."""
+    from .d013 import D013_DEFAULT_DEVELOPMENT_SEEDS
+    from .exp003_seed_policy import validate_exp003_development_seeds
+
+    validate_exp003_development_seeds((seed,))
+    if seed not in D013_DEFAULT_DEVELOPMENT_SEEDS:
+        raise ValueError(
+            "D-013 visualization requires one of its declared development "
+            f"seeds {D013_DEFAULT_DEVELOPMENT_SEEDS}; got {seed}"
+        )
+
+
 def _build_d011_family_development_visualization(
     *,
     seed: int,
     horizon: int,
     source_label: str,
     validate_seed: Callable[[int], None],
+    with_shadow_learner: bool = False,
 ) -> DevelopmentVisualizationData:
     """Replay a D-011-compatible lifetime through one shared controller path."""
-    from . import d011
+    from . import d011, d013
     from .d002 import (
         D002_AMBIENT_THERMAL_STATE,
         D002_UPPER_THERMAL_FAILURE_BOUNDARY,
@@ -993,24 +1214,52 @@ def _build_d011_family_development_visualization(
         raise RuntimeError("D-002 policy RNG is unavailable after reset")
     controller = d011.D011Controller(random_streams.policy)
     controller.reset()
+    predictor = (
+        d013.D013ActionConsequencePredictor() if with_shadow_learner else None
+    )
     if environment.body is None or environment.station_center is None:
         raise RuntimeError("D-011 evaluator geometry is unavailable after setup")
 
     frames: list[DevelopmentVisualizationFrame] = []
+    consequence_predictions: list[DevelopmentConsequencePredictionFrame] = []
     terminated = False
     truncated = False
     while not (terminated or truncated):
         visible = d011._controller_observation(observation)
         mode_before = controller.mode
         action = controller.act(visible)
+        prediction = (
+            predictor.predict(visible, action) if predictor is not None else None
+        )
         observation, reward, terminated, truncated, info = environment.step(action)
         if reward != 0.0 or info != {}:
             raise RuntimeError("D-011 replay crossed the reward/info boundary")
+        next_visible = d011._controller_observation(observation)
+        update = (
+            predictor.observe_transition(visible, action, next_visible)
+            if predictor is not None
+            else None
+        )
         telemetry = environment.last_transition
         body = environment.body
         if telemetry is None or body is None:
             raise RuntimeError("D-011 transition telemetry is unavailable")
-        next_visible = d011._controller_observation(observation)
+        if predictor is not None and prediction is not None and update is not None:
+            consequence_predictions.append(
+                DevelopmentConsequencePredictionFrame(
+                    transition_index=telemetry.step_index,
+                    predicted_delta_energy=prediction.predicted_delta_energy,
+                    observed_delta_energy=update.observed_delta_energy,
+                    predicted_delta_thermal=prediction.predicted_delta_thermal,
+                    observed_delta_thermal=update.observed_delta_thermal,
+                    predicted_delta_charging_contact=(
+                        prediction.predicted_delta_charging_contact
+                    ),
+                    observed_delta_charging_contact=(
+                        update.observed_delta_charging_contact
+                    ),
+                )
+            )
         frames.append(
             DevelopmentVisualizationFrame(
                 transition_index=telemetry.step_index,
@@ -1060,6 +1309,9 @@ def _build_d011_family_development_visualization(
         thermal_threshold=HOT_DEPART_THRESHOLD,
         thermal_threshold_label="HOT DEPART = 0.60",
         energy_label="ENERGY (NORMALIZED)",
+        consequence_predictions=(
+            tuple(consequence_predictions) if predictor is not None else None
+        ),
     )
 
 
@@ -1091,6 +1343,37 @@ def build_d012_development_visualization(
     )
 
 
+def build_d013_reference_development_visualization(
+    *,
+    seed: int,
+    horizon: int = 1000,
+) -> DevelopmentVisualizationData:
+    """Replay D-011 unchanged as an evaluator-side D-013 reference."""
+    return _build_d011_family_development_visualization(
+        seed=seed,
+        horizon=horizon,
+        source_label=(
+            "D-013 reference — unchanged D-011 controller, no shadow learner"
+        ),
+        validate_seed=_validate_d013_visualization_seed,
+    )
+
+
+def build_d013_development_visualization(
+    *,
+    seed: int,
+    horizon: int = 1000,
+) -> DevelopmentVisualizationData:
+    """Replay D-011 with D-013's evaluator-only causal shadow learner."""
+    return _build_d011_family_development_visualization(
+        seed=seed,
+        horizon=horizon,
+        source_label="D-013 shadow learner — evaluator-only consequences",
+        validate_seed=_validate_d013_visualization_seed,
+        with_shadow_learner=True,
+    )
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
@@ -1100,6 +1383,8 @@ DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     "d006": build_d006_development_visualization,
     "d011": build_d011_development_visualization,
     "d012": build_d012_development_visualization,
+    "d013-reference": build_d013_reference_development_visualization,
+    "d013": build_d013_development_visualization,
 }
 
 

@@ -12,12 +12,13 @@ import matplotlib.pyplot as plt
 import pytest
 from matplotlib.backend_bases import KeyEvent
 
-from aweform import d011, d012
+from aweform import d011, d012, d013
 from aweform.d003 import run_d003_probe
 from aweform.d005 import run_d005_probe
 from aweform.d006 import run_d006_probe
 from aweform.development_visualizer import (
     DEVELOPMENT_VISUALIZATION_ADAPTERS,
+    DevelopmentConsequencePredictionFrame,
     DevelopmentVisualizationData,
     DevelopmentVisualizationFrame,
     DevelopmentVisualizationPlayer,
@@ -31,10 +32,67 @@ from aweform.development_visualizer import (
     build_d006_development_visualization,
     build_d011_development_visualization,
     build_d012_development_visualization,
+    build_d013_development_visualization,
+    build_d013_reference_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
 )
 from aweform.env import Action
+
+
+def _synthetic_consequence_data() -> DevelopmentVisualizationData:
+    """Build small exact-value data for renderer MAE and scale assertions."""
+    frames = tuple(
+        DevelopmentVisualizationFrame(
+            transition_index=index,
+            x=0.5,
+            y=0.5,
+            heading=0.0,
+            action="WAIT",
+            decision_mode="CHARGE",
+            energy=0.5,
+            thermal=0.2,
+            charging_contact=True,
+            terminated=False,
+            truncated=index == 3,
+        )
+        for index in range(1, 4)
+    )
+    predictions = tuple(
+        DevelopmentConsequencePredictionFrame(
+            transition_index=index,
+            predicted_delta_energy=predicted_energy,
+            observed_delta_energy=observed_energy,
+            predicted_delta_thermal=0.0,
+            observed_delta_thermal=observed_thermal,
+            predicted_delta_charging_contact=0.0,
+            observed_delta_charging_contact=0.0,
+        )
+        for index, (predicted_energy, observed_energy, observed_thermal) in enumerate(
+            ((0.2, 0.1, 0.001), (-0.1, -0.4, -0.003), (0.4, 0.2, 0.002)),
+            start=1,
+        )
+    )
+    return DevelopmentVisualizationData(
+        source_label="synthetic consequence MAE",
+        seed=1,
+        world_min=(0.0, 0.0),
+        world_max=(1.0, 1.0),
+        station_center=(0.5, 0.5),
+        charging_radius=0.1,
+        energy_range=DevelopmentVisualizationRange(0.0, 1.0),
+        thermal_range=DevelopmentVisualizationRange(0.0, 1.0),
+        frames=frames,
+        visibility=DevelopmentVisualizationVisibility(
+            position_heading="SYNTHETIC EVALUATOR",
+            station_location="SYNTHETIC EVALUATOR",
+            energy="SYNTHETIC ORGANISM",
+            thermal="SYNTHETIC ORGANISM",
+            charging_contact="SYNTHETIC ORGANISM",
+            action_decision_mode="SYNTHETIC CONTROLLER STATE",
+        ),
+        consequence_predictions=predictions,
+    )
 
 
 def test_d003_adapter_preserves_completed_trace_fields() -> None:
@@ -212,6 +270,309 @@ def test_d012_visualization_does_not_call_exact_census_validator(
 
     data = build_d012_development_visualization(seed=18144, horizon=1)
     assert data.seed == 18144
+
+
+def test_d013_sources_are_registered_and_reference_has_no_learner() -> None:
+    assert DEVELOPMENT_VISUALIZATION_ADAPTERS["d013-reference"] is (
+        build_d013_reference_development_visualization
+    )
+    assert DEVELOPMENT_VISUALIZATION_ADAPTERS["d013"] is (
+        build_d013_development_visualization
+    )
+    reference = build_development_visualization(
+        "d013-reference", seed=18344, horizon=3
+    )
+    shadow = build_development_visualization("d013", seed=18344, horizon=3)
+
+    assert reference.source_label == (
+        "D-013 reference — unchanged D-011 controller, no shadow learner"
+    )
+    assert reference.consequence_predictions is None
+    assert shadow.consequence_predictions is not None
+    assert len(shadow.consequence_predictions) == len(shadow.frames) == 3
+    reference_figure, reference_animation = build_development_visualization_figure(
+        reference
+    )
+    assert len(reference_figure.axes) == 2
+    assert not any(
+        "SHADOW ONLY" in axis.get_title() for axis in reference_figure.axes
+    )
+    reference_animation.event_source.stop()
+    plt.close(reference_figure)
+
+
+@pytest.mark.parametrize("seed", (18344, 18345, 18346))
+def test_d013_sources_accept_only_declared_development_seeds(seed: int) -> None:
+    for source in ("d013-reference", "d013"):
+        data = build_development_visualization(source, seed=seed, horizon=1)
+        assert data.seed == seed
+
+
+@pytest.mark.parametrize("seed", (18144, 50001))
+def test_d013_sources_reject_non_d013_and_reserved_seeds(seed: int) -> None:
+    for builder in (
+        build_d013_reference_development_visualization,
+        build_d013_development_visualization,
+    ):
+        with pytest.raises(ValueError):
+            builder(seed=seed, horizon=1)
+
+
+def test_d013_prediction_frames_are_aligned_and_first_prediction_is_zero() -> None:
+    data = build_d013_development_visualization(seed=18344, horizon=5)
+    predictions = data.consequence_predictions
+    assert predictions is not None
+    assert [item.transition_index for item in predictions] == [1, 2, 3, 4, 5]
+    first = predictions[0]
+    assert (
+        first.predicted_delta_energy,
+        first.predicted_delta_thermal,
+        first.predicted_delta_charging_contact,
+    ) == (0.0, 0.0, 0.0)
+
+
+def test_d013_prediction_diagnostics_use_the_executed_action(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executed_actions: list[Action] = []
+    original_observe = d013.D013ActionConsequencePredictor.observe_transition
+
+    def recording_observe(
+        predictor: d013.D013ActionConsequencePredictor,
+        observation: d011.D011Observation,
+        action: Action,
+        next_observation: d011.D011Observation,
+    ) -> d013.D013LearningUpdate:
+        executed_actions.append(action)
+        return original_observe(predictor, observation, action, next_observation)
+
+    monkeypatch.setattr(
+        d013.D013ActionConsequencePredictor,
+        "observe_transition",
+        recording_observe,
+    )
+    data = build_d013_development_visualization(seed=18344, horizon=8)
+
+    assert executed_actions == [Action[frame.action] for frame in data.frames]
+
+
+def test_d013_shadow_predictions_cannot_change_behavior(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reference = build_d013_reference_development_visualization(
+        seed=18344, horizon=40
+    )
+
+    def absurd_predict(
+        _predictor: d013.D013ActionConsequencePredictor,
+        _observation: d011.D011Observation,
+        _action: Action,
+    ) -> d013.D013Prediction:
+        return d013.D013Prediction(1e9, -1e9, 1e9)
+
+    monkeypatch.setattr(d013.D013ActionConsequencePredictor, "predict", absurd_predict)
+    adversarial = build_d013_development_visualization(seed=18344, horizon=40)
+
+    assert [
+        (
+            frame.x,
+            frame.y,
+            frame.heading,
+            frame.action,
+            frame.decision_mode,
+            frame.energy,
+            frame.thermal,
+            frame.charging_contact,
+            frame.terminated,
+            frame.truncated,
+        )
+        for frame in adversarial.frames
+    ] == [
+        (
+            frame.x,
+            frame.y,
+            frame.heading,
+            frame.action,
+            frame.decision_mode,
+            frame.energy,
+            frame.thermal,
+            frame.charging_contact,
+            frame.terminated,
+            frame.truncated,
+        )
+        for frame in reference.frames
+    ]
+
+
+def test_d013_reference_and_shadow_have_identical_per_frame_behavior() -> None:
+    reference = build_d013_reference_development_visualization(
+        seed=18344, horizon=120
+    )
+    shadow = build_d013_development_visualization(seed=18344, horizon=120)
+
+    def physical_frame(frame: DevelopmentVisualizationFrame) -> tuple[object, ...]:
+        return (
+            frame.transition_index,
+            frame.x,
+            frame.y,
+            frame.heading,
+            frame.action,
+            frame.decision_mode,
+            frame.energy,
+            frame.thermal,
+            frame.charging_contact,
+            frame.terminated,
+            frame.truncated,
+        )
+
+    assert [physical_frame(frame) for frame in shadow.frames] == [
+        physical_frame(frame) for frame in reference.frames
+    ]
+
+
+def test_d013_learner_state_is_not_added_to_d011_observation() -> None:
+    assert {field.name for field in fields(d011.D011Observation)} == {
+        "energy",
+        "beacon",
+        "thermal",
+    }
+    assert not any(
+        "prediction" in field.name or "consequence" in field.name
+        for field in fields(d011.D011Observation)
+    )
+
+
+def test_d013_renderer_shows_three_targets_and_only_playback_prefix() -> None:
+    data = build_d013_development_visualization(seed=18344, horizon=5)
+    figure, animation = build_development_visualization_figure(data)
+    assert len(figure.axes) == 5
+    rendered_text = "\n".join(
+        [text.get_text() for axis in figure.axes for text in axis.texts]
+        + [axis.get_title() for axis in figure.axes]
+    )
+    assert "SHADOW ONLY — ZERO BEHAVIOURAL INFLUENCE" in rendered_text
+    assert "cumulative pre-update MAE through current transition" in rendered_text
+    assert all(
+        target in rendered_text
+        for target in ("ENERGY Δ", "THERMAL Δ", "CONTACT Δ")
+    )
+    assert "learned MAE:" in rendered_text
+    assert "zero-change baseline MAE:" in rendered_text
+    assert "current predicted Δ:" in rendered_text
+    assert "current observed Δ:" in rendered_text
+
+    learner_lines = getattr(figure, "_aweform_learner_lines")
+    assert all(len(line.get_xdata()) == 1 for pair in learner_lines for line in pair)
+    player = getattr(figure, "_aweform_player")
+    player.play()
+    animation._func(0)
+    assert all(len(line.get_xdata()) == 2 for pair in learner_lines for line in pair)
+    assert all(max(line.get_xdata()) <= 2 for pair in learner_lines for line in pair)
+
+    animation.event_source.stop()
+    plt.close(figure)
+
+
+def test_renderer_plots_cumulative_mae_and_matches_displayed_statistics() -> None:
+    data = _synthetic_consequence_data()
+    figure, animation = build_development_visualization_figure(data)
+    learner_lines = getattr(figure, "_aweform_learner_lines")
+    learner_axes = getattr(figure, "_aweform_learner_axes")
+    player = getattr(figure, "_aweform_player")
+
+    player.step_forward()
+    player.step_forward()
+    animation._func(0)
+
+    expected_learned = ((0.1, 0.2, 0.2), (0.001, 0.002, 0.002), (0.0, 0.0, 0.0))
+    expected_baseline = (
+        (0.1, 0.25, 0.23333333333333334),
+        (0.001, 0.002, 0.002),
+        (0.0, 0.0, 0.0),
+    )
+    for axis, (learned_line, baseline_line), learned, baseline in zip(
+        learner_axes,
+        learner_lines,
+        expected_learned,
+        expected_baseline,
+        strict=True,
+    ):
+        assert tuple(learned_line.get_xdata()) == (1, 2, 3)
+        assert tuple(baseline_line.get_xdata()) == (1, 2, 3)
+        assert tuple(learned_line.get_ydata()) == pytest.approx(learned)
+        assert tuple(baseline_line.get_ydata()) == pytest.approx(baseline)
+        stats = next(
+            text
+            for text in axis.texts
+            if text.get_text().startswith("learned MAE:")
+        ).get_text().splitlines()
+        displayed_learned = float(stats[0].split(": ", 1)[1])
+        displayed_baseline = float(stats[1].split(": ", 1)[1])
+        assert round(learned_line.get_ydata()[-1], 5) == displayed_learned
+        assert round(baseline_line.get_ydata()[-1], 5) == displayed_baseline
+
+    animation.event_source.stop()
+    plt.close(figure)
+
+
+def test_renderer_uses_independent_cumulative_mae_scales_without_one_floor() -> None:
+    data = _synthetic_consequence_data()
+    figure, animation = build_development_visualization_figure(data)
+    learner_axes = getattr(figure, "_aweform_learner_axes")
+
+    assert learner_axes[0].get_ylim() == pytest.approx((0.0, 0.275))
+    assert learner_axes[1].get_ylim() == pytest.approx((0.0, 0.0022))
+    assert learner_axes[1].get_ylim()[1] < 0.01
+    assert learner_axes[2].get_ylim() == pytest.approx((0.0, 1.0e-6))
+
+    animation.event_source.stop()
+    plt.close(figure)
+
+
+def test_consequence_diagnostics_validate_alignment_and_finite_values() -> None:
+    frame = DevelopmentVisualizationFrame(
+        transition_index=1,
+        x=0.5,
+        y=0.5,
+        heading=0.0,
+        action="WAIT",
+        decision_mode="CHARGE",
+        energy=5.0,
+        thermal=0.2,
+        charging_contact=True,
+        terminated=False,
+        truncated=True,
+    )
+    prediction = DevelopmentConsequencePredictionFrame(
+        transition_index=1,
+        predicted_delta_energy=0.0,
+        observed_delta_energy=0.1,
+        predicted_delta_thermal=0.0,
+        observed_delta_thermal=0.01,
+        predicted_delta_charging_contact=0.0,
+        observed_delta_charging_contact=-1.0,
+    )
+    with pytest.raises(ValueError, match="align"):
+        DevelopmentVisualizationData(
+            source_label="synthetic",
+            seed=1,
+            world_min=(0.0, 0.0),
+            world_max=(1.0, 1.0),
+            station_center=(0.5, 0.5),
+            charging_radius=0.1,
+            energy_range=DevelopmentVisualizationRange(0.0, 10.0),
+            thermal_range=DevelopmentVisualizationRange(0.0, 1.0),
+            frames=(frame,),
+            consequence_predictions=(replace(prediction, transition_index=2),),
+            visibility=DevelopmentVisualizationVisibility(
+                position_heading="SYNTHETIC EVALUATOR",
+                station_location="SYNTHETIC EVALUATOR",
+                energy="SYNTHETIC ORGANISM",
+                thermal="SYNTHETIC ORGANISM + EVALUATOR",
+                charging_contact="SYNTHETIC ORGANISM + EVALUATOR",
+                action_decision_mode="SYNTHETIC CONTROLLER STATE",
+            ),
+        )
 
 
 def test_d011_adapter_actions_are_selected_by_d011_controller(
