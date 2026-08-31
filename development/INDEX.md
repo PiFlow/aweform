@@ -31,6 +31,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-013 | Full-observation shadow viability consequence learner | CONTINUING | [`D-013-full-observation-shadow-viability-consequence-learner.md`](D-013-full-observation-shadow-viability-consequence-learner.md) |
 | D-014 | Full-charge-or-thermal departure scaffold correction | CONTINUING | [`D-014-full-charge-or-thermal-departure.md`](D-014-full-charge-or-thermal-departure.md) |
 | D-015 | D-014 shadow consequence support diagnostic | CONTINUING | [`D-015-d014-shadow-consequence-support-diagnostic.md`](D-015-d014-shadow-consequence-support-diagnostic.md) |
+| D-016 | Current-beacon contact-transition observability audit | CONTINUING | [`D-016-current-beacon-contact-observability-audit.md`](D-016-current-beacon-contact-observability-audit.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 
