@@ -34,6 +34,8 @@ from aweform.development_visualizer import (
     build_d012_development_visualization,
     build_d013_development_visualization,
     build_d013_reference_development_visualization,
+    build_d015_development_visualization,
+    build_d015_reference_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
 )
@@ -471,6 +473,137 @@ def test_d013_renderer_shows_three_targets_and_only_playback_prefix() -> None:
 
     animation.event_source.stop()
     plt.close(figure)
+
+
+def test_d015_sources_use_corrected_controller_and_matched_layouts() -> None:
+    reference = build_d015_reference_development_visualization(
+        seed=18350, horizon=5
+    )
+    shadow = build_d015_development_visualization(seed=18350, horizon=5)
+    assert reference.source_label.startswith("D-015 reference")
+    assert shadow.source_label.startswith("D-015 shadow learner")
+    assert reference.consequence_predictions is None
+    assert shadow.consequence_predictions is not None
+    reference_figure, reference_animation = build_development_visualization_figure(
+        reference
+    )
+    shadow_figure, shadow_animation = build_development_visualization_figure(shadow)
+    assert len(reference_figure.axes) == 2
+    assert len(shadow_figure.axes) == 5
+    shadow_text = "\n".join(
+        [text.get_text() for axis in shadow_figure.axes for text in axis.texts]
+        + [axis.get_title() for axis in shadow_figure.axes]
+    )
+    assert "SHADOW ONLY — ZERO BEHAVIOURAL INFLUENCE" in shadow_text
+    reference_animation.event_source.stop()
+    shadow_animation.event_source.stop()
+    plt.close(reference_figure)
+    plt.close(shadow_figure)
+
+
+def test_d015_reference_and_shadow_have_exact_same_physical_frames() -> None:
+    reference = build_d015_reference_development_visualization(
+        seed=18350, horizon=120
+    )
+    shadow = build_d015_development_visualization(seed=18350, horizon=120)
+    assert [
+        (
+            frame.transition_index,
+            frame.x,
+            frame.y,
+            frame.heading,
+            frame.action,
+            frame.decision_mode,
+            frame.energy,
+            frame.thermal,
+            frame.charging_contact,
+            frame.terminated,
+            frame.truncated,
+        )
+        for frame in reference.frames
+    ] == [
+        (
+            frame.transition_index,
+            frame.x,
+            frame.y,
+            frame.heading,
+            frame.action,
+            frame.decision_mode,
+            frame.energy,
+            frame.thermal,
+            frame.charging_contact,
+            frame.terminated,
+            frame.truncated,
+        )
+        for frame in shadow.frames
+    ]
+
+
+def test_d015_adversarial_predictions_cannot_change_physical_frames(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reference = build_d015_reference_development_visualization(
+        seed=18350, horizon=40
+    )
+
+    def absurd_predict(
+        _predictor: d013.D013ActionConsequencePredictor,
+        _observation: d011.D011Observation,
+        _action: Action,
+    ) -> d013.D013Prediction:
+        return d013.D013Prediction(1e9, -1e9, 1e9)
+
+    monkeypatch.setattr(d013.D013ActionConsequencePredictor, "predict", absurd_predict)
+    adversarial = build_d015_development_visualization(seed=18350, horizon=40)
+    assert [
+        (
+            frame.x,
+            frame.y,
+            frame.heading,
+            frame.action,
+            frame.decision_mode,
+            frame.energy,
+            frame.thermal,
+            frame.charging_contact,
+            frame.terminated,
+            frame.truncated,
+        )
+        for frame in adversarial.frames
+    ] == [
+        (
+            frame.x,
+            frame.y,
+            frame.heading,
+            frame.action,
+            frame.decision_mode,
+            frame.energy,
+            frame.thermal,
+            frame.charging_contact,
+            frame.terminated,
+            frame.truncated,
+        )
+        for frame in reference.frames
+    ]
+
+
+@pytest.mark.parametrize("seed", (18350, 18351, 18352))
+def test_d015_visualization_sources_accept_only_d015_seeds(seed: int) -> None:
+    assert build_d015_reference_development_visualization(
+        seed=seed, horizon=1
+    ).seed == seed
+    assert build_d015_development_visualization(seed=seed, horizon=1).seed == seed
+
+
+@pytest.mark.parametrize("seed", (18349, 50001))
+def test_d015_visualization_sources_reject_non_d015_and_reserved_seeds(
+    seed: int,
+) -> None:
+    for builder in (
+        build_d015_reference_development_visualization,
+        build_d015_development_visualization,
+    ):
+        with pytest.raises(ValueError):
+            builder(seed=seed, horizon=1)
 
 
 def test_renderer_plots_cumulative_mae_and_matches_displayed_statistics() -> None:

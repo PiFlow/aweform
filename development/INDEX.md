@@ -30,6 +30,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-012 | D-011 broad-seed robustness census | CONTINUING | [`D-012-d011-broad-seed-robustness-census.md`](D-012-d011-broad-seed-robustness-census.md) |
 | D-013 | Full-observation shadow viability consequence learner | CONTINUING | [`D-013-full-observation-shadow-viability-consequence-learner.md`](D-013-full-observation-shadow-viability-consequence-learner.md) |
 | D-014 | Full-charge-or-thermal departure scaffold correction | CONTINUING | [`D-014-full-charge-or-thermal-departure.md`](D-014-full-charge-or-thermal-departure.md) |
+| D-015 | D-014 shadow consequence support diagnostic | CONTINUING | [`D-015-d014-shadow-consequence-support-diagnostic.md`](D-015-d014-shadow-consequence-support-diagnostic.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 

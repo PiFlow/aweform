@@ -21,7 +21,7 @@ evaluator visibility metadata; visibility from one developmental mechanism must
 never be inherited by another source.
 
 The registered development sources are `d003`, `d005`, `d006`, `d011`,
-`d012`, `d013-reference`, `d013`, and `d014`:
+`d012`, `d013-reference`, `d013`, `d014`, `d015-reference`, and `d015`:
 
 ```text
 uv run aweform-visualize --source d003 --seed 18141 --horizon 1000
@@ -49,6 +49,18 @@ uv run aweform-visualize \
 uv run aweform-visualize \
   --source d014 \
   --seed 18347 \
+  --horizon 1000 \
+  --interval-ms 60
+
+uv run aweform-visualize \
+  --source d015-reference \
+  --seed 18350 \
+  --horizon 1000 \
+  --interval-ms 60
+
+uv run aweform-visualize \
+  --source d015 \
+  --seed 18350 \
   --horizon 1000 \
   --interval-ms 60
 ```
@@ -85,3 +97,14 @@ D-014 replays the unchanged D-002 ecology and D-011 remainder with
 either normalized energy is fully charged (`energy >= 1.0`) or the existing
 hot-depart thermal threshold (`0.60`) is reached first. It has no learner or
 consequence diagnostics and uses the ordinary two-panel evaluator view.
+
+D-015 provides the same matched two-source pattern on the corrected D-014
+scaffold. `d015-reference` uses `D014Controller` with no learner and the
+ordinary two-panel evaluator view. `d015` attaches the unchanged D-013
+84-weight action-conditioned consequence predictor in shadow only; its
+existing three-target cumulative pre-update MAE panel is labelled
+**SHADOW ONLY — ZERO BEHAVIOURAL INFLUENCE**. Both sources accept only D-015
+development seeds `18350`, `18351`, and `18352`. For the same seed and horizon,
+their physical/controller trajectories are identical. The event-conditioned
+contact diagnostics are retained in the D-015 evaluator artifact rather than
+added as a new live renderer panel.
