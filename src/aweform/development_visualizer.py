@@ -26,6 +26,28 @@ from matplotlib.text import Text
 Coordinate = tuple[float, float]
 
 
+def _cumulative_mean_series(values: Sequence[float]) -> tuple[float, ...]:
+    """Return the prefix mean at each position in a non-empty sequence."""
+    if not values:
+        raise ValueError("cumulative mean series requires at least one value")
+    total = 0.0
+    means: list[float] = []
+    for index, value in enumerate(values, start=1):
+        total += value
+        means.append(total / index)
+    return tuple(means)
+
+
+def _mae_axis_upper_bound(
+    learned_mae: Sequence[float], baseline_mae: Sequence[float]
+) -> float:
+    """Return a target-specific MAE upper bound with modest headroom."""
+    largest_mae = max((*learned_mae, *baseline_mae), default=0.0)
+    if largest_mae == 0.0:
+        return 1.0e-6
+    return largest_mae * 1.1
+
+
 @dataclass(frozen=True, slots=True)
 class DevelopmentVisualizationRange:
     """Inclusive numeric range used by a diagnostic gauge."""
@@ -508,17 +530,22 @@ def build_development_visualization_figure(
                 lambda item: item.observed_delta_charging_contact,
             ),
         )
+        cumulative_mae_series: list[tuple[tuple[float, ...], tuple[float, ...]]] = []
         for index, (axis, (title, predicted_value, observed_value)) in enumerate(
             zip(learner_axes, target_specs, strict=True)
         ):
-            learned_errors = [
+            learned_errors = tuple(
                 abs(predicted_value(item) - observed_value(item))
                 for item in predictions
-            ]
-            baseline_errors = [abs(observed_value(item)) for item in predictions]
-            full_scale = max((*learned_errors, *baseline_errors, 1.0))
+            )
+            baseline_errors = tuple(
+                abs(observed_value(item)) for item in predictions
+            )
+            learned_mae = _cumulative_mean_series(learned_errors)
+            baseline_mae = _cumulative_mean_series(baseline_errors)
+            cumulative_mae_series.append((learned_mae, baseline_mae))
             axis.set_xlim(0.5, max(1.5, len(predictions) + 0.5))
-            axis.set_ylim(0.0, full_scale * 1.1)
+            axis.set_ylim(0.0, _mae_axis_upper_bound(learned_mae, baseline_mae))
             axis.grid(True, alpha=0.25)
             axis.set_ylabel("MAE", fontsize=8)
             axis.set_xlabel("transition", fontsize=8)
@@ -643,53 +670,29 @@ def build_development_visualization_figure(
             predictions = data.consequence_predictions
             if predictions is None:
                 raise RuntimeError("learner axes require consequence predictions")
-            target_specs: tuple[
-                tuple[
-                    Callable[[DevelopmentConsequencePredictionFrame], float],
-                    Callable[[DevelopmentConsequencePredictionFrame], float],
-                ],
-                ...,
-            ] = (
-                (
-                    lambda item: item.predicted_delta_energy,
-                    lambda item: item.observed_delta_energy,
-                ),
-                (
-                    lambda item: item.predicted_delta_thermal,
-                    lambda item: item.observed_delta_thermal,
-                ),
-                (
-                    lambda item: item.predicted_delta_charging_contact,
-                    lambda item: item.observed_delta_charging_contact,
-                ),
-            )
             visible_predictions = predictions[: frame_index + 1]
             transition_numbers = [
                 item.transition_index for item in visible_predictions
             ]
             for (learned_line, baseline_line), stats, (
-                predicted_value,
-                observed_value,
-            ) in zip(
+                learned_mae_series,
+                baseline_mae_series,
+            ), (_title, predicted_value, observed_value) in zip(
                 learner_lines,
                 learner_stats,
+                cumulative_mae_series,
                 target_specs,
                 strict=True,
             ):
-                learned_errors = [
-                    abs(predicted_value(item) - observed_value(item))
-                    for item in visible_predictions
-                ]
-                baseline_errors = [
-                    abs(observed_value(item)) for item in visible_predictions
-                ]
+                visible_learned_mae = learned_mae_series[: frame_index + 1]
+                visible_baseline_mae = baseline_mae_series[: frame_index + 1]
                 current = visible_predictions[-1]
-                learned_line.set_data(transition_numbers, learned_errors)
-                baseline_line.set_data(transition_numbers, baseline_errors)
+                learned_line.set_data(transition_numbers, visible_learned_mae)
+                baseline_line.set_data(transition_numbers, visible_baseline_mae)
                 stats.set_text(
-                    f"learned MAE: {sum(learned_errors) / len(learned_errors):.5f}\n"
+                    f"learned MAE: {visible_learned_mae[-1]:.5f}\n"
                     "zero-change baseline MAE: "
-                    f"{sum(baseline_errors) / len(baseline_errors):.5f}\n"
+                    f"{visible_baseline_mae[-1]:.5f}\n"
                     f"current predicted Δ: {predicted_value(current):.5f}\n"
                     f"current observed Δ: {observed_value(current):.5f}"
                 )

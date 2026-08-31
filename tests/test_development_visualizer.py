@@ -40,6 +40,61 @@ from aweform.development_visualizer import (
 from aweform.env import Action
 
 
+def _synthetic_consequence_data() -> DevelopmentVisualizationData:
+    """Build small exact-value data for renderer MAE and scale assertions."""
+    frames = tuple(
+        DevelopmentVisualizationFrame(
+            transition_index=index,
+            x=0.5,
+            y=0.5,
+            heading=0.0,
+            action="WAIT",
+            decision_mode="CHARGE",
+            energy=0.5,
+            thermal=0.2,
+            charging_contact=True,
+            terminated=False,
+            truncated=index == 3,
+        )
+        for index in range(1, 4)
+    )
+    predictions = tuple(
+        DevelopmentConsequencePredictionFrame(
+            transition_index=index,
+            predicted_delta_energy=predicted_energy,
+            observed_delta_energy=observed_energy,
+            predicted_delta_thermal=0.0,
+            observed_delta_thermal=observed_thermal,
+            predicted_delta_charging_contact=0.0,
+            observed_delta_charging_contact=0.0,
+        )
+        for index, (predicted_energy, observed_energy, observed_thermal) in enumerate(
+            ((0.2, 0.1, 0.001), (-0.1, -0.4, -0.003), (0.4, 0.2, 0.002)),
+            start=1,
+        )
+    )
+    return DevelopmentVisualizationData(
+        source_label="synthetic consequence MAE",
+        seed=1,
+        world_min=(0.0, 0.0),
+        world_max=(1.0, 1.0),
+        station_center=(0.5, 0.5),
+        charging_radius=0.1,
+        energy_range=DevelopmentVisualizationRange(0.0, 1.0),
+        thermal_range=DevelopmentVisualizationRange(0.0, 1.0),
+        frames=frames,
+        visibility=DevelopmentVisualizationVisibility(
+            position_heading="SYNTHETIC EVALUATOR",
+            station_location="SYNTHETIC EVALUATOR",
+            energy="SYNTHETIC ORGANISM",
+            thermal="SYNTHETIC ORGANISM",
+            charging_contact="SYNTHETIC ORGANISM",
+            action_decision_mode="SYNTHETIC CONTROLLER STATE",
+        ),
+        consequence_predictions=predictions,
+    )
+
+
 def test_d003_adapter_preserves_completed_trace_fields() -> None:
     result = run_d003_probe((18141,), horizon=5, collect_trace=True)
     run = result["results"][0]
@@ -413,6 +468,62 @@ def test_d013_renderer_shows_three_targets_and_only_playback_prefix() -> None:
     animation._func(0)
     assert all(len(line.get_xdata()) == 2 for pair in learner_lines for line in pair)
     assert all(max(line.get_xdata()) <= 2 for pair in learner_lines for line in pair)
+
+    animation.event_source.stop()
+    plt.close(figure)
+
+
+def test_renderer_plots_cumulative_mae_and_matches_displayed_statistics() -> None:
+    data = _synthetic_consequence_data()
+    figure, animation = build_development_visualization_figure(data)
+    learner_lines = getattr(figure, "_aweform_learner_lines")
+    learner_axes = getattr(figure, "_aweform_learner_axes")
+    player = getattr(figure, "_aweform_player")
+
+    player.step_forward()
+    player.step_forward()
+    animation._func(0)
+
+    expected_learned = ((0.1, 0.2, 0.2), (0.001, 0.002, 0.002), (0.0, 0.0, 0.0))
+    expected_baseline = (
+        (0.1, 0.25, 0.23333333333333334),
+        (0.001, 0.002, 0.002),
+        (0.0, 0.0, 0.0),
+    )
+    for axis, (learned_line, baseline_line), learned, baseline in zip(
+        learner_axes,
+        learner_lines,
+        expected_learned,
+        expected_baseline,
+        strict=True,
+    ):
+        assert tuple(learned_line.get_xdata()) == (1, 2, 3)
+        assert tuple(baseline_line.get_xdata()) == (1, 2, 3)
+        assert tuple(learned_line.get_ydata()) == pytest.approx(learned)
+        assert tuple(baseline_line.get_ydata()) == pytest.approx(baseline)
+        stats = next(
+            text
+            for text in axis.texts
+            if text.get_text().startswith("learned MAE:")
+        ).get_text().splitlines()
+        displayed_learned = float(stats[0].split(": ", 1)[1])
+        displayed_baseline = float(stats[1].split(": ", 1)[1])
+        assert round(learned_line.get_ydata()[-1], 5) == displayed_learned
+        assert round(baseline_line.get_ydata()[-1], 5) == displayed_baseline
+
+    animation.event_source.stop()
+    plt.close(figure)
+
+
+def test_renderer_uses_independent_cumulative_mae_scales_without_one_floor() -> None:
+    data = _synthetic_consequence_data()
+    figure, animation = build_development_visualization_figure(data)
+    learner_axes = getattr(figure, "_aweform_learner_axes")
+
+    assert learner_axes[0].get_ylim() == pytest.approx((0.0, 0.275))
+    assert learner_axes[1].get_ylim() == pytest.approx((0.0, 0.0022))
+    assert learner_axes[1].get_ylim()[1] < 0.01
+    assert learner_axes[2].get_ylim() == pytest.approx((0.0, 1.0e-6))
 
     animation.event_source.stop()
     plt.close(figure)
