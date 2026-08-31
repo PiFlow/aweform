@@ -764,12 +764,12 @@ def run_d018_probe(
             "all_executed_action_clone_checks_match": selected_branch_matches,
             "reference_final_weight_count": (
                 len(reference.final_weights)
-                * len(d013.D013_OUTPUTS)
+                * len(Action)
                 * d013.D013_FEATURE_DIMENSION
             ),
             "audit_final_weight_count": (
                 len(audit.final_weights)
-                * len(d013.D013_OUTPUTS)
+                * len(Action)
                 * d013.D013_FEATURE_DIMENSION
             ),
         }

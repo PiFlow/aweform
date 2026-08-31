@@ -135,6 +135,10 @@ def test_d018_real_trajectory_and_final_weights_equal_reference() -> None:
     assert equality["all_seeds_relevant_summary_fields_exact_equal"] is True
     assert equality["all_seeds_final_84_weights_exact_equal"] is True
     assert equality["all_seeds_real_rng_state_exact_equal"] is True
+    by_seed = equality["by_seed"]
+    assert isinstance(by_seed, dict)
+    assert by_seed["18359"]["reference_final_weight_count"] == 84
+    assert by_seed["18359"]["audit_final_weight_count"] == 84
     assert result["final_weight_equality"] == {
         "all_seeds_exact_equal": True,
         "weight_count": 84,
