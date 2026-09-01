@@ -36,6 +36,7 @@ from .development_visualizer import (
     DevelopmentVisualizationVisibility,
     adapt_d003_trace,
     build_d003_development_visualization,
+    build_d020_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
 )
@@ -305,6 +306,7 @@ __all__ = [
     "build_exp001_visualization_frames",
     "build_exp001_resource_field_visualization",
     "build_d003_development_visualization",
+    "build_d020_development_visualization",
     "build_development_visualization",
     "build_development_visualization_figure",
     "format_exp001_diagnostic_text",
