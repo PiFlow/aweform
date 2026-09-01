@@ -150,6 +150,52 @@ class DevelopmentConsequencePredictionFrame:
 
 
 @dataclass(frozen=True, slots=True)
+class DevelopmentActionAlternative:
+    """Evaluator-only one-step consequence for one candidate action."""
+
+    transition_index: int
+    action: str
+    physically_executed: bool
+    prior_exact_support_count: int
+    predicted_delta_energy: float
+    actual_delta_energy: float
+    predicted_delta_thermal: float
+    actual_delta_thermal: float
+    predicted_delta_charging_contact: float
+    actual_delta_charging_contact: float
+    candidate_branch_terminated: bool | None = None
+    candidate_branch_truncated: bool | None = None
+
+    def __post_init__(self) -> None:
+        if self.transition_index <= 0:
+            raise ValueError("transition_index must be positive")
+        if not self.action:
+            raise ValueError("action must be non-empty")
+        if not isinstance(self.physically_executed, bool):
+            raise ValueError("physically_executed must be a bool")
+        if (
+            isinstance(self.prior_exact_support_count, bool)
+            or not isinstance(self.prior_exact_support_count, int)
+            or self.prior_exact_support_count < 0
+        ):
+            raise ValueError("prior_exact_support_count must be a non-negative int")
+        for name in (
+            "predicted_delta_energy",
+            "actual_delta_energy",
+            "predicted_delta_thermal",
+            "actual_delta_thermal",
+            "predicted_delta_charging_contact",
+            "actual_delta_charging_contact",
+        ):
+            if not math.isfinite(getattr(self, name)):
+                raise ValueError(f"{name} must be finite")
+        for name in ("candidate_branch_terminated", "candidate_branch_truncated"):
+            value = getattr(self, name)
+            if value is not None and not isinstance(value, bool):
+                raise ValueError(f"{name} must be a bool or None")
+
+
+@dataclass(frozen=True, slots=True)
 class DevelopmentShadowGeometry:
     """Optional evaluator-only shadow morphology for a shared replay."""
 
@@ -201,6 +247,9 @@ class DevelopmentVisualizationData:
     consequence_predictions: (
         tuple[DevelopmentConsequencePredictionFrame, ...] | None
     ) = None
+    action_alternatives: (
+        tuple[tuple[DevelopmentActionAlternative, ...], ...] | None
+    ) = None
     shadow_geometry: DevelopmentShadowGeometry | None = None
 
     def __post_init__(self) -> None:
@@ -237,6 +286,44 @@ class DevelopmentVisualizationData:
                 raise ValueError(
                     "consequence prediction indices must align with frames"
                 )
+        if self.action_alternatives is not None:
+            if len(self.action_alternatives) != len(self.frames):
+                raise ValueError(
+                    "action alternatives must align one-to-one with frames"
+                )
+            for frame, alternatives in zip(
+                self.frames, self.action_alternatives, strict=True
+            ):
+                if len(alternatives) != 4:
+                    raise ValueError(
+                        "each action alternative group must contain four candidates"
+                    )
+                if sum(
+                    alternative.physically_executed for alternative in alternatives
+                ) != 1:
+                    raise ValueError(
+                        "each action alternative group needs exactly one executed"
+                    )
+                executed = next(
+                    alternative
+                    for alternative in alternatives
+                    if alternative.physically_executed
+                )
+                if executed.action != frame.action:
+                    raise ValueError(
+                        "executed action alternative must match the real frame action"
+                    )
+                if any(
+                    alternative.transition_index != frame.transition_index
+                    for alternative in alternatives
+                ):
+                    raise ValueError(
+                        "action alternative indices must align with frames"
+                    )
+                if len({alternative.action for alternative in alternatives}) != 4:
+                    raise ValueError(
+                        "action alternatives must have four unique actions"
+                    )
         if self.station_center is None:
             if self.charging_radius is not None:
                 raise ValueError("charging_radius requires station_center")
@@ -330,9 +417,22 @@ def build_development_visualization_figure(
     if interval_ms <= 0:
         raise ValueError("interval_ms must be positive")
 
+    has_action_alternatives = data.action_alternatives is not None
     has_consequence_predictions = data.consequence_predictions is not None
+    alternative_axis: Axes | None = None
     learner_axes: list[Axes] = []
-    if has_consequence_predictions:
+    if has_action_alternatives:
+        figure = plt.figure(figsize=(20, 8), constrained_layout=True)
+        grid = figure.add_gridspec(
+            1,
+            3,
+            width_ratios=(1.35, 0.85, 1.65),
+            wspace=0.3,
+        )
+        world_axis = figure.add_subplot(grid[0, 0])
+        diagnostic_axis = figure.add_subplot(grid[0, 1])
+        alternative_axis = figure.add_subplot(grid[0, 2])
+    elif has_consequence_predictions:
         figure = plt.figure(figsize=(18, 8), constrained_layout=True)
         grid = figure.add_gridspec(
             3,
@@ -698,6 +798,53 @@ def build_development_visualization_figure(
             learner_lines.append((learned_line, baseline_line))
             learner_stats.append(stats)
 
+    alternative_rows: list[Text] = []
+    alternative_warning: Text | None = None
+    if alternative_axis is not None:
+        alternative_axis.set_xlim(0.0, 1.0)
+        alternative_axis.set_ylim(0.0, 1.0)
+        alternative_axis.axis("off")
+        alternative_axis.set_title(
+            "ACTION ALTERNATIVES — EVALUATOR ONLY", loc="left", fontsize=11
+        )
+        alternative_warning = alternative_axis.text(
+            0.02,
+            0.96,
+            "EVALUATOR-ONLY ACTION ALTERNATIVES\n"
+            "D-014 CHOSE THE REAL ACTION BEFORE SCORING\n"
+            "GHOST OUTCOMES DO NOT AFFECT BEHAVIOUR OR LEARNING",
+            va="top",
+            fontsize=8.5,
+            family="monospace",
+            color="tab:red",
+            bbox={
+                "facecolor": "#fff4f4",
+                "edgecolor": "tab:red",
+                "linewidth": 1.0,
+            },
+        )
+        alternative_axis.text(
+            0.02,
+            0.66,
+            "D-013 PRE-UPDATE PREDICTION  vs  D-018 ISOLATED BRANCH ACTUAL\n"
+            "E/T/C = Δenergy / Δthermal / Δcharging contact",
+            va="top",
+            fontsize=8,
+            family="monospace",
+        )
+        alternative_rows = [
+            alternative_axis.text(
+                0.02,
+                y,
+                "",
+                va="top",
+                fontsize=8.5,
+                family="monospace",
+                bbox={"facecolor": "white", "edgecolor": "0.7"},
+            )
+            for y in (0.54, 0.40, 0.26, 0.12)
+        ]
+
     player = DevelopmentVisualizationPlayer(len(data.frames))
 
     def render(frame_index: int) -> tuple[Artist, ...]:
@@ -854,6 +1001,45 @@ def build_development_visualization_figure(
                     f"current observed Δ: {observed_value(current):.5f}"
                 )
                 rendered.extend((learned_line, baseline_line, stats))
+        if alternative_axis is not None:
+            alternatives = data.action_alternatives
+            if alternatives is None:
+                raise RuntimeError("alternative axis requires action alternatives")
+            current_alternatives = alternatives[frame_index]
+            for text_artist, alternative in zip(
+                alternative_rows, current_alternatives, strict=True
+            ):
+                status = (
+                    "REAL / EXECUTED"
+                    if alternative.physically_executed
+                    else "GHOST / UNEXECUTED"
+                )
+                text_artist.set_text(
+                    f"{alternative.action:<13} {status}\n"
+                    "prior exact real support: "
+                    f"{alternative.prior_exact_support_count}\n"
+                    f"E  pred {alternative.predicted_delta_energy:+.5f}"
+                    f"  actual {alternative.actual_delta_energy:+.5f}\n"
+                    f"T  pred {alternative.predicted_delta_thermal:+.5f}"
+                    f"  actual {alternative.actual_delta_thermal:+.5f}\n"
+                    f"C  pred {alternative.predicted_delta_charging_contact:+.5f}"
+                    f"  actual {alternative.actual_delta_charging_contact:+.5f}"
+                )
+                text_artist.set_color(
+                    "#155724" if alternative.physically_executed else "#444444"
+                )
+                text_artist.set_bbox({
+                    "facecolor": (
+                        "#e8f5e9" if alternative.physically_executed else "#f4f4f4"
+                    ),
+                    "edgecolor": (
+                        "tab:green" if alternative.physically_executed else "0.7"
+                    ),
+                    "linewidth": 1.5 if alternative.physically_executed else 0.8,
+                })
+                rendered.append(text_artist)
+            if alternative_warning is not None:
+                rendered.append(alternative_warning)
         return tuple(rendered)
 
     render(0)
@@ -909,12 +1095,14 @@ def build_development_visualization_figure(
         "DEVELOPMENT / EVALUATOR VIEW — NOT CONFIRMATORY EVIDENCE",
         fontsize=12,
     )
-    if not learner_axes:
+    if not learner_axes and alternative_axis is None:
         figure.tight_layout(rect=(0.0, 0.0, 1.0, 0.91))
     setattr(figure, "_aweform_player", player)
     setattr(figure, "_aweform_animation", animation)
     setattr(figure, "_aweform_learner_axes", tuple(learner_axes))
     setattr(figure, "_aweform_learner_lines", tuple(learner_lines))
+    setattr(figure, "_aweform_alternative_axis", alternative_axis)
+    setattr(figure, "_aweform_alternative_rows", tuple(alternative_rows))
     return figure, animation
 
 
@@ -1684,6 +1872,217 @@ def build_d017_development_visualization(
     )
 
 
+def _validate_d018_visualization_seed(seed: int) -> None:
+    """Validate one D-018 visualization seed against both seed guards."""
+    from .d018 import _validate_d018_development_seeds
+
+    _validate_d018_development_seeds((seed,))
+
+
+def _d018_mapping_value(
+    mapping: Mapping[str, object], name: str
+) -> object:
+    if name not in mapping:
+        raise ValueError(f"D-018 visualization field {name!r} is missing")
+    return mapping[name]
+
+
+def _d018_string(mapping: Mapping[str, object], name: str) -> str:
+    value = _d018_mapping_value(mapping, name)
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"D-018 visualization field {name!r} must be non-empty text")
+    return value
+
+
+def _d018_float(mapping: Mapping[str, object], name: str) -> float:
+    value = _d018_mapping_value(mapping, name)
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise ValueError(f"D-018 visualization field {name!r} must be numeric")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"D-018 visualization field {name!r} must be finite")
+    return number
+
+
+def _d018_int(mapping: Mapping[str, object], name: str) -> int:
+    value = _d018_mapping_value(mapping, name)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"D-018 visualization field {name!r} must be an integer")
+    return value
+
+
+def _d018_bool(mapping: Mapping[str, object], name: str) -> bool:
+    value = _d018_mapping_value(mapping, name)
+    if not isinstance(value, bool):
+        raise ValueError(f"D-018 visualization field {name!r} must be a bool")
+    return value
+
+
+def build_d018_development_visualization(
+    *,
+    seed: int,
+    horizon: int = 1000,
+) -> DevelopmentVisualizationData:
+    """Replay D-018 into a display-only real trace and alternative panel."""
+    from . import d018
+    from .d002 import (
+        D002_AMBIENT_THERMAL_STATE,
+        D002_UPPER_THERMAL_FAILURE_BOUNDARY,
+    )
+    from .d003 import HOT_DEPART_THRESHOLD
+    from .env import Action
+    from .exp003 import EXP003StationConfig
+
+    _validate_d018_visualization_seed(seed)
+    if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon <= 0:
+        raise ValueError("horizon must be a positive integer")
+
+    # This is the accepted D-018 runner's completed evaluator trace.  It is
+    # deliberately built before any Matplotlib object is created.
+    outcome = d018._run_seed(seed, horizon=horizon, counterfactual_audit=True)
+    trace = outcome.trace
+    if not trace:
+        raise RuntimeError("D-018 visualization replay produced no real transitions")
+
+    frames: list[DevelopmentVisualizationFrame] = []
+    for record in trace:
+        next_state_object = _d018_mapping_value(record, "next_visible_state")
+        if not isinstance(next_state_object, dict):
+            raise RuntimeError("D-018 next visible state is not an object")
+        next_state = next_state_object
+        position = _coordinate_from_sequence(
+            _d018_mapping_value(record, "position_after"), "D-018 position_after"
+        )
+        frames.append(
+            DevelopmentVisualizationFrame(
+                transition_index=_d018_int(record, "transition_index"),
+                x=position[0],
+                y=position[1],
+                heading=_d018_float(record, "heading_after"),
+                action=_d018_string(record, "action"),
+                decision_mode=_d018_string(record, "mode_before"),
+                energy=_d018_float(next_state, "normalized_energy"),
+                thermal=_d018_float(next_state, "normalized_thermal"),
+                charging_contact=_d018_bool(next_state, "charging_contact"),
+                terminated=_d018_bool(record, "terminated"),
+                truncated=_d018_bool(record, "truncated"),
+                beacon_left=_d018_float(next_state, "beacon_left"),
+                beacon_forward=_d018_float(next_state, "beacon_forward"),
+                beacon_right=_d018_float(next_state, "beacon_right"),
+            )
+        )
+
+    audit_object = outcome.summary.get("audit")
+    if not isinstance(audit_object, dict):
+        raise RuntimeError("D-018 visualization audit rows are unavailable")
+    rows_object = audit_object.get("rows")
+    if not isinstance(rows_object, list):
+        raise RuntimeError("D-018 visualization candidate rows are unavailable")
+    rows_by_transition: dict[int, list[dict[str, object]]] = {}
+    for row_object in rows_object:
+        if not isinstance(row_object, dict):
+            raise RuntimeError("D-018 candidate row is not an object")
+        row = row_object
+        transition_index = _d018_int(row, "transition_index")
+        rows_by_transition.setdefault(transition_index, []).append(row)
+
+    action_order = tuple(action.name for action in Action)
+    alternatives: list[tuple[DevelopmentActionAlternative, ...]] = []
+    for frame in frames:
+        transition_rows = rows_by_transition.get(frame.transition_index, [])
+        if len(transition_rows) != len(action_order):
+            raise RuntimeError(
+                "D-018 visualization requires one row for each candidate action"
+            )
+        try:
+            ordered_rows = sorted(
+                transition_rows,
+                key=lambda row: action_order.index(
+                    _d018_string(row, "candidate_action")
+                ),
+            )
+        except ValueError as error:
+            raise RuntimeError(
+                "D-018 row contains an unknown candidate action"
+            ) from error
+        alternatives.append(
+            tuple(
+                DevelopmentActionAlternative(
+                    transition_index=_d018_int(row, "transition_index"),
+                    action=_d018_string(row, "candidate_action"),
+                    physically_executed=(
+                        _d018_string(row, "candidate_action") == frame.action
+                    ),
+                    prior_exact_support_count=_d018_int(
+                        row, "prior_exact_state_action_support_count"
+                    ),
+                    predicted_delta_energy=_d018_float(
+                        row, "predicted_delta_energy"
+                    ),
+                    actual_delta_energy=_d018_float(row, "actual_delta_energy"),
+                    predicted_delta_thermal=_d018_float(
+                        row, "predicted_delta_thermal"
+                    ),
+                    actual_delta_thermal=_d018_float(row, "actual_delta_thermal"),
+                    predicted_delta_charging_contact=_d018_float(
+                        row, "predicted_delta_charging_contact"
+                    ),
+                    actual_delta_charging_contact=_d018_float(
+                        row, "actual_delta_charging_contact"
+                    ),
+                    candidate_branch_terminated=_d018_bool(
+                        row, "candidate_branch_terminated"
+                    ),
+                    candidate_branch_truncated=_d018_bool(
+                        row, "candidate_branch_truncated"
+                    ),
+                )
+                for row in ordered_rows
+            )
+        )
+
+    config = EXP003StationConfig(episode_horizon=horizon)
+    evaluator_object = outcome.summary.get("evaluator_only")
+    if not isinstance(evaluator_object, dict):
+        raise RuntimeError("D-018 evaluator metadata is unavailable")
+    station = _coordinate_from_sequence(
+        _d018_mapping_value(evaluator_object, "station_position"),
+        "D-018 station_position",
+    )
+    return DevelopmentVisualizationData(
+        source_label=(
+            "D-018 evaluator-only action alternatives — real D-014 trajectory"
+        ),
+        seed=seed,
+        world_min=config.world_min,
+        world_max=config.world_max,
+        station_center=station,
+        charging_radius=config.charging_radius,
+        energy_range=DevelopmentVisualizationRange(0.0, 1.0),
+        thermal_range=DevelopmentVisualizationRange(
+            D002_AMBIENT_THERMAL_STATE,
+            D002_UPPER_THERMAL_FAILURE_BOUNDARY,
+        ),
+        frames=tuple(frames),
+        visibility=DevelopmentVisualizationVisibility(
+            position_heading="EVALUATOR ONLY",
+            station_location="EVALUATOR ONLY",
+            energy="CTRL + EVAL",
+            thermal="CTRL + EVAL",
+            charging_contact="CTRL + EVAL",
+            action_decision_mode=(
+                "ORGANISM-OWNED / CONTROLLER STATE SHOWN BY EVALUATOR"
+            ),
+        ),
+        probe_distance=config.probe_distance,
+        sensor_angle=config.sensor_angle,
+        thermal_threshold=HOT_DEPART_THRESHOLD,
+        thermal_threshold_label="HOT DEPART = 0.60",
+        energy_label="ENERGY (NORMALIZED)",
+        action_alternatives=tuple(alternatives),
+    )
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
@@ -1699,6 +2098,7 @@ DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     "d015-reference": build_d015_reference_development_visualization,
     "d015": build_d015_development_visualization,
     "d017": build_d017_development_visualization,
+    "d018": build_d018_development_visualization,
 }
 
 

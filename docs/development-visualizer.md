@@ -21,7 +21,8 @@ evaluator visibility metadata; visibility from one developmental mechanism must
 never be inherited by another source.
 
 The registered development sources are `d003`, `d005`, `d006`, `d011`,
-`d012`, `d013-reference`, `d013`, `d014`, `d015-reference`, and `d015`:
+`d012`, `d013-reference`, `d013`, `d014`, `d015-reference`, `d015`, `d017`,
+and `d018`:
 
 ```text
 uv run aweform-visualize --source d003 --seed 18141 --horizon 1000
@@ -63,6 +64,12 @@ uv run aweform-visualize \
   --seed 18350 \
   --horizon 1000 \
   --interval-ms 60
+
+uv run aweform-visualize \
+  --source d018 \
+  --seed 18361 \
+  --horizon 1000 \
+  --interval-ms 90
 ```
 
 All adapters return the same neutral model. D-006 regime and learned-state
@@ -108,3 +115,12 @@ development seeds `18350`, `18351`, and `18352`. For the same seed and horizon,
 their physical/controller trajectories are identical. The event-conditioned
 contact diagnostics are retained in the D-015 evaluator artifact rather than
 added as a new live renderer panel.
+
+D-018 adds a four-row evaluator-only action-alternative panel beside the real
+D-014 lifetime. The real D-014 trajectory remains behaviourally authoritative;
+all four unchanged D-013 action predictions are shown pre-update, and the
+unexecuted actuals come from isolated evaluator clone results. Only the
+physically executed transition updates the learner afterward. Exact prior
+support means prior physically executed exact visible-state/action support,
+with no rounding or nearest-neighbour matching. This is a development/evaluator
+display only and is not new D-018 evidence.
