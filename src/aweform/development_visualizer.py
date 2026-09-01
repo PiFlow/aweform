@@ -163,8 +163,6 @@ class DevelopmentActionAlternative:
     actual_delta_thermal: float
     predicted_delta_charging_contact: float
     actual_delta_charging_contact: float
-    candidate_branch_terminated: bool | None = None
-    candidate_branch_truncated: bool | None = None
 
     def __post_init__(self) -> None:
         if self.transition_index <= 0:
@@ -189,12 +187,6 @@ class DevelopmentActionAlternative:
         ):
             if not math.isfinite(getattr(self, name)):
                 raise ValueError(f"{name} must be finite")
-        for name in ("candidate_branch_terminated", "candidate_branch_truncated"):
-            value = getattr(self, name)
-            if value is not None and not isinstance(value, bool):
-                raise ValueError(f"{name} must be a bool or None")
-
-
 @dataclass(frozen=True, slots=True)
 class DevelopmentShadowGeometry:
     """Optional evaluator-only shadow morphology for a shared replay."""
@@ -250,6 +242,8 @@ class DevelopmentVisualizationData:
     action_alternatives: (
         tuple[tuple[DevelopmentActionAlternative, ...], ...] | None
     ) = None
+    action_alternative_warning: str | None = None
+    action_alternative_provenance: str | None = None
     shadow_geometry: DevelopmentShadowGeometry | None = None
 
     def __post_init__(self) -> None:
@@ -323,6 +317,12 @@ class DevelopmentVisualizationData:
                 if len({alternative.action for alternative in alternatives}) != 4:
                     raise ValueError(
                         "action alternatives must have four unique actions"
+                    )
+            for name in ("action_alternative_warning", "action_alternative_provenance"):
+                value = getattr(self, name)
+                if not isinstance(value, str) or not value:
+                    raise ValueError(
+                        f"{name} is required when action alternatives are present"
                     )
         if self.station_center is None:
             if self.charging_radius is not None:
@@ -807,12 +807,17 @@ def build_development_visualization_figure(
         alternative_axis.set_title(
             "ACTION ALTERNATIVES — EVALUATOR ONLY", loc="left", fontsize=11
         )
+        if (
+            data.action_alternative_warning is None
+            or data.action_alternative_provenance is None
+        ):
+            raise RuntimeError(
+                "action alternative display metadata is incomplete"
+            )
         alternative_warning = alternative_axis.text(
             0.02,
             0.96,
-            "EVALUATOR-ONLY ACTION ALTERNATIVES\n"
-            "D-014 CHOSE THE REAL ACTION BEFORE SCORING\n"
-            "GHOST OUTCOMES DO NOT AFFECT BEHAVIOUR OR LEARNING",
+            data.action_alternative_warning,
             va="top",
             fontsize=8.5,
             family="monospace",
@@ -826,8 +831,7 @@ def build_development_visualization_figure(
         alternative_axis.text(
             0.02,
             0.66,
-            "D-013 PRE-UPDATE PREDICTION  vs  D-018 ISOLATED BRANCH ACTUAL\n"
-            "E/T/C = Δenergy / Δthermal / Δcharging contact",
+            data.action_alternative_provenance,
             va="top",
             fontsize=8,
             family="monospace",
@@ -2030,12 +2034,6 @@ def build_d018_development_visualization(
                     actual_delta_charging_contact=_d018_float(
                         row, "actual_delta_charging_contact"
                     ),
-                    candidate_branch_terminated=_d018_bool(
-                        row, "candidate_branch_terminated"
-                    ),
-                    candidate_branch_truncated=_d018_bool(
-                        row, "candidate_branch_truncated"
-                    ),
                 )
                 for row in ordered_rows
             )
@@ -2080,6 +2078,15 @@ def build_d018_development_visualization(
         thermal_threshold_label="HOT DEPART = 0.60",
         energy_label="ENERGY (NORMALIZED)",
         action_alternatives=tuple(alternatives),
+        action_alternative_warning=(
+            "EVALUATOR-ONLY ACTION ALTERNATIVES\n"
+            "D-014 CHOSE THE REAL ACTION BEFORE SCORING\n"
+            "GHOST OUTCOMES DO NOT AFFECT BEHAVIOUR OR LEARNING"
+        ),
+        action_alternative_provenance=(
+            "D-013 PRE-UPDATE PREDICTION  vs  D-018 ISOLATED BRANCH ACTUAL\n"
+            "E/T/C = Δenergy / Δthermal / Δcharging contact"
+        ),
     )
 
 
