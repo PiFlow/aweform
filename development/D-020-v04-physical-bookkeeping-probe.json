@@ -1,0 +1,470 @@
+{
+  "config": {
+    "ambient_temperature_c": 23.0,
+    "battery_capacity_j": 5328.0,
+    "beacon_scale": 0.25,
+    "bulk_charge_power_w": 1.85,
+    "bulk_soc_upper": 0.9,
+    "charge_efficiency": 0.9,
+    "charging_radius": 0.1,
+    "dt_seconds": 0.1,
+    "electronics_body_heat_w": 0.15,
+    "electronics_electrical_power_w": 0.15,
+    "episode_horizon": 30000,
+    "hard_shutdown_c": 65.0,
+    "initial_battery_j": 2664.0,
+    "initial_body_temperature_c": 23.0,
+    "move_actuator_body_heat_w": 0.0,
+    "move_actuator_electrical_power_w": 1.0,
+    "movement_distance_world_units": 0.05,
+    "preferred_operating_ceiling_c": 45.0,
+    "probe_distance": 0.1,
+    "protective_shutdown_c": 60.0,
+    "provenance": {
+      "actuator_body_heat_w": "LOWER-BOUND SENSITIVITY ASSUMPTION / UNKNOWN \u2014 NEEDS MEASUREMENT",
+      "actuator_electrical_power_w": "ACTION SEMANTICS / engineering estimate",
+      "ambient_temperature_c": "DESIGN CHOICE / evaluator-only",
+      "battery_capacity_j": "DERIVED from 3.7 V * 0.500 Ah * 3600 * 0.80; engineering estimate for usable fraction",
+      "charge_efficiency": "ENGINEERING ESTIMATE",
+      "charge_taper_and_restart": "DESIGN CHOICE / first-slice simple SOC rule",
+      "dt_seconds": "DESIGN CHOICE / PROVISIONAL PHYSICALIZATION",
+      "electronics_body_heat_w": "ENGINEERING ESTIMATE / first lumped radio-disabled local-heat approximation",
+      "electronics_electrical_power_w": "ENGINEERING ESTIMATE",
+      "hard_shutdown_c": "ADR 0014 / emergency hard simulator shutdown",
+      "initial_battery_j": "DESIGN CHOICE",
+      "initial_body_temperature_c": "DESIGN CHOICE",
+      "movement_distance_world_units": "HISTORICAL SEMANTICS + PROVISIONAL PHYSICAL MAPPING",
+      "preferred_operating_ceiling_c": "ADR 0014 / conservative preferred operating ceiling",
+      "protective_shutdown_c": "ADR 0014 / protective simulator thermal shutdown",
+      "thermal_capacitance_j_per_k": "ENGINEERING ESTIMATE / D-019 illustrative centre",
+      "thermal_conductance_w_per_k": "ENGINEERING ESTIMATE / D-019 candidate centre",
+      "visible_temperature_bounds": "ADR 0014 / fixed first-slice normalization bounds",
+      "world_scale_metres_per_unit": "DESIGN CHOICE / PROVISIONAL PHYSICALIZATION"
+    },
+    "resume_soc": 0.98,
+    "sensor_angle": 0.7853981633974483,
+    "taper_1_charge_power_w": 0.925,
+    "taper_1_soc_upper": 0.95,
+    "taper_2_charge_power_w": 0.37,
+    "thermal_capacitance_j_per_k": 180.0,
+    "thermal_conductance_w_per_k": 0.25,
+    "turn_actuator_body_heat_w": 0.0,
+    "turn_actuator_electrical_power_w": 0.65,
+    "turn_angle": 0.7853981633974483,
+    "visible_temperature_max_c": 80.0,
+    "visible_temperature_min_c": 0.0,
+    "wait_actuator_body_heat_w": 0.0,
+    "wait_actuator_electrical_power_w": 0.0,
+    "world_max": [
+      1.0,
+      1.0
+    ],
+    "world_min": [
+      0.0,
+      0.0
+    ],
+    "world_scale_metres_per_unit": 1.0
+  },
+  "identifier": "D-020",
+  "lane": "Development",
+  "probes": {
+    "DOCKED_WAIT_CHARGE": {
+      "battery_end_j": 5299.214999999372,
+      "battery_max_j": 5328.0,
+      "battery_min_j": 2664.0,
+      "battery_start_j": 2664.0,
+      "body_temperature_end_c": 23.775429720091857,
+      "body_temperature_max_c": 24.172935197773615,
+      "body_temperature_min_c": 23.0,
+      "body_temperature_start_c": 23.0,
+      "boundary_clamped_transition_count": 0,
+      "charge_phase_counts": {
+        "BULK": 12537,
+        "OFF": 0,
+        "STANDBY": 1919,
+        "TAPER_1": 3437,
+        "TAPER_2": 12107
+      },
+      "charging_heat_zero_after_termination": true,
+      "cumulative_actual_stored_energy_j": 3085.2150000018814,
+      "cumulative_actuator_electrical_energy_j": 0.0,
+      "cumulative_charger_input_energy_j": 3428.0166666687574,
+      "cumulative_charging_loss_heat_energy_j": 342.8016666668759,
+      "cumulative_electronics_body_heat_energy_j": 450.0,
+      "cumulative_electronics_electrical_energy_j": 450.0,
+      "cumulative_environmental_exchange_energy_j": -653.2243170503959,
+      "cumulative_requested_stored_energy_j": 3085.2265,
+      "emergency_hard_shutdown": false,
+      "energy_normalized_end": 0.994597409909792,
+      "energy_normalized_max": 1.0,
+      "energy_normalized_min": 0.5,
+      "energy_normalized_start": 0.5,
+      "first_full_latch_step": 28081,
+      "first_phase_steps": {
+        "BULK": 1,
+        "OFF": null,
+        "STANDBY": 28082,
+        "TAPER_1": 12538,
+        "TAPER_2": 15975
+      },
+      "headroom_limited_charge_event_count": 1,
+      "limitation": null,
+      "name": "DOCKED_WAIT_CHARGE",
+      "no_charging_occurred": false,
+      "physical_seconds": 3000.0,
+      "preferred_ceiling_reached": false,
+      "protective_shutdown": false,
+      "seed_status": "seedless fixed-state evaluator probe",
+      "temperature_normalized_end": 0.2971928715011482,
+      "temperature_normalized_max": 0.3021616899721702,
+      "temperature_normalized_min": 0.2875,
+      "temperature_normalized_start": 0.2875,
+      "termination_reason": null,
+      "transitions": 30000,
+      "transitions_table": []
+    },
+    "MIXED_ACTION_CAUSAL_ACCOUNTING": {
+      "battery_end_j": 2663.9300000000017,
+      "battery_max_j": 2664.0450000000014,
+      "battery_min_j": 2663.5950000000007,
+      "battery_start_j": 2664.0,
+      "body_temperature_end_c": 23.001486780144614,
+      "body_temperature_max_c": 23.001486780144614,
+      "body_temperature_min_c": 23.0,
+      "body_temperature_start_c": 23.0,
+      "boundary_clamped_transition_count": 0,
+      "charge_phase_counts": {
+        "BULK": 5,
+        "OFF": 6,
+        "STANDBY": 0,
+        "TAPER_1": 0,
+        "TAPER_2": 0
+      },
+      "charging_heat_zero_after_termination": true,
+      "cumulative_actual_stored_energy_j": 0.9250000000000002,
+      "cumulative_actuator_electrical_energy_j": 0.8300000000000001,
+      "cumulative_charger_input_energy_j": 1.0277777777777781,
+      "cumulative_charging_loss_heat_energy_j": 0.10277777777777787,
+      "cumulative_electronics_body_heat_energy_j": 0.16499999999999998,
+      "cumulative_electronics_electrical_energy_j": 0.16499999999999998,
+      "cumulative_environmental_exchange_energy_j": -0.00015735174805326936,
+      "cumulative_requested_stored_energy_j": 0.9250000000000002,
+      "emergency_hard_shutdown": false,
+      "energy_normalized_end": 0.4999868618618622,
+      "energy_normalized_max": 0.5000084459459462,
+      "energy_normalized_min": 0.4999239864864866,
+      "energy_normalized_start": 0.5,
+      "first_full_latch_step": null,
+      "first_phase_steps": {
+        "BULK": 6,
+        "OFF": 1,
+        "STANDBY": null,
+        "TAPER_1": null,
+        "TAPER_2": null
+      },
+      "headroom_limited_charge_event_count": 0,
+      "limitation": null,
+      "name": "MIXED_ACTION_CAUSAL_ACCOUNTING",
+      "no_charging_occurred": false,
+      "physical_seconds": 1.1,
+      "preferred_ceiling_reached": false,
+      "protective_shutdown": false,
+      "seed_status": "seedless fixed-state evaluator probe",
+      "temperature_normalized_end": 0.2875185847518077,
+      "temperature_normalized_max": 0.2875185847518077,
+      "temperature_normalized_min": 0.2875,
+      "temperature_normalized_start": 0.2875,
+      "termination_reason": null,
+      "transitions": 11,
+      "transitions_table": [
+        {
+          "action": "WAIT",
+          "actual_stored_power_w": 0.0,
+          "battery_after_j": 2663.985,
+          "battery_before_j": 2664.0,
+          "body_temperature_after_c": 23.000083333333333,
+          "charge_phase": "OFF",
+          "charging_body_heat_w": 0.0,
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "position_after": [
+            0.26,
+            0.5
+          ],
+          "position_before": [
+            0.26,
+            0.5
+          ],
+          "requested_stored_power_w": 0.0,
+          "step": 1
+        },
+        {
+          "action": "TURN_LEFT",
+          "actual_stored_power_w": 0.0,
+          "battery_after_j": 2663.905,
+          "battery_before_j": 2663.985,
+          "body_temperature_after_c": 23.000166655092592,
+          "charge_phase": "OFF",
+          "charging_body_heat_w": 0.0,
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "position_after": [
+            0.26,
+            0.5
+          ],
+          "position_before": [
+            0.26,
+            0.5
+          ],
+          "requested_stored_power_w": 0.0,
+          "step": 2
+        },
+        {
+          "action": "TURN_RIGHT",
+          "actual_stored_power_w": 0.0,
+          "battery_after_j": 2663.8250000000003,
+          "battery_before_j": 2663.905,
+          "body_temperature_after_c": 23.000249965279384,
+          "charge_phase": "OFF",
+          "charging_body_heat_w": 0.0,
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "position_after": [
+            0.26,
+            0.5
+          ],
+          "position_before": [
+            0.26,
+            0.5
+          ],
+          "requested_stored_power_w": 0.0,
+          "step": 3
+        },
+        {
+          "action": "MOVE_FORWARD",
+          "actual_stored_power_w": 0.0,
+          "battery_after_j": 2663.7100000000005,
+          "battery_before_j": 2663.8250000000003,
+          "body_temperature_after_c": 23.000333263895318,
+          "charge_phase": "OFF",
+          "charging_body_heat_w": 0.0,
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "position_after": [
+            0.31,
+            0.5
+          ],
+          "position_before": [
+            0.26,
+            0.5
+          ],
+          "requested_stored_power_w": 0.0,
+          "step": 4
+        },
+        {
+          "action": "MOVE_FORWARD",
+          "actual_stored_power_w": 0.0,
+          "battery_after_j": 2663.5950000000007,
+          "battery_before_j": 2663.7100000000005,
+          "body_temperature_after_c": 23.000416550942,
+          "charge_phase": "OFF",
+          "charging_body_heat_w": 0.0,
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "position_after": [
+            0.36,
+            0.5
+          ],
+          "position_before": [
+            0.31,
+            0.5
+          ],
+          "requested_stored_power_w": 0.0,
+          "step": 5
+        },
+        {
+          "action": "MOVE_FORWARD",
+          "actual_stored_power_w": 1.85,
+          "battery_after_j": 2663.665000000001,
+          "battery_before_j": 2663.5950000000007,
+          "body_temperature_after_c": 23.0006140239519,
+          "charge_phase": "BULK",
+          "charging_body_heat_w": 0.2055555555555557,
+          "charging_contact_after": true,
+          "charging_contact_before": false,
+          "position_after": [
+            0.41,
+            0.5
+          ],
+          "position_before": [
+            0.36,
+            0.5
+          ],
+          "requested_stored_power_w": 1.85,
+          "step": 6
+        },
+        {
+          "action": "WAIT",
+          "actual_stored_power_w": 1.85,
+          "battery_after_j": 2663.835000000001,
+          "battery_before_j": 2663.665000000001,
+          "body_temperature_after_c": 23.000811469534995,
+          "charge_phase": "BULK",
+          "charging_body_heat_w": 0.2055555555555557,
+          "charging_contact_after": true,
+          "charging_contact_before": true,
+          "position_after": [
+            0.41,
+            0.5
+          ],
+          "position_before": [
+            0.41,
+            0.5
+          ],
+          "requested_stored_power_w": 1.85,
+          "step": 7
+        },
+        {
+          "action": "MOVE_FORWARD",
+          "actual_stored_power_w": 1.85,
+          "battery_after_j": 2663.905000000001,
+          "battery_before_j": 2663.835000000001,
+          "body_temperature_after_c": 23.00100888769509,
+          "charge_phase": "BULK",
+          "charging_body_heat_w": 0.2055555555555557,
+          "charging_contact_after": true,
+          "charging_contact_before": true,
+          "position_after": [
+            0.45999999999999996,
+            0.5
+          ],
+          "position_before": [
+            0.41,
+            0.5
+          ],
+          "requested_stored_power_w": 1.85,
+          "step": 8
+        },
+        {
+          "action": "MOVE_FORWARD",
+          "actual_stored_power_w": 1.85,
+          "battery_after_j": 2663.9750000000013,
+          "battery_before_j": 2663.905000000001,
+          "body_temperature_after_c": 23.001206278435998,
+          "charge_phase": "BULK",
+          "charging_body_heat_w": 0.2055555555555557,
+          "charging_contact_after": true,
+          "charging_contact_before": true,
+          "position_after": [
+            0.51,
+            0.5
+          ],
+          "position_before": [
+            0.45999999999999996,
+            0.5
+          ],
+          "requested_stored_power_w": 1.85,
+          "step": 9
+        },
+        {
+          "action": "MOVE_FORWARD",
+          "actual_stored_power_w": 1.85,
+          "battery_after_j": 2664.0450000000014,
+          "battery_before_j": 2663.9750000000013,
+          "body_temperature_after_c": 23.001403641761524,
+          "charge_phase": "BULK",
+          "charging_body_heat_w": 0.2055555555555557,
+          "charging_contact_after": true,
+          "charging_contact_before": true,
+          "position_after": [
+            0.56,
+            0.5
+          ],
+          "position_before": [
+            0.51,
+            0.5
+          ],
+          "requested_stored_power_w": 1.85,
+          "step": 10
+        },
+        {
+          "action": "MOVE_FORWARD",
+          "actual_stored_power_w": 0.0,
+          "battery_after_j": 2663.9300000000017,
+          "battery_before_j": 2664.0450000000014,
+          "body_temperature_after_c": 23.001486780144614,
+          "charge_phase": "OFF",
+          "charging_body_heat_w": 0.0,
+          "charging_contact_after": false,
+          "charging_contact_before": true,
+          "position_after": [
+            0.6100000000000001,
+            0.5
+          ],
+          "position_before": [
+            0.56,
+            0.5
+          ],
+          "requested_stored_power_w": 0.0,
+          "step": 11
+        }
+      ]
+    },
+    "OFF_DOCK_MOVE_ENERGY": {
+      "battery_end_j": 0.0,
+      "battery_max_j": 2664.0,
+      "battery_min_j": 0.0,
+      "battery_start_j": 2664.0,
+      "body_temperature_end_c": 23.57597232725832,
+      "body_temperature_max_c": 23.57597232725832,
+      "body_temperature_min_c": 23.0,
+      "body_temperature_start_c": 23.0,
+      "boundary_clamped_transition_count": 23148,
+      "charge_phase_counts": {
+        "BULK": 0,
+        "OFF": 23166,
+        "STANDBY": 0,
+        "TAPER_1": 0,
+        "TAPER_2": 0
+      },
+      "charging_heat_zero_after_termination": true,
+      "cumulative_actual_stored_energy_j": 0.0,
+      "cumulative_actuator_electrical_energy_j": 2316.6,
+      "cumulative_charger_input_energy_j": 0.0,
+      "cumulative_charging_loss_heat_energy_j": 0.0,
+      "cumulative_electronics_body_heat_energy_j": 347.49,
+      "cumulative_electronics_electrical_energy_j": 347.49,
+      "cumulative_environmental_exchange_energy_j": -243.81498109354163,
+      "cumulative_requested_stored_energy_j": 0.0,
+      "emergency_hard_shutdown": false,
+      "energy_normalized_end": 0.0,
+      "energy_normalized_max": 0.5,
+      "energy_normalized_min": 0.0,
+      "energy_normalized_start": 0.5,
+      "first_full_latch_step": null,
+      "first_phase_steps": {
+        "BULK": null,
+        "OFF": 1,
+        "STANDBY": null,
+        "TAPER_1": null,
+        "TAPER_2": null
+      },
+      "headroom_limited_charge_event_count": 0,
+      "limitation": "The repeated MOVE command keeps incurring a fixed action-class electrical load after the body reaches the world boundary; this is not realistic wheel or motor mechanics.",
+      "name": "OFF_DOCK_MOVE_ENERGY",
+      "no_charging_occurred": true,
+      "physical_seconds": 2316.6,
+      "preferred_ceiling_reached": false,
+      "protective_shutdown": false,
+      "seed_status": "seedless fixed-state evaluator probe",
+      "temperature_normalized_end": 0.294699654090729,
+      "temperature_normalized_max": 0.294699654090729,
+      "temperature_normalized_min": 0.2875,
+      "temperature_normalized_start": 0.2875,
+      "termination_reason": "ENERGY_DEPLETION",
+      "transitions": 23166,
+      "transitions_table": []
+    }
+  },
+  "seed_status": "seedless fixed-state evaluator probes"
+}
