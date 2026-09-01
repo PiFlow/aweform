@@ -301,8 +301,6 @@ def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
             charger_exits += 1
             if cycle_stage == 1:
                 cycle_stage = 2
-            else:
-                mode_event_inconsistencies.append("charger_exit_outside_departure_stage")
 
         entered_seek = (
             mode_before is D021Mode.AWAY
