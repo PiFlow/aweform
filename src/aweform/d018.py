@@ -35,6 +35,15 @@ D018_AUTHORITATIVE_BASE_SHA: Final[str] = (
 )
 D018_SUPPORT_CLASSES: Final[tuple[str, ...]] = ("zero", ">=1", ">=2")
 D018_CONTACT_TARGETS: Final[tuple[str, ...]] = ("exit", "unchanged", "entry")
+D018_ACCEPTED_PRE_REPAIR_ARTIFACT_SHA256: Final[str] = (
+    "1ed8a2b593a946a39b62b9238d377114e3f1c9d5627d09db45fc2fb4a655a56b"
+)
+D018_INVALIDATED_EXECUTABLE_SHA: Final[str] = (
+    "99c1625683c2c03cace89d57766bbc8320da7936"
+)
+D018_INVALIDATED_ARTIFACT_SHA256: Final[str] = (
+    "9a5bad9a41d1fbfa7d64e5ce8ed07abb139d02859b3e75fd110e1b636b167de6"
+)
 
 VisibleStateKey = tuple[float, float, float, float, bool, float]
 StateActionKey = tuple[VisibleStateKey, Action]
@@ -183,9 +192,6 @@ class _AuditMetrics:
             raise ValueError(f"unsupported contact target: {contact_target}")
         if support_count < 0:
             raise ValueError("support_count must be non-negative")
-        support_class = (
-            "zero" if support_count == 0 else ">=2" if support_count >= 2 else ">=1"
-        )
         self.groups["executed_vs_unexecuted"][
             "executed" if executed else "unexecuted"
         ].record(prediction, actual)
@@ -193,7 +199,12 @@ class _AuditMetrics:
         self.groups["current_contact"][str(current.charging_contact)].record(
             prediction, actual
         )
-        self.groups["prior_exact_support"][support_class].record(prediction, actual)
+        if support_count == 0:
+            self.groups["prior_exact_support"]["zero"].record(prediction, actual)
+        if support_count >= 1:
+            self.groups["prior_exact_support"][">=1"].record(prediction, actual)
+        if support_count >= 2:
+            self.groups["prior_exact_support"][">=2"].record(prediction, actual)
         self.groups["contact_target"][contact_target].record(prediction, actual)
         count_key = str(support_count)
         self.support_count_distribution[count_key] = (
@@ -296,13 +307,17 @@ class _AuditCollector:
             actual=actual,
         )
 
-    def as_dict(self, *, unique_real_pairs: int) -> dict[str, object]:
-        return {
+    def as_dict(
+        self, *, unique_real_pairs: int, include_rows: bool = True
+    ) -> dict[str, object]:
+        result: dict[str, object] = {
             "raw_prediction_count": len(self.rows),
             "metrics": self.metrics.as_dict(),
             "unique_prior_real_state_action_pairs": unique_real_pairs,
-            "rows": self.rows,
         }
+        if include_rows:
+            result["rows"] = self.rows
+        return result
 
 
 @dataclass(slots=True)
@@ -716,6 +731,163 @@ def _validate_executed_commit_sha(value: str | None) -> str | None:
     return value
 
 
+def _row_components(
+    row: dict[str, object],
+) -> tuple[
+    d011.D011Observation,
+    Action,
+    Action,
+    int,
+    str,
+    d013.D013Prediction,
+    dict[str, float],
+]:
+    """Decode one preserved candidate row for derived aggregation only."""
+    current_object = row["current_visible_state"]
+    if not isinstance(current_object, dict):
+        raise RuntimeError("D-018 row current state is not an object")
+    current_values = cast(dict[str, object], current_object)
+    current = d011.D011Observation(
+        energy=float(cast(float, current_values["normalized_energy"])),
+        beacon=BeaconObservation(
+            float(cast(float, current_values["beacon_left"])),
+            float(cast(float, current_values["beacon_forward"])),
+            float(cast(float, current_values["beacon_right"])),
+            bool(current_values["charging_contact"]),
+        ),
+        thermal=float(cast(float, current_values["normalized_thermal"])),
+    )
+    candidate = Action[str(row["candidate_action"])]
+    executed_action = Action[str(row["physically_executed_action"])]
+    prediction = d013.D013Prediction(
+        float(cast(float, row["predicted_delta_energy"])),
+        float(cast(float, row["predicted_delta_thermal"])),
+        float(cast(float, row["predicted_delta_charging_contact"])),
+    )
+    actual = {
+        "delta_energy": float(cast(float, row["actual_delta_energy"])),
+        "delta_thermal": float(cast(float, row["actual_delta_thermal"])),
+        "delta_charging_contact": float(
+            cast(float, row["actual_delta_charging_contact"])
+        ),
+    }
+    return (
+        current,
+        candidate,
+        executed_action,
+        int(cast(int, row["prior_exact_state_action_support_count"])),
+        str(row["actual_contact_target_class"]),
+        prediction,
+        actual,
+    )
+
+
+def _record_rows_in_collector(
+    collector: _AuditCollector, rows: list[dict[str, object]]
+) -> None:
+    """Recompute metrics from preserved rows without stepping the simulator."""
+    for row in rows:
+        (
+            current,
+            candidate,
+            executed_action,
+            support_count,
+            contact_target,
+            prediction,
+            actual,
+        ) = _row_components(row)
+        collector.metrics.record(
+            action=candidate,
+            executed=candidate is executed_action,
+            current=current,
+            support_count=support_count,
+            contact_target=contact_target,
+            prediction=prediction,
+            actual=actual,
+        )
+        collector.rows.append(row)
+
+
+def compact_d018_artifact(payload: dict[str, object]) -> dict[str, object]:
+    """Compact an accepted D-018 artifact while preserving every raw row once."""
+    raw_results_object = payload["results"]
+    if not isinstance(raw_results_object, list):
+        raise ValueError("D-018 results must be a list")
+    canonical_rows: list[dict[str, object]] = []
+    compact_results: list[dict[str, object]] = []
+    per_seed_audits: dict[str, dict[str, object]] = {}
+    pooled_unique_real_pairs = 0
+    for raw_result in raw_results_object:
+        if not isinstance(raw_result, dict):
+            raise ValueError("D-018 result must be an object")
+        result = cast(dict[str, object], raw_result)
+        raw_audit = result["audit"]
+        if not isinstance(raw_audit, dict):
+            raise ValueError("D-018 result audit must be an object")
+        raw_rows = raw_audit["rows"]
+        if not isinstance(raw_rows, list):
+            raise ValueError("D-018 result audit rows must be a list")
+        rows = [cast(dict[str, object], row) for row in raw_rows]
+        canonical_rows.extend(rows)
+        collector = _AuditCollector()
+        _record_rows_in_collector(collector, rows)
+        unique_pairs = int(
+            cast(int, raw_audit["unique_prior_real_state_action_pairs"])
+        )
+        pooled_unique_real_pairs += unique_pairs
+        per_seed_audits[str(result["seed"])] = collector.as_dict(
+            unique_real_pairs=unique_pairs,
+            include_rows=False,
+        )
+        compact_results.append(
+            {key: value for key, value in result.items() if key != "audit"}
+        )
+
+    raw_aggregates = payload.get("aggregates")
+    if isinstance(raw_aggregates, dict):
+        raw_pooled = raw_aggregates.get("pooled")
+        if isinstance(raw_pooled, dict) and "rows" in raw_pooled:
+            old_pooled_rows = raw_pooled["rows"]
+            if old_pooled_rows != canonical_rows:
+                raise ValueError("duplicated pooled rows differ from per-seed rows")
+
+    pooled_collector = _AuditCollector()
+    _record_rows_in_collector(pooled_collector, canonical_rows)
+    compact = {
+        key: value
+        for key, value in payload.items()
+        if key not in ("aggregates", "results", "candidate_rows")
+    }
+    compact["schema_version"] = 2
+    compact["reporting_repair"] = {
+        "accepted_pre_repair_artifact_sha256": (
+            D018_ACCEPTED_PRE_REPAIR_ARTIFACT_SHA256
+        ),
+        "accepted_substantive_executable_sha": (
+            "ab0868db89f3b22d84b0d5016f14b806df013bc5"
+        ),
+        "simulation_outcomes_regenerated": False,
+        "raw_outcome_values_preserved": True,
+        "repair_scope": "derived aggregation semantics and serialization only",
+        "invalidated_first_run": {
+            "executable_sha": D018_INVALIDATED_EXECUTABLE_SHA,
+            "artifact_sha256": D018_INVALIDATED_ARTIFACT_SHA256,
+            "reason": "weight snapshot count reported 63 instead of 84",
+            "artifact_durably_retained": False,
+        },
+    }
+    compact["aggregates"] = {
+        "pooled": pooled_collector.as_dict(
+            unique_real_pairs=pooled_unique_real_pairs,
+            include_rows=False,
+        ),
+        "per_seed": per_seed_audits,
+    }
+    compact["results"] = compact_results
+    compact["candidate_rows"] = canonical_rows
+    return compact
+
+
 def run_d018_probe(
     seeds: Sequence[int] = D018_DEFAULT_DEVELOPMENT_SEEDS,
     *,
@@ -729,6 +901,7 @@ def run_d018_probe(
     executed_sha = _validate_executed_commit_sha(executed_commit_sha)
     outcomes: list[dict[str, object]] = []
     pooled_rows: list[dict[str, object]] = []
+    per_seed_audits: dict[str, dict[str, object]] = {}
     equality_by_seed: dict[str, dict[str, object]] = {}
     all_trajectory_equal = True
     all_weight_equal = True
@@ -781,66 +954,29 @@ def run_d018_probe(
         all_selected_branch_matches = (
             all_selected_branch_matches and selected_branch_matches
         )
-        audit_rows = summary["audit"]["rows"]  # type: ignore[index]
-        if not isinstance(audit_rows, list):
-            raise RuntimeError("D-018 audit rows are unavailable")
-        pooled_rows.extend(audit_rows)
         audit_data = summary["audit"]
         if not isinstance(audit_data, dict):
             raise RuntimeError("D-018 audit summary is not an object")
+        audit_rows = audit_data["rows"]
+        if not isinstance(audit_rows, list):
+            raise RuntimeError("D-018 audit rows are unavailable")
+        pooled_rows.extend(audit_rows)
         pooled_unique_real_pairs += int(
             cast(int, audit_data["unique_prior_real_state_action_pairs"])
         )
+        per_seed_audits[str(seed)] = {
+            key: value for key, value in audit_data.items() if key != "rows"
+        }
         summary["reference_comparison"] = equality
+        del summary["audit"]
         summary["final_weights"] = audit.final_weights
         outcomes.append(summary)
 
     pooled_collector = _AuditCollector()
-    for row in pooled_rows:
-        if not isinstance(row, dict):
-            raise RuntimeError("D-018 pooled row is not an object")
-        current_values = cast(dict[str, object], row["current_visible_state"])
-        if not isinstance(current_values, dict):
-            raise RuntimeError("D-018 row current state is not an object")
-        current = d011.D011Observation(
-            energy=float(cast(float, current_values["normalized_energy"])),
-            beacon=BeaconObservation(
-                float(cast(float, current_values["beacon_left"])),
-                float(cast(float, current_values["beacon_forward"])),
-                float(cast(float, current_values["beacon_right"])),
-                bool(current_values["charging_contact"]),
-            ),
-            thermal=float(cast(float, current_values["normalized_thermal"])),
-        )
-        action = Action[str(row["candidate_action"])]
-        executed_action = Action[str(row["physically_executed_action"])]
-        prediction = d013.D013Prediction(
-            float(cast(float, row["predicted_delta_energy"])),
-            float(cast(float, row["predicted_delta_thermal"])),
-            float(cast(float, row["predicted_delta_charging_contact"])),
-        )
-        actual = {
-            "delta_energy": float(cast(float, row["actual_delta_energy"])),
-            "delta_thermal": float(cast(float, row["actual_delta_thermal"])),
-            "delta_charging_contact": float(
-                cast(float, row["actual_delta_charging_contact"])
-            ),
-        }
-        pooled_collector.metrics.record(
-            action=action,
-            executed=action is executed_action,
-            current=current,
-            support_count=int(
-                cast(int, row["prior_exact_state_action_support_count"])
-            ),
-            contact_target=str(row["actual_contact_target_class"]),
-            prediction=prediction,
-            actual=actual,
-        )
-        pooled_collector.rows.append(row)
+    _record_rows_in_collector(pooled_collector, pooled_rows)
 
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "experiment": "D-018",
         "title": "Evaluator-only action-alternative consequence audit",
         "authoritative_base_sha": D018_AUTHORITATIVE_BASE_SHA,
@@ -937,12 +1073,12 @@ def run_d018_probe(
         },
         "aggregates": {
             "pooled": pooled_collector.as_dict(
-                unique_real_pairs=pooled_unique_real_pairs
+                unique_real_pairs=pooled_unique_real_pairs,
+                include_rows=False,
             ),
-            "per_seed": {
-                str(summary["seed"]): summary["audit"] for summary in outcomes
-            },
+            "per_seed": per_seed_audits,
         },
+        "candidate_rows": pooled_rows,
         "results": outcomes,
     }
 

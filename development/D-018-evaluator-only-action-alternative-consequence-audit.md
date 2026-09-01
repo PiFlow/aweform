@@ -10,6 +10,12 @@
 
 The machine-readable JSON artifact is the numerical source for this record:
 [`D-018-evaluator-only-action-alternative-consequence-audit.json`](D-018-evaluator-only-action-alternative-consequence-audit.json).
+The accepted raw artifact before this reporting repair was 61,783,035 bytes
+with SHA-256
+`1ed8a2b593a946a39b62b9238d377114e3f1c9d5627d09db45fc2fb4a655a56b`.
+The repaired schema-2 artifact stores the 12,000 unique candidate rows once;
+it is 18,401,415 bytes with SHA-256
+`ea612460a0710c643a2ea08874eed434bb733658b2b854f3635426bcf98c224c`.
 
 ## Question and scope
 
@@ -40,9 +46,13 @@ was used.
 The implementation and focused tests were first committed at
 `99c1625683c2c03cace89d57766bbc8320da7936`. Its substantive artifact was
 invalidated before any corrected rerun because a reporting field counted the
-84-weight snapshot as 63. The invalidated artifact was preserved unchanged at
-`/private/tmp/aweform-d018-invalidated-99c1625.json` with SHA-256
+84-weight snapshot as 63. The invalidated executable SHA is
+`99c1625683c2c03cace89d57766bbc8320da7936`; its artifact SHA-256 is
 `9a5bad9a41d1fbfa7d64e5ce8ed07abb139d02859b3e75fd110e1b636b167de6`.
+The artifact file existed only at the ephemeral path
+`/private/tmp/aweform-d018-invalidated-99c1625.json`; it is not durably
+retained in the repository. Only its checksum and invalidation provenance are
+retained here and in the JSON record.
 
 The reporting correction was committed at the accepted executable SHA
 `ab0868db89f3b22d84b0d5016f14b806df013bc5`. It did not change the learner,
@@ -59,8 +69,13 @@ uv run python -m aweform.d018 \
   --output development/D-018-evaluator-only-action-alternative-consequence-audit.json
 ```
 
-The accepted artifact is the corrected run only. No learner, seed, support,
-procedure, or metric tuning occurred after inspecting the substantive result.
+The accepted artifact contains the corrected run's raw rows. This later repair
+did not rerun any environment transition or regenerate simulation outcomes:
+`ab0868...` remains the substantive executable SHA, raw outcome values were
+preserved, and only derived aggregation semantics and serialization were
+corrected. Schema version 2 stores the canonical 12,000-row collection once;
+pooled and per-seed aggregates and behavioural results contain no duplicate
+candidate-row arrays.
 
 ## Causal and provenance boundary
 
@@ -165,9 +180,29 @@ unexecuted. The pooled exact prior-support distribution is:
 
 The support categories used for metrics are overlapping: `zero` means exactly
 zero, `>=1` means at least one, and `>=2` means at least two. The pooled
-`>=1` category contains 14 rows and `>=2` contains 4 rows. Per-seed
-distributions were `18359: 0=4000`, `18360: 0=3993, 1=7`, and
-`18361: 0=3989, 1=7, 2=4`. No unexecuted candidate had prior support >=2.
+`>=1` category contains 18 rows and `>=2` contains 4 rows; a support count of
+2 contributes to both overlapping threshold cells. Per-seed exact support
+count distributions were `18359: 0=4000`, `18360: 0=3993, 1=7`, and
+`18361: 0=3989, 1=7, 2=4`. The executed/unexecuted split is:
+
+| Candidate class | Support 0 | Support 1 | Support 2 |
+|---|---:|---:|---:|
+| Physically executed | 2,986 | 10 | 4 |
+| Unexecuted | 8,996 | 4 | 0 |
+
+The same exact split by seed is:
+
+| Seed | Candidate class | Support 0 | Support 1 | Support 2 |
+|---:|---|---:|---:|---:|
+| 18359 | Physically executed | 1,000 | 0 | 0 |
+| 18359 | Unexecuted | 3,000 | 0 | 0 |
+| 18360 | Physically executed | 994 | 6 | 0 |
+| 18360 | Unexecuted | 2,999 | 1 | 0 |
+| 18361 | Physically executed | 992 | 4 | 4 |
+| 18361 | Unexecuted | 2,997 | 3 | 0 |
+
+Thus 4 of 9,000 unexecuted candidates had prior exact support (`>=1`), and
+none had support `>=2`.
 
 The per-seed final exact real state/action pair counts were 1,000, 994, and
 992; pooled across the three independent lifetime registries this is 2,986.
@@ -222,7 +257,7 @@ contact sufficiency.
 | Support class | Raw count | Delta energy MAE | Delta thermal MAE | Delta charging-contact MAE |
 |---|---:|---:|---:|---:|
 | `zero` | 11,982 | 0.01518130 / 0.01929478 | 0.00605146 / 0.00692122 | 0.03428402 / 0.01026540 |
-| `>=1` | 14 | 0.00569863 / 0.01114286 | 0.00708735 / 0.01000000 | 0.21679291 / 0.14285714 |
+| `>=1` | 18 | 0.00562134 / 0.00977778 | 0.00791498 / 0.01000000 | 0.24696528 / 0.16666667 |
 | `>=2` | 4 | 0.00535085 / 0.00500000 | 0.01081170 / 0.01000000 | 0.35256858 / 0.25000000 |
 
 The `>=1` and `>=2` rows are tiny and overlapping support strata, not
@@ -256,9 +291,9 @@ Direct observations from the accepted artifact:
   through exact isolated one-step branches.
 - The real trajectory, all relevant real fields, final 84 weights, and RNG
   states matched the no-branch D-014+D-013 reference exactly.
-- Only 18 of 9,000 unexecuted candidate rows had any prior exact support, and
-  only 4 candidate rows had support count >=2; none of those were unexecuted
-  support >=2 rows.
+- Four of 9,000 unexecuted candidate rows had prior exact support. Across all
+  candidates, 18 rows had support `>=1` and 4 had support `>=2`; none of the
+  unexecuted rows had support `>=2`.
 - The unchanged D-013 learner was better than zero-change for executed energy
   and thermal deltas, but worse for executed contact overall.
 - The unchanged learner was worse than zero-change for all three pooled
@@ -288,7 +323,7 @@ The strongest surprise was the clean separation between the real on-policy
 learner fit and alternative scoring: the executed rows retained the earlier
 energy/thermal advantage, while the unexecuted rows were worse than the
 zero-change comparator for every target despite using the same current visible
-features. The exact support result was also sparse—only 18 unexecuted rows had
+features. The exact support result was also sparse—only 4 unexecuted rows had
 any prior exact state/action support and none had two or more prior examples.
 The unexecuted branches produced entries but no exits, exposing a further
 action/event imbalance rather than a balanced counterfactual test.
@@ -319,12 +354,23 @@ Before the accepted executable commit and corrected substantive execution:
 - `uv run mypy src --strict`: **clean**;
 - `git diff --check`: **clean**.
 
-The focused D-018 suite contains 12 tests covering the exact seed and formal
+Reporting-repair validation after the accepted execution:
+
+- `uv run pytest -q`: **739 passed**, 8 existing Matplotlib warnings;
+- `uv run ruff check .`: **clean**;
+- `uv run mypy src --strict`: **clean**;
+- `git diff --check`: **clean**.
+
+These checks did not rerun the three substantive D-018 lifetimes or regenerate
+their outcome rows.
+
+The focused D-018 suite contains 14 tests covering the exact seed and formal
 reservation guards, non-mutating alternative prediction, environment and RNG
 branch isolation, selected-action clone fidelity, executed-action-only
 learning, counterfactual non-entry into plasticity, exact support semantics,
-reward/info boundaries, reference trajectory/weight equality, and untested
-empty cells. No production visualizer or visualizer adapter was added.
+overlapping support thresholds, compact artifact structure, reward/info
+boundaries, reference trajectory/weight equality, and untested empty cells.
+No production visualizer or visualizer adapter was added.
 
 No dependency changed, no existing D-014/D-013/D-002 implementation was
 modified, and no durable information, sensory/plasticity, action, morphology,

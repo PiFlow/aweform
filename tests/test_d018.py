@@ -96,7 +96,9 @@ def test_d018_checks_executed_clone_fidelity_and_boundary() -> None:
     assert run["evaluator_only"][  # type: ignore[index]
         "selected_branch_matches_real_next_observation"
     ] is True
-    assert run["audit"]["raw_prediction_count"] == 8  # type: ignore[index]
+    assert result["aggregates"]["per_seed"]["18359"][  # type: ignore[index]
+        "raw_prediction_count"
+    ] == 8
 
 
 def test_only_physically_executed_action_updates_learner() -> None:
@@ -149,7 +151,7 @@ def test_audit_records_all_actions_and_exact_support_flags() -> None:
     result = d018.run_d018_probe((18359,), horizon=3)
     run = result["results"][0]
     assert isinstance(run, dict)
-    rows = run["audit"]["rows"]  # type: ignore[index]
+    rows = result["candidate_rows"]
     assert len(rows) == 12
     first_transition = [row for row in rows if row["transition_index"] == 1]
     assert len(first_transition) == 4
@@ -166,11 +168,54 @@ def test_empty_support_and_contact_event_cells_are_untested() -> None:
     result = d018.run_d018_probe((18359,), horizon=1)
     run = result["results"][0]
     assert isinstance(run, dict)
-    metrics = run["audit"]["metrics"]["metrics_by"]  # type: ignore[index]
+    metrics = result["aggregates"]["per_seed"]["18359"]["metrics"][  # type: ignore[index]
+        "metrics_by"
+    ]
     assert metrics["prior_exact_support"]["zero"]["raw_count"] == 4  # type: ignore[index]
     assert metrics["prior_exact_support"][">=1"]["status"] == "untested"  # type: ignore[index]
     assert metrics["contact_target"]["exit"]["status"] == "untested"  # type: ignore[index]
     assert metrics["contact_target"]["entry"]["status"] == "untested"  # type: ignore[index]
+
+
+def test_support_threshold_metrics_overlap_at_two_examples() -> None:
+    metrics = d018._AuditMetrics()
+    metrics.record(
+        action=Action.WAIT,
+        executed=True,
+        current=_observation(),
+        support_count=2,
+        contact_target="unchanged",
+        prediction=d013.D013Prediction(0.0, 0.0, 0.0),
+        actual={
+            "delta_energy": 0.0,
+            "delta_thermal": 0.0,
+            "delta_charging_contact": 0.0,
+        },
+    )
+    support = metrics.as_dict()["metrics_by"]["prior_exact_support"]
+    assert support["zero"]["raw_count"] == 0  # type: ignore[index]
+    assert support[">=1"]["raw_count"] == 1  # type: ignore[index]
+    assert support[">=2"]["raw_count"] == 1  # type: ignore[index]
+
+
+def test_committed_artifact_stores_canonical_rows_once() -> None:
+    import json
+    from pathlib import Path
+
+    artifact_path = (
+        Path(__file__).parents[1]
+        / "development/D-018-evaluator-only-action-alternative-consequence-audit.json"
+    )
+    payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+    assert payload["schema_version"] == 2
+    assert len(payload["candidate_rows"]) == 12000
+    assert payload["reporting_repair"]["simulation_outcomes_regenerated"] is False
+    assert payload["reporting_repair"]["raw_outcome_values_preserved"] is True
+    assert "rows" not in payload["aggregates"]["pooled"]
+    assert all(
+        "rows" not in audit for audit in payload["aggregates"]["per_seed"].values()
+    )
+    assert all("audit" not in result for result in payload["results"])
 
 
 def test_d018_does_not_add_visible_fields_or_learner_state() -> None:
