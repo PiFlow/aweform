@@ -422,12 +422,21 @@ def build_development_visualization_figure(
     alternative_axis: Axes | None = None
     learner_axes: list[Axes] = []
     if has_action_alternatives:
-        figure = plt.figure(figsize=(20, 8), constrained_layout=True)
+        # Keep this evaluator-heavy layout deterministic. Constrained layout
+        # measures text artists on every draw, so changing frame labels can
+        # resize/reposition the axes during playback.
+        figure = plt.figure(figsize=(20, 8))
+        figure.subplots_adjust(
+            left=0.03,
+            right=0.99,
+            bottom=0.12,
+            top=0.90,
+            wspace=0.18,
+        )
         grid = figure.add_gridspec(
             1,
             3,
-            width_ratios=(1.35, 0.85, 1.65),
-            wspace=0.3,
+            width_ratios=(1.30, 0.92, 1.35),
         )
         world_axis = figure.add_subplot(grid[0, 0])
         diagnostic_axis = figure.add_subplot(grid[0, 1])
@@ -455,6 +464,8 @@ def build_development_visualization_figure(
     world_axis.set_xlim(data.world_min[0], data.world_max[0])
     world_axis.set_ylim(data.world_min[1], data.world_max[1])
     world_axis.set_aspect("equal", adjustable="box")
+    if has_action_alternatives:
+        world_axis.set_anchor("NW")
     world_axis.set_xlabel("x (evaluator view)")
     world_axis.set_ylabel("y (evaluator view)")
     world_axis.set_title("2D EVALUATOR WORLD")
@@ -551,19 +562,38 @@ def build_development_visualization_figure(
             linewidth=1.2,
             label="one audit orientation outward axis",
         )[0]
-        shadow_overlay_label = world_axis.text(
-            0.02,
-            0.03,
+        shadow_text = (
             "EVALUATOR-ONLY SHADOW MORPHOLOGY\n"
             "DOES NOT CONTROL CHARGING OR BEHAVIOUR\n"
-            f"ONE AUDIT ORIENTATION: phi={shadow.dock_orientation:g}",
-            transform=world_axis.transAxes,
-            va="bottom",
-            fontsize=8,
-            color="tab:purple",
-            bbox={"facecolor": "white", "alpha": 0.8, "edgecolor": "tab:purple"},
+            f"ONE AUDIT ORIENTATION: phi={shadow.dock_orientation:g}"
         )
-        world_axis.legend(loc="lower left", fontsize=8)
+        if has_action_alternatives:
+            shadow_overlay_label = figure.text(
+                0.03,
+                0.965,
+                shadow_text,
+                va="top",
+                fontsize=8,
+                color="tab:purple",
+                bbox={
+                    "facecolor": "white",
+                    "alpha": 0.8,
+                    "edgecolor": "tab:purple",
+                },
+            )
+        else:
+            shadow_overlay_label = world_axis.text(
+                0.02,
+                0.03,
+                shadow_text,
+                transform=world_axis.transAxes,
+                va="bottom",
+                fontsize=8,
+                color="tab:purple",
+                bbox={"facecolor": "white", "alpha": 0.8, "edgecolor": "tab:purple"},
+            )
+        if not has_action_alternatives:
+            world_axis.legend(loc="lower left", fontsize=8)
 
     trajectory_line, *_ = world_axis.plot(
         [], [], color="tab:blue", alpha=0.5, linewidth=1.8, label="trajectory"
@@ -591,15 +621,40 @@ def build_development_visualization_figure(
                 ("#e31a1c", "right directional probe"),
             )
         ]
-        world_axis.text(
-            0.02,
-            0.97,
-            "directional probes = idealized beacon display\n(not literal RF beams)",
-            transform=world_axis.transAxes,
-            va="top",
-            fontsize=8,
+        if has_action_alternatives:
+            figure.text(
+                0.03,
+                0.965,
+                "directional probes = idealized beacon display\n"
+                "(not literal RF beams)",
+                va="top",
+                fontsize=8,
+            )
+        else:
+            world_axis.text(
+                0.02,
+                0.97,
+                "directional probes = idealized beacon display\n"
+                "(not literal RF beams)",
+                transform=world_axis.transAxes,
+                va="top",
+                fontsize=8,
+            )
+    if not has_action_alternatives:
+        world_axis.legend(loc="lower left", fontsize=8)
+    else:
+        legend_handles, legend_labels = world_axis.get_legend_handles_labels()
+        figure.legend(
+            legend_handles,
+            legend_labels,
+            loc="lower left",
+            bbox_to_anchor=(0.03, 0.0, 0.31, 0.08),
+            mode="expand",
+            ncols=3,
+            borderaxespad=0.0,
+            fontsize=7,
+            framealpha=0.85,
         )
-    world_axis.legend(loc="lower left", fontsize=8)
 
     diagnostic_axis.set_xlim(0.0, 1.0)
     diagnostic_axis.set_ylim(-0.34, 1.15 if beacon_values_available else 1.0)
@@ -1093,12 +1148,15 @@ def build_development_visualization_figure(
             figure.canvas.draw_idle()
 
     figure.canvas.mpl_connect("key_press_event", on_key)
-    figure.suptitle(
+    suptitle = (
         "AWEFORM DEVELOPMENT VISUALIZER\n"
         f"{data.source_label} — seed {data.seed}\n"
-        "DEVELOPMENT / EVALUATOR VIEW — NOT CONFIRMATORY EVIDENCE",
-        fontsize=12,
+        "DEVELOPMENT / EVALUATOR VIEW — NOT CONFIRMATORY EVIDENCE"
     )
+    if has_action_alternatives:
+        figure.suptitle(suptitle, y=0.995, fontsize=11, linespacing=1.0)
+    else:
+        figure.suptitle(suptitle, fontsize=12)
     if not learner_axes and alternative_axis is None:
         figure.tight_layout(rect=(0.0, 0.0, 1.0, 0.91))
     setattr(figure, "_aweform_player", player)
