@@ -15,6 +15,18 @@ from .controllers import (
     HomeostaticController,
     PersistentExplorationController,
 )
+from .d020 import (
+    ChargePhase,
+    D020Env,
+    D020Observation,
+    D020PhysicalConfig,
+    D020ProbeResult,
+    D020TerminationReason,
+    D020TransitionTelemetry,
+    classify_thermal_safety,
+    run_d020_probe_suite,
+    write_d020_probe_json,
+)
 from .development_visualizer import (
     DEVELOPMENT_VISUALIZATION_ADAPTERS,
     DevelopmentVisualizationData,
@@ -211,6 +223,7 @@ from .visualizer import (
 
 __all__ = [
     "Action",
+    "ChargePhase",
     "AweformEnv",
     "AweformEnvConfig",
     "Body",
@@ -224,6 +237,12 @@ __all__ = [
     "DevelopmentBatchResult",
     "DevelopmentManifest",
     "DirectionalSignals",
+    "D020Env",
+    "D020Observation",
+    "D020PhysicalConfig",
+    "D020ProbeResult",
+    "D020TerminationReason",
+    "D020TransitionTelemetry",
     "DEVELOPMENT_VISUALIZATION_ADAPTERS",
     "DevelopmentVisualizationData",
     "DevelopmentVisualizationFrame",
@@ -389,7 +408,10 @@ __all__ = [
     "VisualizationFrame",
     "build_visualization_figure",
     "build_visualization_frames",
+    "classify_thermal_safety",
     "select_seed_records",
     "show_development_visualization",
     "show_exp001_development_visualization",
+    "run_d020_probe_suite",
+    "write_d020_probe_json",
 ]
