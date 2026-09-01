@@ -25,6 +25,7 @@ from matplotlib.patches import Circle, Polygon, Rectangle
 from matplotlib.text import Text
 
 from . import d011
+from .d021 import D021Mode, D021TransitionTrace
 
 Coordinate = tuple[float, float]
 
@@ -95,10 +96,15 @@ class DevelopmentVisualizationFrame:
     beacon_left: float | None = None
     beacon_forward: float | None = None
     beacon_right: float | None = None
+    thermal_normalized: float | None = None
+    thermal_absolute_c: float | None = None
+    charger_phase: str | None = None
+    simulated_seconds: float | None = None
+    charging_contact_before: bool | None = None
 
     def __post_init__(self) -> None:
-        if self.transition_index <= 0:
-            raise ValueError("transition_index must be positive")
+        if self.transition_index < 0:
+            raise ValueError("transition_index must be non-negative")
         for name in ("x", "y", "heading", "energy", "thermal"):
             if not math.isfinite(getattr(self, name)):
                 raise ValueError(f"{name} must be finite")
@@ -120,6 +126,25 @@ class DevelopmentVisualizationFrame:
                 not math.isfinite(value) or not 0.0 <= value <= 1.0
             ):
                 raise ValueError("directional beacon values must be in [0.0, 1.0]")
+        if self.thermal_normalized is not None and (
+            not math.isfinite(self.thermal_normalized)
+            or not 0.0 <= self.thermal_normalized <= 1.0
+        ):
+            raise ValueError("thermal_normalized must be finite and in [0.0, 1.0]")
+        if self.thermal_absolute_c is not None and not math.isfinite(
+            self.thermal_absolute_c
+        ):
+            raise ValueError("thermal_absolute_c must be finite")
+        if self.charger_phase is not None and not self.charger_phase:
+            raise ValueError("charger_phase must be non-empty")
+        if self.simulated_seconds is not None and (
+            not math.isfinite(self.simulated_seconds) or self.simulated_seconds < 0.0
+        ):
+            raise ValueError("simulated_seconds must be finite and non-negative")
+        if self.charging_contact_before is not None and not isinstance(
+            self.charging_contact_before, bool
+        ):
+            raise ValueError("charging_contact_before must be a bool")
 
 
 @dataclass(frozen=True, slots=True)
@@ -267,10 +292,14 @@ class DevelopmentVisualizationData:
         if not self.frames:
             raise ValueError("visualization data must contain at least one frame")
         if any(
-            frame.transition_index != index
-            for index, frame in enumerate(self.frames, start=1)
+            frame.transition_index < 0
+            or (
+                index > 0
+                and frame.transition_index <= self.frames[index - 1].transition_index
+            )
+            for index, frame in enumerate(self.frames)
         ):
-            raise ValueError("frames must contain one ordered entry per transition")
+            raise ValueError("frames must contain strictly increasing transitions")
         if self.consequence_predictions is not None:
             if len(self.consequence_predictions) != len(self.frames):
                 raise ValueError(
@@ -919,7 +948,10 @@ def build_development_visualization_figure(
         body_marker.set_data([frame.x], [frame.y])
         heading_arrow.set_offsets([[frame.x, frame.y]])
         heading_arrow.set_UVC([math.cos(frame.heading)], [math.sin(frame.heading)])
-        transition_text.set_text(f"transition: {frame.transition_index}")
+        transition_label = f"transition: {frame.transition_index}"
+        if frame.simulated_seconds is not None:
+            transition_label += f"   simulated time: {frame.simulated_seconds:.1f} s"
+        transition_text.set_text(transition_label)
         action_text.set_text(f"action: {frame.action}")
         mode_text.set_text(f"{data.mode_display_label}: {frame.decision_mode}")
         contact_text.set_text(
@@ -932,13 +964,29 @@ def build_development_visualization_figure(
             if frame.truncated
             else "RUNNING"
         )
-        status_text.set_text(f"status: {status}")
+        status_label = f"status: {status}"
+        if frame.charger_phase is not None:
+            status_label += (
+                f"\ncharger phase: {frame.charger_phase}"
+                " (EVALUATOR ONLY)"
+            )
+        status_text.set_text(status_label)
         energy_fill.set_width(_gauge_fraction(frame.energy, data.energy_range) * 0.62)
         thermal_fill.set_width(
             _gauge_fraction(frame.thermal, data.thermal_range) * 0.62
         )
         energy_value.set_text(f"{frame.energy:.3f} / {data.energy_range.upper:g}")
-        thermal_value.set_text(f"{frame.thermal:.3f} / {data.thermal_range.upper:g}")
+        if frame.thermal_normalized is not None:
+            absolute = frame.thermal_absolute_c
+            if absolute is None:
+                absolute = frame.thermal
+            thermal_value.set_text(
+                f"{frame.thermal_normalized:.3f} norm / {absolute:.3f} °C"
+            )
+        else:
+            thermal_value.set_text(
+                f"{frame.thermal:.3f} / {data.thermal_range.upper:g}"
+            )
         beacon_signals = (
             frame.beacon_left,
             frame.beacon_forward,
@@ -2253,6 +2301,235 @@ def build_d020_development_visualization() -> DevelopmentVisualizationData:
     )
 
 
+def d021_replay_event_steps(
+    trace: Sequence[D021TransitionTrace],
+) -> dict[str, int]:
+    """Return the frozen event steps used by the D-021 replay selector."""
+    from .d020 import D020PhysicalConfig
+
+    if not trace:
+        raise ValueError("D-021 replay trace must not be empty")
+    battery_capacity_j = D020PhysicalConfig().battery_capacity_j
+
+    departures = [
+        record.transition_index
+        for record in trace
+        if record.mode_before is D021Mode.CHARGE
+        and record.mode_after is D021Mode.DEPART
+    ]
+    charger_exits = [
+        record.transition_index
+        for record in trace
+        if record.telemetry.charging_contact_before
+        and not record.telemetry.charging_contact_after
+    ]
+    seek_entries = [
+        record.transition_index
+        for record in trace
+        if record.mode_before is D021Mode.AWAY
+        and record.mode_after is D021Mode.SEEK
+    ]
+    reacquisitions = [
+        record.transition_index
+        for record in trace
+        if record.mode_before is D021Mode.SEEK
+        and not record.telemetry.charging_contact_before
+        and record.telemetry.charging_contact_after
+    ]
+    charge_entries = [
+        record.transition_index
+        for record in trace
+        if record.mode_before is D021Mode.SEEK
+        and record.mode_after is D021Mode.CHARGE
+    ]
+    full_recharges = [
+        record.transition_index
+        for record in trace
+        if record.telemetry.charger_termination_latched_after
+        and record.telemetry.battery_after_j >= battery_capacity_j
+    ]
+    if len(departures) < 2:
+        raise RuntimeError("D-021 replay did not contain two full departures")
+    required = {
+        "first_departure": departures[0],
+        "first_charger_exit": _first_or_raise(charger_exits, "charger exit"),
+        "first_seek_entry": _first_or_raise(seek_entries, "SEEK entry"),
+        "first_reacquisition": _first_or_raise(reacquisitions, "reacquisition"),
+        "first_charge_entry": _first_or_raise(charge_entries, "CHARGE entry"),
+        "first_full_recharge": _first_or_raise(full_recharges, "full recharge"),
+        "first_redeparture": departures[1],
+        "final": trace[-1].transition_index,
+    }
+    incidental_contacts = [
+        record.transition_index
+        for record in trace
+        if record.mode_before is D021Mode.AWAY
+        and not record.telemetry.charging_contact_before
+        and record.telemetry.charging_contact_after
+    ]
+    if incidental_contacts:
+        required["representative_away_contact"] = incidental_contacts[0]
+    return required
+
+
+def _first_or_raise(values: Sequence[int], label: str) -> int:
+    if not values:
+        raise RuntimeError(f"D-021 replay did not contain a {label}")
+    return values[0]
+
+
+def select_d021_replay_indices(
+    trace: Sequence[D021TransitionTrace],
+) -> tuple[int, ...]:
+    """Select actual D-021 steps with deterministic event-preserving sampling."""
+    if not trace:
+        raise ValueError("D-021 replay trace must not be empty")
+    event_steps = d021_replay_event_steps(trace)
+    trace_by_step = {record.transition_index: record for record in trace}
+    selected = set(event_steps.values())
+    for step in event_steps.values():
+        selected.update(
+            candidate
+            for candidate in range(step - 2, step + 3)
+            if candidate in trace_by_step
+        )
+
+    run_start = 0
+    while run_start < len(trace):
+        run_end = run_start
+        mode = trace[run_start].mode_before
+        while (
+            run_end + 1 < len(trace)
+            and trace[run_end + 1].mode_before is mode
+        ):
+            run_end += 1
+        selected.add(trace[(run_start + run_end) // 2].transition_index)
+        run_start = run_end + 1
+
+    stride = (len(trace) + 699) // 700
+    selected.update(record.transition_index for record in trace[::stride])
+    selected.add(trace[-1].transition_index)
+    return tuple(sorted(selected))
+
+
+def adapt_d021_trace(
+    trace: Sequence[D021TransitionTrace],
+    *,
+    source_label: str = "D-021 V0.4 autonomous energy-regulation lifetime",
+) -> DevelopmentVisualizationData:
+    """Convert one completed D-021 evaluator trace to neutral replay data."""
+    from .d020 import D020PhysicalConfig
+
+    if not trace:
+        raise ValueError("D-021 replay trace must not be empty")
+    config = D020PhysicalConfig()
+    selected_steps = select_d021_replay_indices(trace)
+    by_step = {record.transition_index: record for record in trace}
+    frames: list[DevelopmentVisualizationFrame] = []
+    initial = trace[0]
+    initial_observation = initial.observation_before
+    if len(initial_observation) != 6:
+        raise RuntimeError("D-021 initial observation must contain six channels")
+    frames.append(
+        DevelopmentVisualizationFrame(
+            transition_index=0,
+            x=initial.telemetry.position_before[0],
+            y=initial.telemetry.position_before[1],
+            heading=initial.telemetry.heading,
+            action="INITIAL",
+            decision_mode=initial.mode_before.value,
+            energy=initial_observation[0],
+            thermal=initial.telemetry.body_temperature_before_c,
+            charging_contact=bool(initial_observation[4]),
+            terminated=False,
+            truncated=False,
+            beacon_left=initial_observation[1],
+            beacon_forward=initial_observation[2],
+            beacon_right=initial_observation[3],
+            thermal_normalized=initial_observation[5],
+            thermal_absolute_c=initial.telemetry.body_temperature_before_c,
+            charger_phase=initial.telemetry.charge_phase.value,
+            simulated_seconds=0.0,
+            charging_contact_before=initial.telemetry.charging_contact_before,
+        )
+    )
+    for step in selected_steps:
+        record = by_step[step]
+        if len(record.observation) != 6:
+            raise RuntimeError("D-021 observation must contain exactly six channels")
+        if record.reward != 0.0 or record.info != {}:
+            raise RuntimeError("D-021 replay crossed the reward/info boundary")
+        observation = record.observation
+        telemetry = record.telemetry
+        frames.append(
+            DevelopmentVisualizationFrame(
+                transition_index=record.transition_index,
+                x=telemetry.position_after[0],
+                y=telemetry.position_after[1],
+                heading=telemetry.heading,
+                action=record.action.name,
+                decision_mode=record.mode_before.value,
+                energy=observation[0],
+                thermal=telemetry.body_temperature_after_c,
+                charging_contact=bool(observation[4]),
+                terminated=telemetry.terminated,
+                truncated=telemetry.truncated,
+                beacon_left=observation[1],
+                beacon_forward=observation[2],
+                beacon_right=observation[3],
+                thermal_normalized=observation[5],
+                thermal_absolute_c=telemetry.body_temperature_after_c,
+                charger_phase=telemetry.charge_phase.value,
+                simulated_seconds=record.transition_index * config.dt_seconds,
+                charging_contact_before=telemetry.charging_contact_before,
+            )
+        )
+    return DevelopmentVisualizationData(
+        source_label=source_label,
+        seed=18365,
+        world_min=config.world_min,
+        world_max=config.world_max,
+        station_center=trace[0].telemetry.station_center,
+        charging_radius=config.charging_radius,
+        energy_range=DevelopmentVisualizationRange(0.0, 1.0),
+        thermal_range=DevelopmentVisualizationRange(0.0, 80.0),
+        frames=tuple(frames),
+        visibility=DevelopmentVisualizationVisibility(
+            position_heading="EVALUATOR ONLY",
+            station_location="EVALUATOR ONLY",
+            energy="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
+            thermal=(
+                "ORGANISM-VISIBLE NORMALIZED OWN TEMPERATURE + "
+                "EVALUATOR ABSOLUTE °C"
+            ),
+            charging_contact="ORGANISM-VISIBLE + EVALUATOR",
+            action_decision_mode=(
+                "CONTROLLER MODE SHOWN; CHARGER PHASE EVALUATOR ONLY"
+            ),
+        ),
+        probe_distance=config.probe_distance,
+        sensor_angle=config.sensor_angle,
+        thermal_threshold=config.preferred_operating_ceiling_c,
+        thermal_threshold_label="PREFERRED 45°C — EVALUATOR ONLY",
+        energy_label="BATTERY (NORMALIZED)",
+        mode_display_label="controller mode",
+    )
+
+
+def build_d021_development_visualization(
+    *,
+    seed: int = 18365,
+    horizon: int = 70_000,
+) -> DevelopmentVisualizationData:
+    """Run the fixed canonical D-021 lifetime before building neutral data."""
+    from .d021 import run_d021_lifetime_trace
+
+    if seed != 18365:
+        raise ValueError("D-021 visualization is fixed to canonical seed 18365")
+    trace = run_d021_lifetime_trace(seed, horizon=horizon)
+    return adapt_d021_trace(trace)
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
@@ -2269,6 +2546,7 @@ DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     "d015": build_d015_development_visualization,
     "d017": build_d017_development_visualization,
     "d018": build_d018_development_visualization,
+    "d021": build_d021_development_visualization,
 }
 
 
@@ -2339,6 +2617,18 @@ def d020_main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--interval-ms", type=_positive_int, default=650)
     args = parser.parse_args(argv)
     data = build_d020_development_visualization()
+    show_development_visualization(data, interval_ms=args.interval_ms)
+    return 0
+
+
+def d021_main(argv: Sequence[str] | None = None) -> int:
+    """Open the fixed canonical D-021 autonomous lifetime visualization."""
+    parser = argparse.ArgumentParser(
+        description="Replay the canonical D-021 seed 18365 lifetime."
+    )
+    parser.add_argument("--interval-ms", type=_positive_int, default=90)
+    args = parser.parse_args(argv)
+    data = build_d021_development_visualization()
     show_development_visualization(data, interval_ms=args.interval_ms)
     return 0
 
