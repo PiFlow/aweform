@@ -17,7 +17,7 @@ Aweform now uses two research lanes:
 - **Development (`D-NNN`)** for fast, descriptive, exploratory iteration on legal development seeds.
 - **Evidence (`EXP-NNN`)** for important claims that justify frozen protocols, untouched reserved seeds, exact-SHA reproducibility, and independent review.
 
-The accepted lifetime-plasticity / sensory-plasticity closure is **V0.3**, opened by [`ADR 0010`](docs/adr/0010-v0.3-lifetime-plasticity.md). [`ADR 0009`](docs/adr/0009-v0.2-bounded-observation-history-state.md) remains the valid historical authorization for V0.2 work performed under it and is not rewritten by V0.3. [`ADR 0012`](docs/adr/0012-v0.4-minimal-physical-energy-thermal-boundary.md) proposes a separate V0.4 physical embodiment, energy, and thermal boundary; while unmerged it authorizes no implementation, and after acceptance it supplements rather than replaces the V0.3 provenance closure.
+The accepted lifetime-plasticity / sensory-plasticity closure is **V0.3**, opened by [`ADR 0010`](docs/adr/0010-v0.3-lifetime-plasticity.md). [`ADR 0009`](docs/adr/0009-v0.2-bounded-observation-history-state.md) remains the valid historical authorization for V0.2 work performed under it and is not rewritten by V0.3. [`ADR 0012`](docs/adr/0012-v0.4-minimal-physical-energy-thermal-boundary.md) opens the accepted V0.4 physical embodiment, energy, and thermal boundary; it supplements rather than replaces the V0.3 provenance closure. [`ADR 0013`](docs/adr/0013-model-agnostic-independent-review-governance.md) governs model-agnostic independent reviewer selection and records the review-provenance ratification for ADR 0012.
 
 V0.3 permits bounded persistent plastic/learned state within a continuous organism lifetime when every causal write obeys the declared sensory/plasticity provenance boundary. It does not pre-authorize a particular learner, world model, thermal ecology, predictor horizon, or arbitration architecture.
 
@@ -92,7 +92,7 @@ A development iteration may:
 
 It makes **no confirmatory claim**. A D-result may motivate a later EXP protocol but cannot count as confirmatory evidence for that claim.
 
-Development work does not require dual Sol + Opus exact-SHA review for every iteration when it makes no evidence claim and does not change a durable architecture/information/sensory-plasticity/safety boundary, frozen evidence, or reserved-seed contract. Normal tests still apply and Flow controls merges.
+Development work does not require the formal two-reviewer exact-SHA gate for every iteration when it makes no evidence claim and does not change a durable architecture/information/sensory-plasticity/safety boundary, frozen evidence, or reserved-seed contract. Normal tests still apply and Flow controls merges.
 
 ## Evidence and durable-boundary review
 
@@ -102,14 +102,17 @@ Formal independent review remains mandatory for:
 - new or changed durable architecture, sensory/plasticity, information, or safety boundaries;
 - modifications to frozen evidence or reserved-seed contracts.
 
+Reviewer selection and provenance follow [`ADR 0013`](docs/adr/0013-model-agnostic-independent-review-governance.md).
+
 For those reviews:
 
 - Luna/Codex may implement, but its own summary is not independent evidence.
-- GPT-5.6 Sol performs the first independent implementation/scientific review.
-- Claude Opus 5 performs the final independent review.
-- Each independent review of record must be posted as a comment on the relevant GitHub PR and must contain the reviewer identity, `PASS` or `REQUEST CHANGES`, and the exact reviewed HEAD SHA.
+- Flow designates at least two independent high-capability reviewers for the exact candidate; no particular vendor or model is permanently required.
+- The second reviewer should, whenever practical, be from a different model family/provider from the first to increase error diversity.
+- Each independent review of record must identify the reviewer/model, `PASS` or `REQUEST CHANGES`, and the exact reviewed HEAD SHA, with enough substantive reasoning to show what was checked.
+- The review of record must be archived on the relevant GitHub PR. If an external terminal reviewer cannot post directly, Flow or a maintainer may archive a faithful transcript or concise provenance-preserving summary, clearly labelled so no reviewer is impersonated.
 - Only `PASS` against the exact current HEAD qualifies. Any later commit invalidates that `PASS` and requires review of the new HEAD.
 - Repository evidence outranks agent summaries, and no actor treats its own implementation as independent approval.
-- Flow authorises merges. Merge only after **both Sol and Opus pass the exact current candidate** and Flow authorises it.
+- Flow authorises merges. Merge only after at least **two qualifying independent reviewers pass the exact current candidate** and Flow authorises it.
 
-The developmental-reset foundation itself changes durable governance and therefore remains subject to this rigorous review before merge.
+Changes to this review governance require an explicit Flow decision and a durable repository record; reviewer unavailability alone must not be hidden by pretending a review occurred.
