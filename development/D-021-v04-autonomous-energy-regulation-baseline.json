@@ -1,0 +1,391 @@
+{
+  "authoritative_base_sha": "eb632767bc2fedf2465e8b24b6b3395841b9b54a",
+  "development_seeds": [
+    18365,
+    18366,
+    18367
+  ],
+  "evaluator_only": {
+    "fields": [
+      "x/y/heading after initial setup",
+      "station location",
+      "true distance",
+      "battery joules",
+      "absolute Celsius",
+      "charger phase/latch",
+      "telemetry and event summaries",
+      "shutdown reason"
+    ],
+    "passed_to_controller": false
+  },
+  "experiment": "D-021",
+  "freeze": {
+    "controller": "D021Controller",
+    "event_definitions_frozen": true,
+    "exploration_hazard": 0.125,
+    "full_energy_threshold": 1.0,
+    "initial_battery": "D020PhysicalConfig.battery_capacity_j",
+    "initial_body_position": [
+      0.5,
+      0.5
+    ],
+    "initial_body_temperature_c": 23.0,
+    "initial_charger_termination_latched": false,
+    "initial_heading": "RandomStreams.from_seed(seed).environment.uniform(0.0, 2*pi)",
+    "initial_station_center": [
+      0.5,
+      0.5
+    ],
+    "low_energy_seek_threshold": 0.5,
+    "physical_config": "D020PhysicalConfig unchanged except episode_horizon"
+  },
+  "horizon": 70000,
+  "implementation_probe_sha": "0dd310cf1324319bb64a603f3a293b70db4ecbd2",
+  "learned": {
+    "status": "none"
+  },
+  "lifetime": "one uninterrupted lifetime per seed",
+  "organism_boundary": {
+    "info": {},
+    "reward": 0.0
+  },
+  "organism_visible": {
+    "channels": [
+      "normalized own battery energy",
+      "beacon left",
+      "beacon forward",
+      "beacon right",
+      "charging_contact",
+      "normalized own body temperature"
+    ],
+    "observation_type": "D011Observation projection of D020's six channels",
+    "temperature_used_for_behavior": false
+  },
+  "programmed": {
+    "controller": "fixed non-learning D021Controller",
+    "controller_modes": [
+      "CHARGE",
+      "DEPART",
+      "AWAY",
+      "SEEK"
+    ],
+    "exploration": "StochasticPersistentExplorer with EXP001 hazard 1/8",
+    "full_departure_rule": "CHARGE contact and normalized energy >= 1.0",
+    "learning": false,
+    "low_energy_seek_rule": "AWAY normalized energy < inherited 0.50 threshold",
+    "seek": "existing seek_beacon_action",
+    "thermal_behavioral_influence": "zero"
+  },
+  "results": [
+    {
+      "accidental_away_contacts": 88,
+      "action_counts": {
+        "MOVE_FORWARD": 35249,
+        "TURN_LEFT": 3359,
+        "TURN_RIGHT": 3308,
+        "WAIT": 28084
+      },
+      "battery_j": {
+        "final": 3454.178500003387,
+        "maximum": 5328.0,
+        "minimum": 2663.4855000048174,
+        "start": 5328.0
+      },
+      "battery_normalized": {
+        "final": 0.6483067870140076,
+        "maximum": 1.0,
+        "minimum": 0.49990344047546387,
+        "start": 1.0
+      },
+      "charge_entries": 1,
+      "completed_energy_regulation_cycles": 1,
+      "failure_and_censoring": {
+        "demonstrated_failed_seek_episodes": 0,
+        "emergency_hard_thermal_shutdown": false,
+        "energy_depletion": false,
+        "full_recharge_without_redeparture_before_horizon": 0,
+        "horizon_censored_seek_episodes": 0,
+        "horizon_truncation": true,
+        "mode_event_inconsistencies": [],
+        "protective_thermal_shutdown": false,
+        "reacquisition_followed_by_termination_before_full_recharge": 0,
+        "unresolved_seek_at_horizon": 0,
+        "unresolved_seek_at_termination": 0
+      },
+      "final_mode": "AWAY",
+      "full_departures": 2,
+      "full_recharge_events": 1,
+      "initial_full_departures": 1,
+      "low_energy_seek_entries": 1,
+      "mode_entry_counts": {
+        "AWAY": 2,
+        "CHARGE": 2,
+        "DEPART": 2,
+        "SEEK": 1
+      },
+      "mode_occupancy": {
+        "AWAY": 41903,
+        "CHARGE": 28085,
+        "DEPART": 6,
+        "SEEK": 6
+      },
+      "physical_charger_exits": 90,
+      "physical_reacquisitions": 1,
+      "physical_seconds": 7000.0,
+      "post_recharge_redepartures": 1,
+      "seed": 18365,
+      "seeded_heading": 5.745213187352808,
+      "seek_episodes": [
+        {
+          "charging_contact_at_entry": false,
+          "energy_at_entry": 0.49999165534973145,
+          "energy_at_reacquisition": 0.49991658329963684,
+          "entry_action": "TURN_LEFT",
+          "evaluator_distance_at_entry": 0.20259140197772882,
+          "evaluator_distance_at_reacquisition": 0.06598407268102083,
+          "outcome": "reacquired",
+          "reacquisition_action": "MOVE_FORWARD",
+          "reacquisition_transition": 24575,
+          "seek_entry_transition": 24570,
+          "temperature_normalized_at_entry": 0.29480478167533875,
+          "temperature_normalized_at_reacquisition": 0.2948063611984253,
+          "transitions_since_seek_entry": 5
+        }
+      ],
+      "temperature_c": {
+        "final": 23.628244346944438,
+        "maximum": 24.275449191393236
+      },
+      "temperature_normalized": {
+        "final": 0.2953530550003052,
+        "maximum": 0.3034431040287018,
+        "start": 0.2874999940395355
+      },
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_diagnostics": {
+        "emergency_65_c_occurred": false,
+        "final_temperature_c": 23.628244346944438,
+        "final_temperature_normalized": 0.2953530550003052,
+        "maximum_temperature_c": 24.275449191393236,
+        "maximum_temperature_normalized": 0.3034431040287018,
+        "preferred_45_c_reached": false,
+        "protective_60_c_occurred": false,
+        "starting_temperature_normalized": 0.2874999940395355
+      },
+      "transitions": 70000,
+      "truncated": true
+    },
+    {
+      "accidental_away_contacts": 92,
+      "action_counts": {
+        "MOVE_FORWARD": 35378,
+        "TURN_LEFT": 3316,
+        "TURN_RIGHT": 3217,
+        "WAIT": 28089
+      },
+      "battery_j": {
+        "final": 3463.020000003398,
+        "maximum": 5328.0,
+        "minimum": 2662.5725000048515,
+        "start": 5328.0
+      },
+      "battery_normalized": {
+        "final": 0.6499662399291992,
+        "maximum": 1.0,
+        "minimum": 0.4997320771217346,
+        "start": 1.0
+      },
+      "charge_entries": 1,
+      "completed_energy_regulation_cycles": 1,
+      "failure_and_censoring": {
+        "demonstrated_failed_seek_episodes": 0,
+        "emergency_hard_thermal_shutdown": false,
+        "energy_depletion": false,
+        "full_recharge_without_redeparture_before_horizon": 0,
+        "horizon_censored_seek_episodes": 0,
+        "horizon_truncation": true,
+        "mode_event_inconsistencies": [],
+        "protective_thermal_shutdown": false,
+        "reacquisition_followed_by_termination_before_full_recharge": 0,
+        "unresolved_seek_at_horizon": 0,
+        "unresolved_seek_at_termination": 0
+      },
+      "final_mode": "AWAY",
+      "full_departures": 2,
+      "full_recharge_events": 1,
+      "initial_full_departures": 1,
+      "low_energy_seek_entries": 1,
+      "mode_entry_counts": {
+        "AWAY": 2,
+        "CHARGE": 2,
+        "DEPART": 2,
+        "SEEK": 1
+      },
+      "mode_occupancy": {
+        "AWAY": 41888,
+        "CHARGE": 28090,
+        "DEPART": 7,
+        "SEEK": 15
+      },
+      "physical_charger_exits": 94,
+      "physical_reacquisitions": 1,
+      "physical_seconds": 7000.0,
+      "post_recharge_redepartures": 1,
+      "seed": 18366,
+      "seeded_heading": 1.1544805814060477,
+      "seek_episodes": [
+        {
+          "charging_contact_at_entry": false,
+          "energy_at_entry": 0.49999484419822693,
+          "energy_at_reacquisition": 0.4997452199459076,
+          "entry_action": "TURN_LEFT",
+          "evaluator_distance_at_entry": 0.5088423379304523,
+          "evaluator_distance_at_reacquisition": 0.08732661874473412,
+          "outcome": "reacquired",
+          "reacquisition_action": "MOVE_FORWARD",
+          "reacquisition_transition": 24632,
+          "seek_entry_transition": 24618,
+          "temperature_normalized_at_entry": 0.2948251962661743,
+          "temperature_normalized_at_reacquisition": 0.2948269844055176,
+          "transitions_since_seek_entry": 14
+        }
+      ],
+      "temperature_c": {
+        "final": 23.629791455579376,
+        "maximum": 24.27583996221735
+      },
+      "temperature_normalized": {
+        "final": 0.2953723967075348,
+        "maximum": 0.30344799160957336,
+        "start": 0.2874999940395355
+      },
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_diagnostics": {
+        "emergency_65_c_occurred": false,
+        "final_temperature_c": 23.629791455579376,
+        "final_temperature_normalized": 0.2953723967075348,
+        "maximum_temperature_c": 24.27583996221735,
+        "maximum_temperature_normalized": 0.30344799160957336,
+        "preferred_45_c_reached": false,
+        "protective_60_c_occurred": false,
+        "starting_temperature_normalized": 0.2874999940395355
+      },
+      "transitions": 70000,
+      "truncated": true
+    },
+    {
+      "accidental_away_contacts": 95,
+      "action_counts": {
+        "MOVE_FORWARD": 35396,
+        "TURN_LEFT": 3255,
+        "TURN_RIGHT": 3255,
+        "WAIT": 28094
+      },
+      "battery_j": {
+        "final": 3454.352000003394,
+        "maximum": 5328.0,
+        "minimum": 2661.871500004827,
+        "start": 5328.0
+      },
+      "battery_normalized": {
+        "final": 0.6483393311500549,
+        "maximum": 1.0,
+        "minimum": 0.49960049986839294,
+        "start": 1.0
+      },
+      "charge_entries": 1,
+      "completed_energy_regulation_cycles": 1,
+      "failure_and_censoring": {
+        "demonstrated_failed_seek_episodes": 0,
+        "emergency_hard_thermal_shutdown": false,
+        "energy_depletion": false,
+        "full_recharge_without_redeparture_before_horizon": 0,
+        "horizon_censored_seek_episodes": 0,
+        "horizon_truncation": true,
+        "mode_event_inconsistencies": [],
+        "protective_thermal_shutdown": false,
+        "reacquisition_followed_by_termination_before_full_recharge": 0,
+        "unresolved_seek_at_horizon": 0,
+        "unresolved_seek_at_termination": 0
+      },
+      "final_mode": "AWAY",
+      "full_departures": 2,
+      "full_recharge_events": 1,
+      "initial_full_departures": 1,
+      "low_energy_seek_entries": 1,
+      "mode_entry_counts": {
+        "AWAY": 2,
+        "CHARGE": 2,
+        "DEPART": 2,
+        "SEEK": 1
+      },
+      "mode_occupancy": {
+        "AWAY": 41877,
+        "CHARGE": 28095,
+        "DEPART": 6,
+        "SEEK": 22
+      },
+      "physical_charger_exits": 97,
+      "physical_reacquisitions": 1,
+      "physical_seconds": 7000.0,
+      "post_recharge_redepartures": 1,
+      "seed": 18367,
+      "seeded_heading": 5.6984393743113415,
+      "seek_episodes": [
+        {
+          "charging_contact_at_entry": false,
+          "energy_at_entry": 0.4999946653842926,
+          "energy_at_reacquisition": 0.4996136426925659,
+          "entry_action": "TURN_LEFT",
+          "evaluator_distance_at_entry": 0.7071067811865476,
+          "evaluator_distance_at_reacquisition": 0.09359097522561621,
+          "outcome": "reacquired",
+          "reacquisition_action": "MOVE_FORWARD",
+          "reacquisition_transition": 24642,
+          "seek_entry_transition": 24621,
+          "temperature_normalized_at_entry": 0.29483622312545776,
+          "temperature_normalized_at_reacquisition": 0.2948381304740906,
+          "transitions_since_seek_entry": 21
+        }
+      ],
+      "temperature_c": {
+        "final": 23.627893873782394,
+        "maximum": 24.27607724216125
+      },
+      "temperature_normalized": {
+        "final": 0.2953486740589142,
+        "maximum": 0.30345097184181213,
+        "start": 0.2874999940395355
+      },
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "thermal_diagnostics": {
+        "emergency_65_c_occurred": false,
+        "final_temperature_c": 23.627893873782394,
+        "final_temperature_normalized": 0.2953486740589142,
+        "maximum_temperature_c": 24.27607724216125,
+        "maximum_temperature_normalized": 0.30345097184181213,
+        "preferred_45_c_reached": false,
+        "protective_60_c_occurred": false,
+        "starting_temperature_normalized": 0.2874999940395355
+      },
+      "transitions": 70000,
+      "truncated": true
+    }
+  ],
+  "schema_version": 1,
+  "seed_policy": {
+    "canonical_validator": "validate_exp003_development_seeds",
+    "exact_declared_seeds": [
+      18365,
+      18366,
+      18367
+    ],
+    "formal_reservation_guard_preserved": true
+  },
+  "simulated_duration_seconds": 7000.0,
+  "timestep_seconds": 0.1,
+  "title": "Minimal autonomous V0.4 energy-regulation baseline"
+}
