@@ -33,6 +33,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-015 | D-014 shadow consequence support diagnostic | CONTINUING | [`D-015-d014-shadow-consequence-support-diagnostic.md`](D-015-d014-shadow-consequence-support-diagnostic.md) |
 | D-016 | Current-beacon contact-transition observability audit | CONTINUING | [`D-016-current-beacon-contact-observability-audit.md`](D-016-current-beacon-contact-observability-audit.md) |
 | D-017 | Shadow rear-docking pose decomposition audit | CONTINUING | [`D-017-shadow-rear-docking-pose-decomposition-audit.md`](D-017-shadow-rear-docking-pose-decomposition-audit.md) |
+| D-018 | Evaluator-only action-alternative consequence audit | CONTINUING | [`D-018-evaluator-only-action-alternative-consequence-audit.md`](D-018-evaluator-only-action-alternative-consequence-audit.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 
