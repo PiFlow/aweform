@@ -741,6 +741,63 @@ def test_d018_alternative_panel_is_headless_and_controls_remain_display_only() -
     plt.close(figure)
 
 
+def test_d018_layout_makes_world_primary_and_keeps_annotations_outside_world() -> None:
+    data = build_d018_development_visualization(seed=18361, horizon=3)
+    figure, animation = build_development_visualization_figure(data)
+    figure.canvas.draw()
+    world_axis, diagnostic_axis, alternative_axis = figure.axes
+    renderer = figure.canvas.get_renderer()
+    world_position = world_axis.get_position()
+    usable_width = figure.subplotpars.right - figure.subplotpars.left
+
+    assert world_axis.get_aspect() == pytest.approx(1.0)
+    assert world_position.width / usable_width >= 0.30
+    assert diagnostic_axis.get_title(loc="left").startswith(
+        "EVALUATOR DIAGNOSTICS"
+    )
+    assert alternative_axis.get_title(loc="left").startswith("ACTION ALTERNATIVES")
+    assert len(figure.legends) == 1
+
+    world_rectangle = world_axis.get_window_extent(renderer)
+    world_legend = figure.legends[0].get_window_extent(renderer)
+    assert not world_legend.overlaps(world_rectangle)
+
+    probe_caption = next(
+        text
+        for text in figure.texts
+        if "directional probes = idealized beacon display" in text.get_text()
+    )
+    assert not probe_caption.get_window_extent(renderer).overlaps(world_rectangle)
+
+    animation.event_source.stop()
+    plt.close(figure)
+
+
+def test_d018_axes_geometry_is_fixed_when_playback_labels_change() -> None:
+    data = build_d018_development_visualization(seed=18361, horizon=120)
+    figure, animation = build_development_visualization_figure(data)
+    figure.canvas.draw()
+    initial_positions = tuple(
+        tuple(float(value) for value in axis.get_position().bounds)
+        for axis in figure.axes
+    )
+
+    player = getattr(figure, "_aweform_player")
+    for _ in range(99):
+        player.step_forward()
+    animation._func(0)
+    figure.canvas.draw()
+    later_positions = tuple(
+        tuple(float(value) for value in axis.get_position().bounds)
+        for axis in figure.axes
+    )
+
+    for later, initial in zip(later_positions, initial_positions, strict=True):
+        assert later == pytest.approx(initial, abs=1.0e-12)
+    animation.event_source.stop()
+    plt.close(figure)
+
+
 def test_renderer_plots_cumulative_mae_and_matches_displayed_statistics() -> None:
     data = _synthetic_consequence_data()
     figure, animation = build_development_visualization_figure(data)
