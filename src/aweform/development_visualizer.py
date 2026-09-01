@@ -570,7 +570,7 @@ def build_development_visualization_figure(
         if has_action_alternatives:
             shadow_overlay_label = figure.text(
                 0.03,
-                0.94,
+                0.965,
                 shadow_text,
                 va="top",
                 fontsize=8,
@@ -624,7 +624,7 @@ def build_development_visualization_figure(
         if has_action_alternatives:
             figure.text(
                 0.03,
-                0.94,
+                0.965,
                 "directional probes = idealized beacon display\n"
                 "(not literal RF beams)",
                 va="top",
@@ -648,9 +648,9 @@ def build_development_visualization_figure(
             legend_handles,
             legend_labels,
             loc="lower left",
-            bbox_to_anchor=(0.03, 0.015, 0.31, 0.08),
+            bbox_to_anchor=(0.03, 0.0, 0.31, 0.08),
             mode="expand",
-            ncols=2,
+            ncols=3,
             borderaxespad=0.0,
             fontsize=7,
             framealpha=0.85,

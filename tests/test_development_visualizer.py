@@ -761,6 +761,14 @@ def test_d018_layout_makes_world_primary_and_keeps_annotations_outside_world() -
     world_rectangle = world_axis.get_window_extent(renderer)
     world_legend = figure.legends[0].get_window_extent(renderer)
     assert not world_legend.overlaps(world_rectangle)
+    assert not world_legend.overlaps(
+        world_axis.xaxis.label.get_window_extent(renderer)
+    )
+    assert all(
+        not world_legend.overlaps(tick_label.get_window_extent(renderer))
+        for tick_label in world_axis.get_xticklabels()
+        if tick_label.get_visible()
+    )
 
     probe_caption = next(
         text
@@ -768,6 +776,9 @@ def test_d018_layout_makes_world_primary_and_keeps_annotations_outside_world() -
         if "directional probes = idealized beacon display" in text.get_text()
     )
     assert not probe_caption.get_window_extent(renderer).overlaps(world_rectangle)
+    assert not probe_caption.get_window_extent(renderer).overlaps(
+        world_axis.title.get_window_extent(renderer)
+    )
 
     animation.event_source.stop()
     plt.close(figure)
