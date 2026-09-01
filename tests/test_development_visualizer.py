@@ -12,12 +12,13 @@ import matplotlib.pyplot as plt
 import pytest
 from matplotlib.backend_bases import KeyEvent
 
-from aweform import d011, d012, d013
+from aweform import d011, d012, d013, d015, d018
 from aweform.d003 import run_d003_probe
 from aweform.d005 import run_d005_probe
 from aweform.d006 import run_d006_probe
 from aweform.development_visualizer import (
     DEVELOPMENT_VISUALIZATION_ADAPTERS,
+    DevelopmentActionAlternative,
     DevelopmentConsequencePredictionFrame,
     DevelopmentVisualizationData,
     DevelopmentVisualizationFrame,
@@ -36,6 +37,7 @@ from aweform.development_visualizer import (
     build_d013_reference_development_visualization,
     build_d015_development_visualization,
     build_d015_reference_development_visualization,
+    build_d018_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
 )
@@ -604,6 +606,139 @@ def test_d015_visualization_sources_reject_non_d015_and_reserved_seeds(
     ):
         with pytest.raises(ValueError):
             builder(seed=seed, horizon=1)
+
+
+def test_d018_source_is_registered_and_builds_four_action_groups() -> None:
+    assert DEVELOPMENT_VISUALIZATION_ADAPTERS["d018"] is (
+        build_d018_development_visualization
+    )
+    for seed in (18359, 18360, 18361):
+        data = build_d018_development_visualization(seed=seed, horizon=3)
+        assert data.action_alternatives is not None
+        assert len(data.action_alternatives) == 3
+        for frame, alternatives in zip(
+            data.frames, data.action_alternatives, strict=True
+        ):
+            assert len(alternatives) == 4
+            assert all(
+                isinstance(alternative, DevelopmentActionAlternative)
+                for alternative in alternatives
+            )
+            assert sum(
+                alternative.physically_executed for alternative in alternatives
+            ) == 1
+            executed = next(
+                alternative
+                for alternative in alternatives
+                if alternative.physically_executed
+            )
+            assert executed.action == frame.action
+
+
+@pytest.mark.parametrize("seed", (18358, 50001))
+def test_d018_visualization_sources_reject_undeclared_and_reserved_seeds(
+    seed: int,
+) -> None:
+    with pytest.raises(ValueError):
+        build_d018_development_visualization(seed=seed, horizon=1)
+
+
+def test_d018_visualization_preserves_real_trace_and_evaluator_rows() -> None:
+    data = build_d018_development_visualization(seed=18361, horizon=40)
+    audit = d018._run_seed(18361, horizon=40, counterfactual_audit=True)
+    reference = d015._run_seed(18361, horizon=40)
+    alternatives = data.action_alternatives
+    assert alternatives is not None
+    audit_rows = audit.summary["audit"]
+    assert isinstance(audit_rows, dict)
+    rows = audit_rows["rows"]
+    assert isinstance(rows, list)
+    assert len(rows) == len(data.frames) * 4
+    rows_by_transition: dict[int, list[dict[str, object]]] = {}
+    for row in rows:
+        assert isinstance(row, dict)
+        rows_by_transition.setdefault(row["transition_index"], []).append(row)
+
+    for frame, record, group in zip(
+        data.frames, audit.trace, alternatives, strict=True
+    ):
+        assert frame.transition_index == record["transition_index"]
+        assert frame.action == record["action"]
+        assert frame.decision_mode == record["mode_before"]
+        assert (frame.x, frame.y) == tuple(record["position_after"])
+        assert frame.heading == record["heading_after"]
+        next_state = record["next_visible_state"]
+        assert isinstance(next_state, dict)
+        assert frame.energy == next_state["normalized_energy"]
+        assert frame.thermal == next_state["normalized_thermal"]
+        assert frame.charging_contact == next_state["charging_contact"]
+        assert frame.beacon_left == next_state["beacon_left"]
+        assert frame.beacon_forward == next_state["beacon_forward"]
+        assert frame.beacon_right == next_state["beacon_right"]
+        assert frame.terminated == record["terminated"]
+        assert frame.truncated == record["truncated"]
+        transition_rows = rows_by_transition[frame.transition_index]
+        assert [alternative.action for alternative in group] == [
+            row["candidate_action"] for row in transition_rows
+        ]
+        for alternative, row in zip(group, transition_rows, strict=True):
+            assert alternative.physically_executed == (
+                row["candidate_action"] == frame.action
+            )
+            assert alternative.prior_exact_support_count == row[
+                "prior_exact_state_action_support_count"
+            ]
+            assert alternative.predicted_delta_energy == row["predicted_delta_energy"]
+            assert alternative.actual_delta_energy == row["actual_delta_energy"]
+            assert alternative.predicted_delta_thermal == row[
+                "predicted_delta_thermal"
+            ]
+            assert alternative.actual_delta_thermal == row["actual_delta_thermal"]
+            assert alternative.predicted_delta_charging_contact == row[
+                "predicted_delta_charging_contact"
+            ]
+            assert alternative.actual_delta_charging_contact == row[
+                "actual_delta_charging_contact"
+            ]
+    assert all(
+        alternative.prior_exact_support_count == 0
+        for alternative in alternatives[0]
+    )
+    assert audit.final_weights == reference["final_weights"]
+
+
+def test_d018_alternative_panel_is_headless_and_controls_remain_display_only() -> None:
+    data = build_d018_development_visualization(seed=18361, horizon=3)
+    figure, animation = build_development_visualization_figure(data)
+    assert len(figure.axes) == 3
+    alternative_axis = getattr(figure, "_aweform_alternative_axis")
+    assert alternative_axis is figure.axes[2]
+    rendered_text = "\n".join(
+        [text.get_text() for axis in figure.axes for text in axis.texts]
+        + [axis.get_title() for axis in figure.axes]
+    )
+    assert "EVALUATOR-ONLY ACTION ALTERNATIVES" in rendered_text
+    assert "D-014 CHOSE THE REAL ACTION BEFORE SCORING" in rendered_text
+    assert "GHOST OUTCOMES DO NOT AFFECT BEHAVIOUR OR LEARNING" in rendered_text
+    assert "D-013 PRE-UPDATE PREDICTION" in rendered_text
+    assert "REAL / EXECUTED" in rendered_text
+    assert "GHOST / UNEXECUTED" in rendered_text
+    assert all(
+        label in rendered_text
+        for label in ("WAIT", "TURN_LEFT", "TURN_RIGHT", "MOVE_FORWARD")
+    )
+
+    player = getattr(figure, "_aweform_player")
+    assert player.frame_index == 0
+    event = KeyEvent("key_press_event", figure.canvas, key="right")
+    figure.canvas.callbacks.process("key_press_event", event)
+    assert player.frame_index == 1
+    event = KeyEvent("key_press_event", figure.canvas, key="r")
+    figure.canvas.callbacks.process("key_press_event", event)
+    assert player.frame_index == 0
+
+    animation.event_source.stop()
+    plt.close(figure)
 
 
 def test_renderer_plots_cumulative_mae_and_matches_displayed_statistics() -> None:
