@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import pytest
 from matplotlib.backend_bases import KeyEvent
 
+import aweform.development_visualizer as development_visualizer_module
 from aweform import d011, d012, d013, d015, d018
 from aweform.d003 import run_d003_probe
 from aweform.d005 import run_d005_probe
@@ -38,6 +39,7 @@ from aweform.development_visualizer import (
     build_d015_development_visualization,
     build_d015_reference_development_visualization,
     build_d018_development_visualization,
+    build_d020_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
 )
@@ -1292,3 +1294,136 @@ def test_figure_keyboard_controls_drive_only_the_display_player() -> None:
 
     animation.event_source.stop()
     plt.close(figure)
+
+
+def test_d020_visualization_is_seedless_and_keeps_seeded_title_semantics() -> None:
+    d020 = build_d020_development_visualization()
+    assert d020.seed is None
+    figure, animation = build_development_visualization_figure(d020)
+    title = figure._suptitle.get_text()  # type: ignore[union-attr]
+    assert "seedless fixed-state" in title
+    assert "seed None" not in title
+    assert "seed 0" not in title
+    animation.event_source.stop()
+    plt.close(figure)
+
+    seeded = build_d003_development_visualization(seed=18141, horizon=1)
+    seeded_figure, seeded_animation = build_development_visualization_figure(seeded)
+    seeded_title = seeded_figure._suptitle.get_text()  # type: ignore[union-attr]
+    assert "seed 18141" in seeded_title
+    assert "seedless fixed-state" not in seeded_title
+    seeded_animation.event_source.stop()
+    plt.close(seeded_figure)
+
+
+def test_d020_visualization_replays_exact_frozen_mixed_action_trace() -> None:
+    data = build_d020_development_visualization()
+
+    assert len(data.frames) == 11
+    assert [frame.action for frame in data.frames] == [
+        "WAIT",
+        "TURN_LEFT",
+        "TURN_RIGHT",
+        "MOVE_FORWARD",
+        "MOVE_FORWARD",
+        "MOVE_FORWARD",
+        "WAIT",
+        "MOVE_FORWARD",
+        "MOVE_FORWARD",
+        "MOVE_FORWARD",
+        "MOVE_FORWARD",
+    ]
+    assert [frame.charging_contact for frame in data.frames] == [
+        False,
+        False,
+        False,
+        False,
+        False,
+        True,
+        True,
+        True,
+        True,
+        True,
+        False,
+    ]
+    assert [frame.decision_mode for frame in data.frames] == [
+        "EVALUATOR CHARGER: OFF",
+        "EVALUATOR CHARGER: OFF",
+        "EVALUATOR CHARGER: OFF",
+        "EVALUATOR CHARGER: OFF",
+        "EVALUATOR CHARGER: OFF",
+        "EVALUATOR CHARGER: BULK",
+        "EVALUATOR CHARGER: BULK",
+        "EVALUATOR CHARGER: BULK",
+        "EVALUATOR CHARGER: BULK",
+        "EVALUATOR CHARGER: BULK",
+        "EVALUATOR CHARGER: OFF",
+    ]
+    assert all(frame.terminated is False for frame in data.frames)
+    assert all(frame.truncated is False for frame in data.frames)
+
+
+def test_d020_visualization_preserves_boundary_and_physical_display_semantics() -> None:
+    data = build_d020_development_visualization()
+
+    assert data.energy_range == DevelopmentVisualizationRange(0.0, 1.0)
+    assert data.energy_label == "BATTERY (NORMALIZED)"
+    assert all(0.0 <= frame.energy <= 1.0 for frame in data.frames)
+    assert data.frames[-1].energy == pytest.approx(0.4999868618618622, abs=2e-7)
+    assert data.frames[-1].energy != pytest.approx(2663.9300000000017)
+    assert data.thermal_range == DevelopmentVisualizationRange(0.0, 80.0)
+    assert data.frames[-1].thermal == pytest.approx(23.001486780144614)
+    assert data.thermal_threshold == 45.0
+    assert data.thermal_threshold_label == "PREFERRED 45°C — EVALUATOR ONLY"
+    assert all(
+        None not in (frame.beacon_left, frame.beacon_forward, frame.beacon_right)
+        and all(
+            0.0 <= value <= 1.0
+            for value in (frame.beacon_left, frame.beacon_forward, frame.beacon_right)
+            if value is not None
+        )
+        for frame in data.frames
+    )
+
+    assert data.visibility.position_heading == "EVALUATOR ONLY"
+    assert data.visibility.station_location == "EVALUATOR ONLY"
+    assert data.visibility.energy == "ORGANISM-VISIBLE + EVALUATOR"
+    assert data.visibility.charging_contact == "ORGANISM-VISIBLE + EVALUATOR"
+    assert "EVALUATOR °C" in data.visibility.thermal
+    assert "NORMALIZED OWN TEMPERATURE" in data.visibility.thermal
+    assert data.visibility.action_decision_mode == "EVALUATOR ONLY — NO CONTROLLER"
+    assert data.mode_display_label == "charger phase"
+
+
+def test_d020_visualization_builds_headless_from_unchanged_neutral_trace() -> None:
+    data = build_d020_development_visualization()
+    original_frames = data.frames
+    figure, animation = build_development_visualization_figure(data)
+
+    assert figure.axes[0].get_title() == "2D EVALUATOR WORLD"
+    assert figure.axes[1].get_title(loc="left") == "EVALUATOR DIAGNOSTICS"
+    rendered_text = "\n".join(
+        text.get_text() for axis in figure.axes for text in axis.texts
+    )
+    assert "ACTION / CHARGER PHASE: EVALUATOR ONLY — NO CONTROLLER" in rendered_text
+    assert "PREFERRED 45°C — EVALUATOR ONLY" in rendered_text
+    assert "BATTERY (NORMALIZED) — ORGANISM-VISIBLE + EVALUATOR" in rendered_text
+    assert data.frames is original_frames
+    animation.event_source.stop()
+    plt.close(figure)
+
+
+def test_d020_visualization_adapter_is_post_hoc_and_deterministic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def renderer_must_not_run(_data: object) -> object:
+        raise AssertionError("D-020 adapter must finish before rendering")
+
+    monkeypatch.setattr(
+        development_visualizer_module,
+        "build_development_visualization_figure",
+        renderer_must_not_run,
+    )
+    first = build_d020_development_visualization()
+    second = build_d020_development_visualization()
+    assert first == second

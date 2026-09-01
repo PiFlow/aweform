@@ -222,7 +222,7 @@ class DevelopmentVisualizationData:
     """All neutral data required by the shared development renderer."""
 
     source_label: str
-    seed: int
+    seed: int | None
     world_min: Coordinate
     world_max: Coordinate
     station_center: Coordinate | None
@@ -236,6 +236,7 @@ class DevelopmentVisualizationData:
     thermal_threshold: float | None = None
     thermal_threshold_label: str | None = None
     energy_label: str = "ENERGY"
+    mode_display_label: str = "decision mode"
     consequence_predictions: (
         tuple[DevelopmentConsequencePredictionFrame, ...] | None
     ) = None
@@ -251,8 +252,12 @@ class DevelopmentVisualizationData:
             raise ValueError("source_label must be non-empty")
         if not self.energy_label:
             raise ValueError("energy_label must be non-empty")
-        if isinstance(self.seed, bool) or not isinstance(self.seed, int):
-            raise ValueError("seed must be an integer")
+        if self.seed is not None and (
+            isinstance(self.seed, bool) or not isinstance(self.seed, int)
+        ):
+            raise ValueError("seed must be an integer or None")
+        if not self.mode_display_label:
+            raise ValueError("mode_display_label must be non-empty")
         _validate_coordinate("world_min", self.world_min)
         _validate_coordinate("world_max", self.world_max)
         if not all(
@@ -750,7 +755,8 @@ def build_development_visualization_figure(
         f"{data.visibility.station_location}\n"
         "CHARGING CONTACT: "
         f"{data.visibility.charging_contact}\n"
-        "ACTION / DECISION MODE: "
+        "ACTION / "
+        f"{data.mode_display_label.upper()}: "
         f"{data.visibility.action_decision_mode}",
         va="top",
         fontsize=8,
@@ -915,7 +921,7 @@ def build_development_visualization_figure(
         heading_arrow.set_UVC([math.cos(frame.heading)], [math.sin(frame.heading)])
         transition_text.set_text(f"transition: {frame.transition_index}")
         action_text.set_text(f"action: {frame.action}")
-        mode_text.set_text(f"decision mode: {frame.decision_mode}")
+        mode_text.set_text(f"{data.mode_display_label}: {frame.decision_mode}")
         contact_text.set_text(
             "charging contact: " + ("YES" if frame.charging_contact else "NO")
         )
@@ -1150,7 +1156,8 @@ def build_development_visualization_figure(
     figure.canvas.mpl_connect("key_press_event", on_key)
     suptitle = (
         "AWEFORM DEVELOPMENT VISUALIZER\n"
-        f"{data.source_label} — seed {data.seed}\n"
+        f"{data.source_label} — "
+        f"{'seedless fixed-state' if data.seed is None else f'seed {data.seed}'}\n"
         "DEVELOPMENT / EVALUATOR VIEW — NOT CONFIRMATORY EVIDENCE"
     )
     if has_action_alternatives:
@@ -2148,6 +2155,104 @@ def build_d018_development_visualization(
     )
 
 
+def build_d020_development_visualization() -> DevelopmentVisualizationData:
+    """Replay the frozen, seedless D-020 mixed-action probe post-hoc."""
+    from .d020 import (
+        D020_MIXED_ACTIONS,
+        D020Env,
+        D020PhysicalConfig,
+        D020TransitionTelemetry,
+    )
+
+    config = D020PhysicalConfig()
+    environment = D020Env(config)
+    reset_observation, reset_info = environment.reset(
+        options={
+            "body_position": (0.26, 0.5),
+            "station_center": (0.5, 0.5),
+            "heading": 0.0,
+            "battery_j": 2664.0,
+            "body_temperature_c": 23.0,
+        }
+    )
+    if reset_info != {} or reset_observation.shape != (6,):
+        raise RuntimeError("D-020 reset crossed the ordinary observation boundary")
+
+    completed_trace: list[tuple[np.ndarray, D020TransitionTelemetry]] = []
+    for transition_number, action in enumerate(D020_MIXED_ACTIONS, start=1):
+        observation, reward, terminated, truncated, info = environment.step(action)
+        if reward != 0.0 or info != {}:
+            raise RuntimeError("D-020 replay crossed the reward/info boundary")
+        if observation.shape != (6,):
+            raise RuntimeError("D-020 observation must contain exactly six channels")
+        telemetry = environment.last_transition
+        if telemetry is None:
+            raise RuntimeError("D-020 replay did not expose transition telemetry")
+        if telemetry.step_index != transition_number:
+            raise RuntimeError("D-020 transition indices are not sequential")
+        if telemetry.terminated != terminated or telemetry.truncated != truncated:
+            raise RuntimeError("D-020 telemetry flags disagree with returned flags")
+        if (terminated or truncated) and transition_number != len(D020_MIXED_ACTIONS):
+            raise RuntimeError("D-020 mixed probe ended before all actions ran")
+        completed_trace.append((observation, telemetry))
+
+    if len(completed_trace) != len(D020_MIXED_ACTIONS):
+        raise RuntimeError("D-020 mixed replay did not complete all transitions")
+    if environment.station_center is None:
+        raise RuntimeError("D-020 station geometry is unavailable")
+
+    # The neutral trace is built only after the complete evaluator replay has
+    # finished.  No renderer or GUI state participates in this accounting.
+    frames = tuple(
+        DevelopmentVisualizationFrame(
+            transition_index=telemetry.step_index,
+            x=telemetry.position_after[0],
+            y=telemetry.position_after[1],
+            heading=telemetry.heading,
+            action=telemetry.action.name,
+            decision_mode=f"EVALUATOR CHARGER: {telemetry.charge_phase.value}",
+            energy=float(observation[0]),
+            thermal=telemetry.body_temperature_after_c,
+            charging_contact=telemetry.charging_contact_after,
+            terminated=telemetry.terminated,
+            truncated=telemetry.truncated,
+            beacon_left=float(observation[1]),
+            beacon_forward=float(observation[2]),
+            beacon_right=float(observation[3]),
+        )
+        for observation, telemetry in completed_trace
+    )
+    return DevelopmentVisualizationData(
+        source_label=(
+            "D-020 V0.4 physical bookkeeping — mixed-action causal replay"
+        ),
+        seed=None,
+        world_min=config.world_min,
+        world_max=config.world_max,
+        station_center=environment.station_center,
+        charging_radius=config.charging_radius,
+        energy_range=DevelopmentVisualizationRange(0.0, 1.0),
+        thermal_range=DevelopmentVisualizationRange(0.0, 80.0),
+        frames=frames,
+        visibility=DevelopmentVisualizationVisibility(
+            position_heading="EVALUATOR ONLY",
+            station_location="EVALUATOR ONLY",
+            energy="ORGANISM-VISIBLE + EVALUATOR",
+            thermal=(
+                "EVALUATOR °C; ORGANISM SEES NORMALIZED OWN TEMPERATURE"
+            ),
+            charging_contact="ORGANISM-VISIBLE + EVALUATOR",
+            action_decision_mode="EVALUATOR ONLY — NO CONTROLLER",
+        ),
+        probe_distance=config.probe_distance,
+        sensor_angle=config.sensor_angle,
+        thermal_threshold=45.0,
+        thermal_threshold_label="PREFERRED 45°C — EVALUATOR ONLY",
+        energy_label="BATTERY (NORMALIZED)",
+        mode_display_label="charger phase",
+    )
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
@@ -2222,6 +2327,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     except ValueError as error:
         raise SystemExit(str(error)) from error
+    show_development_visualization(data, interval_ms=args.interval_ms)
+    return 0
+
+
+def d020_main(argv: Sequence[str] | None = None) -> int:
+    """Open the exact D-020 mixed-action visualization."""
+    parser = argparse.ArgumentParser(
+        description="Replay the seedless D-020 mixed-action causal probe."
+    )
+    parser.add_argument("--interval-ms", type=_positive_int, default=650)
+    args = parser.parse_args(argv)
+    data = build_d020_development_visualization()
     show_development_visualization(data, interval_ms=args.interval_ms)
     return 0
 
