@@ -95,7 +95,7 @@ Important source limitations are retained explicitly:
 | Item | First-party/reference fact | Interpretation |
 |---|---|---|
 | Chassis | 122 mm diameter; 15 mm ground clearance; 42 mm wheel diameter | Direct manufacturer reference |
-| Motor page specification | 13,000 rpm no-load; 50:1; 260 rpm @ 6 V; 40 mA @ 6 V; 360 mA stall @ 6 V; 10 oz-in torque @ 6 V | Direct manufacturer reference; the 40 mA value is not a loaded operating current |
+| Motor page specification | 13,000 rpm no-load; 50:1; 260 rpm @ 6 V; 40 mA @ 6 V; 360 mA stall @ 6 V; 10 oz-in torque @ 6 V | Direct manufacturer reference; the page does not explicitly label 40 mA as no-load current and provides no loaded-current curve, so it is not treated as normal loaded operating current |
 | Shipping list | Micro Metal Gear Motor with Connector `(75:1) x2` | Direct manufacturer reference conflicting with the preceding 50:1 specification |
 | Separate DFRobot 50:1 motor page | 1–6 V operating range; 440 rpm @ 6 V; 30 mA rated; 350 mA stall; 0.39 kg·cm stall torque; 15 g | Useful related reference, but not proof that it is the exact motor shipped with ROB0049 |
 | Complete miniQ kit | 350 g; 4.5–6 V supply; 109 × 122 mm | Manufacturer reference for a complete kit, not the bare ROB0049 chassis mass |
@@ -183,8 +183,8 @@ organism-visible**.
 E_battery_next = clamp(
     E_battery
     + P_stored_charge × dt
-    - P_electronics × dt
-    - P_actuator × dt,
+    - P_electronics_electrical × dt
+    - P_actuator_electrical(action) × dt,
     0,
     E_battery_max,
 )
@@ -210,10 +210,14 @@ The DRV8833 reference reports 1.7–3 mA motor-supply current in its active
 non-driving test condition and 1.6–2.5 µA in sleep at 5 V. Those values do not
 include motor power.
 
-Candidate continuous body electronics heat, including regulator and small
-supporting losses, is therefore:
+At this abstraction, most electronics electrical consumption is treated as
+local body heat, including regulator and small supporting losses. The
+battery-side electrical input and the body-coupled heat remain separate terms
+so a later prototype measurement can account for any power that is not
+coupled into the lumped body. Candidate continuous electronics body heat, and
+the corresponding electrical input estimate, is therefore:
 
-| Mode | Candidate body electronics power | Status |
+| Mode | Candidate electronics electrical input / body heat | Status |
 |---|---:|---|
 | Idle/light computation, radio disabled | 0.08–0.20 W | Engineering estimate anchored to ESP32-S3 and driver references |
 | Active normal computation, radio disabled | 0.12–0.35 W | Engineering estimate; exact firmware duty cycle dominates |
@@ -228,33 +232,38 @@ and radio disabled/enabled states.
 
 ### 10.1 Motor input
 
-The linked DFRobot page's 40 mA @ 6 V figure gives a 0.24 W per-motor
-no-load electrical input, or 0.48 W for two motors. It is not ordinary loaded
-power and it does not describe mechanical output under load. The 360 mA stall
-figure gives 2.16 W per motor, or 4.32 W for both, but stall is a peak/failure
-case and must not be used as the normal movement cost.
+DFRobot lists 40 mA at 6 V. The page does not explicitly label that line
+"no-load current" and does not provide a loaded-current curve, so this figure
+is not treated as normal loaded operating current. It does not describe
+mechanical output under load. The 360 mA stall figure gives 2.16 W per motor,
+or 4.32 W for both, but stall is a peak/failure case and must not be used as
+the normal movement cost.
 
 The following are deliberately broad **ENGINEERING ESTIMATES** pending a
 loaded current measurement:
 
-| Action | Normal two-motor electrical input | Energy at 0.1 s | Peak/stall comparison |
-|---|---:|---:|---:|
-| `WAIT` | 0 W actuator input | 0 J | motors inactive |
-| `MOVE_FORWARD` | 0.5–1.5 W | 0.05–0.15 J | up to about 4.32 W pair at documented stall current |
-| In-place `TURN` | 0.3–1.0 W | 0.03–0.10 J | depends on PWM and floor friction |
+| Action | Normal two-motor actuator electrical input | Battery electrical energy at 0.1 s | Actuator body-coupled heat | Peak/stall comparison |
+|---|---:|---:|---:|---:|
+| `WAIT` | 0 W | 0 J | 0 W (motors inactive) | motors inactive |
+| `MOVE_FORWARD` | 0.5–1.5 W | 0.05–0.15 J | **UNKNOWN / NEEDS MEASUREMENT** | up to about 4.32 W pair at documented stall current |
+| In-place `TURN` | 0.3–1.0 W | 0.03–0.10 J | **UNKNOWN / NEEDS MEASUREMENT** | depends on PWM and floor friction |
 
+These are battery-side electrical-input ranges, not thermal heat values.
 Normal, peak, and stall cases must remain separate. A future physical power
-event should split battery electrical input into mechanical work, motor/gear
-loss, driver loss, and heat rather than assigning unrelated abstract movement
-and thermal costs.
+event should split actuator electrical input into mechanical output,
+motor/gear losses, driver losses, and heat. Only the effective portion
+thermally coupled into the lumped body belongs in
+`P_actuator_body_heat(action)`.
 
 ### 10.2 Driver loss
 
-At 5 V and 25 °C, the DRV8833 datasheet gives typical high-side and low-side
-FET on-resistances of 160 mΩ and 200 mΩ at 500 mA. For one conducting bridge:
+At `VM = 5 V`, `IO = 500 mA`, and `TJ = 25 °C`, the DRV8833 datasheet gives
+typical high-side and low-side FET on-resistances of 200 mΩ and 160 mΩ. For
+one conducting bridge:
 
 ```text
-P_driver,DC ≈ I_RMS² × (0.160 + 0.200) Ω
+P_driver,DC ≈ I_RMS² × (0.200 + 0.160) Ω
+             = I_RMS² × 0.360 Ω
 ```
 
 For two bridges at 100–200 mA per motor, this is approximately 7–29 mW total
@@ -272,10 +281,17 @@ body heat. The fraction conducted into a single lumped body is **UNKNOWN / NEEDS
 MEASUREMENT**, because it depends on motor mounting, chassis material, gearbox
 coupling, duty cycle, and time scale.
 
-Recommendation: retain `P_actuator(action)` in the physics candidate, but first
-parameterize it as an evaluator-side effective body-coupled heat/power estimate
-or measured action-class average. Do not expose motor power, current, RPM, or
-loss decomposition to the organism.
+The battery energy equation must therefore use
+`P_actuator_electrical(action)`, while the thermal equation must use only
+`P_actuator_body_heat(action)`. Do not invent a motor thermal-efficiency or
+coupling fraction to populate the latter. If a numerical sensitivity envelope
+is needed before measurement, sweeping `P_actuator_body_heat(action)` from
+zero up to the corresponding electrical-input range is a deliberately broad
+upper-envelope assumption, not an estimate of the actual body heat.
+
+Recommendation: retain both terms in the evaluator-side physics candidate and
+measure the action-class body-coupled heat. Do not expose motor power, current,
+RPM, or loss decomposition to the organism.
 
 ## 11. Charging power and heat budget
 
@@ -400,9 +416,12 @@ Useful cooling-power checks:
 | 20 K | 3.00–10.00 W |
 
 At the center values `C = 180 J/K`, `G = 0.25 W/K`, the time constant is 720
-s and a 0.2 W idle load would settle about 0.8 K above ambient, while a 1.2 W
-move-plus-electronics load would settle about 4.8 K above ambient. Those are
-steady-state inferences from the candidate law, not measured temperatures.
+s and a 0.2 W idle load would settle about 0.8 K above ambient. A move-plus-
+electronics load cannot be assigned one physical steady-state rise until
+`P_actuator_body_heat` is measured. For sensitivity only, if 1.0 W of MOVE
+electrical input plus 0.2 W of electronics heat were conservatively treated as
+body heat, the result would be about 4.8 K above ambient. That is a sensitivity
+calculation, not an expected thermal value.
 
 ## 14. Movement-cooling assessment
 
@@ -416,9 +435,9 @@ shape.
 With approximately 0.035 m² exposed area, even an additional 2–5
 W/(m²·K) of effective convection would add only about 0.07–0.18 W/K. At a 5 K
 temperature difference that is approximately 0.35–0.90 W of extra cooling,
-which can be a meaningful fraction of normal actuator heat. At a 1 K
-difference it is only 0.07–0.18 W. Floor conduction and enclosure geometry may
-make the movement contribution smaller or larger.
+which could be a meaningful fraction of an as-yet-unmeasured actuator
+body-heat term. At a 1 K difference it is only 0.07–0.18 W. Floor conduction
+and enclosure geometry may make the movement contribution smaller or larger.
 
 Conclusion: movement-induced cooling is **not provably negligible**, but its
 uncertainty is comparable to the normal actuator budget and it is not needed to
@@ -448,11 +467,13 @@ the MCU absolute maximum.
 The inconvenient physical implication is important. From 23 °C to a 45 °C
 boundary is a 22 K rise. At `G = 0.15–0.50 W/K`, persistent net heat of
 approximately 3.3–11 W would be required to reach that steady-state boundary.
-The candidate baseline, actuator, and switching/linear charger losses are
-usually below this. Therefore realistic V0.4 physics may produce little or no
-thermal viability pressure in an open, room-temperature 122 mm body. That
-result must be preserved rather than corrected by inflating charger loss or
-lowering the threshold solely to recreate D-002.
+Known electronics and charging-loss terms are usually below this. The
+actuator contribution cannot be inferred by equating electrical input with
+body heat; even a broad full-electrical sensitivity envelope is not a physical
+estimate. Therefore realistic V0.4 physics may produce little or no thermal
+viability pressure in an open, room-temperature 122 mm body. That result must
+be preserved rather than corrected by inflating charger loss, treating all
+actuator input as heat, or lowering the threshold solely to recreate D-002.
 
 ## 16. Thermal time constant and horizon
 
@@ -481,29 +502,35 @@ record.
 ## 17. Scenario comparison table
 
 These scenarios use the candidate ranges above, assume the body begins near
-ambient unless otherwise stated, and are non-behavioral comparisons.
+ambient unless otherwise stated, and are non-behavioral comparisons. The
+actuator electrical-input column is a battery-depletion quantity; it is not a
+thermal quantity. Where actuator body-coupled heat is unknown, the net thermal
+power is intentionally left symbolic rather than silently equated to
+electrical input.
 
-| Scenario | Electronics | Motor/driver input | Charging loss | Cooling | Approx. net thermal power |
-|---|---:|---:|---:|---:|---:|
-| 1. `WAIT`, off charger | 0.08–0.30 W | 0 W | 0 W | 0 W at ΔT≈0 | +0.08–+0.30 W |
-| 2. `MOVE_FORWARD`, off charger | 0.10–0.35 W | 0.5–1.5 W | 0 W | 0 W at ΔT≈0 | +0.60–+1.85 W |
-| 3. `TURN`, off charger | 0.10–0.35 W | 0.3–1.0 W | 0 W | 0 W at ΔT≈0 | +0.40–+1.35 W |
-| 4. Charging, low/mid SOC | 0.08–0.30 W | 0 W | +0.05–+0.33 W switching; +0.13–+0.65 W linear | 0 W at ΔT≈0 | +0.13–+0.63 W switching; +0.21–+0.95 W linear |
-| 5. Docked near full | 0.08–0.30 W | 0 W | approximately 0–0.05 W after termination, topology-dependent | 0 W at ΔT≈0 | approximately +0.08–+0.35 W |
-| 6. Moving while warm | 0.10–0.35 W | 0.5–1.5 W | 0 W | 0.75–7.50 W for ΔT=5–15 K and G=0.15–0.50 W/K | approximately −6.90–+1.10 W |
+| Scenario | Electronics electrical input / body heat approximation | Actuator electrical input | Actuator body-coupled heat | Charging body heat | Cooling | Approx. net body thermal power |
+|---|---:|---:|---:|---:|---:|---:|
+| 1. `WAIT`, off charger | 0.08–0.20 W | 0 W | 0 W | 0 W | 0 W at ΔT≈0 | +0.08–+0.20 W |
+| 2. `MOVE_FORWARD`, off charger | 0.12–0.35 W | 0.5–1.5 W | **UNKNOWN / NEEDS MEASUREMENT** | 0 W | 0 W at ΔT≈0 | `+0.12–+0.35 W + P_actuator_body_heat(MOVE)` |
+| 3. `TURN`, off charger | 0.12–0.35 W | 0.3–1.0 W | **UNKNOWN / NEEDS MEASUREMENT** | 0 W | 0 W at ΔT≈0 | `+0.12–+0.35 W + P_actuator_body_heat(TURN)` |
+| 4. Charging, low/mid SOC | 0.08–0.20 W | 0 W | 0 W | +0.05–+0.33 W switching; +0.13–+0.65 W linear | 0 W at ΔT≈0 | `+0.08–+0.20 W + charging body heat` |
+| 5. Docked near full | 0.08–0.20 W | 0 W | 0 W | approximately 0–0.05 W after termination, topology-dependent | 0 W at ΔT≈0 | approximately +0.08–+0.25 W |
+| 6. Moving while warm | 0.12–0.35 W | 0.5–1.5 W | **UNKNOWN / NEEDS MEASUREMENT** | 0 W | 0.75–7.50 W for ΔT=5–15 K and G=0.15–0.50 W/K | `+0.12–+0.35 W + P_actuator_body_heat(MOVE) − cooling` |
 
 The wide range in scenario 6 is intentional: cooling is temperature-dependent,
-while the action itself does not guarantee a large cooling benefit. The table
-does not model a controller, contact geometry, or behavioral duty cycle.
+while the action itself does not guarantee a large cooling benefit. No finite
+net range is reported for scenarios 2, 3, or 6 until actuator body-coupled
+heat is measured or an explicit sensitivity bound is selected. The table does
+not model a controller, contact geometry, or behavioral duty cycle.
 
 ## 18. Candidate minimal V0.4 equations
 
 The smallest coherent candidate is:
 
 ```text
-P_body_heat = P_electronics
-            + P_actuator(action)
-            + P_charger_loss(charge_phase, SOC)
+P_body_heat = P_electronics_body_heat
+            + P_actuator_body_heat(action)
+            + P_charging_body_heat(charge_phase, SOC)
 
 P_cooling = max(0, G × (T_body - T_ambient))
 
@@ -516,15 +543,16 @@ Candidate energy accounting is:
 E_next = clamp(
     E_battery
     + P_stored_charge(charge_phase, SOC) × dt
-    - P_electronics × dt
-    - P_actuator(action) × dt,
+    - P_electronics_electrical × dt
+    - P_actuator_electrical(action) × dt,
     0,
     E_battery_max,
 )
 ```
 
-The charger must be allowed to taper or terminate. `P_charger_loss` must not
-be a constant function of docking contact when no energy is being accepted.
+The charger must be allowed to taper or terminate. `P_charging_body_heat`
+(including charger loss at this abstraction) must not be a constant function
+of docking contact when no energy is being accepted.
 Battery internal loss may later be represented as part of the charging and
 discharge power event, but adding multiple compartments or voltage curves is
 not justified yet.
@@ -533,15 +561,19 @@ Term-level disposition for the smallest candidate model:
 
 | Candidate term | Required classification | Reason |
 |---|---|---|
-| `P_electronics` | **RETAIN** | Continuous radio-disabled electronics power is physically present and is comparable to low-end actuator/charger losses |
-| `P_actuator(action)` | **RETAIN** | Movement and turning draw materially more electrical power than the controller at the reference scale; use measured/effective values when available |
-| `P_charging_losses` | **RETAIN** | Charging loss exists, but must follow topology, charge phase, taper, and termination rather than D-002 offered-input heat |
+| `P_electronics_electrical` and `P_electronics_body_heat` | **RETAIN** | Battery-side electronics consumption is physically present; at this abstraction most is treated as local body heat, with the distinction preserved for measurement |
+| `P_actuator_electrical(action)` | **RETAIN** | Movement and turning draw materially more battery electrical power than the controller at the reference scale; use measured action-class values when available |
+| `P_actuator_body_heat(action)` | **RETAIN IN PRINCIPLE; UNKNOWN / NEEDS MEASUREMENT** | Actuator losses can heat the body, but mechanical output is not immediate body heat and thermal coupling is unresolved |
+| `P_charging_body_heat` | **RETAIN** | Charging loss exists, but must follow topology, charge phase, taper, and termination rather than D-002 offered-input heat |
 | Temperature-dependent passive cooling | **RETAIN** | A body-to-ambient gradient is the minimal physically coherent cooling mechanism |
 | Movement-dependent cooling | **OMIT** | It may matter, but current shape, airflow, floor, and enclosure uncertainty do not justify adding it before measurement |
 
 The retained terms are candidate physics, not authorization to modify the
-current simulator. `P_electronics`, `P_actuator`, `P_charging_losses`, and `G`
-remain **UNKNOWN / NEEDS MEASUREMENT** at prototype-fidelity precision.
+current simulator. `P_electronics_electrical`,
+`P_electronics_body_heat`, `P_actuator_electrical`,
+`P_actuator_body_heat`, `P_charging_body_heat`, and `G` remain **UNKNOWN / NEEDS
+MEASUREMENT** at prototype-fidelity precision, except where the broad
+engineering ranges above are explicitly identified as sensitivity inputs.
 
 ## 19. PROGRAMMED / ORGANISM-VISIBLE / EVALUATOR-ONLY separation
 
@@ -565,11 +597,19 @@ The organism must not receive ambient temperature, body-to-ambient delta,
 absolute joules/Wh, charger efficiency, motor power/current/RPM, component
 temperatures, physical coordinates, world scale, or elapsed wall-clock time.
 
+For ADR 0012, normalization of own body temperature must not secretly encode
+the evaluator's ambient temperature. Ambient remains evaluator-only. Use fixed
+durable physical bounds or another ambient-independent mapping unless a future
+ADR explicitly authorizes otherwise; do not derive the organism-visible
+normalized signal from an ambient-relative expression such as
+`T_body - T_ambient`.
+
 ### EVALUATOR-ONLY
 
 - Ambient temperature, absolute body temperature, battery joules/voltage/SOC,
-  charge phase, accepted charge, charger loss, actuator power, heat-source
-  decomposition, cooling power, and component or prototype measurements.
+  charge phase, accepted charge, charger loss, actuator electrical power,
+  actuator body-coupled heat, heat-source decomposition, cooling power, and
+  component or prototype measurements.
 - Geometry, mass, wheel speed, motor identity, temperature sensor placement,
   and diagnostic scenario labels.
 
@@ -590,7 +630,7 @@ to a physical truth for a future robot merely because it is convenient.
 | Gear ratio | 50:1 versus 75:1 | ratio | MANUFACTURER REFERENCE | [DFRobot ROB0049](https://www.dfrobot.com/product-367.html) | Low until resolved | Needs measurement/resolution |
 | Motor speed | 260 at 6 V; related page 440 at 6 V | rpm | MANUFACTURER REFERENCE | [ROB0049](https://www.dfrobot.com/product-367.html), [DFRobot 50:1 motor](https://www.dfrobot.com/product-1418.html) | Low for exact shipped motor | Do not freeze |
 | Motor no-load speed | 13,000 | rpm | MANUFACTURER REFERENCE | [DFRobot ROB0049](https://www.dfrobot.com/product-367.html) | Medium; condition unclear | Reference only |
-| Motor current | 40 mA at 6 V; 360 mA stall | mA | MANUFACTURER REFERENCE | [DFRobot ROB0049](https://www.dfrobot.com/product-367.html) | Medium for page's motor spec | Keep normal/stall distinct |
+| Motor current | 40 mA at 6 V; 360 mA stall | mA | MANUFACTURER REFERENCE | [DFRobot ROB0049](https://www.dfrobot.com/product-367.html) | Medium for page's motor spec; 40 mA is not explicitly labelled no-load and no loaded-current curve is provided | Keep normal/stall distinct; measure loaded current |
 | Control timestep | 0.1 | s | DESIGN CHOICE | Flow brief; driver wake reference [DRV8833](https://www.ti.com/lit/ds/symlink/drv8833.pdf) | Medium | Retain provisionally |
 | World scale | 1 simulator unit ≈ 1 | m | DESIGN CHOICE | Flow brief | Medium | Retain provisionally |
 | Movement increment | 0.05 | m/action equivalent | DESIGN CHOICE | Flow brief; wheel calculation above | Medium-low due motor conflict/load | Do not change yet |
@@ -600,11 +640,12 @@ to a physical truth for a future robot merely because it is convenient.
 | Battery energy | 1.85–3.145 | Wh | DERIVED | `V × Ah` from battery references | Medium | Candidate range |
 | Battery energy | 6,660–11,322 | J | DERIVED | `Wh × 3600` | Medium | Candidate range |
 | Usable battery fraction | 70–85 | % | DESIGN CHOICE | Reserve policy not yet specified | Low | Sensitivity only |
-| Electronics power, idle | 0.08–0.20 | W | ENGINEERING ESTIMATE | [ESP32-S3 datasheet](https://documentation.espressif.com/esp32_s3_datasheet_en.pdf); [DRV8833](https://www.ti.com/lit/ds/symlink/drv8833.pdf) | Medium-low | Candidate, measure |
-| Electronics power, active radio-off | 0.12–0.35 | W | ENGINEERING ESTIMATE | ESP32-S3/DRV8833 references above | Medium-low | Candidate, measure |
-| Motor power, move | 0.5–1.5 | W, pair | ENGINEERING ESTIMATE | DFRobot current/stall bounds | Low | Needs measurement |
-| Motor power, turn | 0.3–1.0 | W, pair | ENGINEERING ESTIMATE | DFRobot current/stall bounds | Low | Needs measurement |
-| Driver FET resistance | 0.160 + 0.200 | Ω/bridge | DATASHEET | [TI DRV8833](https://www.ti.com/lit/ds/symlink/drv8833.pdf) | Medium | Use if driver selected |
+| Electronics electrical input / body heat approximation, idle | 0.08–0.20 | W | ENGINEERING ESTIMATE | [ESP32-S3 datasheet](https://documentation.espressif.com/esp32_s3_datasheet_en.pdf); [DRV8833](https://www.ti.com/lit/ds/symlink/drv8833.pdf) | Medium-low | Candidate, measure |
+| Electronics electrical input / body heat approximation, active radio-off | 0.12–0.35 | W | ENGINEERING ESTIMATE | ESP32-S3/DRV8833 references above | Medium-low | Candidate, measure |
+| Actuator electrical input, move | 0.5–1.5 | W, pair | ENGINEERING ESTIMATE | DFRobot electrical current/stall bounds; no loaded-current curve | Low | Needs measurement |
+| Actuator electrical input, turn | 0.3–1.0 | W, pair | ENGINEERING ESTIMATE | DFRobot electrical current/stall bounds; no loaded-current curve | Low | Needs measurement |
+| Actuator body-coupled heat | UNKNOWN | W, action class | UNKNOWN / NEEDS MEASUREMENT | No loaded thermal-coupling measurement; electrical input is not body heat | Low | Measure; do not freeze a coupling fraction |
+| Driver FET resistance | 0.200 + 0.160 | Ω/bridge | DATASHEET | [TI DRV8833](https://www.ti.com/lit/ds/symlink/drv8833.pdf), `VM = 5 V`, `IO = 500 mA`, `TJ = 25 °C` | Medium | Use if driver selected |
 | Driver PWM loss | 10–30 | % of DC driver loss | DATASHEET | [TI DRV8833](https://www.ti.com/lit/ds/symlink/drv8833.pdf) | Medium, reference conditions | Use as sensitivity |
 | Switching charger efficiency | 85–93 | % | ENGINEERING ESTIMATE | [TI BQ25895](https://www.ti.com/lit/ds/symlink/bq25895.pdf) | Low-medium at small current | Candidate; measure |
 | Linear charge current | 0.1–0.5 | A | DESIGN CHOICE | [Adafruit battery](https://www.adafruit.com/product/1578), [Microchip MCP73831](https://ww1.microchip.com/downloads/en/DeviceDoc/MCP73831-Family-Data-Sheet-DS20001984H.pdf) | Medium | Candidate only |
@@ -639,7 +680,7 @@ Can remain estimates for the first evaluator sensitivity study:
 
 - 150–250 J/K effective thermal capacity;
 - 0.15–0.50 W/K total conductance;
-- 0.5–1.5 W normal paired movement power;
+- 0.5–1.5 W normal paired actuator electrical input;
 - 85–93% switching charge efficiency;
 - 40–50 °C candidate integrated boundary.
 
@@ -647,6 +688,9 @@ Should be measured before a physicalized claim or tightly tuned V0.4 model:
 
 - wheel rpm and distance per 0.1 s at several loads and battery voltages;
 - battery-side current for WAIT, MOVE, and TURN;
+- synchronized motor-case, driver-board, regulator, battery, and shell
+  temperatures during those action classes, so effective body-coupled actuator
+  heat can be estimated without equating it to battery electrical input;
 - driver-board input power and temperature;
 - charge input, battery acceptance, taper, and post-termination draw;
 - transient temperatures at battery, motor cases, driver, regulator, and shell;
@@ -662,7 +706,10 @@ Should be measured before a physicalized claim or tightly tuned V0.4 model:
 - Use one lumped thermal body in the first physicalized model.
 - Use temperature-dependent passive cooling toward evaluator-side ambient.
 - Couple battery electrical power, mechanical work, losses, and heat at the
-  same physical event.
+  same physical event while keeping the accounting paths distinct:
+  `P_actuator_electrical(action)` depletes the battery and
+  `P_actuator_body_heat(action)` heats the body only to the measured/effective
+  coupled extent.
 - Use physical joules internally with normalized own-energy interoception.
 - Retain a single normalized own-temperature interoceptive channel.
 - Keep ambient, absolute power, component temperatures, and charge phase
@@ -675,6 +722,8 @@ Should be measured before a physicalized claim or tightly tuned V0.4 model:
 - Do not carry D-002's constant offered-input heat into V0.4 by default.
 - Do not make charging the dominant heat source without measured evidence.
 - Do not inflate charger losses to preserve the D-003/D-014 shuttle.
+- Do not equate actuator electrical input with actuator body-coupled heat or
+  draw thermal conclusions from the full electrical-input range.
 - Do not assume movement cools the robot overall; it adds motor heat and may
   add uncertain airflow cooling.
 - Do not add movement-dependent cooling in the first model unless prototype
