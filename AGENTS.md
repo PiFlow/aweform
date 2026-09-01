@@ -17,7 +17,7 @@ Aweform now uses two research lanes:
 - **Development (`D-NNN`)** for fast, descriptive, exploratory iteration on legal development seeds.
 - **Evidence (`EXP-NNN`)** for important claims that justify frozen protocols, untouched reserved seeds, exact-SHA reproducibility, and independent review.
 
-The current developmental permission boundary is **V0.3 — lifetime plasticity / sensory-plasticity closure**, opened by [`ADR 0010`](docs/adr/0010-v0.3-lifetime-plasticity.md). [`ADR 0009`](docs/adr/0009-v0.2-bounded-observation-history-state.md) remains the valid historical authorization for V0.2 work performed under it and is not rewritten by V0.3.
+The accepted lifetime-plasticity / sensory-plasticity closure is **V0.3**, opened by [`ADR 0010`](docs/adr/0010-v0.3-lifetime-plasticity.md). [`ADR 0009`](docs/adr/0009-v0.2-bounded-observation-history-state.md) remains the valid historical authorization for V0.2 work performed under it and is not rewritten by V0.3. [`ADR 0012`](docs/adr/0012-v0.4-minimal-physical-energy-thermal-boundary.md) proposes a separate V0.4 physical embodiment, energy, and thermal boundary; while unmerged it authorizes no implementation, and after acceptance it supplements rather than replaces the V0.3 provenance closure.
 
 V0.3 permits bounded persistent plastic/learned state within a continuous organism lifetime when every causal write obeys the declared sensory/plasticity provenance boundary. It does not pre-authorize a particular learner, world model, thermal ecology, predictor horizon, or arbitration architecture.
 
