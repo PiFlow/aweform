@@ -393,3 +393,6 @@ def test_probe_suite_is_seedless_and_deterministic() -> None:
         "OFF_DOCK_MOVE_ENERGY",
         "MIXED_ACTION_CAUSAL_ACCOUNTING",
     }
+    assert probes["DOCKED_WAIT_CHARGE"]["transitions_table"] == ()
+    assert probes["OFF_DOCK_MOVE_ENERGY"]["transitions_table"] == ()
+    assert len(probes["MIXED_ACTION_CAUSAL_ACCOUNTING"]["transitions_table"]) == 11

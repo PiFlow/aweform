@@ -707,6 +707,7 @@ def run_d020_probe_suite() -> dict[str, object]:
         },
         action_policy=lambda step: D020_MIXED_ACTIONS[step],
         horizon=len(D020_MIXED_ACTIONS),
+        include_transition_table=True,
     )
     return {
         "identifier": "D-020",
@@ -739,6 +740,7 @@ def _run_fixed_probe(
     action_policy: Any,
     horizon: int | None = None,
     limitation: str | None = None,
+    include_transition_table: bool = False,
 ) -> D020ProbeResult:
     probe_config = (
         config if horizon is None else replace(config, episode_horizon=horizon)
@@ -802,7 +804,11 @@ def _run_fixed_probe(
             and item.charging_body_heat_w != 0.0
         ):
             charging_heat_zero_after_termination = False
-    table = tuple(_telemetry_table_row(item) for item in telemetry)
+    table = (
+        tuple(_telemetry_table_row(item) for item in telemetry)
+        if include_transition_table
+        else ()
+    )
     return D020ProbeResult(
         name=name,
         seed_status="seedless fixed-state evaluator probe",
