@@ -101,6 +101,7 @@ class DevelopmentVisualizationFrame:
     charger_phase: str | None = None
     simulated_seconds: float | None = None
     charging_contact_before: bool | None = None
+    trajectory_break_before: bool = False
 
     def __post_init__(self) -> None:
         if self.transition_index < 0:
@@ -145,6 +146,8 @@ class DevelopmentVisualizationFrame:
             self.charging_contact_before, bool
         ):
             raise ValueError("charging_contact_before must be a bool")
+        if not isinstance(self.trajectory_break_before, bool):
+            raise ValueError("trajectory_break_before must be a bool")
 
 
 @dataclass(frozen=True, slots=True)
@@ -438,6 +441,21 @@ class DevelopmentVisualizationPlayer:
         """Return the display to the first recorded frame."""
         self._frame_index = 0
         return self._frame_index
+
+
+def _trajectory_line_coordinates(
+    frames: Sequence[DevelopmentVisualizationFrame],
+) -> tuple[list[float], list[float]]:
+    """Return displayed coordinates with explicit breaks between source gaps."""
+    x_values: list[float] = []
+    y_values: list[float] = []
+    for frame in frames:
+        if frame.trajectory_break_before:
+            x_values.append(math.nan)
+            y_values.append(math.nan)
+        x_values.append(frame.x)
+        y_values.append(frame.y)
+    return x_values, y_values
 
 
 def build_development_visualization_figure(
@@ -944,7 +962,7 @@ def build_development_visualization_figure(
     def render(frame_index: int) -> tuple[Artist, ...]:
         frame = data.frames[frame_index]
         path = data.frames[: frame_index + 1]
-        trajectory_line.set_data([item.x for item in path], [item.y for item in path])
+        trajectory_line.set_data(*_trajectory_line_coordinates(path))
         body_marker.set_data([frame.x], [frame.y])
         heading_arrow.set_offsets([[frame.x, frame.y]])
         heading_arrow.set_UVC([math.cos(frame.heading)], [math.sin(frame.heading)])
@@ -2453,6 +2471,7 @@ def adapt_d021_trace(
             charging_contact_before=initial.telemetry.charging_contact_before,
         )
     )
+    previous_displayed_source_step = 0
     for step in selected_steps:
         record = by_step[step]
         if len(record.observation) != 6:
@@ -2482,8 +2501,12 @@ def adapt_d021_trace(
                 charger_phase=telemetry.charge_phase.value,
                 simulated_seconds=record.transition_index * config.dt_seconds,
                 charging_contact_before=telemetry.charging_contact_before,
+                trajectory_break_before=(
+                    record.transition_index != previous_displayed_source_step + 1
+                ),
             )
         )
+        previous_displayed_source_step = record.transition_index
     return DevelopmentVisualizationData(
         source_label=source_label,
         seed=18365,
