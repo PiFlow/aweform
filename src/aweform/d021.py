@@ -11,14 +11,19 @@ import argparse
 import json
 import math
 import re
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Final, Sequence, cast
 
 import numpy as np
 
 from . import d011
-from .d020 import D020Env, D020PhysicalConfig, D020TerminationReason
+from .d020 import (
+    D020Env,
+    D020PhysicalConfig,
+    D020TerminationReason,
+    D020TransitionTelemetry,
+)
 from .env import Action
 from .exp001 import ExternalObservation, StochasticPersistentExplorer
 from .exp003 import (
@@ -30,6 +35,7 @@ from .exp003_seed_policy import validate_exp003_development_seeds
 from .rng import RandomStreams
 
 D021_DEFAULT_DEVELOPMENT_SEEDS: Final[tuple[int, ...]] = (18365, 18366, 18367)
+D021_CANONICAL_VISUALIZATION_SEED: Final[int] = D021_DEFAULT_DEVELOPMENT_SEEDS[0]
 D021_HORIZON: Final[int] = 70_000
 D021_FULL_ENERGY_THRESHOLD: Final[float] = 1.0
 D021_AUTHORITATIVE_BASE_SHA: Final[str] = (
@@ -38,6 +44,21 @@ D021_AUTHORITATIVE_BASE_SHA: Final[str] = (
 
 D021Mode = d011.D011Mode
 D021Observation = d011.D011Observation
+
+
+@dataclass(frozen=True, slots=True)
+class D021TransitionTrace:
+    """Completed-transition trace record for evaluator-only visualization."""
+
+    transition_index: int
+    mode_before: D021Mode
+    mode_after: D021Mode
+    action: Action
+    observation_before: tuple[float, ...]
+    observation: tuple[float, ...]
+    telemetry: D020TransitionTelemetry
+    reward: float
+    info: dict[str, object]
 
 
 class D021Controller:
@@ -186,7 +207,12 @@ def _classify_unresolved_seek(*, terminated: bool, truncated: bool) -> dict[str,
     }
 
 
-def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
+def _run_seed(
+    seed: int,
+    *,
+    horizon: int,
+    trace: list[D021TransitionTrace] | None = None,
+) -> dict[str, object]:
     config = D020PhysicalConfig()
     run_config = replace(config, episode_horizon=horizon)
     streams = RandomStreams.from_seed(seed)
@@ -286,6 +312,32 @@ def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
         if telemetry is None:
             raise RuntimeError("D-020 transition telemetry is unavailable")
         transitions += 1
+
+        if trace is not None:
+            if observation.shape != (6,):
+                raise RuntimeError(
+                    "D-021 observation must contain exactly six channels"
+                )
+            trace.append(
+                D021TransitionTrace(
+                    transition_index=transition_index,
+                    mode_before=mode_before,
+                    mode_after=mode_after,
+                    action=action,
+                    observation_before=(
+                        current.energy,
+                        current.beacon.left,
+                        current.beacon.forward,
+                        current.beacon.right,
+                        float(current.charging_contact),
+                        current.thermal,
+                    ),
+                    observation=tuple(float(value) for value in observation),
+                    telemetry=telemetry,
+                    reward=reward,
+                    info=info,
+                )
+            )
 
         final_energy = float(observation[0])
         minimum_energy = min(minimum_energy, final_energy)
@@ -491,6 +543,24 @@ def _run_seed(seed: int, *, horizon: int) -> dict[str, object]:
             "emergency_65_c_occurred": final_telemetry.emergency_hard_shutdown,
         },
     }
+
+
+def run_d021_lifetime_trace(
+    seed: int = D021_CANONICAL_VISUALIZATION_SEED,
+    *,
+    horizon: int = D021_HORIZON,
+) -> tuple[D021TransitionTrace, ...]:
+    """Run the canonical D-021 lifetime and retain completed transitions."""
+    _validate_d021_development_seeds((seed,))
+    if horizon != D021_HORIZON:
+        raise ValueError(
+            "D-021 visualization requires the frozen 70,000-transition horizon"
+        )
+    trace: list[D021TransitionTrace] = []
+    _run_seed(seed, horizon=horizon, trace=trace)
+    if len(trace) != horizon:
+        raise RuntimeError("D-021 lifetime trace did not reach the frozen horizon")
+    return tuple(trace)
 
 def run_d021_probe(
     seeds: Sequence[int] = D021_DEFAULT_DEVELOPMENT_SEEDS,

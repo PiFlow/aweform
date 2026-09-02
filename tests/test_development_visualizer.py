@@ -1,5 +1,6 @@
 """Focused tests for the canonical post-hoc development visualizer."""
 
+import math
 import sys
 from collections import Counter
 from dataclasses import fields, replace
@@ -17,6 +18,7 @@ from aweform import d011, d012, d013, d015, d018
 from aweform.d003 import run_d003_probe
 from aweform.d005 import run_d005_probe
 from aweform.d006 import run_d006_probe
+from aweform.d021 import D021TransitionTrace, run_d021_lifetime_trace
 from aweform.development_visualizer import (
     DEVELOPMENT_VISUALIZATION_ADAPTERS,
     DevelopmentActionAlternative,
@@ -40,8 +42,11 @@ from aweform.development_visualizer import (
     build_d015_reference_development_visualization,
     build_d018_development_visualization,
     build_d020_development_visualization,
+    build_d021_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
+    d021_replay_event_steps,
+    select_d021_replay_indices,
 )
 from aweform.env import Action
 
@@ -1427,3 +1432,268 @@ def test_d020_visualization_adapter_is_post_hoc_and_deterministic(
     first = build_d020_development_visualization()
     second = build_d020_development_visualization()
     assert first == second
+
+
+@pytest.fixture(scope="module")
+def d021_visualization_data() -> DevelopmentVisualizationData:
+    return build_d021_development_visualization()
+
+
+@pytest.fixture(scope="module")
+def d021_lifetime_trace() -> tuple[D021TransitionTrace, ...]:
+    return run_d021_lifetime_trace()
+
+
+def test_d021_adapter_builds_fixed_canonical_lifetime(
+    d021_visualization_data: DevelopmentVisualizationData,
+) -> None:
+    assert d021_visualization_data.seed == 18365
+    assert d021_visualization_data.frames
+    assert d021_visualization_data.frames[0].transition_index == 0
+    assert d021_visualization_data.frames[0].action == "INITIAL"
+    assert d021_visualization_data.frames[-1].transition_index == 70_000
+
+
+def test_d021_adapter_is_deterministic() -> None:
+    assert build_d021_development_visualization() == (
+        build_d021_development_visualization()
+    )
+
+
+def test_d021_replay_is_deterministically_downsampled_and_event_preserving(
+    d021_visualization_data: DevelopmentVisualizationData,
+    d021_lifetime_trace: tuple[D021TransitionTrace, ...],
+) -> None:
+    assert 400 <= len(d021_visualization_data.frames) <= 900
+    assert len(d021_visualization_data.frames) < 70_000
+    event_steps = d021_replay_event_steps(d021_lifetime_trace)
+    selected_steps = {
+        frame.transition_index for frame in d021_visualization_data.frames
+    }
+    assert set(event_steps.values()) <= selected_steps
+    assert selected_steps == {
+        0,
+        *select_d021_replay_indices(d021_lifetime_trace),
+    }
+
+
+def test_d021_replay_frame_count_and_event_steps_are_frozen(
+    d021_visualization_data: DevelopmentVisualizationData,
+    d021_lifetime_trace: tuple[D021TransitionTrace, ...],
+) -> None:
+    assert len(d021_visualization_data.frames) == 733
+    assert d021_replay_event_steps(d021_lifetime_trace) == {
+        "first_departure": 1,
+        "first_charger_exit": 3,
+        "first_seek_entry": 24570,
+        "first_reacquisition": 24575,
+        "first_charge_entry": 24576,
+        "first_full_recharge": 52659,
+        "first_redeparture": 52660,
+        "final": 70000,
+        "representative_away_contact": 478,
+    }
+
+
+def test_d021_nonconsecutive_sampled_transitions_create_trajectory_breaks(
+    d021_visualization_data: DevelopmentVisualizationData,
+) -> None:
+    frame_pairs = zip(
+        d021_visualization_data.frames,
+        d021_visualization_data.frames[1:],
+    )
+    break_pairs = [
+        (previous, frame)
+        for previous, frame in frame_pairs
+        if frame.trajectory_break_before
+    ]
+
+    assert break_pairs
+    assert all(
+        frame.transition_index != previous.transition_index + 1
+        for previous, frame in break_pairs
+    )
+
+
+def test_d021_consecutive_event_window_transitions_remain_connected(
+    d021_visualization_data: DevelopmentVisualizationData,
+    d021_lifetime_trace: tuple[D021TransitionTrace, ...],
+) -> None:
+    frame_by_step = {
+        frame.transition_index: frame for frame in d021_visualization_data.frames
+    }
+    selected_event_window_pairs = [
+        (frame_by_step[step], frame_by_step[step + 1])
+        for event_step in d021_replay_event_steps(d021_lifetime_trace).values()
+        for step in (event_step - 2, event_step - 1, event_step, event_step + 1)
+        if step in frame_by_step and step + 1 in frame_by_step
+    ]
+
+    assert selected_event_window_pairs
+    assert all(
+        not frame.trajectory_break_before
+        for _, frame in selected_event_window_pairs
+    )
+
+
+def test_trajectory_break_geometry_has_no_synthetic_intermediate_positions(
+    d021_visualization_data: DevelopmentVisualizationData,
+) -> None:
+    frames = d021_visualization_data.frames
+    x_values, y_values = development_visualizer_module._trajectory_line_coordinates(
+        frames
+    )
+
+    assert len(x_values) == len(y_values)
+    assert sum(math.isfinite(value) for value in x_values) == len(frames)
+    assert sum(math.isfinite(value) for value in y_values) == len(frames)
+    assert [
+        (x, y)
+        for x, y in zip(x_values, y_values, strict=True)
+        if math.isfinite(x) and math.isfinite(y)
+    ] == [(frame.x, frame.y) for frame in frames]
+    assert all(
+        math.isnan(x) and math.isnan(y)
+        for x, y in zip(x_values, y_values, strict=True)
+        if not math.isfinite(x)
+    )
+
+    replay_data = replace(d021_visualization_data, frames=frames[:12])
+    figure, animation = build_development_visualization_figure(replay_data)
+    player = getattr(figure, "_aweform_player")
+    break_index = next(
+        index
+        for index, frame in enumerate(replay_data.frames)
+        if frame.trajectory_break_before
+    )
+    for _ in range(break_index):
+        player.step_forward()
+    animation._func(0)
+    trajectory_line = next(
+        line for line in figure.axes[0].lines if line.get_label() == "trajectory"
+    )
+    rendered_x, rendered_y = trajectory_line.get_data()
+    expected_x, expected_y = (
+        development_visualizer_module._trajectory_line_coordinates(
+            replay_data.frames[: break_index + 1]
+        )
+    )
+    assert len(rendered_x) == len(expected_x)
+    assert len(rendered_y) == len(expected_y)
+    for actual, expected in zip(
+        rendered_x, expected_x, strict=True
+    ):
+        if math.isnan(expected):
+            assert math.isnan(actual)
+        else:
+            assert actual == expected
+    for actual, expected in zip(
+        rendered_y, expected_y, strict=True
+    ):
+        if math.isnan(expected):
+            assert math.isnan(actual)
+        else:
+            assert actual == expected
+    animation.event_source.stop()
+    plt.close(figure)
+
+
+def test_historical_visualization_frames_default_to_continuous_trajectory() -> None:
+    historical_data = (
+        build_d003_development_visualization(seed=18141, horizon=4),
+        build_d005_development_visualization(seed=18141, horizon=4),
+        build_d006_development_visualization(seed=18141, horizon=4),
+        build_d020_development_visualization(),
+    )
+
+    for data in historical_data:
+        assert all(not frame.trajectory_break_before for frame in data.frames)
+        x_values, y_values = development_visualizer_module._trajectory_line_coordinates(
+            data.frames
+        )
+        assert all(math.isfinite(value) for value in (*x_values, *y_values))
+
+
+def test_d021_replay_displays_modes_phases_and_valid_sensors(
+    d021_visualization_data: DevelopmentVisualizationData,
+) -> None:
+    frames = d021_visualization_data.frames
+    assert {frame.decision_mode for frame in frames} == {
+        "AWAY",
+        "SEEK",
+        "CHARGE",
+        "DEPART",
+    }
+    assert {frame.charger_phase for frame in frames} == {
+        "OFF",
+        "BULK",
+        "TAPER_1",
+        "TAPER_2",
+        "STANDBY",
+    }
+    for frame in frames:
+        assert frame.simulated_seconds == pytest.approx(
+            frame.transition_index * 0.1
+        )
+        assert 0.0 <= frame.energy <= 1.0
+        assert frame.thermal_normalized is not None
+        assert 0.0 <= frame.thermal_normalized <= 1.0
+        assert frame.thermal_absolute_c is not None
+        assert frame.charging_contact_before is not None
+        assert all(
+            value is not None and 0.0 <= value <= 1.0
+            for value in (
+                frame.beacon_left,
+                frame.beacon_forward,
+                frame.beacon_right,
+            )
+        )
+
+
+def test_d021_replay_preserves_reward_info_and_observation_boundary(
+    d021_lifetime_trace: tuple[D021TransitionTrace, ...],
+) -> None:
+    for record in d021_lifetime_trace:
+        assert len(record.observation) == 6
+        assert record.reward == 0.0
+        assert record.info == {}
+
+
+def test_d021_replay_uses_evaluator_only_temperature_and_charger_display(
+    d021_visualization_data: DevelopmentVisualizationData,
+) -> None:
+    assert d021_visualization_data.energy_range == DevelopmentVisualizationRange(
+        0.0, 1.0
+    )
+    assert d021_visualization_data.thermal_range == DevelopmentVisualizationRange(
+        0.0, 80.0
+    )
+    assert d021_visualization_data.thermal_threshold == 45.0
+    assert d021_visualization_data.thermal_threshold_label == (
+        "PREFERRED 45°C — EVALUATOR ONLY"
+    )
+    assert "EVALUATOR ABSOLUTE °C" in d021_visualization_data.visibility.thermal
+    assert "CHARGER PHASE EVALUATOR ONLY" in (
+        d021_visualization_data.visibility.action_decision_mode
+    )
+
+
+def test_d021_replay_builds_headless_from_unchanged_neutral_trace(
+    d021_visualization_data: DevelopmentVisualizationData,
+) -> None:
+    original_frames = d021_visualization_data.frames
+    figure, animation = build_development_visualization_figure(
+        d021_visualization_data
+    )
+    assert len(figure.axes) == 2
+    rendered_text = "\n".join(
+        text.get_text() for axis in figure.axes for text in axis.texts
+    )
+    assert "controller mode: CHARGE" in rendered_text
+    assert "charger phase: STANDBY" in rendered_text
+    assert "PREFERRED 45°C — EVALUATOR ONLY" in rendered_text
+    assert "norm /" in rendered_text
+    assert "°C" in rendered_text
+    assert d021_visualization_data.frames is original_frames
+    animation.event_source.stop()
+    plt.close(figure)
