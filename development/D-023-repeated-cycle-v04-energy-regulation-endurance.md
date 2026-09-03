@@ -4,7 +4,7 @@
 - **lane:** Development
 - **date:** 2026-09-03
 - **authoritative_base_sha:** `a7c66a8bc096baf61b50bc3963b6cf19a6d38f83`
-- **implementation_probe_sha:** `TO_BE_FILLED_AFTER_FREEZE`
+- **implementation_probe_sha:** `87fa6192556b51bab4b0aa138ecb3a39be104abc`
 - **development_seeds:** `18365, 18366, 18367`
 - **horizon:** `210,000` transitions per uninterrupted lifetime (`21,000.0 s`)
 - **disposition:** `CONTINUING`
@@ -76,18 +76,41 @@ per-seed/per-cycle summaries. No raw 210,000-transition trace is stored.
 
 ## Direct observations
 
-To be completed from the frozen exact-SHA artifact after implementation
-validation. No result magnitude was used to select the horizon, seeds,
-controller, physical values, or interpretation criteria.
+The frozen artifact reports the following compact per-seed results:
+
+| Seed | Completed cycles | Full departures | Cycle exits | SEEK / reacquisition | Full recharge / re-departure | Final mode | Min / final battery (J) | Max / final body temperature (°C) | Incidental AWAY contacts |
+|---:|---:|---:|---:|---|---|---|---:|---:|---:|
+| 18365 | 3 | 4 | 4 | 4 / 4 (`5, 16, 16, 16` transitions) | 3 / 3 | CHARGE | 2662.2925 / 5311.2545 | 24.280806 / 23.850058 | 196 |
+| 18366 | 3 | 4 | 4 | 4 / 4 (`14, 12, 29, 23` transitions) | 3 / 3 | CHARGE | 2661.1260 / 5307.8980 | 24.280950 / 23.851843 | 197 |
+| 18367 | 3 | 4 | 4 | 4 / 4 (`21, 19, 13, 15` transitions) | 3 / 3 | CHARGE | 2661.8715 / 5305.7475 | 24.281013 / 23.853111 | 225 |
+
+Each lifetime completed `210,000` transitions / `21,000.0 s` and ended by
+horizon truncation in `CHARGE`. Each had four low-energy SEEK entries and
+four physical reacquisitions; the fourth reacquisition was horizon-censored
+before full recharge and re-departure. No lifetime depleted energy, reached
+the preferred `45 °C` ceiling, or underwent protective or emergency thermal
+shutdown. All prefix controls matched the accepted D-021 first `70,000`
+transitions with zero mismatches, ignoring only the D-021 final
+horizon-derived `telemetry.truncated` label. No mode/event inconsistencies
+were reported.
+
+The four cycle summaries per seed preserve the entry, cycle-relevant charger
+exit, SEEK entry, reacquisition, full-recharge, and post-recharge departure
+transition indices in the JSON artifact. The fourth summary is explicitly
+`horizon_censored`.
+
+No result magnitude was used to select the horizon, seeds, controller,
+physical values, or interpretation criteria.
 
 ## Cautious inference
 
-If the lifetimes complete several coherent cycles without depletion or thermal
-shutdown, the narrow inference is repeated-cycle endurance of this exact fixed
-V0.4 baseline on these three declared development lifetimes only. It does not
-establish robustness, optimality, learning, intelligence, metabolism,
-consciousness, emotion, subjective experience, genuine life, or hardware
-autonomy.
+Under these three declared development lifetimes, the unchanged fixed D-021
+controller completed three full repeated regulation cycles without energy
+depletion or thermal shutdown. The narrow inference is repeated-cycle
+endurance of this exact fixed V0.4 baseline on these three lifetimes only. It
+does not establish broad robustness, optimality, learning, intelligence,
+metabolism, consciousness, emotion, subjective experience, genuine life, or
+hardware autonomy.
 
 ## Surprises / nulls
 
@@ -99,9 +122,12 @@ not extended after inspection.
 
 ## Invalidated attempts
 
-None known at freeze time. Any genuine implementation/reporting defect will be
-recorded here with its exact SHA and invalidated output before a corrected
-rerun; scientific retuning is not permitted.
+The first artifact-writing invocation used the incorrect manually supplied SHA
+`87fa619d46d7c4df4c0e4cf45e9ca2f3c4d8410b`, which did not equal the frozen
+commit; its measurements were not used as a separate scientific attempt. The
+artifact was deterministically regenerated with the exact frozen
+implementation SHA above. No controller, horizon, physical value, seed, or
+interpretation criterion changed.
 
 ## Disposition
 
