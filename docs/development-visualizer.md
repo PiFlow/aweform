@@ -22,7 +22,7 @@ never be inherited by another source.
 
 The registered development sources are `d003`, `d005`, `d006`, `d011`,
 `d012`, `d013-reference`, `d013`, `d014`, `d015-reference`, `d015`, `d017`,
-and `d018`:
+`d018`, `d021`, and `d023`:
 
 ```text
 uv run aweform-visualize --source d003 --seed 18141 --horizon 1000
@@ -70,6 +70,16 @@ uv run aweform-visualize \
   --seed 18361 \
   --horizon 1000 \
   --interval-ms 90
+
+uv run aweform-visualize \
+  --source d021 \
+  --seed 18365 \
+  --horizon 70000
+
+uv run aweform-visualize \
+  --source d023 \
+  --seed 18365 \
+  --horizon 210000
 ```
 
 All adapters return the same neutral model. D-006 regime and learned-state
@@ -124,3 +134,11 @@ physically executed transition updates the learner afterward. Exact prior
 support means prior physically executed exact visible-state/action support,
 with no rounding or nearest-neighbour matching. This is a development/evaluator
 display only and is not new D-018 evidence.
+
+D-021 and D-023 replay completed continuous V0.4 lifetimes through the shared
+evaluator renderer. D-021 is fixed to seed `18365` and its 70,000-transition
+horizon. D-023 uses its exact 210,000-transition horizon and accepts the
+declared development seeds `18365`, `18366`, and `18367`. Deterministic display
+downsampling does not create lifecycle trajectory breaks; explicit breaks in
+neutral display data remain available for sources that contain a genuine reset
+or discontinuity.

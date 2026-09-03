@@ -14,7 +14,7 @@ import pytest
 from matplotlib.backend_bases import KeyEvent
 
 import aweform.development_visualizer as development_visualizer_module
-from aweform import d011, d012, d013, d015, d018
+from aweform import d011, d012, d013, d015, d018, d021, d023
 from aweform.d003 import run_d003_probe
 from aweform.d005 import run_d005_probe
 from aweform.d006 import run_d006_probe
@@ -43,6 +43,7 @@ from aweform.development_visualizer import (
     build_d018_development_visualization,
     build_d020_development_visualization,
     build_d021_development_visualization,
+    build_d023_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
     d021_replay_event_steps,
@@ -1091,7 +1092,7 @@ def test_d011_normalized_energy_renders_as_normalized_gauge_and_text() -> None:
     energy_fills = [
         patch
         for patch in diagnostic_axis.patches
-        if patch.get_y() == pytest.approx(0.61 - 0.025)
+        if patch.get_y() == pytest.approx(0.57 - 0.025)
         and patch.get_facecolor() != pytest.approx((0.88, 0.88, 0.88, 1.0))
     ]
     assert len(energy_fills) == 1
@@ -1495,24 +1496,21 @@ def test_d021_replay_frame_count_and_event_steps_are_frozen(
     }
 
 
-def test_d021_nonconsecutive_sampled_transitions_create_trajectory_breaks(
+def test_d021_nonconsecutive_sampled_transitions_remain_one_continuous_trajectory(
     d021_visualization_data: DevelopmentVisualizationData,
 ) -> None:
     frame_pairs = zip(
         d021_visualization_data.frames,
         d021_visualization_data.frames[1:],
     )
-    break_pairs = [
+    sampled_gaps = [
         (previous, frame)
         for previous, frame in frame_pairs
-        if frame.trajectory_break_before
+        if frame.transition_index != previous.transition_index + 1
     ]
 
-    assert break_pairs
-    assert all(
-        frame.transition_index != previous.transition_index + 1
-        for previous, frame in break_pairs
-    )
+    assert sampled_gaps
+    assert all(not frame.trajectory_break_before for _, frame in sampled_gaps)
 
 
 def test_d021_consecutive_event_window_transitions_remain_connected(
@@ -1558,14 +1556,14 @@ def test_trajectory_break_geometry_has_no_synthetic_intermediate_positions(
         if not math.isfinite(x)
     )
 
-    replay_data = replace(d021_visualization_data, frames=frames[:12])
+    break_index = 5
+    replay_frames = tuple(
+        replace(frame, trajectory_break_before=index == break_index)
+        for index, frame in enumerate(frames[:12])
+    )
+    replay_data = replace(d021_visualization_data, frames=replay_frames)
     figure, animation = build_development_visualization_figure(replay_data)
     player = getattr(figure, "_aweform_player")
-    break_index = next(
-        index
-        for index, frame in enumerate(replay_data.frames)
-        if frame.trajectory_break_before
-    )
     for _ in range(break_index):
         player.step_forward()
     animation._func(0)
@@ -1697,3 +1695,69 @@ def test_d021_replay_builds_headless_from_unchanged_neutral_trace(
     assert d021_visualization_data.frames is original_frames
     animation.event_source.stop()
     plt.close(figure)
+
+
+def test_d021_diagnostic_rows_do_not_overlap_at_default_figure_size(
+    d021_visualization_data: DevelopmentVisualizationData,
+) -> None:
+    figure, animation = build_development_visualization_figure(
+        d021_visualization_data
+    )
+    figure.canvas.draw()
+    renderer = figure.canvas.get_renderer()
+    diagnostic_texts = getattr(figure, "_aweform_diagnostic_texts")
+    boxes = [text.get_window_extent(renderer) for text in diagnostic_texts]
+
+    assert all(
+        not first.overlaps(second)
+        for index, first in enumerate(boxes)
+        for second in boxes[index + 1 :]
+    )
+    assert diagnostic_texts[4].get_text().startswith("status: ")
+    assert diagnostic_texts[5].get_text().startswith("charger phase: ")
+    assert diagnostic_texts[4].get_position()[1] > diagnostic_texts[5].get_position()[1]
+    animation.event_source.stop()
+    plt.close(figure)
+
+
+def test_d023_adapter_is_registered_and_enforces_exact_horizon_and_seed_guard(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert DEVELOPMENT_VISUALIZATION_ADAPTERS["d023"] is (
+        build_d023_development_visualization
+    )
+    assert d023.D023_HORIZON == 210_000
+    assert build_d023_development_visualization.__kwdefaults__["horizon"] == 210_000
+
+    with pytest.raises(ValueError, match="210,000"):
+        build_d023_development_visualization(seed=18365, horizon=1)
+    for seed in (18364, 50001):
+        with pytest.raises(ValueError):
+            build_d023_development_visualization(seed=seed, horizon=210_000)
+
+    calls: list[tuple[int, int, int]] = []
+    sentinel = object()
+
+    def fake_run_seed(
+        seed: int, *, horizon: int, trace: list[object]
+    ) -> dict[str, object]:
+        calls.append((seed, horizon, len(trace)))
+        trace.extend([sentinel] * horizon)
+        return {}
+
+    adapted = _synthetic_consequence_data()
+    adapted_calls: list[tuple[int, int]] = []
+
+    def fake_adapt(
+        trace: tuple[object, ...], *, seed: int
+    ) -> DevelopmentVisualizationData:
+        adapted_calls.append((len(trace), seed))
+        return adapted
+
+    monkeypatch.setattr(d021, "_run_seed", fake_run_seed)
+    monkeypatch.setattr(development_visualizer_module, "adapt_d023_trace", fake_adapt)
+    result = build_d023_development_visualization(seed=18366, horizon=210_000)
+
+    assert result is adapted
+    assert calls == [(18366, 210_000, 0)]
+    assert adapted_calls == [(210_000, 18366)]

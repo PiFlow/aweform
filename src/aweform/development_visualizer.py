@@ -713,11 +713,11 @@ def build_development_visualization_figure(
     diagnostic_axis.axis("off")
     diagnostic_axis.set_title("EVALUATOR DIAGNOSTICS", loc="left")
     if beacon_values_available:
-        top_y = (1.06, 0.99, 0.92, 0.85, 0.78)
-        energy_y, thermal_y = 0.61, 0.47
+        top_y = (1.06, 0.99, 0.92, 0.85, 0.78, 0.71)
+        energy_y, thermal_y = 0.57, 0.43
     else:
-        top_y = (0.86, 0.79, 0.72, 0.65, 0.58)
-        energy_y, thermal_y = 0.41, 0.25
+        top_y = (0.86, 0.79, 0.72, 0.65, 0.58, 0.51)
+        energy_y, thermal_y = 0.37, 0.21
     transition_text = diagnostic_axis.text(
         0.02, top_y[0], "", family="monospace", fontsize=11
     )
@@ -732,6 +732,9 @@ def build_development_visualization_figure(
     )
     status_text = diagnostic_axis.text(
         0.02, top_y[4], "", family="monospace", fontsize=11
+    )
+    charger_phase_text = diagnostic_axis.text(
+        0.02, top_y[5], "", family="monospace", fontsize=11
     )
 
     energy_background, energy_fill, energy_value = _make_gauge(
@@ -982,13 +985,15 @@ def build_development_visualization_figure(
             if frame.truncated
             else "RUNNING"
         )
-        status_label = f"status: {status}"
-        if frame.charger_phase is not None:
-            status_label += (
-                f"\ncharger phase: {frame.charger_phase}"
-                " (EVALUATOR ONLY)"
+        status_text.set_text(f"status: {status}")
+        charger_phase_text.set_text(
+            "charger phase: "
+            + (
+                f"{frame.charger_phase} (EVALUATOR ONLY)"
+                if frame.charger_phase is not None
+                else "UNAVAILABLE (EVALUATOR ONLY)"
             )
-        status_text.set_text(status_label)
+        )
         energy_fill.set_width(_gauge_fraction(frame.energy, data.energy_range) * 0.62)
         thermal_fill.set_width(
             _gauge_fraction(frame.thermal, data.thermal_range) * 0.62
@@ -1027,6 +1032,7 @@ def build_development_visualization_figure(
             mode_text,
             contact_text,
             status_text,
+            charger_phase_text,
             energy_fill,
             thermal_fill,
             energy_value,
@@ -1238,6 +1244,12 @@ def build_development_visualization_figure(
     setattr(figure, "_aweform_learner_lines", tuple(learner_lines))
     setattr(figure, "_aweform_alternative_axis", alternative_axis)
     setattr(figure, "_aweform_alternative_rows", tuple(alternative_rows))
+    setattr(
+        figure,
+        "_aweform_diagnostic_texts",
+        (transition_text, action_text, mode_text, contact_text, status_text,
+         charger_phase_text),
+    )
     return figure, animation
 
 
@@ -2434,6 +2446,7 @@ def adapt_d021_trace(
     trace: Sequence[D021TransitionTrace],
     *,
     source_label: str = "D-021 V0.4 autonomous energy-regulation lifetime",
+    seed: int = 18365,
 ) -> DevelopmentVisualizationData:
     """Convert one completed D-021 evaluator trace to neutral replay data."""
     from .d020 import D020PhysicalConfig
@@ -2471,7 +2484,6 @@ def adapt_d021_trace(
             charging_contact_before=initial.telemetry.charging_contact_before,
         )
     )
-    previous_displayed_source_step = 0
     for step in selected_steps:
         record = by_step[step]
         if len(record.observation) != 6:
@@ -2501,15 +2513,11 @@ def adapt_d021_trace(
                 charger_phase=telemetry.charge_phase.value,
                 simulated_seconds=record.transition_index * config.dt_seconds,
                 charging_contact_before=telemetry.charging_contact_before,
-                trajectory_break_before=(
-                    record.transition_index != previous_displayed_source_step + 1
-                ),
             )
         )
-        previous_displayed_source_step = record.transition_index
     return DevelopmentVisualizationData(
         source_label=source_label,
-        seed=18365,
+        seed=seed,
         world_min=config.world_min,
         world_max=config.world_max,
         station_center=trace[0].telemetry.station_center,
@@ -2550,7 +2558,51 @@ def build_d021_development_visualization(
     if seed != 18365:
         raise ValueError("D-021 visualization is fixed to canonical seed 18365")
     trace = run_d021_lifetime_trace(seed, horizon=horizon)
-    return adapt_d021_trace(trace)
+    return adapt_d021_trace(trace, seed=seed)
+
+
+def _validate_d023_visualization_seed(seed: int) -> None:
+    """Validate one D-023 seed without requiring the full three-seed probe."""
+    from .d023 import D023_DEFAULT_DEVELOPMENT_SEEDS
+    from .exp003_seed_policy import validate_exp003_development_seeds
+
+    validate_exp003_development_seeds((seed,))
+    if seed not in D023_DEFAULT_DEVELOPMENT_SEEDS:
+        raise ValueError(
+            "D-023 visualization requires a seed from its exact declared "
+            f"development set {D023_DEFAULT_DEVELOPMENT_SEEDS}; got {seed}"
+        )
+
+
+def adapt_d023_trace(
+    trace: Sequence[D021TransitionTrace],
+    *,
+    seed: int,
+    source_label: str = "D-023 V0.4 repeated-cycle energy-regulation lifetime",
+) -> DevelopmentVisualizationData:
+    """Adapt one completed D-023 trace using the shared D-021 replay model."""
+    _validate_d023_visualization_seed(seed)
+    return adapt_d021_trace(trace, source_label=source_label, seed=seed)
+
+
+def build_d023_development_visualization(
+    *,
+    seed: int = 18365,
+    horizon: int = 210_000,
+) -> DevelopmentVisualizationData:
+    """Run one complete D-023 lifetime, then adapt its evaluator trace."""
+    from . import d021, d023
+
+    _validate_d023_visualization_seed(seed)
+    if horizon != d023.D023_HORIZON:
+        raise ValueError(
+            "D-023 visualization requires the frozen 210,000-transition horizon"
+        )
+    trace: list[D021TransitionTrace] = []
+    d021._run_seed(seed, horizon=d023.D023_HORIZON, trace=trace)
+    if len(trace) != d023.D023_HORIZON:
+        raise RuntimeError("D-023 lifetime trace did not reach the frozen horizon")
+    return adapt_d023_trace(tuple(trace), seed=seed)
 
 
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
@@ -2570,6 +2622,7 @@ DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     "d017": build_d017_development_visualization,
     "d018": build_d018_development_visualization,
     "d021": build_d021_development_visualization,
+    "d023": build_d023_development_visualization,
 }
 
 
