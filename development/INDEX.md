@@ -37,7 +37,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-019 | Minimal V0.4 physical embodiment and thermal-budget audit | CONTINUING | [`D-019-minimal-v0.4-physical-embodiment-thermal-budget-audit.md`](D-019-minimal-v0.4-physical-embodiment-thermal-budget-audit.md) |
 | D-020 | V0.4 physical bookkeeping and fixed-action probe | CONTINUING | [`D-020-v04-physical-bookkeeping-probe.md`](D-020-v04-physical-bookkeeping-probe.md) |
 | D-021 | Minimal autonomous V0.4 energy-regulation baseline | CONTINUING | [`D-021-v04-autonomous-energy-regulation-baseline.md`](D-021-v04-autonomous-energy-regulation-baseline.md) |
-| D-022 | Incidental charging contribution audit | CONTINUING | [`D-022-incidental-charging-audit.md`](D-022-incidental-charging-audit.md) |
+| D-022 | Incidental charging contribution audit | CONTINUING | [`D-022-v04-incidental-charging-contribution-audit.md`](D-022-v04-incidental-charging-contribution-audit.md) |
 | D-023 | Repeated-cycle V0.4 energy-regulation endurance probe | CONTINUING | [`D-023-repeated-cycle-v04-energy-regulation-endurance.md`](D-023-repeated-cycle-v04-energy-regulation-endurance.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
