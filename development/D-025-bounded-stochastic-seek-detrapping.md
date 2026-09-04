@@ -6,7 +6,8 @@
 - **development_seeds:** `18365, 18366, 18367`
 - **horizon:** `70,000` transitions per uninterrupted lifetime
 - **delegation probability:** exactly `1/8`
-- **disposition:** `CONTINUING` (pending descriptive outcome)
+- **implementation_probe_sha:** `621d5e77643d3919138596e387b9de5b9fe1d944`
+- **disposition:** `CONTINUING`
 
 ## Question and frozen scope
 
@@ -82,6 +83,44 @@ arbitration, fresh explorer segment without reseeding, greedy default,
 evaluator-only diagnostics, natural termination versus censoring, unchanged
 D-024 artifacts, focused/full tests, Ruff, strict mypy, compileall, diff
 whitespace, canonical visualization replay, and exact-current-HEAD CI.
+
+## Frozen-run descriptive results
+
+The canonical run used exactly the three declared seeds and the frozen
+70,000-transition ceiling. All three runs entered false-contact SEEK and
+reacquired valid causal dual contact during SEEK. All three then reached full
+recharge, redeparted, and were horizon-censored later in the same uninterrupted
+lifetime. No run was energy-depleted or thermally shut down.
+
+| Seed | SEEK entry → reacquisition | False-contact SEEK decisions | Delegations | Effective perturbations | SEEK minimum max pair error | Full cycle | Final mode |
+|---:|---:|---:|---:|---:|---:|---:|---|
+| 18365 | 24,332 → 27,779 (3,447 decisions) | 3,448 | 429 | 320 | 0.00893904 | yes | AWAY |
+| 18366 | 24,311 → 24,347 (36 decisions) | 37 | 5 | 2 | 0.00994215 | yes | AWAY |
+| 18367 | 24,327 → 27,268 (2,941 decisions) | 2,942 | 347 | 262 | 0.00291199 | yes | AWAY |
+
+The initial dual-contact predicate was valid for every seed. Initial full
+departure and first causal contact loss both occurred at transition `1`. Each
+run validated its D-024-compatible prefix through the completed AWAY transition
+immediately before the first SEEK decision: `24,331`, `24,310`, and `24,326`
+for seeds `18365`, `18366`, and `18367`. Each recorded exactly one SEEK-entry
+explorer `begin_segment()` call. The delegated action counts, greedy-to-actual
+action counts, first effective perturbation state, pair errors at reacquisition,
+one-pair tolerance events, AWAY incidental contacts, energy, temperature, and
+all termination fields are preserved in the JSON artifact.
+
+## Cautious interpretation
+
+Direct observation: on these three declared development lifetimes, the bounded
+stochastic arbitration permitted SEEK reacquisition and a full energy-regulation
+cycle under the unchanged D-024 physical and organism-visible boundary.
+
+Narrow inference: bounded stochastic de-trapping can permit docking on this
+declared support without adding new sensory information. This does not show
+robustness, optimality, learning, or general sufficiency. There is no
+scientific PASS threshold, and the result is not confirmatory evidence. The
+mechanism remains `CONTINUING` for future explicitly authorized development;
+this task makes no change to the frozen D-024 comparator or any later-stage
+boundary.
 
 Substantive machine-readable outcomes are in
 [`D-025-bounded-stochastic-seek-detrapping.json`](D-025-bounded-stochastic-seek-detrapping.json).
