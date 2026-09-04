@@ -317,7 +317,12 @@ def _update_seek_geometry(
         )
 
 
-def _run_d024_seed(seed: int, *, horizon: int = D024_HORIZON) -> dict[str, object]:
+def _run_d024_seed(
+    seed: int,
+    *,
+    horizon: int = D024_HORIZON,
+    trace: list[d021.D021TransitionTrace] | None = None,
+) -> dict[str, object]:
     """Run one exact-pose, uninterrupted D-024 lifetime."""
     _validate_d024_seed(seed)
     if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon <= 0:
@@ -438,6 +443,32 @@ def _run_d024_seed(seed: int, *, horizon: int = D024_HORIZON) -> dict[str, objec
         if telemetry is None:
             raise RuntimeError("D-024 transition telemetry is unavailable")
         transitions += 1
+
+        if trace is not None:
+            if observation.shape != (6,):
+                raise RuntimeError(
+                    "D-024 observation must contain exactly six channels"
+                )
+            trace.append(
+                d021.D021TransitionTrace(
+                    transition_index=transition_index,
+                    mode_before=mode_before,
+                    mode_after=mode_after,
+                    action=action,
+                    observation_before=(
+                        current.energy,
+                        current.beacon.left,
+                        current.beacon.forward,
+                        current.beacon.right,
+                        float(current.charging_contact),
+                        current.thermal,
+                    ),
+                    observation=tuple(float(value) for value in observation),
+                    telemetry=telemetry,
+                    reward=reward,
+                    info=info,
+                )
+            )
 
         dual_after = telemetry.charging_contact_after
         legacy_after = legacy_circular_contact(
@@ -752,6 +783,41 @@ def _run_d024_seed(seed: int, *, horizon: int = D024_HORIZON) -> dict[str, objec
             "emergency_65_c_occurred": final_telemetry.emergency_hard_shutdown,
         },
     }
+
+
+def run_d024_lifetime_trace(
+    seed: int = D024_DEFAULT_DEVELOPMENT_SEEDS[0],
+    *,
+    horizon: int = D024_HORIZON,
+) -> tuple[d021.D021TransitionTrace, ...]:
+    """Run one exact D-024 lifetime and retain completed transitions."""
+    _validate_d024_seed(seed)
+    if horizon != D024_HORIZON:
+        raise ValueError(
+            "D-024 visualization requires the frozen 70,000-transition horizon"
+        )
+    trace: list[d021.D021TransitionTrace] = []
+    _run_d024_seed(seed, horizon=horizon, trace=trace)
+    if not trace:
+        raise RuntimeError("D-024 lifetime trace contains no completed transitions")
+
+    final_telemetry = trace[-1].telemetry
+    naturally_terminated = (
+        len(trace) < horizon
+        and final_telemetry.terminated
+        and not final_telemetry.truncated
+    )
+    horizon_censored = (
+        len(trace) == horizon
+        and not final_telemetry.terminated
+        and final_telemetry.truncated
+    )
+    if not naturally_terminated and not horizon_censored:
+        raise RuntimeError(
+            "D-024 lifetime trace is neither naturally terminated before "
+            "the frozen horizon nor correctly horizon-censored"
+        )
+    return tuple(trace)
 
 
 def run_d024_probe(executed_commit_sha: str | None = None) -> dict[str, object]:
