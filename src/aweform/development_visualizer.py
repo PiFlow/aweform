@@ -246,6 +246,37 @@ class DevelopmentShadowGeometry:
 
 
 @dataclass(frozen=True, slots=True)
+class DevelopmentCausalGeometry:
+    """Causal evaluator geometry for a development replay."""
+
+    body_length: float
+    body_width: float
+    rear_contact_plus: Coordinate
+    rear_contact_minus: Coordinate
+    front_midpoint: Coordinate
+    dock_orientation: float
+    dock_contact_plus: Coordinate
+    dock_contact_minus: Coordinate
+    contact_tolerance: float
+
+    def __post_init__(self) -> None:
+        for name in ("body_length", "body_width", "contact_tolerance"):
+            value = getattr(self, name)
+            if not math.isfinite(value) or value <= 0.0:
+                raise ValueError(f"{name} must be finite and positive")
+        if not math.isfinite(self.dock_orientation):
+            raise ValueError("dock_orientation must be finite")
+        for name in (
+            "rear_contact_plus",
+            "rear_contact_minus",
+            "front_midpoint",
+            "dock_contact_plus",
+            "dock_contact_minus",
+        ):
+            _validate_coordinate(name, getattr(self, name))
+
+
+@dataclass(frozen=True, slots=True)
 class DevelopmentVisualizationData:
     """All neutral data required by the shared development renderer."""
 
@@ -274,6 +305,7 @@ class DevelopmentVisualizationData:
     action_alternative_warning: str | None = None
     action_alternative_provenance: str | None = None
     shadow_geometry: DevelopmentShadowGeometry | None = None
+    causal_geometry: DevelopmentCausalGeometry | None = None
 
     def __post_init__(self) -> None:
         if not self.source_label:
@@ -366,12 +398,22 @@ class DevelopmentVisualizationData:
                 raise ValueError("charging_radius requires station_center")
         else:
             _validate_coordinate("station_center", self.station_center)
-            if self.charging_radius is None or not math.isfinite(self.charging_radius):
+            if (
+                self.charging_radius is None
+                and self.causal_geometry is None
+            ) or (
+                self.charging_radius is not None
+                and not math.isfinite(self.charging_radius)
+            ):
                 raise ValueError("station visualizations require a finite radius")
-            if self.charging_radius < 0:
+            if self.charging_radius is not None and self.charging_radius < 0:
                 raise ValueError("charging_radius must be non-negative")
         if self.shadow_geometry is not None and self.station_center is None:
             raise ValueError("shadow geometry requires station_center")
+        if self.causal_geometry is not None and self.station_center is None:
+            raise ValueError("causal geometry requires station_center")
+        if self.shadow_geometry is not None and self.causal_geometry is not None:
+            raise ValueError("shadow and causal geometry cannot be combined")
         if (self.probe_distance is None) != (self.sensor_angle is None):
             raise ValueError("probe_distance and sensor_angle must be paired")
         for name in ("probe_distance", "sensor_angle"):
@@ -533,18 +575,19 @@ def build_development_visualization_figure(
         )
     )
 
-    if data.station_center is not None and data.charging_radius is not None:
-        world_axis.add_patch(
-            Circle(
-                data.station_center,
-                data.charging_radius,
-                facecolor="tab:green",
-                edgecolor="tab:green",
-                alpha=0.15,
-                linewidth=1.5,
-                label="charging radius",
+    if data.station_center is not None:
+        if data.charging_radius is not None:
+            world_axis.add_patch(
+                Circle(
+                    data.station_center,
+                    data.charging_radius,
+                    facecolor="tab:green",
+                    edgecolor="tab:green",
+                    alpha=0.15,
+                    linewidth=1.5,
+                    label="charging radius",
+                )
             )
-        )
         world_axis.plot(
             [data.station_center[0]],
             [data.station_center[1]],
@@ -555,94 +598,122 @@ def build_development_visualization_figure(
             label="station centre",
         )
 
-    shadow_body: Polygon | None = None
-    shadow_front_direction: Line2D | None = None
-    shadow_rear_contacts: Line2D | None = None
-    shadow_front_midpoint: Line2D | None = None
-    shadow_dock_contacts: Line2D | None = None
-    shadow_dock_axis: Line2D | None = None
-    shadow_overlay_label: Text | None = None
-    if data.shadow_geometry is not None:
-        shadow = data.shadow_geometry
+    geometry = data.causal_geometry or data.shadow_geometry
+    geometry_body: Polygon | None = None
+    geometry_front_direction: Line2D | None = None
+    geometry_rear_contacts: Line2D | None = None
+    geometry_front_midpoint: Line2D | None = None
+    geometry_dock_contacts: Line2D | None = None
+    geometry_dock_axis: Line2D | None = None
+    geometry_overlay_label: Text | None = None
+    if geometry is not None:
         if data.station_center is None:
-            raise RuntimeError("shadow geometry has no station center")
-        shadow_body = Polygon(
+            raise RuntimeError("geometry has no station center")
+        causal = data.causal_geometry is not None
+        geometry_body = Polygon(
             _shadow_body_corners(
-                (0.0, 0.0), 0.0, shadow.body_length, shadow.body_width
+                (0.0, 0.0), 0.0, geometry.body_length, geometry.body_width
             ),
             closed=True,
             facecolor="tab:purple",
             edgecolor="tab:purple",
             alpha=0.18,
             linewidth=1.5,
-            label="shadow body footprint",
+            label=(
+                "causal finite-body footprint" if causal else "shadow body footprint"
+            ),
         )
-        world_axis.add_patch(shadow_body)
-        shadow_front_direction = world_axis.plot(
-            [], [], color="tab:orange", linewidth=2.0, label="shadow front direction"
+        world_axis.add_patch(geometry_body)
+        geometry_front_direction = world_axis.plot(
+            [], [], color="tab:orange", linewidth=2.0,
+            label=("causal body heading" if causal else "shadow front direction"),
         )[0]
-        shadow_rear_contacts = world_axis.plot(
+        geometry_rear_contacts = world_axis.plot(
             [], [], marker="s", markersize=5, linestyle="None", color="tab:red",
-            label="shadow rear contacts",
+            label=("causal rear contacts" if causal else "shadow rear contacts"),
         )[0]
-        shadow_front_midpoint = world_axis.plot(
+        geometry_front_midpoint = world_axis.plot(
             [], [], marker="x", markersize=7, linestyle="None", color="#e377c2",
-            label="front midpoint comparator",
+            label=("causal front midpoint" if causal else "front midpoint comparator"),
         )[0]
-        shadow_dock_contacts = world_axis.plot(
-            [shadow.dock_contact_plus[0], shadow.dock_contact_minus[0]],
-            [shadow.dock_contact_plus[1], shadow.dock_contact_minus[1]],
+        geometry_dock_contacts = world_axis.plot(
+            [geometry.dock_contact_plus[0], geometry.dock_contact_minus[0]],
+            [geometry.dock_contact_plus[1], geometry.dock_contact_minus[1]],
             marker="D",
             markersize=4,
             color="tab:green",
             linewidth=2.0,
-            label="one audit orientation dock contacts",
+            label=(
+                "fixed causal dock contacts"
+                if causal
+                else "one audit orientation dock contacts"
+            ),
         )[0]
-        shadow_dock_axis = world_axis.plot(
+        geometry_dock_axis = world_axis.plot(
             [
                 data.station_center[0],
                 data.station_center[0]
-                + 0.07 * math.cos(shadow.dock_orientation),
+                + 0.07 * math.cos(geometry.dock_orientation),
             ],
             [
                 data.station_center[1],
                 data.station_center[1]
-                + 0.07 * math.sin(shadow.dock_orientation),
+                + 0.07 * math.sin(geometry.dock_orientation),
             ],
             color="tab:green",
             linestyle="--",
             linewidth=1.2,
-            label="one audit orientation outward axis",
+            label=(
+                "fixed causal dock outward axis"
+                if causal
+                else "one audit orientation outward axis"
+            ),
         )[0]
-        shadow_text = (
-            "EVALUATOR-ONLY SHADOW MORPHOLOGY\n"
-            "DOES NOT CONTROL CHARGING OR BEHAVIOUR\n"
-            f"ONE AUDIT ORIENTATION: phi={shadow.dock_orientation:g}"
-        )
+        if causal:
+            causal_geometry = data.causal_geometry
+            if causal_geometry is None:
+                raise RuntimeError("causal geometry disappeared")
+            geometry_text = (
+                "CAUSAL D-024 FINITE-BODY DUAL-CONTACT GEOMETRY\n"
+                "CONTROLS THE BINARY CHARGING CONTACT PREDICATE\n"
+                f"FIXED DOCK: phi={geometry.dock_orientation:g}; "
+                f"PAIR TOLERANCE <= {causal_geometry.contact_tolerance:g}\n"
+                "GEOMETRY IS EVALUATOR-ONLY; ORGANISM SEES BINARY CONTACT"
+            )
+        else:
+            geometry_text = (
+                "EVALUATOR-ONLY SHADOW MORPHOLOGY\n"
+                "DOES NOT CONTROL CHARGING OR BEHAVIOUR\n"
+                f"ONE AUDIT ORIENTATION: phi={geometry.dock_orientation:g}"
+            )
         if has_action_alternatives:
-            shadow_overlay_label = figure.text(
+            geometry_overlay_label = figure.text(
                 0.03,
                 0.965,
-                shadow_text,
+                geometry_text,
                 va="top",
                 fontsize=8,
-                color="tab:purple",
+                color=("tab:blue" if causal else "tab:purple"),
                 bbox={
                     "facecolor": "white",
                     "alpha": 0.8,
-                    "edgecolor": "tab:purple",
+                    "edgecolor": ("tab:blue" if causal else "tab:purple"),
                 },
             )
         else:
-            shadow_overlay_label = world_axis.text(
+            geometry_overlay_label = world_axis.text(
                 0.02,
                 0.03,
-                shadow_text,
+                geometry_text,
                 transform=world_axis.transAxes,
                 va="bottom",
                 fontsize=8,
-                color="tab:purple",
-                bbox={"facecolor": "white", "alpha": 0.8, "edgecolor": "tab:purple"},
+                color=("tab:blue" if causal else "tab:purple"),
+                bbox={
+                    "facecolor": "white",
+                    "alpha": 0.8,
+                    "edgecolor": ("tab:blue" if causal else "tab:purple"),
+                },
             )
         if not has_action_alternatives:
             world_axis.legend(loc="lower left", fontsize=8)
@@ -1059,54 +1130,53 @@ def build_development_visualization_figure(
             rendered.extend((fill, value))
         if threshold_marker is not None:
             rendered.append(threshold_marker)
-        if data.shadow_geometry is not None:
-            shadow = data.shadow_geometry
+        if geometry is not None:
             if (
-                shadow_body is None
-                or shadow_front_direction is None
-                or shadow_rear_contacts is None
-                or shadow_front_midpoint is None
-                or shadow_dock_contacts is None
-                or shadow_dock_axis is None
+                geometry_body is None
+                or geometry_front_direction is None
+                or geometry_rear_contacts is None
+                or geometry_front_midpoint is None
+                or geometry_dock_contacts is None
+                or geometry_dock_axis is None
             ):
-                raise RuntimeError("shadow geometry artists are incomplete")
-            shadow_body.set_xy(
+                raise RuntimeError("geometry artists are incomplete")
+            geometry_body.set_xy(
                 _shadow_body_corners(
                     (frame.x, frame.y),
                     frame.heading,
-                    shadow.body_length,
-                    shadow.body_width,
+                    geometry.body_length,
+                    geometry.body_width,
                 )
             )
             front = _translate_and_rotate(
-                (frame.x, frame.y), frame.heading, shadow.front_midpoint
+                (frame.x, frame.y), frame.heading, geometry.front_midpoint
             )
             rear_plus = _translate_and_rotate(
-                (frame.x, frame.y), frame.heading, shadow.rear_contact_plus
+                (frame.x, frame.y), frame.heading, geometry.rear_contact_plus
             )
             rear_minus = _translate_and_rotate(
-                (frame.x, frame.y), frame.heading, shadow.rear_contact_minus
+                (frame.x, frame.y), frame.heading, geometry.rear_contact_minus
             )
-            shadow_front_direction.set_data(
+            geometry_front_direction.set_data(
                 [frame.x, frame.x + 0.07 * math.cos(frame.heading)],
                 [frame.y, frame.y + 0.07 * math.sin(frame.heading)],
             )
-            shadow_rear_contacts.set_data(
+            geometry_rear_contacts.set_data(
                 [rear_plus[0], rear_minus[0]], [rear_plus[1], rear_minus[1]]
             )
-            shadow_front_midpoint.set_data([front[0]], [front[1]])
+            geometry_front_midpoint.set_data([front[0]], [front[1]])
             rendered.extend(
                 (
-                    shadow_body,
-                    shadow_front_direction,
-                    shadow_rear_contacts,
-                    shadow_front_midpoint,
-                    shadow_dock_contacts,
-                    shadow_dock_axis,
+                    geometry_body,
+                    geometry_front_direction,
+                    geometry_rear_contacts,
+                    geometry_front_midpoint,
+                    geometry_dock_contacts,
+                    geometry_dock_axis,
                 )
             )
-            if shadow_overlay_label is not None:
-                rendered.append(shadow_overlay_label)
+            if geometry_overlay_label is not None:
+                rendered.append(geometry_overlay_label)
         if learner_axes:
             predictions = data.consequence_predictions
             if predictions is None:
@@ -2605,6 +2675,236 @@ def build_d023_development_visualization(
     return adapt_d023_trace(tuple(trace), seed=seed)
 
 
+def _validate_d024_visualization_seed(seed: int) -> None:
+    """Validate one D-024 visualization seed against its frozen set."""
+    from .d024 import _validate_d024_seed
+
+    _validate_d024_seed(seed)
+
+
+def d024_replay_event_steps(
+    trace: Sequence[D021TransitionTrace],
+) -> dict[str, int]:
+    """Return available causal D-024 events for display-only replay sampling."""
+    from . import d024
+    from .d020 import D020PhysicalConfig
+
+    if not trace:
+        raise ValueError("D-024 replay trace must not be empty")
+    config = D020PhysicalConfig()
+    events: dict[str, int] = {"final": trace[-1].transition_index}
+    candidates: dict[str, list[int]] = {
+        "first_departure": [
+            record.transition_index
+            for record in trace
+            if record.mode_before is D021Mode.CHARGE
+            and record.mode_after is D021Mode.DEPART
+        ],
+        "first_charger_exit": [
+            record.transition_index
+            for record in trace
+            if record.telemetry.charging_contact_before
+            and not record.telemetry.charging_contact_after
+        ],
+        "first_seek_entry": [
+            record.transition_index
+            for record in trace
+            if record.mode_before is D021Mode.AWAY
+            and record.mode_after is D021Mode.SEEK
+        ],
+        "first_dual_contact_entry": [
+            record.transition_index
+            for record in trace
+            if not record.telemetry.charging_contact_before
+            and record.telemetry.charging_contact_after
+        ],
+        "first_legacy_without_dual_entry": [
+            record.transition_index
+            for record in trace
+            if d024.legacy_circular_contact(
+                record.telemetry.position_after,
+                record.telemetry.station_center,
+                config,
+            )
+            and not record.telemetry.charging_contact_after
+        ],
+    }
+    for name, values in candidates.items():
+        if values:
+            events[name] = values[0]
+    return events
+
+
+def select_d024_replay_indices(
+    trace: Sequence[D021TransitionTrace],
+) -> tuple[int, ...]:
+    """Select actual D-024 steps with deterministic event-preserving sampling."""
+    if not trace:
+        raise ValueError("D-024 replay trace must not be empty")
+    event_steps = d024_replay_event_steps(trace)
+    trace_by_step = {record.transition_index: record for record in trace}
+    selected = set(event_steps.values())
+    for step in event_steps.values():
+        selected.update(
+            candidate
+            for candidate in range(step - 2, step + 3)
+            if candidate in trace_by_step
+        )
+    run_start = 0
+    while run_start < len(trace):
+        run_end = run_start
+        mode = trace[run_start].mode_before
+        while run_end + 1 < len(trace) and trace[run_end + 1].mode_before is mode:
+            run_end += 1
+        selected.add(trace[(run_start + run_end) // 2].transition_index)
+        run_start = run_end + 1
+    stride = (len(trace) + 699) // 700
+    selected.update(record.transition_index for record in trace[::stride])
+    selected.add(trace[-1].transition_index)
+    return tuple(sorted(selected))
+
+
+def adapt_d024_trace(
+    trace: Sequence[D021TransitionTrace],
+    *,
+    seed: int,
+    source_label: str = "D-024 causal finite-body dual-contact lifetime",
+) -> DevelopmentVisualizationData:
+    """Convert one completed causal D-024 trace to neutral replay data."""
+    from . import d024
+    from .d020 import D020PhysicalConfig
+
+    _validate_d024_visualization_seed(seed)
+    if not trace:
+        raise ValueError("D-024 replay trace must not be empty")
+    config = D020PhysicalConfig()
+    selected_steps = select_d024_replay_indices(trace)
+    by_step = {record.transition_index: record for record in trace}
+    initial = trace[0]
+    if len(initial.observation_before) != 6:
+        raise RuntimeError("D-024 initial observation must contain six channels")
+    initial_observation = initial.observation_before
+    frames: list[DevelopmentVisualizationFrame] = [
+        DevelopmentVisualizationFrame(
+            transition_index=0,
+            x=initial.telemetry.position_before[0],
+            y=initial.telemetry.position_before[1],
+            heading=initial.telemetry.heading,
+            action="INITIAL",
+            decision_mode=initial.mode_before.value,
+            energy=initial_observation[0],
+            thermal=initial.telemetry.body_temperature_before_c,
+            charging_contact=bool(initial_observation[4]),
+            terminated=False,
+            truncated=False,
+            beacon_left=initial_observation[1],
+            beacon_forward=initial_observation[2],
+            beacon_right=initial_observation[3],
+            thermal_normalized=initial_observation[5],
+            thermal_absolute_c=initial.telemetry.body_temperature_before_c,
+            charger_phase=initial.telemetry.charge_phase.value,
+            simulated_seconds=0.0,
+            charging_contact_before=initial.telemetry.charging_contact_before,
+        )
+    ]
+    for step in selected_steps:
+        record = by_step[step]
+        if len(record.observation) != 6:
+            raise RuntimeError("D-024 observation must contain exactly six channels")
+        if record.reward != 0.0 or record.info != {}:
+            raise RuntimeError("D-024 replay crossed the reward/info boundary")
+        observation = record.observation
+        telemetry = record.telemetry
+        frames.append(
+            DevelopmentVisualizationFrame(
+                transition_index=record.transition_index,
+                x=telemetry.position_after[0],
+                y=telemetry.position_after[1],
+                heading=telemetry.heading,
+                action=record.action.name,
+                decision_mode=record.mode_before.value,
+                energy=observation[0],
+                thermal=telemetry.body_temperature_after_c,
+                charging_contact=bool(observation[4]),
+                terminated=telemetry.terminated,
+                truncated=telemetry.truncated,
+                beacon_left=observation[1],
+                beacon_forward=observation[2],
+                beacon_right=observation[3],
+                thermal_normalized=observation[5],
+                thermal_absolute_c=telemetry.body_temperature_after_c,
+                charger_phase=telemetry.charge_phase.value,
+                simulated_seconds=record.transition_index * config.dt_seconds,
+                charging_contact_before=telemetry.charging_contact_before,
+            )
+        )
+    dock_plus, dock_minus = d024.dock_contacts_world(d024.D024_STATION_CENTER)
+    return DevelopmentVisualizationData(
+        source_label=source_label,
+        seed=seed,
+        world_min=config.world_min,
+        world_max=config.world_max,
+        station_center=trace[0].telemetry.station_center,
+        charging_radius=None,
+        energy_range=DevelopmentVisualizationRange(0.0, 1.0),
+        thermal_range=DevelopmentVisualizationRange(0.0, 80.0),
+        frames=tuple(frames),
+        visibility=DevelopmentVisualizationVisibility(
+            position_heading="EVALUATOR ONLY — CAUSAL BODY GEOMETRY",
+            station_location="EVALUATOR ONLY",
+            energy="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
+            thermal=(
+                "ORGANISM-VISIBLE NORMALIZED OWN TEMPERATURE + "
+                "EVALUATOR ABSOLUTE °C"
+            ),
+            charging_contact="ORGANISM-VISIBLE BINARY DUAL CONTACT + EVALUATOR",
+            action_decision_mode=(
+                "CONTROLLER MODE SHOWN; CHARGER PHASE EVALUATOR ONLY"
+            ),
+        ),
+        probe_distance=config.probe_distance,
+        sensor_angle=config.sensor_angle,
+        thermal_threshold=config.preferred_operating_ceiling_c,
+        thermal_threshold_label="PREFERRED 45°C — EVALUATOR ONLY",
+        energy_label="BATTERY (NORMALIZED)",
+        mode_display_label="controller mode",
+        causal_geometry=DevelopmentCausalGeometry(
+            body_length=d024.D024_BODY_LENGTH,
+            body_width=d024.D024_BODY_WIDTH,
+            rear_contact_plus=(
+                d024.D024_REAR_X,
+                d024.D024_CONTACT_LATERAL_OFFSET,
+            ),
+            rear_contact_minus=(
+                d024.D024_REAR_X,
+                -d024.D024_CONTACT_LATERAL_OFFSET,
+            ),
+            front_midpoint=(d024.D024_BODY_LENGTH / 2.0, 0.0),
+            dock_orientation=d024.D024_DOCK_ORIENTATION,
+            dock_contact_plus=dock_plus,
+            dock_contact_minus=dock_minus,
+            contact_tolerance=d024.D024_CONTACT_TOLERANCE,
+        ),
+    )
+
+
+def build_d024_development_visualization(
+    *,
+    seed: int = 18365,
+    horizon: int = 70_000,
+) -> DevelopmentVisualizationData:
+    """Run one exact D-024 lifetime, then adapt its evaluator trace."""
+    from . import d024
+
+    _validate_d024_visualization_seed(seed)
+    if horizon != d024.D024_HORIZON:
+        raise ValueError(
+            "D-024 visualization requires the frozen 70,000-transition horizon"
+        )
+    trace = d024.run_d024_lifetime_trace(seed, horizon=horizon)
+    return adapt_d024_trace(trace, seed=seed)
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
@@ -2623,6 +2923,7 @@ DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     "d018": build_d018_development_visualization,
     "d021": build_d021_development_visualization,
     "d023": build_d023_development_visualization,
+    "d024": build_d024_development_visualization,
 }
 
 
@@ -2705,6 +3006,26 @@ def d021_main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--interval-ms", type=_positive_int, default=90)
     args = parser.parse_args(argv)
     data = build_d021_development_visualization()
+    show_development_visualization(data, interval_ms=args.interval_ms)
+    return 0
+
+
+def d024_main(argv: Sequence[str] | None = None) -> int:
+    """Open one exact-horizon D-024 causal docking visualization."""
+    from .d024 import D024_DEFAULT_DEVELOPMENT_SEEDS
+
+    parser = argparse.ArgumentParser(
+        description="Replay one frozen D-024 causal dual-contact lifetime."
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        choices=D024_DEFAULT_DEVELOPMENT_SEEDS,
+        default=D024_DEFAULT_DEVELOPMENT_SEEDS[0],
+    )
+    parser.add_argument("--interval-ms", type=_positive_int, default=90)
+    args = parser.parse_args(argv)
+    data = build_d024_development_visualization(seed=args.seed, horizon=70_000)
     show_development_visualization(data, interval_ms=args.interval_ms)
     return 0
 

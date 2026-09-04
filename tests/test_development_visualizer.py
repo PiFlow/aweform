@@ -14,7 +14,7 @@ import pytest
 from matplotlib.backend_bases import KeyEvent
 
 import aweform.development_visualizer as development_visualizer_module
-from aweform import d011, d012, d013, d015, d018, d021, d023
+from aweform import d011, d012, d013, d015, d018, d021, d023, d024
 from aweform.d003 import run_d003_probe
 from aweform.d005 import run_d005_probe
 from aweform.d006 import run_d006_probe
@@ -22,6 +22,7 @@ from aweform.d021 import D021TransitionTrace, run_d021_lifetime_trace
 from aweform.development_visualizer import (
     DEVELOPMENT_VISUALIZATION_ADAPTERS,
     DevelopmentActionAlternative,
+    DevelopmentCausalGeometry,
     DevelopmentConsequencePredictionFrame,
     DevelopmentVisualizationData,
     DevelopmentVisualizationFrame,
@@ -31,6 +32,7 @@ from aweform.development_visualizer import (
     adapt_d003_trace,
     adapt_d005_trace,
     adapt_d006_trace,
+    adapt_d024_trace,
     build_d003_development_visualization,
     build_d005_development_visualization,
     build_d006_development_visualization,
@@ -44,9 +46,12 @@ from aweform.development_visualizer import (
     build_d020_development_visualization,
     build_d021_development_visualization,
     build_d023_development_visualization,
+    build_d024_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
     d021_replay_event_steps,
+    d024_main,
+    d024_replay_event_steps,
     select_d021_replay_indices,
 )
 from aweform.env import Action
@@ -1761,3 +1766,77 @@ def test_d023_adapter_is_registered_and_enforces_exact_horizon_and_seed_guard(
     assert result is adapted
     assert calls == [(18366, 210_000, 0)]
     assert adapted_calls == [(210_000, 18366)]
+
+
+def test_d024_adapter_replays_causal_trace_and_exact_geometry() -> None:
+    trace: list[d021.D021TransitionTrace] = []
+    d024._run_d024_seed(18365, horizon=1, trace=trace)
+    data = adapt_d024_trace(tuple(trace), seed=18365)
+
+    assert DEVELOPMENT_VISUALIZATION_ADAPTERS["d024"] is (
+        build_d024_development_visualization
+    )
+    assert d024_replay_event_steps(trace)["final"] == 1
+    assert isinstance(data.causal_geometry, DevelopmentCausalGeometry)
+    assert data.shadow_geometry is None
+    assert data.charging_radius is None
+    assert data.causal_geometry.body_length == d024.D024_BODY_LENGTH
+    assert data.causal_geometry.contact_tolerance == d024.D024_CONTACT_TOLERANCE
+
+
+def test_d024_visualization_enforces_exact_seed_and_horizon() -> None:
+    with pytest.raises(ValueError, match="70,000"):
+        build_d024_development_visualization(seed=18365, horizon=1)
+    for seed in (18364, 50001):
+        with pytest.raises(ValueError):
+            build_d024_development_visualization(seed=seed, horizon=70_000)
+
+
+def test_d024_cli_passes_declared_seed_and_frozen_horizon(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[int, int]] = []
+    shown: list[tuple[DevelopmentVisualizationData, int]] = []
+    fake_data = _synthetic_consequence_data()
+
+    def fake_build(*, seed: int, horizon: int) -> DevelopmentVisualizationData:
+        calls.append((seed, horizon))
+        return fake_data
+
+    def fake_show(value: DevelopmentVisualizationData, *, interval_ms: int) -> None:
+        shown.append((value, interval_ms))
+
+    monkeypatch.setattr(
+        development_visualizer_module,
+        "build_d024_development_visualization",
+        fake_build,
+    )
+    monkeypatch.setattr(
+        development_visualizer_module,
+        "show_development_visualization",
+        fake_show,
+    )
+    assert d024_main(["--seed", "18366", "--interval-ms", "123"]) == 0
+    assert calls == [(18366, 70_000)]
+    assert shown == [(fake_data, 123)]
+
+
+def test_d024_renderer_labels_causal_geometry_without_legacy_radius_or_shadow() -> None:
+    trace: list[d021.D021TransitionTrace] = []
+    d024._run_d024_seed(18365, horizon=1, trace=trace)
+    data = adapt_d024_trace(tuple(trace), seed=18365)
+    figure, animation = build_development_visualization_figure(data, interval_ms=1)
+    rendered_text = "\n".join(
+        artist.get_text()
+        for axis in figure.axes
+        for artist in axis.texts
+    )
+    assert "CAUSAL D-024 FINITE-BODY DUAL-CONTACT GEOMETRY" in rendered_text
+    assert "SHADOW MORPHOLOGY" not in rendered_text
+    assert "charging radius" not in rendered_text
+    assert not any(
+        patch.__class__.__name__ == "Circle"
+        for patch in figure.axes[0].patches
+    )
+    animation.event_source.stop()
+    plt.close(figure)
