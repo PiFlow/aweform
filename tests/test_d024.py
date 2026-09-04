@@ -58,6 +58,15 @@ def test_d024_predicate_is_inclusive_and_correspondence_is_not_swappable() -> No
             body_center, 0.0, d024.D024_STATION_CENTER
         ) is expected
 
+    boundary_body_center = (0.56, 0.50)
+    boundary_errors = d024.dual_contact_pair_errors(
+        boundary_body_center, 0.0, d024.D024_STATION_CENTER
+    )
+    assert boundary_errors == pytest.approx((0.01, 0.01))
+    assert d024.has_dual_contact(
+        boundary_body_center, 0.0, d024.D024_STATION_CENTER
+    ) is True
+
     heading = 0.8
     raw_plus, _ = d024.body_rear_contacts_world((0.0, 0.0), heading)
     dock_plus, _ = d024.dock_contacts_world((0.0, 0.0))
@@ -71,6 +80,52 @@ def test_d024_predicate_is_inclusive_and_correspondence_is_not_swappable() -> No
     assert plus_error == pytest.approx(0.0)
     assert minus_error > d024.D024_CONTACT_TOLERANCE
     assert d024.has_dual_contact(body_center, heading, (0.0, 0.0)) is False
+
+
+def test_d024_seek_diagnostics_preserve_first_minimum_and_mode_provenance() -> None:
+    episode: dict[str, object] = {
+        "minimum_rear_plus_pair_error_during_seek": 0.01,
+        "minimum_rear_minus_pair_error_during_seek": 0.01,
+        "minimum_max_pair_error_during_seek": 0.01,
+        "minimum_max_pair_error_during_seek_record": {
+            "transition": 7,
+        },
+        "one_pair_only_tolerance_events": 0,
+    }
+    d024._update_seek_geometry(
+        episode,
+        position=(0.56, 0.50),
+        heading=0.0,
+        station=d024.D024_STATION_CENTER,
+        transition_index=8,
+    )
+    assert episode["minimum_max_pair_error_during_seek_record"] == {
+        "transition": 7,
+    }
+
+    result = d024._run_d024_seed(18367, horizon=25_000)
+    assert result["initial_full_departure_transition"] == 1
+    assert result["first_dual_contact_loss_after_departure_transition"] == 1
+    dual_entry = result["pair_error_diagnostics"]["dual_contact_entry_records"][0]
+    assert dual_entry["controller_mode_before_action"] == "AWAY"
+    assert dual_entry["controller_mode_after_action"] == "AWAY"
+    assert dual_entry["controller_mode_at_entry"] == "AWAY"
+    seek_episode = result["seek_episodes"][0]
+    minimum_record = seek_episode["minimum_max_pair_error_during_seek_record"]
+    assert minimum_record["transition"] >= seek_episode["seek_entry_transition"]
+    assert minimum_record["value"] == seek_episode[
+        "minimum_max_pair_error_during_seek"
+    ]
+    assert set(
+        ("body_center", "heading", "rear_plus_pair_error", "rear_minus_pair_error")
+    ) <= minimum_record.keys()
+    legacy = result["legacy_circular_contact_without_dual"]
+    assert legacy["seek_transition_count"] > 0
+    assert legacy["seek_entry_records"]
+    assert all(
+        record["controller_mode_at_entry"] == "SEEK"
+        for record in legacy["seek_entry_records"]
+    )
 
 
 def test_first_move_loses_initial_contact_and_preserves_kinematics() -> None:

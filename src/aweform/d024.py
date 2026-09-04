@@ -113,8 +113,15 @@ def has_dual_contact(
         body_center, body_heading, station_center
     )
     return (
-        plus_error <= D024_CONTACT_TOLERANCE
-        and minus_error <= D024_CONTACT_TOLERANCE
+        _within_contact_tolerance(plus_error)
+        and _within_contact_tolerance(minus_error)
+    )
+
+
+def _within_contact_tolerance(error: float) -> bool:
+    """Apply inclusive contact tolerance with floating-point boundary care."""
+    return error <= D024_CONTACT_TOLERANCE or math.isclose(
+        error, D024_CONTACT_TOLERANCE, rel_tol=0.0, abs_tol=1e-12
     )
 
 
@@ -207,9 +214,27 @@ def _geometry_metrics(
         "rear_minus_pair_error": minus_error,
         "max_pair_error": max(plus_error, minus_error),
         "one_pair_only_within_tolerance": (
-            (plus_error <= D024_CONTACT_TOLERANCE)
-            != (minus_error <= D024_CONTACT_TOLERANCE)
+            _within_contact_tolerance(plus_error)
+            != _within_contact_tolerance(minus_error)
         ),
+    }
+
+
+def _pair_error_record(
+    metrics: dict[str, float | bool],
+    *,
+    transition_index: int,
+    position: Coordinate,
+    heading: float,
+) -> dict[str, object]:
+    """Record one deterministic SEEK minimum candidate."""
+    return {
+        "value": metrics["max_pair_error"],
+        "transition": transition_index,
+        "body_center": list(position),
+        "heading": heading,
+        "rear_plus_pair_error": metrics["rear_plus_pair_error"],
+        "rear_minus_pair_error": metrics["rear_minus_pair_error"],
     }
 
 
@@ -239,6 +264,12 @@ def _new_seek_episode(
             "rear_minus_pair_error"
         ],
         "minimum_max_pair_error_during_seek": metrics["max_pair_error"],
+        "minimum_max_pair_error_during_seek_record": _pair_error_record(
+            metrics,
+            transition_index=transition_index,
+            position=position,
+            heading=heading,
+        ),
         "one_pair_only_tolerance_events": 0,
         "outcome": "unresolved",
         "reacquisition_transition": None,
@@ -256,8 +287,11 @@ def _update_seek_geometry(
     position: Coordinate,
     heading: float,
     station: Coordinate,
+    transition_index: int,
 ) -> None:
     metrics = _geometry_metrics(position, heading, station)
+    previous_max = cast(float, episode["minimum_max_pair_error_during_seek"])
+    current_max = cast(float, metrics["max_pair_error"])
     for key, metric_key in (
         (
             "minimum_rear_plus_pair_error_during_seek",
@@ -271,6 +305,14 @@ def _update_seek_geometry(
     ):
         previous = cast(float, episode[key])
         episode[key] = min(previous, cast(float, metrics[metric_key]))
+    # Strictly-less-than preserves the first transition on an exact tie.
+    if current_max < previous_max:
+        episode["minimum_max_pair_error_during_seek_record"] = _pair_error_record(
+            metrics,
+            transition_index=transition_index,
+            position=position,
+            heading=heading,
+        )
     if bool(metrics["one_pair_only_within_tolerance"]):
         episode["one_pair_only_tolerance_events"] = (
             cast(int, episode["one_pair_only_tolerance_events"]) + 1
@@ -325,6 +367,8 @@ def _run_d024_seed(seed: int, *, horizon: int = D024_HORIZON) -> dict[str, objec
 
     full_departures = 0
     initial_full_departures = 0
+    initial_full_departure_transition: int | None = None
+    first_dual_contact_loss_after_departure_transition: int | None = None
     post_recharge_redepartures = 0
     charger_exits = 0
     low_energy_seek_entries = 0
@@ -344,6 +388,10 @@ def _run_d024_seed(seed: int, *, horizon: int = D024_HORIZON) -> dict[str, objec
     legacy_without_dual_entries = 0
     legacy_without_dual_active = False
     legacy_without_dual_entry_records: list[dict[str, object]] = []
+    seek_legacy_without_dual_transitions = 0
+    seek_legacy_without_dual_entries = 0
+    seek_legacy_without_dual_active = False
+    seek_legacy_without_dual_entry_records: list[dict[str, object]] = []
     dual_entry_records: list[dict[str, object]] = []
     terminated = False
     truncated = False
@@ -378,6 +426,7 @@ def _run_d024_seed(seed: int, *, horizon: int = D024_HORIZON) -> dict[str, objec
                 cycle_stage = 1
             elif cycle_stage == 0:
                 initial_full_departures += 1
+                initial_full_departure_transition = transition_index
                 cycle_stage = 1
             else:
                 mode_event_inconsistencies.append("unexpected_full_departure_stage")
@@ -411,8 +460,18 @@ def _run_d024_seed(seed: int, *, horizon: int = D024_HORIZON) -> dict[str, objec
                     "rear_minus_pair_error": pair_errors[1],
                     "max_pair_error": max(pair_errors),
                     "legacy_circular_contact": legacy_after,
+                    "controller_mode_before_action": mode_before.name,
+                    "controller_mode_after_action": mode_after.name,
+                    "controller_mode_at_entry": mode_after.name,
                 }
             )
+        if (
+            first_dual_contact_loss_after_departure_transition is None
+            and initial_full_departure_transition is not None
+            and telemetry.charging_contact_before
+            and not telemetry.charging_contact_after
+        ):
+            first_dual_contact_loss_after_departure_transition = transition_index
         if legacy_after and not dual_after:
             legacy_without_dual_transitions += 1
             if not legacy_without_dual_active:
@@ -423,11 +482,35 @@ def _run_d024_seed(seed: int, *, horizon: int = D024_HORIZON) -> dict[str, objec
                         "action": action.name,
                         "body_center": list(telemetry.position_after),
                         "heading": telemetry.heading,
+                        "controller_mode_before_action": mode_before.name,
+                        "controller_mode_after_action": mode_after.name,
+                        "controller_mode_at_entry": mode_after.name,
                     }
                 )
             legacy_without_dual_active = True
         else:
             legacy_without_dual_active = False
+
+        if legacy_after and not dual_after and mode_after is d021.D021Mode.SEEK:
+            seek_legacy_without_dual_transitions += 1
+            if not seek_legacy_without_dual_active:
+                seek_legacy_without_dual_entries += 1
+                seek_legacy_without_dual_entry_records.append(
+                    {
+                        "transition": transition_index,
+                        "action": action.name,
+                        "body_center": list(telemetry.position_after),
+                        "heading": telemetry.heading,
+                        "controller_mode_before_action": mode_before.name,
+                        "controller_mode_after_action": mode_after.name,
+                        "controller_mode_at_entry": mode_after.name,
+                        "legacy_circular_contact": True,
+                        "dual_contact": False,
+                    }
+                )
+            seek_legacy_without_dual_active = True
+        else:
+            seek_legacy_without_dual_active = False
 
         entered_seek = (
             mode_before is d021.D021Mode.AWAY
@@ -469,6 +552,7 @@ def _run_d024_seed(seed: int, *, horizon: int = D024_HORIZON) -> dict[str, objec
                 position=telemetry.position_after,
                 heading=telemetry.heading,
                 station=telemetry.station_center,
+                transition_index=transition_index,
             )
             if bool(active_seek["charging_contact_at_entry"]):
                 active_seek["outcome"] = "contact_already_true_at_entry"
@@ -607,6 +691,10 @@ def _run_d024_seed(seed: int, *, horizon: int = D024_HORIZON) -> dict[str, objec
         },
         "full_departures": full_departures,
         "initial_full_departures": initial_full_departures,
+        "initial_full_departure_transition": initial_full_departure_transition,
+        "first_dual_contact_loss_after_departure_transition": (
+            first_dual_contact_loss_after_departure_transition
+        ),
         "physical_charger_exits": charger_exits,
         "low_energy_seek_entries": low_energy_seek_entries,
         "physical_reacquisitions": physical_reacquisitions,
@@ -629,6 +717,9 @@ def _run_d024_seed(seed: int, *, horizon: int = D024_HORIZON) -> dict[str, objec
             "transition_count": legacy_without_dual_transitions,
             "entry_count": legacy_without_dual_entries,
             "entry_records": legacy_without_dual_entry_records,
+            "seek_transition_count": seek_legacy_without_dual_transitions,
+            "seek_entry_count": seek_legacy_without_dual_entries,
+            "seek_entry_records": seek_legacy_without_dual_entry_records,
         },
         "failure_and_censoring": {
             "energy_depletion": final_telemetry.energy_nonviable,
