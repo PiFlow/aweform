@@ -58,7 +58,7 @@ def test_d024_predicate_is_inclusive_and_correspondence_is_not_swappable() -> No
             body_center, 0.0, d024.D024_STATION_CENTER
         ) is expected
 
-    boundary_body_center = (0.56, 0.50)
+    boundary_body_center = (math.nextafter(0.56, -math.inf), 0.50)
     boundary_errors = d024.dual_contact_pair_errors(
         boundary_body_center, 0.0, d024.D024_STATION_CENTER
     )
@@ -80,6 +80,15 @@ def test_d024_predicate_is_inclusive_and_correspondence_is_not_swappable() -> No
     assert plus_error == pytest.approx(0.0)
     assert minus_error > d024.D024_CONTACT_TOLERANCE
     assert d024.has_dual_contact(body_center, heading, (0.0, 0.0)) is False
+
+
+def test_d024_contact_tolerance_has_exact_inclusive_boundary() -> None:
+    assert d024._within_contact_tolerance(d024.D024_CONTACT_TOLERANCE) is True
+    above_boundary = math.nextafter(
+        d024.D024_CONTACT_TOLERANCE, math.inf
+    )
+    assert above_boundary > d024.D024_CONTACT_TOLERANCE
+    assert d024._within_contact_tolerance(above_boundary) is False
 
 
 def test_d024_seek_diagnostics_preserve_first_minimum_and_mode_provenance() -> None:

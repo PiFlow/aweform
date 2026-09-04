@@ -119,10 +119,8 @@ def has_dual_contact(
 
 
 def _within_contact_tolerance(error: float) -> bool:
-    """Apply inclusive contact tolerance with floating-point boundary care."""
-    return error <= D024_CONTACT_TOLERANCE or math.isclose(
-        error, D024_CONTACT_TOLERANCE, rel_tol=0.0, abs_tol=1e-12
-    )
+    """Apply the literal inclusive contact tolerance."""
+    return error <= D024_CONTACT_TOLERANCE
 
 
 class D024Env(D020Env):
