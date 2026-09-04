@@ -39,6 +39,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-021 | Minimal autonomous V0.4 energy-regulation baseline | CONTINUING | [`D-021-v04-autonomous-energy-regulation-baseline.md`](D-021-v04-autonomous-energy-regulation-baseline.md) |
 | D-022 | Incidental charging contribution audit | CONTINUING | [`D-022-v04-incidental-charging-contribution-audit.md`](D-022-v04-incidental-charging-contribution-audit.md) |
 | D-023 | Repeated-cycle V0.4 energy-regulation endurance probe | CONTINUING | [`D-023-repeated-cycle-v04-energy-regulation-endurance.md`](D-023-repeated-cycle-v04-energy-regulation-endurance.md) |
+| D-024 | Causal finite-body dual-contact docking probe | CONTINUING | [`D-024-causal-finite-body-dual-contact-docking-probe.md`](D-024-causal-finite-body-dual-contact-docking-probe.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 
