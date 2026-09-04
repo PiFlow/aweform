@@ -1792,6 +1792,37 @@ def test_d024_visualization_enforces_exact_seed_and_horizon() -> None:
             build_d024_development_visualization(seed=seed, horizon=70_000)
 
 
+def test_d024_builder_accepts_natural_termination_and_terminal_frame() -> None:
+    data = build_d024_development_visualization(seed=18365, horizon=70_000)
+
+    final_frame = data.frames[-1]
+    assert final_frame.transition_index == 54_949
+    assert final_frame.terminated is True
+    assert final_frame.truncated is False
+    assert final_frame.energy == pytest.approx(0.0)
+
+
+def test_d024_trace_rejects_incomplete_nonterminal_replay(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_trace: list[D021TransitionTrace] = []
+    d024._run_d024_seed(18365, horizon=1, trace=source_trace)
+
+    def fake_run(
+        seed: int,
+        *,
+        horizon: int,
+        trace: list[D021TransitionTrace],
+    ) -> dict[str, object]:
+        del seed, horizon
+        trace.extend(source_trace)
+        return {}
+
+    monkeypatch.setattr(d024, "_run_d024_seed", fake_run)
+    with pytest.raises(RuntimeError, match="neither naturally terminated"):
+        d024.run_d024_lifetime_trace(seed=18365, horizon=70_000)
+
+
 def test_d024_cli_passes_declared_seed_and_frozen_horizon(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

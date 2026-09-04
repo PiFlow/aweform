@@ -798,8 +798,25 @@ def run_d024_lifetime_trace(
         )
     trace: list[d021.D021TransitionTrace] = []
     _run_d024_seed(seed, horizon=horizon, trace=trace)
-    if len(trace) != horizon:
-        raise RuntimeError("D-024 lifetime trace did not reach the frozen horizon")
+    if not trace:
+        raise RuntimeError("D-024 lifetime trace contains no completed transitions")
+
+    final_telemetry = trace[-1].telemetry
+    naturally_terminated = (
+        len(trace) < horizon
+        and final_telemetry.terminated
+        and not final_telemetry.truncated
+    )
+    horizon_censored = (
+        len(trace) == horizon
+        and not final_telemetry.terminated
+        and final_telemetry.truncated
+    )
+    if not naturally_terminated and not horizon_censored:
+        raise RuntimeError(
+            "D-024 lifetime trace is neither naturally terminated before "
+            "the frozen horizon nor correctly horizon-censored"
+        )
     return tuple(trace)
 
 
