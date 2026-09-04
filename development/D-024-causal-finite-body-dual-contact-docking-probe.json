@@ -63,7 +63,7 @@
     "physical_config": "D020PhysicalConfig unchanged except episode_horizon"
   },
   "horizon": 70000,
-  "implementation_probe_sha": "f3fac6760bc1db8c599184c27bff567db8220445",
+  "implementation_probe_sha": "2b71596683b444c1fa841e1bb56f0611cc23232d",
   "interpretation": {
     "censoring": "unresolved at transition 70,000 is horizon-censored, not failure",
     "contact_already_true_at_seek_entry": "report provenance; do not claim SEEK solved docking",

@@ -4,7 +4,7 @@
 - **lane:** Development
 - **date:** 2026-09-04
 - **authoritative_base_sha:** `c0ce8182d0fba97035d76899e5b188ca7f171b05`
-- **implementation_probe_sha:** `f3fac6760bc1db8c599184c27bff567db8220445`
+- **implementation_probe_sha:** `2b71596683b444c1fa841e1bb56f0611cc23232d`
 - **development_seeds:** `18365, 18366, 18367`
 - **horizon:** `70,000` transitions per uninterrupted causal lifetime
 - **disposition:** `CONTINUING`
@@ -24,7 +24,7 @@ sensor, planning, visualization, or later-task work is included.
 ## Frozen protocol and provenance
 
 The executable implementation was frozen at
-`f3fac6760bc1db8c599184c27bff567db8220445`, from the exact authorized base.
+`2b71596683b444c1fa841e1bb56f0611cc23232d`, from the exact authorized base.
 The exact seeds, horizon, metrics, and interpretation below were committed
 before inspecting the canonical result magnitude. Each seed is one
 uninterrupted causal lifetime with no reset or reseed.
