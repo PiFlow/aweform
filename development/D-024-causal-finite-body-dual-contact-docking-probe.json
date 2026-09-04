@@ -1,0 +1,1842 @@
+{
+  "authoritative_base_sha": "c0ce8182d0fba97035d76899e5b188ca7f171b05",
+  "development_seeds": [
+    18365,
+    18366,
+    18367
+  ],
+  "evaluator_only": {
+    "fields": [
+      "body and dock geometry",
+      "x/y/heading and station location",
+      "true distance",
+      "battery joules and absolute Celsius",
+      "charger phase/latch and D-020 telemetry",
+      "dual-contact pair errors",
+      "legacy circular contact diagnostics",
+      "mode/action/SEEK/recharge/termination summaries"
+    ],
+    "passed_to_controller": false
+  },
+  "experiment": "D-024",
+  "freeze": {
+    "body_length": 0.1,
+    "body_rear_contacts_body_frame": [
+      [
+        -0.05,
+        0.025
+      ],
+      [
+        -0.05,
+        -0.025
+      ]
+    ],
+    "body_width": 0.08,
+    "contact_tolerance_inclusive": 0.01,
+    "controller": "actual D021Controller unchanged",
+    "dock_contacts_station_offsets": [
+      [
+        0.0,
+        0.025
+      ],
+      [
+        0.0,
+        -0.025
+      ]
+    ],
+    "dock_orientation": 0.0,
+    "horizon": 70000,
+    "initial_battery_j": 5328.0,
+    "initial_body_center": [
+      0.55,
+      0.5
+    ],
+    "initial_controller_mode": "CHARGE",
+    "initial_heading": 0.0,
+    "initial_latch": false,
+    "initial_station_center": [
+      0.5,
+      0.5
+    ],
+    "initial_temperature_c": 23.0,
+    "legacy_circular_contact_is_diagnostic_only": true,
+    "physical_config": "D020PhysicalConfig unchanged except episode_horizon"
+  },
+  "horizon": 70000,
+  "implementation_probe_sha": "d29d65aca4542c341404216f691b53ed15720b51",
+  "interpretation": {
+    "censoring": "unresolved at transition 70,000 is horizon-censored, not failure",
+    "contact_already_true_at_seek_entry": "report provenance; do not claim SEEK solved docking",
+    "full_cycle": "full docked departure -> low-energy SEEK -> valid dual-contact charging -> full recharge -> post-recharge re-departure",
+    "partial_diagnostics": "one-pair tolerance, small pair error, or legacy circular contact without dual contact are near-approach diagnostics only"
+  },
+  "learned": {
+    "status": "none"
+  },
+  "lifetime": "one uninterrupted causal lifetime per seed",
+  "organism_boundary": {
+    "info": {},
+    "reward": 0.0
+  },
+  "organism_visible": {
+    "channels": [
+      "normalized own battery energy",
+      "beacon left",
+      "beacon forward",
+      "beacon right",
+      "charging_contact as binary dual-contact predicate",
+      "normalized own body temperature"
+    ],
+    "observation_type": "D011Observation projection of D020's six channels",
+    "temperature_used_for_behavior": false
+  },
+  "programmed": {
+    "controller": "fixed non-learning D021Controller",
+    "controller_modes": [
+      "CHARGE",
+      "DEPART",
+      "AWAY",
+      "SEEK"
+    ],
+    "exploration": "StochasticPersistentExplorer with EXP001 hazard 1/8",
+    "full_departure_rule": "CHARGE contact and normalized energy >= 1.0",
+    "learning": false,
+    "low_energy_seek_rule": "AWAY normalized energy < inherited 0.50 threshold",
+    "seek": "existing seek_beacon_action",
+    "thermal_behavioral_influence": "zero"
+  },
+  "results": [
+    {
+      "accidental_away_contacts": 0,
+      "action_counts": {
+        "MOVE_FORWARD": 26634,
+        "TURN_LEFT": 14177,
+        "TURN_RIGHT": 14138,
+        "WAIT": 0
+      },
+      "battery_j": {
+        "final": 0.0,
+        "maximum": 5328.0,
+        "minimum": 0.0,
+        "start": 5328.0
+      },
+      "battery_normalized": {
+        "final": 0.0,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "start": 1.0
+      },
+      "charge_entries": 0,
+      "completed_energy_regulation_cycles": 0,
+      "dual_contact_entries": 0,
+      "failure_and_censoring": {
+        "demonstrated_failed_seek_episodes": 1,
+        "emergency_hard_thermal_shutdown": false,
+        "energy_depletion": true,
+        "full_recharge_without_redeparture_before_horizon": 0,
+        "horizon_censored_seek_episodes": 0,
+        "horizon_truncation": false,
+        "mode_event_inconsistencies": [],
+        "protective_thermal_shutdown": false,
+        "reacquisition_followed_by_termination_before_full_recharge": 0,
+        "seek_contact_already_true_at_entry": 0,
+        "unresolved_seek_at_horizon": 0,
+        "unresolved_seek_at_termination": 1
+      },
+      "final_mode": "SEEK",
+      "full_departures": 1,
+      "full_recharge_events": 0,
+      "initial_full_departures": 1,
+      "initial_pose": {
+        "body_center": [
+          0.55,
+          0.5
+        ],
+        "heading": 0.0,
+        "initial_battery_j": 5328.0,
+        "initial_controller_mode": "CHARGE",
+        "initial_dual_contact": true,
+        "initial_latch": false,
+        "initial_temperature_c": 23.0,
+        "station_center": [
+          0.5,
+          0.5
+        ]
+      },
+      "legacy_circular_contact_without_dual": {
+        "entry_count": 49,
+        "entry_records": [
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5499999999999996,
+              0.4181980515339463
+            ],
+            "heading": 3.141592653589793,
+            "transition": 401
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4610912703473984,
+              0.575735931288071
+            ],
+            "heading": 3.9269908169872414,
+            "transition": 1306
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.45961940777125554,
+              0.4267766952966368
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 1986
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5499999999999996,
+              0.4207106781186547
+            ],
+            "heading": 3.141592653589793,
+            "transition": 2426
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4696699141100888,
+              0.42426406871192857
+            ],
+            "heading": 2.356194490192345,
+            "transition": 3556
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4414213562373095,
+              0.5535533905932739
+            ],
+            "heading": 0.0,
+            "transition": 3861
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5403805922287436,
+              0.43431457505076143
+            ],
+            "heading": 2.356194490192345,
+            "transition": 4127
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5596194077712561,
+              0.5439339828220174
+            ],
+            "heading": 4.71238898038469,
+            "transition": 4753
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5025126265847079,
+              0.4389087296526011
+            ],
+            "heading": 2.356194490192345,
+            "transition": 4890
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4853553390593273,
+              0.4096194077712559
+            ],
+            "heading": 0.0,
+            "transition": 5076
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5560660171779821,
+              0.575735931288071
+            ],
+            "heading": 3.9269908169872414,
+            "transition": 5341
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5303300858899105,
+              0.45961940777125576
+            ],
+            "heading": 2.356194490192345,
+            "transition": 5553
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5939339828220178,
+              0.50857864376269
+            ],
+            "heading": 3.9269908169872414,
+            "transition": 5755
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4242640687119285,
+              0.5303300858899106
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 7143
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4696699141100888,
+              0.43890872965260114
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 7402
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.43180194846605313,
+              0.4414213562373095
+            ],
+            "heading": 5.497787143782138,
+            "transition": 7616
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.45606601717798184,
+              0.4282485578727794
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 8348
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4242640687119284,
+              0.5050252531694162
+            ],
+            "heading": 5.497787143782138,
+            "transition": 9166
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5464466094067257,
+              0.5318019484660531
+            ],
+            "heading": 3.9269908169872414,
+            "transition": 9788
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4242640687119285,
+              0.5303300858899106
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 10710
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4671572875253805,
+              0.5646446609406722
+            ],
+            "heading": 0.0,
+            "transition": 11070
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.50857864376269,
+              0.45
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 12105
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.498959235991434,
+              0.44999999999999996
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 12177
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.565685424949238,
+              0.5671572875253805
+            ],
+            "heading": 4.71238898038469,
+            "transition": 12583
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5863961030678928,
+              0.4646446609406723
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 12925
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.44999999999999996,
+              0.4621320343559643
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 13181
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.42426406871192845,
+              0.4610912703473984
+            ],
+            "heading": 5.497787143782138,
+            "transition": 13832
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5560660171779821,
+              0.43284271247461903
+            ],
+            "heading": 3.141592653589793,
+            "transition": 14500
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.525735931288071,
+              0.42426406871192857
+            ],
+            "heading": 2.356194490192345,
+            "transition": 14909
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.45502525316941617,
+              0.44999999999999996
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 15255
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5232233047033626,
+              0.4242640687119284
+            ],
+            "heading": 3.141592653589793,
+            "transition": 15530
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4696699141100888,
+              0.575735931288071
+            ],
+            "heading": 5.497787143782138,
+            "transition": 17125
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4696699141100887,
+              0.4121320343559642
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 17615
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4196699141100886,
+              0.5121320343559642
+            ],
+            "heading": 0.0,
+            "transition": 17664
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.40502525316941596,
+              0.47677669529663685
+            ],
+            "heading": 0.0,
+            "transition": 17678
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4242640687119285,
+              0.4949747468305831
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 17863
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.575735931288071,
+              0.525735931288071
+            ],
+            "heading": 3.9269908169872414,
+            "transition": 18039
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4464466094067258,
+              0.4378679656440353
+            ],
+            "heading": 0.0,
+            "transition": 18228
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4242640687119285,
+              0.4949747468305832
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 18332
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5050252531694162,
+              0.43431457505076143
+            ],
+            "heading": 2.356194490192345,
+            "transition": 18647
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.49497474683058323,
+              0.5878679656440353
+            ],
+            "heading": 4.71238898038469,
+            "transition": 19701
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5525126265847079,
+              0.4242640687119285
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 20173
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4292893218813452,
+              0.4499999999999996
+            ],
+            "heading": 0.0,
+            "transition": 20561
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4596194077712558,
+              0.575735931288071
+            ],
+            "heading": 5.497787143782138,
+            "transition": 21033
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5242640687119284,
+              0.575735931288071
+            ],
+            "heading": 5.497787143782138,
+            "transition": 21261
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4999999999999996,
+              0.5999999999999996
+            ],
+            "heading": 0.0,
+            "transition": 22293
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.44999999999999996,
+              0.5499999999999996
+            ],
+            "heading": 0.0,
+            "transition": 23065
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4999999999999996,
+              0.5878679656440353
+            ],
+            "heading": 4.71238898038469,
+            "transition": 23852
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5181980515339463,
+              0.432842712474619
+            ],
+            "heading": 2.356194490192345,
+            "transition": 24350
+          }
+        ],
+        "transition_count": 30790
+      },
+      "low_energy_seek_entries": 1,
+      "mode_entry_counts": {
+        "AWAY": 1,
+        "CHARGE": 1,
+        "DEPART": 1,
+        "SEEK": 1
+      },
+      "mode_occupancy": {
+        "AWAY": 24330,
+        "CHARGE": 1,
+        "DEPART": 1,
+        "SEEK": 30617
+      },
+      "pair_error_diagnostics": {
+        "dual_contact_entry_records": [],
+        "minimum_max_pair_error_during_any_seek": 0.04318291480054739,
+        "one_pair_only_tolerance_events": 0
+      },
+      "physical_charger_exits": 1,
+      "physical_reacquisitions": 0,
+      "physical_seconds": 5494.900000000001,
+      "post_recharge_redepartures": 0,
+      "seed": 18365,
+      "seek_episodes": [
+        {
+          "charging_contact_at_entry": false,
+          "energy_at_entry": 0.4999906122684479,
+          "energy_at_reacquisition": null,
+          "entry_action": "TURN_RIGHT",
+          "evaluator_distance_at_entry": 0.5836313404837516,
+          "evaluator_distance_at_reacquisition": null,
+          "legacy_circular_contact_at_entry": false,
+          "minimum_max_pair_error_during_seek": 0.04318291480054739,
+          "minimum_rear_minus_pair_error_during_seek": 0.04318291480054739,
+          "minimum_rear_plus_pair_error_during_seek": 0.010888163577198483,
+          "one_pair_only_tolerance_events": 0,
+          "outcome": "terminated_before_reacquisition",
+          "reacquisition_action": null,
+          "reacquisition_transition": null,
+          "seek_entry_transition": 24332,
+          "temperature_normalized_at_entry": 0.2947445213794708,
+          "temperature_normalized_at_reacquisition": null,
+          "transitions_since_seek_entry": null
+        }
+      ],
+      "temperature_c": {
+        "final": 23.599709283273913,
+        "maximum": 23.599709283273913
+      },
+      "temperature_normalized": {
+        "final": 0.29499638080596924,
+        "maximum": 0.29499638080596924,
+        "start": 0.2874999940395355
+      },
+      "terminated": true,
+      "termination_reason": "energy_depletion",
+      "thermal_diagnostics": {
+        "emergency_65_c_occurred": false,
+        "final_temperature_c": 23.599709283273913,
+        "final_temperature_normalized": 0.29499638080596924,
+        "maximum_temperature_c": 23.599709283273913,
+        "maximum_temperature_normalized": 0.29499638080596924,
+        "preferred_45_c_reached": false,
+        "protective_60_c_occurred": false,
+        "starting_temperature_normalized": 0.2874999940395355
+      },
+      "transitions": 54949,
+      "truncated": false
+    },
+    {
+      "accidental_away_contacts": 0,
+      "action_counts": {
+        "MOVE_FORWARD": 26681,
+        "TURN_LEFT": 14184,
+        "TURN_RIGHT": 14063,
+        "WAIT": 0
+      },
+      "battery_j": {
+        "final": 0.0,
+        "maximum": 5328.0,
+        "minimum": 0.0,
+        "start": 5328.0
+      },
+      "battery_normalized": {
+        "final": 0.0,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "start": 1.0
+      },
+      "charge_entries": 0,
+      "completed_energy_regulation_cycles": 0,
+      "dual_contact_entries": 0,
+      "failure_and_censoring": {
+        "demonstrated_failed_seek_episodes": 1,
+        "emergency_hard_thermal_shutdown": false,
+        "energy_depletion": true,
+        "full_recharge_without_redeparture_before_horizon": 0,
+        "horizon_censored_seek_episodes": 0,
+        "horizon_truncation": false,
+        "mode_event_inconsistencies": [],
+        "protective_thermal_shutdown": false,
+        "reacquisition_followed_by_termination_before_full_recharge": 0,
+        "seek_contact_already_true_at_entry": 0,
+        "unresolved_seek_at_horizon": 0,
+        "unresolved_seek_at_termination": 1
+      },
+      "final_mode": "SEEK",
+      "full_departures": 1,
+      "full_recharge_events": 0,
+      "initial_full_departures": 1,
+      "initial_pose": {
+        "body_center": [
+          0.55,
+          0.5
+        ],
+        "heading": 0.0,
+        "initial_battery_j": 5328.0,
+        "initial_controller_mode": "CHARGE",
+        "initial_dual_contact": true,
+        "initial_latch": false,
+        "initial_temperature_c": 23.0,
+        "station_center": [
+          0.5,
+          0.5
+        ]
+      },
+      "legacy_circular_contact_without_dual": {
+        "entry_count": 48,
+        "entry_records": [
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.575735931288071,
+              0.49497474683058323
+            ],
+            "heading": 2.356194490192345,
+            "transition": 72
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4596194077712555,
+              0.42426406871192845
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 536
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5403805922287436,
+              0.4121320343559642
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 1111
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.498959235991434,
+              0.44999999999999996
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 1971
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.44393398282201746,
+              0.432842712474619
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 2183
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5499999999999996,
+              0.5681980515339464
+            ],
+            "heading": 5.497787143782138,
+            "transition": 2191
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4282485578727793,
+              0.4707106781186547
+            ],
+            "heading": 0.0,
+            "transition": 2499
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.49497474683058323,
+              0.4242640687119284
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 2587
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.40857864376269,
+              0.5242640687119285
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 2747
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5610912703473984,
+              0.432842712474619
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 3031
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5303300858899105,
+              0.425735931288071
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 4762
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.42071067811865437,
+              0.4585786437626901
+            ],
+            "heading": 0.0,
+            "transition": 6042
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5646446609406722,
+              0.45961940777125576
+            ],
+            "heading": 3.141592653589793,
+            "transition": 6196
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4696699141100888,
+              0.4242640687119284
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 6861
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.45,
+              0.5499999999999996
+            ],
+            "heading": 4.71238898038469,
+            "transition": 7822
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5414213562373095,
+              0.41317279836452986
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 7931
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5499999999999996,
+              0.5171572875253805
+            ],
+            "heading": 3.141592653589793,
+            "transition": 8504
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4242640687119284,
+              0.5403805922287436
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 8677
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5585786437626901,
+              0.456066017177982
+            ],
+            "heading": 3.141592653589793,
+            "transition": 9548
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.575735931288071,
+              0.49497474683058323
+            ],
+            "heading": 2.356194490192345,
+            "transition": 9967
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5343145750507614,
+              0.4363961030678928
+            ],
+            "heading": 3.141592653589793,
+            "transition": 9998
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5474873734152915,
+              0.4328427124746189
+            ],
+            "heading": 3.141592653589793,
+            "transition": 10609
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5792893218813449,
+              0.50857864376269
+            ],
+            "heading": 3.9269908169872414,
+            "transition": 10696
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.45355339059327376,
+              0.552512626584708
+            ],
+            "heading": 5.497787143782138,
+            "transition": 10767
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4328427124746189,
+              0.47677669529663685
+            ],
+            "heading": 5.497787143782138,
+            "transition": 10863
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.50857864376269,
+              0.575735931288071
+            ],
+            "heading": 5.497787143782138,
+            "transition": 11004
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.50857864376269,
+              0.5499999999999996
+            ],
+            "heading": 4.71238898038469,
+            "transition": 12114
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5353553390593273,
+              0.4181980515339463
+            ],
+            "heading": 2.356194490192345,
+            "transition": 12565
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5,
+              0.5949747468305833
+            ],
+            "heading": 5.497787143782138,
+            "transition": 12588
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.49393398282201745,
+              0.42677669529663687
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 13690
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5828427124746188,
+              0.4828427124746191
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 14009
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4207106781186547,
+              0.5585786437626901
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 14964
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4974873734152916,
+              0.5560660171779821
+            ],
+            "heading": 4.71238898038469,
+            "transition": 15119
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4681980515339463,
+              0.452512626584708
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 15534
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4257359312880711,
+              0.5303300858899107
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 16220
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5525126265847079,
+              0.4696699141100888
+            ],
+            "heading": 3.141592653589793,
+            "transition": 16984
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4181980515339462,
+              0.47928932188134515
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 17486
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5499999999999996,
+              0.4403805922287436
+            ],
+            "heading": 3.141592653589793,
+            "transition": 17771
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.44999999999999996,
+              0.41819805153394646
+            ],
+            "heading": 0.0,
+            "transition": 18886
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.44999999999999996,
+              0.4181980515339465
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 19062
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5242640687119285,
+              0.4242640687119284
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 19420
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.45961940777125576,
+              0.4267766952966368
+            ],
+            "heading": 2.356194490192345,
+            "transition": 20135
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5403805922287436,
+              0.43890872965260114
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 22937
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.47426406871192844,
+              0.5803300858899108
+            ],
+            "heading": 5.497787143782138,
+            "transition": 23200
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4242640687119284,
+              0.5232233047033626
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 23350
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5499999999999996,
+              0.5267766952966368
+            ],
+            "heading": 3.141592653589793,
+            "transition": 23502
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5035533905932738,
+              0.5525126265847079
+            ],
+            "heading": 4.71238898038469,
+            "transition": 24228
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4060660171779821,
+              0.4696699141100888
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 24319
+          }
+        ],
+        "transition_count": 30783
+      },
+      "low_energy_seek_entries": 1,
+      "mode_entry_counts": {
+        "AWAY": 1,
+        "CHARGE": 1,
+        "DEPART": 1,
+        "SEEK": 1
+      },
+      "mode_occupancy": {
+        "AWAY": 24309,
+        "CHARGE": 1,
+        "DEPART": 1,
+        "SEEK": 30617
+      },
+      "pair_error_diagnostics": {
+        "dual_contact_entry_records": [],
+        "minimum_max_pair_error_during_any_seek": 0.0290147688160175,
+        "one_pair_only_tolerance_events": 3061
+      },
+      "physical_charger_exits": 1,
+      "physical_reacquisitions": 0,
+      "physical_seconds": 5492.8,
+      "post_recharge_redepartures": 0,
+      "seed": 18366,
+      "seek_episodes": [
+        {
+          "charging_contact_at_entry": false,
+          "energy_at_entry": 0.4999840557575226,
+          "energy_at_reacquisition": null,
+          "entry_action": "TURN_LEFT",
+          "evaluator_distance_at_entry": 0.4342855016370076,
+          "evaluator_distance_at_reacquisition": null,
+          "legacy_circular_contact_at_entry": false,
+          "minimum_max_pair_error_during_seek": 0.0290147688160175,
+          "minimum_rear_minus_pair_error_during_seek": 0.0258582956054443,
+          "minimum_rear_plus_pair_error_during_seek": 0.009384499668839301,
+          "one_pair_only_tolerance_events": 3061,
+          "outcome": "terminated_before_reacquisition",
+          "reacquisition_action": null,
+          "reacquisition_transition": null,
+          "seek_entry_transition": 24311,
+          "temperature_normalized_at_entry": 0.29474377632141113,
+          "temperature_normalized_at_reacquisition": null,
+          "transitions_since_seek_entry": null
+        }
+      ],
+      "temperature_c": {
+        "final": 23.59970843405331,
+        "maximum": 23.59970843405331
+      },
+      "temperature_normalized": {
+        "final": 0.29499635100364685,
+        "maximum": 0.29499635100364685,
+        "start": 0.2874999940395355
+      },
+      "terminated": true,
+      "termination_reason": "energy_depletion",
+      "thermal_diagnostics": {
+        "emergency_65_c_occurred": false,
+        "final_temperature_c": 23.59970843405331,
+        "final_temperature_normalized": 0.29499635100364685,
+        "maximum_temperature_c": 23.59970843405331,
+        "maximum_temperature_normalized": 0.29499635100364685,
+        "preferred_45_c_reached": false,
+        "protective_60_c_occurred": false,
+        "starting_temperature_normalized": 0.2874999940395355
+      },
+      "transitions": 54928,
+      "truncated": false
+    },
+    {
+      "accidental_away_contacts": 1,
+      "action_counts": {
+        "MOVE_FORWARD": 26647,
+        "TURN_LEFT": 14141,
+        "TURN_RIGHT": 14157,
+        "WAIT": 0
+      },
+      "battery_j": {
+        "final": 0.0,
+        "maximum": 5328.0,
+        "minimum": 0.0,
+        "start": 5328.0
+      },
+      "battery_normalized": {
+        "final": 0.0,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "start": 1.0
+      },
+      "charge_entries": 0,
+      "completed_energy_regulation_cycles": 0,
+      "dual_contact_entries": 1,
+      "failure_and_censoring": {
+        "demonstrated_failed_seek_episodes": 1,
+        "emergency_hard_thermal_shutdown": false,
+        "energy_depletion": true,
+        "full_recharge_without_redeparture_before_horizon": 0,
+        "horizon_censored_seek_episodes": 0,
+        "horizon_truncation": false,
+        "mode_event_inconsistencies": [],
+        "protective_thermal_shutdown": false,
+        "reacquisition_followed_by_termination_before_full_recharge": 0,
+        "seek_contact_already_true_at_entry": 0,
+        "unresolved_seek_at_horizon": 0,
+        "unresolved_seek_at_termination": 1
+      },
+      "final_mode": "SEEK",
+      "full_departures": 1,
+      "full_recharge_events": 0,
+      "initial_full_departures": 1,
+      "initial_pose": {
+        "body_center": [
+          0.55,
+          0.5
+        ],
+        "heading": 0.0,
+        "initial_battery_j": 5328.0,
+        "initial_controller_mode": "CHARGE",
+        "initial_dual_contact": true,
+        "initial_latch": false,
+        "initial_temperature_c": 23.0,
+        "station_center": [
+          0.5,
+          0.5
+        ]
+      },
+      "legacy_circular_contact_without_dual": {
+        "entry_count": 49,
+        "entry_records": [
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5499999999999996,
+              0.5328427124746189
+            ],
+            "heading": 3.141592653589793,
+            "transition": 155
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.44644660940672576,
+              0.5510407640085653
+            ],
+            "heading": 4.71238898038469,
+            "transition": 521
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4903805922287436,
+              0.5767766952966366
+            ],
+            "heading": 3.9269908169872414,
+            "transition": 2502
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.525735931288071,
+              0.5903805922287436
+            ],
+            "heading": 5.497787143782138,
+            "transition": 3069
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.44999999999999996,
+              0.47218254069479726
+            ],
+            "heading": 0.0,
+            "transition": 4125
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5449747468305833,
+              0.5878679656440353
+            ],
+            "heading": 3.9269908169872414,
+            "transition": 4450
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.44142135623730944,
+              0.4696699141100888
+            ],
+            "heading": 0.0,
+            "transition": 4590
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.41213203435596435,
+              0.4999999999999996
+            ],
+            "heading": 4.71238898038469,
+            "transition": 5048
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4378679656440352,
+              0.5025126265847079
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 6836
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.48284271247461896,
+              0.41109127034739834
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 7211
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4242640687119284,
+              0.525735931288071
+            ],
+            "heading": 5.497787143782138,
+            "transition": 7292
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4621320343559641,
+              0.43535533905932733
+            ],
+            "heading": 0.0,
+            "transition": 7848
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4171572875253805,
+              0.5499999999999996
+            ],
+            "heading": 4.71238898038469,
+            "transition": 8093
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5389087296526012,
+              0.5499999999999996
+            ],
+            "heading": 4.71238898038469,
+            "transition": 8364
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5585786437626901,
+              0.5621320343559643
+            ],
+            "heading": 3.141592653589793,
+            "transition": 8594
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.45961940777125576,
+              0.41213203435596407
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 9507
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.43535533905932733,
+              0.43431457505076143
+            ],
+            "heading": 0.0,
+            "transition": 10673
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5050252531694162,
+              0.575735931288071
+            ],
+            "heading": 3.9269908169872414,
+            "transition": 10924
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4060660171779821,
+              0.5282485578727794
+            ],
+            "heading": 5.497787143782138,
+            "transition": 11192
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.45961940777125576,
+              0.43180194846605313
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 11754
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4025126265847078,
+              0.4792893218813448
+            ],
+            "heading": 0.0,
+            "transition": 11849
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.44999999999999996,
+              0.5767766952966369
+            ],
+            "heading": 4.71238898038469,
+            "transition": 12594
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.44999999999999996,
+              0.5242640687119285
+            ],
+            "heading": 0.0,
+            "transition": 13426
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4999999999999996,
+              0.6
+            ],
+            "heading": 3.141592653589793,
+            "transition": 14234
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.41464466094067226,
+              0.5146446609406725
+            ],
+            "heading": 4.71238898038469,
+            "transition": 14239
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4949747468305831,
+              0.4242640687119284
+            ],
+            "heading": 2.356194490192345,
+            "transition": 14985
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.44142135623730944,
+              0.5403805922287436
+            ],
+            "heading": 0.0,
+            "transition": 15173
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4110912703473984,
+              0.45606601717798195
+            ],
+            "heading": 0.0,
+            "transition": 15414
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.575735931288071,
+              0.5403805922287436
+            ],
+            "heading": 3.9269908169872414,
+            "transition": 15682
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5292893218813448,
+              0.4292893218813448
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 16672
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5303300858899106,
+              0.4242640687119284
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 17188
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.49497474683058323,
+              0.5964466094067258
+            ],
+            "heading": 3.9269908169872414,
+            "transition": 17372
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5656854249492379,
+              0.44142135623730944
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 17532
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4085786437626901,
+              0.5292893218813448
+            ],
+            "heading": 4.71238898038469,
+            "transition": 17765
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4596194077712558,
+              0.5474873734152916
+            ],
+            "heading": 5.497787143782138,
+            "transition": 17994
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.46819805153394634,
+              0.42824855787277927
+            ],
+            "heading": 1.5707963267948966,
+            "transition": 18573
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5525126265847079,
+              0.5353553390593276
+            ],
+            "heading": 3.141592653589793,
+            "transition": 18786
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.44999999999999996,
+              0.5171572875253805
+            ],
+            "heading": 0.0,
+            "transition": 19457
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5681980515339463,
+              0.5646446609406722
+            ],
+            "heading": 5.497787143782138,
+            "transition": 19777
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5818019484660532,
+              0.4999999999999996
+            ],
+            "heading": 3.9269908169872414,
+            "transition": 20943
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4510407640085653,
+              0.44142135623730944
+            ],
+            "heading": 0.7853981633974483,
+            "transition": 21795
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5692388155425118,
+              0.5525126265847079
+            ],
+            "heading": 3.141592653589793,
+            "transition": 22219
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.525735931288071,
+              0.42426406871192857
+            ],
+            "heading": 2.356194490192345,
+            "transition": 22310
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4110912703473984,
+              0.4999999999999996
+            ],
+            "heading": 0.0,
+            "transition": 22587
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.43431457505076143,
+              0.5403805922287436
+            ],
+            "heading": 5.497787143782138,
+            "transition": 22702
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.575735931288071,
+              0.5242640687119285
+            ],
+            "heading": 2.356194490192345,
+            "transition": 22943
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.40355339059327366,
+              0.5
+            ],
+            "heading": 0.0,
+            "transition": 23795
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4242640687119284,
+              0.4914213562373095
+            ],
+            "heading": 5.497787143782138,
+            "transition": 23910
+          },
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4596194077712558,
+              0.5571067811865476
+            ],
+            "heading": 4.71238898038469,
+            "transition": 24334
+          }
+        ],
+        "transition_count": 30798
+      },
+      "low_energy_seek_entries": 1,
+      "mode_entry_counts": {
+        "AWAY": 1,
+        "CHARGE": 1,
+        "DEPART": 1,
+        "SEEK": 1
+      },
+      "mode_occupancy": {
+        "AWAY": 24325,
+        "CHARGE": 1,
+        "DEPART": 1,
+        "SEEK": 30618
+      },
+      "pair_error_diagnostics": {
+        "dual_contact_entry_records": [
+          {
+            "action": "MOVE_FORWARD",
+            "legacy_circular_contact": true,
+            "max_pair_error": 0.003553390593273642,
+            "rear_minus_pair_error": 0.003553390593273642,
+            "rear_plus_pair_error": 0.003553390593273642,
+            "transition": 23798
+          }
+        ],
+        "minimum_max_pair_error_during_any_seek": 0.055562695838686484,
+        "one_pair_only_tolerance_events": 0
+      },
+      "physical_charger_exits": 2,
+      "physical_reacquisitions": 0,
+      "physical_seconds": 5494.5,
+      "post_recharge_redepartures": 0,
+      "seed": 18367,
+      "seek_episodes": [
+        {
+          "charging_contact_at_entry": false,
+          "energy_at_entry": 0.49999532103538513,
+          "energy_at_reacquisition": null,
+          "entry_action": "TURN_LEFT",
+          "evaluator_distance_at_entry": 0.3593825891694825,
+          "evaluator_distance_at_reacquisition": null,
+          "legacy_circular_contact_at_entry": false,
+          "minimum_max_pair_error_during_seek": 0.055562695838686484,
+          "minimum_rear_minus_pair_error_during_seek": 0.020237184566996802,
+          "minimum_rear_plus_pair_error_during_seek": 0.02023718456699681,
+          "one_pair_only_tolerance_events": 0,
+          "outcome": "terminated_before_reacquisition",
+          "reacquisition_action": null,
+          "reacquisition_transition": null,
+          "seek_entry_transition": 24327,
+          "temperature_normalized_at_entry": 0.29474568367004395,
+          "temperature_normalized_at_reacquisition": null,
+          "transitions_since_seek_entry": null
+        }
+      ],
+      "temperature_c": {
+        "final": 23.599710631025285,
+        "maximum": 23.599710631025285
+      },
+      "temperature_normalized": {
+        "final": 0.29499638080596924,
+        "maximum": 0.29499638080596924,
+        "start": 0.2874999940395355
+      },
+      "terminated": true,
+      "termination_reason": "energy_depletion",
+      "thermal_diagnostics": {
+        "emergency_65_c_occurred": false,
+        "final_temperature_c": 23.599710631025285,
+        "final_temperature_normalized": 0.29499638080596924,
+        "maximum_temperature_c": 23.599710631025285,
+        "maximum_temperature_normalized": 0.29499638080596924,
+        "preferred_45_c_reached": false,
+        "protective_60_c_occurred": false,
+        "starting_temperature_normalized": 0.2874999940395355
+      },
+      "transitions": 54945,
+      "truncated": false
+    }
+  ],
+  "schema_version": 1,
+  "seed_policy": {
+    "canonical_validator": "validate_exp003_development_seeds",
+    "exact_declared_seeds": [
+      18365,
+      18366,
+      18367
+    ],
+    "formal_reservation_guard_preserved": true
+  },
+  "simulated_duration_seconds": 7000.0,
+  "timestep_seconds": 0.1,
+  "title": "Causal finite-body dual-contact docking probe"
+}

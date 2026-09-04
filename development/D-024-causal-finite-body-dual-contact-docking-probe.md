@@ -89,6 +89,26 @@ after the frozen implementation/protocol commit. They report the number and
 outcome of each SEEK episode, dual-contact/pair-error diagnostics, inherited
 D-020 energy/thermal outcome, and recharge/redeparture state.
 
+| Seed | Transitions | Outcome | Dual entries | SEEK / reacquisition | Full recharge / re-departure | Min battery (J) | Max body temperature (°C) |
+|---:|---:|---|---:|---:|---:|---:|---:|
+| 18365 | 54,949 | energy depletion | 0 | 1 / 0 | 0 / 0 | 0.0 | 23.599709 |
+| 18366 | 54,928 | energy depletion | 0 | 1 / 0 | 0 / 0 | 0.0 | 23.599708 |
+| 18367 | 54,945 | energy depletion | 1 | 1 / 0 | 0 / 0 | 0.0 | 23.599711 |
+
+All three SEEK episodes began with contact false and ended as demonstrated
+failures before dual reacquisition. The single seed-18367 dual entry occurred
+at transition `23,798`, before its low-energy SEEK entry at `24,327`, so it is
+an AWAY incidental dual-contact event rather than a SEEK docking solution. Its
+corresponding plus and minus pair errors were both approximately `0.00355339`.
+Minimum maximum pair errors during SEEK were approximately `0.043183`,
+`0.029015`, and `0.055563` for seeds 18365, 18366, and 18367 respectively.
+Seed 18366 also recorded `3,061` one-pair-only tolerance events. Legacy
+circular-contact-without-dual events occupied `30,790`, `30,783`, and `30,798`
+transitions respectively, but never granted charging. No thermal threshold was
+reached and no full-cycle success occurred.
+
+No run was invalidated and no scientific retuning or remediation was applied.
+
 ## Cautious inference
 
 The narrow inference is limited to these three exact development lifetimes,
