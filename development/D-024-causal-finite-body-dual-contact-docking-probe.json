@@ -63,7 +63,7 @@
     "physical_config": "D020PhysicalConfig unchanged except episode_horizon"
   },
   "horizon": 70000,
-  "implementation_probe_sha": "d29d65aca4542c341404216f691b53ed15720b51",
+  "implementation_probe_sha": "f3fac6760bc1db8c599184c27bff567db8220445",
   "interpretation": {
     "censoring": "unresolved at transition 70,000 is horizon-censored, not failure",
     "contact_already_true_at_seek_entry": "report provenance; do not claim SEEK solved docking",
@@ -144,8 +144,10 @@
         "unresolved_seek_at_termination": 1
       },
       "final_mode": "SEEK",
+      "first_dual_contact_loss_after_departure_transition": 1,
       "full_departures": 1,
       "full_recharge_events": 0,
+      "initial_full_departure_transition": 1,
       "initial_full_departures": 1,
       "initial_pose": {
         "body_center": [
@@ -172,6 +174,9 @@
               0.5499999999999996,
               0.4181980515339463
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 401
           },
@@ -181,6 +186,9 @@
               0.4610912703473984,
               0.575735931288071
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.9269908169872414,
             "transition": 1306
           },
@@ -190,6 +198,9 @@
               0.45961940777125554,
               0.4267766952966368
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 1986
           },
@@ -199,6 +210,9 @@
               0.5499999999999996,
               0.4207106781186547
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 2426
           },
@@ -208,6 +222,9 @@
               0.4696699141100888,
               0.42426406871192857
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 2.356194490192345,
             "transition": 3556
           },
@@ -217,6 +234,9 @@
               0.4414213562373095,
               0.5535533905932739
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 3861
           },
@@ -226,6 +246,9 @@
               0.5403805922287436,
               0.43431457505076143
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 2.356194490192345,
             "transition": 4127
           },
@@ -235,6 +258,9 @@
               0.5596194077712561,
               0.5439339828220174
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 4753
           },
@@ -244,6 +270,9 @@
               0.5025126265847079,
               0.4389087296526011
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 2.356194490192345,
             "transition": 4890
           },
@@ -253,6 +282,9 @@
               0.4853553390593273,
               0.4096194077712559
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 5076
           },
@@ -262,6 +294,9 @@
               0.5560660171779821,
               0.575735931288071
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.9269908169872414,
             "transition": 5341
           },
@@ -271,6 +306,9 @@
               0.5303300858899105,
               0.45961940777125576
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 2.356194490192345,
             "transition": 5553
           },
@@ -280,6 +318,9 @@
               0.5939339828220178,
               0.50857864376269
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.9269908169872414,
             "transition": 5755
           },
@@ -289,6 +330,9 @@
               0.4242640687119285,
               0.5303300858899106
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 7143
           },
@@ -298,6 +342,9 @@
               0.4696699141100888,
               0.43890872965260114
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 7402
           },
@@ -307,6 +354,9 @@
               0.43180194846605313,
               0.4414213562373095
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 7616
           },
@@ -316,6 +366,9 @@
               0.45606601717798184,
               0.4282485578727794
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 8348
           },
@@ -325,6 +378,9 @@
               0.4242640687119284,
               0.5050252531694162
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 9166
           },
@@ -334,6 +390,9 @@
               0.5464466094067257,
               0.5318019484660531
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.9269908169872414,
             "transition": 9788
           },
@@ -343,6 +402,9 @@
               0.4242640687119285,
               0.5303300858899106
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 10710
           },
@@ -352,6 +414,9 @@
               0.4671572875253805,
               0.5646446609406722
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 11070
           },
@@ -361,6 +426,9 @@
               0.50857864376269,
               0.45
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 12105
           },
@@ -370,6 +438,9 @@
               0.498959235991434,
               0.44999999999999996
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 12177
           },
@@ -379,6 +450,9 @@
               0.565685424949238,
               0.5671572875253805
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 12583
           },
@@ -388,6 +462,9 @@
               0.5863961030678928,
               0.4646446609406723
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 12925
           },
@@ -397,6 +474,9 @@
               0.44999999999999996,
               0.4621320343559643
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 13181
           },
@@ -406,6 +486,9 @@
               0.42426406871192845,
               0.4610912703473984
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 13832
           },
@@ -415,6 +498,9 @@
               0.5560660171779821,
               0.43284271247461903
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 14500
           },
@@ -424,6 +510,9 @@
               0.525735931288071,
               0.42426406871192857
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 2.356194490192345,
             "transition": 14909
           },
@@ -433,6 +522,9 @@
               0.45502525316941617,
               0.44999999999999996
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 15255
           },
@@ -442,6 +534,9 @@
               0.5232233047033626,
               0.4242640687119284
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 15530
           },
@@ -451,6 +546,9 @@
               0.4696699141100888,
               0.575735931288071
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 17125
           },
@@ -460,6 +558,9 @@
               0.4696699141100887,
               0.4121320343559642
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 17615
           },
@@ -469,6 +570,9 @@
               0.4196699141100886,
               0.5121320343559642
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 17664
           },
@@ -478,6 +582,9 @@
               0.40502525316941596,
               0.47677669529663685
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 17678
           },
@@ -487,6 +594,9 @@
               0.4242640687119285,
               0.4949747468305831
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 17863
           },
@@ -496,6 +606,9 @@
               0.575735931288071,
               0.525735931288071
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.9269908169872414,
             "transition": 18039
           },
@@ -505,6 +618,9 @@
               0.4464466094067258,
               0.4378679656440353
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 18228
           },
@@ -514,6 +630,9 @@
               0.4242640687119285,
               0.4949747468305832
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 18332
           },
@@ -523,6 +642,9 @@
               0.5050252531694162,
               0.43431457505076143
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 2.356194490192345,
             "transition": 18647
           },
@@ -532,6 +654,9 @@
               0.49497474683058323,
               0.5878679656440353
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 19701
           },
@@ -541,6 +666,9 @@
               0.5525126265847079,
               0.4242640687119285
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 20173
           },
@@ -550,6 +678,9 @@
               0.4292893218813452,
               0.4499999999999996
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 20561
           },
@@ -559,6 +690,9 @@
               0.4596194077712558,
               0.575735931288071
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 21033
           },
@@ -568,6 +702,9 @@
               0.5242640687119284,
               0.575735931288071
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 21261
           },
@@ -577,6 +714,9 @@
               0.4999999999999996,
               0.5999999999999996
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 22293
           },
@@ -586,6 +726,9 @@
               0.44999999999999996,
               0.5499999999999996
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 23065
           },
@@ -595,6 +738,9 @@
               0.4999999999999996,
               0.5878679656440353
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 23852
           },
@@ -604,10 +750,31 @@
               0.5181980515339463,
               0.432842712474619
             ],
+            "controller_mode_after_action": "SEEK",
+            "controller_mode_at_entry": "SEEK",
+            "controller_mode_before_action": "SEEK",
             "heading": 2.356194490192345,
             "transition": 24350
           }
         ],
+        "seek_entry_count": 1,
+        "seek_entry_records": [
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.5181980515339463,
+              0.432842712474619
+            ],
+            "controller_mode_after_action": "SEEK",
+            "controller_mode_at_entry": "SEEK",
+            "controller_mode_before_action": "SEEK",
+            "dual_contact": false,
+            "heading": 2.356194490192345,
+            "legacy_circular_contact": true,
+            "transition": 24350
+          }
+        ],
+        "seek_transition_count": 30600,
         "transition_count": 30790
       },
       "low_energy_seek_entries": 1,
@@ -643,6 +810,17 @@
           "evaluator_distance_at_reacquisition": null,
           "legacy_circular_contact_at_entry": false,
           "minimum_max_pair_error_during_seek": 0.04318291480054739,
+          "minimum_max_pair_error_during_seek_record": {
+            "body_center": [
+              0.5181980515339463,
+              0.482842712474619
+            ],
+            "heading": 5.497787143782138,
+            "rear_minus_pair_error": 0.04318291480054739,
+            "rear_plus_pair_error": 0.010888163577198483,
+            "transition": 24359,
+            "value": 0.04318291480054739
+          },
           "minimum_rear_minus_pair_error_during_seek": 0.04318291480054739,
           "minimum_rear_plus_pair_error_during_seek": 0.010888163577198483,
           "one_pair_only_tolerance_events": 0,
@@ -717,8 +895,10 @@
         "unresolved_seek_at_termination": 1
       },
       "final_mode": "SEEK",
+      "first_dual_contact_loss_after_departure_transition": 1,
       "full_departures": 1,
       "full_recharge_events": 0,
+      "initial_full_departure_transition": 1,
       "initial_full_departures": 1,
       "initial_pose": {
         "body_center": [
@@ -745,6 +925,9 @@
               0.575735931288071,
               0.49497474683058323
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 2.356194490192345,
             "transition": 72
           },
@@ -754,6 +937,9 @@
               0.4596194077712555,
               0.42426406871192845
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 536
           },
@@ -763,6 +949,9 @@
               0.5403805922287436,
               0.4121320343559642
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 1111
           },
@@ -772,6 +961,9 @@
               0.498959235991434,
               0.44999999999999996
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 1971
           },
@@ -781,6 +973,9 @@
               0.44393398282201746,
               0.432842712474619
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 2183
           },
@@ -790,6 +985,9 @@
               0.5499999999999996,
               0.5681980515339464
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 2191
           },
@@ -799,6 +997,9 @@
               0.4282485578727793,
               0.4707106781186547
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 2499
           },
@@ -808,6 +1009,9 @@
               0.49497474683058323,
               0.4242640687119284
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 2587
           },
@@ -817,6 +1021,9 @@
               0.40857864376269,
               0.5242640687119285
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 2747
           },
@@ -826,6 +1033,9 @@
               0.5610912703473984,
               0.432842712474619
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 3031
           },
@@ -835,6 +1045,9 @@
               0.5303300858899105,
               0.425735931288071
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 4762
           },
@@ -844,6 +1057,9 @@
               0.42071067811865437,
               0.4585786437626901
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 6042
           },
@@ -853,6 +1069,9 @@
               0.5646446609406722,
               0.45961940777125576
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 6196
           },
@@ -862,6 +1081,9 @@
               0.4696699141100888,
               0.4242640687119284
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 6861
           },
@@ -871,6 +1093,9 @@
               0.45,
               0.5499999999999996
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 7822
           },
@@ -880,6 +1105,9 @@
               0.5414213562373095,
               0.41317279836452986
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 7931
           },
@@ -889,6 +1117,9 @@
               0.5499999999999996,
               0.5171572875253805
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 8504
           },
@@ -898,6 +1129,9 @@
               0.4242640687119284,
               0.5403805922287436
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 8677
           },
@@ -907,6 +1141,9 @@
               0.5585786437626901,
               0.456066017177982
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 9548
           },
@@ -916,6 +1153,9 @@
               0.575735931288071,
               0.49497474683058323
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 2.356194490192345,
             "transition": 9967
           },
@@ -925,6 +1165,9 @@
               0.5343145750507614,
               0.4363961030678928
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 9998
           },
@@ -934,6 +1177,9 @@
               0.5474873734152915,
               0.4328427124746189
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 10609
           },
@@ -943,6 +1189,9 @@
               0.5792893218813449,
               0.50857864376269
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.9269908169872414,
             "transition": 10696
           },
@@ -952,6 +1201,9 @@
               0.45355339059327376,
               0.552512626584708
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 10767
           },
@@ -961,6 +1213,9 @@
               0.4328427124746189,
               0.47677669529663685
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 10863
           },
@@ -970,6 +1225,9 @@
               0.50857864376269,
               0.575735931288071
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 11004
           },
@@ -979,6 +1237,9 @@
               0.50857864376269,
               0.5499999999999996
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 12114
           },
@@ -988,6 +1249,9 @@
               0.5353553390593273,
               0.4181980515339463
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 2.356194490192345,
             "transition": 12565
           },
@@ -997,6 +1261,9 @@
               0.5,
               0.5949747468305833
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 12588
           },
@@ -1006,6 +1273,9 @@
               0.49393398282201745,
               0.42677669529663687
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 13690
           },
@@ -1015,6 +1285,9 @@
               0.5828427124746188,
               0.4828427124746191
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 14009
           },
@@ -1024,6 +1297,9 @@
               0.4207106781186547,
               0.5585786437626901
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 14964
           },
@@ -1033,6 +1309,9 @@
               0.4974873734152916,
               0.5560660171779821
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 15119
           },
@@ -1042,6 +1321,9 @@
               0.4681980515339463,
               0.452512626584708
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 15534
           },
@@ -1051,6 +1333,9 @@
               0.4257359312880711,
               0.5303300858899107
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 16220
           },
@@ -1060,6 +1345,9 @@
               0.5525126265847079,
               0.4696699141100888
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 16984
           },
@@ -1069,6 +1357,9 @@
               0.4181980515339462,
               0.47928932188134515
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 17486
           },
@@ -1078,6 +1369,9 @@
               0.5499999999999996,
               0.4403805922287436
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 17771
           },
@@ -1087,6 +1381,9 @@
               0.44999999999999996,
               0.41819805153394646
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 18886
           },
@@ -1096,6 +1393,9 @@
               0.44999999999999996,
               0.4181980515339465
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 19062
           },
@@ -1105,6 +1405,9 @@
               0.5242640687119285,
               0.4242640687119284
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 19420
           },
@@ -1114,6 +1417,9 @@
               0.45961940777125576,
               0.4267766952966368
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 2.356194490192345,
             "transition": 20135
           },
@@ -1123,6 +1429,9 @@
               0.5403805922287436,
               0.43890872965260114
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 22937
           },
@@ -1132,6 +1441,9 @@
               0.47426406871192844,
               0.5803300858899108
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 23200
           },
@@ -1141,6 +1453,9 @@
               0.4242640687119284,
               0.5232233047033626
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 23350
           },
@@ -1150,6 +1465,9 @@
               0.5499999999999996,
               0.5267766952966368
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 23502
           },
@@ -1159,6 +1477,9 @@
               0.5035533905932738,
               0.5525126265847079
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 24228
           },
@@ -1168,10 +1489,31 @@
               0.4060660171779821,
               0.4696699141100888
             ],
+            "controller_mode_after_action": "SEEK",
+            "controller_mode_at_entry": "SEEK",
+            "controller_mode_before_action": "SEEK",
             "heading": 0.7853981633974483,
             "transition": 24319
           }
         ],
+        "seek_entry_count": 1,
+        "seek_entry_records": [
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4060660171779821,
+              0.4696699141100888
+            ],
+            "controller_mode_after_action": "SEEK",
+            "controller_mode_at_entry": "SEEK",
+            "controller_mode_before_action": "SEEK",
+            "dual_contact": false,
+            "heading": 0.7853981633974483,
+            "legacy_circular_contact": true,
+            "transition": 24319
+          }
+        ],
+        "seek_transition_count": 30610,
         "transition_count": 30783
       },
       "low_energy_seek_entries": 1,
@@ -1207,6 +1549,17 @@
           "evaluator_distance_at_reacquisition": null,
           "legacy_circular_contact_at_entry": false,
           "minimum_max_pair_error_during_seek": 0.0290147688160175,
+          "minimum_max_pair_error_during_seek_record": {
+            "body_center": [
+              0.5267766952966368,
+              0.4696699141100888
+            ],
+            "heading": 5.497787143782138,
+            "rear_minus_pair_error": 0.0290147688160175,
+            "rear_plus_pair_error": 0.009384499668839301,
+            "transition": 24326,
+            "value": 0.0290147688160175
+          },
           "minimum_rear_minus_pair_error_during_seek": 0.0258582956054443,
           "minimum_rear_plus_pair_error_during_seek": 0.009384499668839301,
           "one_pair_only_tolerance_events": 3061,
@@ -1281,8 +1634,10 @@
         "unresolved_seek_at_termination": 1
       },
       "final_mode": "SEEK",
+      "first_dual_contact_loss_after_departure_transition": 1,
       "full_departures": 1,
       "full_recharge_events": 0,
+      "initial_full_departure_transition": 1,
       "initial_full_departures": 1,
       "initial_pose": {
         "body_center": [
@@ -1309,6 +1664,9 @@
               0.5499999999999996,
               0.5328427124746189
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 155
           },
@@ -1318,6 +1676,9 @@
               0.44644660940672576,
               0.5510407640085653
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 521
           },
@@ -1327,6 +1688,9 @@
               0.4903805922287436,
               0.5767766952966366
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.9269908169872414,
             "transition": 2502
           },
@@ -1336,6 +1700,9 @@
               0.525735931288071,
               0.5903805922287436
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 3069
           },
@@ -1345,6 +1712,9 @@
               0.44999999999999996,
               0.47218254069479726
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 4125
           },
@@ -1354,6 +1724,9 @@
               0.5449747468305833,
               0.5878679656440353
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.9269908169872414,
             "transition": 4450
           },
@@ -1363,6 +1736,9 @@
               0.44142135623730944,
               0.4696699141100888
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 4590
           },
@@ -1372,6 +1748,9 @@
               0.41213203435596435,
               0.4999999999999996
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 5048
           },
@@ -1381,6 +1760,9 @@
               0.4378679656440352,
               0.5025126265847079
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 6836
           },
@@ -1390,6 +1772,9 @@
               0.48284271247461896,
               0.41109127034739834
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 7211
           },
@@ -1399,6 +1784,9 @@
               0.4242640687119284,
               0.525735931288071
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 7292
           },
@@ -1408,6 +1796,9 @@
               0.4621320343559641,
               0.43535533905932733
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 7848
           },
@@ -1417,6 +1808,9 @@
               0.4171572875253805,
               0.5499999999999996
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 8093
           },
@@ -1426,6 +1820,9 @@
               0.5389087296526012,
               0.5499999999999996
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 8364
           },
@@ -1435,6 +1832,9 @@
               0.5585786437626901,
               0.5621320343559643
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 8594
           },
@@ -1444,6 +1844,9 @@
               0.45961940777125576,
               0.41213203435596407
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 9507
           },
@@ -1453,6 +1856,9 @@
               0.43535533905932733,
               0.43431457505076143
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 10673
           },
@@ -1462,6 +1868,9 @@
               0.5050252531694162,
               0.575735931288071
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.9269908169872414,
             "transition": 10924
           },
@@ -1471,6 +1880,9 @@
               0.4060660171779821,
               0.5282485578727794
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 11192
           },
@@ -1480,6 +1892,9 @@
               0.45961940777125576,
               0.43180194846605313
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 11754
           },
@@ -1489,6 +1904,9 @@
               0.4025126265847078,
               0.4792893218813448
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 11849
           },
@@ -1498,6 +1916,9 @@
               0.44999999999999996,
               0.5767766952966369
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 12594
           },
@@ -1507,6 +1928,9 @@
               0.44999999999999996,
               0.5242640687119285
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 13426
           },
@@ -1516,6 +1940,9 @@
               0.4999999999999996,
               0.6
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 14234
           },
@@ -1525,6 +1952,9 @@
               0.41464466094067226,
               0.5146446609406725
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 14239
           },
@@ -1534,6 +1964,9 @@
               0.4949747468305831,
               0.4242640687119284
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 2.356194490192345,
             "transition": 14985
           },
@@ -1543,6 +1976,9 @@
               0.44142135623730944,
               0.5403805922287436
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 15173
           },
@@ -1552,6 +1988,9 @@
               0.4110912703473984,
               0.45606601717798195
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 15414
           },
@@ -1561,6 +2000,9 @@
               0.575735931288071,
               0.5403805922287436
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.9269908169872414,
             "transition": 15682
           },
@@ -1570,6 +2012,9 @@
               0.5292893218813448,
               0.4292893218813448
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 16672
           },
@@ -1579,6 +2024,9 @@
               0.5303300858899106,
               0.4242640687119284
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 17188
           },
@@ -1588,6 +2036,9 @@
               0.49497474683058323,
               0.5964466094067258
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.9269908169872414,
             "transition": 17372
           },
@@ -1597,6 +2048,9 @@
               0.5656854249492379,
               0.44142135623730944
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 17532
           },
@@ -1606,6 +2060,9 @@
               0.4085786437626901,
               0.5292893218813448
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 4.71238898038469,
             "transition": 17765
           },
@@ -1615,6 +2072,9 @@
               0.4596194077712558,
               0.5474873734152916
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 17994
           },
@@ -1624,6 +2084,9 @@
               0.46819805153394634,
               0.42824855787277927
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 1.5707963267948966,
             "transition": 18573
           },
@@ -1633,6 +2096,9 @@
               0.5525126265847079,
               0.5353553390593276
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 18786
           },
@@ -1642,6 +2108,9 @@
               0.44999999999999996,
               0.5171572875253805
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 19457
           },
@@ -1651,6 +2120,9 @@
               0.5681980515339463,
               0.5646446609406722
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 19777
           },
@@ -1660,6 +2132,9 @@
               0.5818019484660532,
               0.4999999999999996
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.9269908169872414,
             "transition": 20943
           },
@@ -1669,6 +2144,9 @@
               0.4510407640085653,
               0.44142135623730944
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.7853981633974483,
             "transition": 21795
           },
@@ -1678,6 +2156,9 @@
               0.5692388155425118,
               0.5525126265847079
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 3.141592653589793,
             "transition": 22219
           },
@@ -1687,6 +2168,9 @@
               0.525735931288071,
               0.42426406871192857
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 2.356194490192345,
             "transition": 22310
           },
@@ -1696,6 +2180,9 @@
               0.4110912703473984,
               0.4999999999999996
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 22587
           },
@@ -1705,6 +2192,9 @@
               0.43431457505076143,
               0.5403805922287436
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 22702
           },
@@ -1714,6 +2204,9 @@
               0.575735931288071,
               0.5242640687119285
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 2.356194490192345,
             "transition": 22943
           },
@@ -1723,6 +2216,9 @@
               0.40355339059327366,
               0.5
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 0.0,
             "transition": 23795
           },
@@ -1732,6 +2228,9 @@
               0.4242640687119284,
               0.4914213562373095
             ],
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "heading": 5.497787143782138,
             "transition": 23910
           },
@@ -1741,10 +2240,31 @@
               0.4596194077712558,
               0.5571067811865476
             ],
+            "controller_mode_after_action": "SEEK",
+            "controller_mode_at_entry": "SEEK",
+            "controller_mode_before_action": "SEEK",
             "heading": 4.71238898038469,
             "transition": 24334
           }
         ],
+        "seek_entry_count": 1,
+        "seek_entry_records": [
+          {
+            "action": "MOVE_FORWARD",
+            "body_center": [
+              0.4596194077712558,
+              0.5571067811865476
+            ],
+            "controller_mode_after_action": "SEEK",
+            "controller_mode_at_entry": "SEEK",
+            "controller_mode_before_action": "SEEK",
+            "dual_contact": false,
+            "heading": 4.71238898038469,
+            "legacy_circular_contact": true,
+            "transition": 24334
+          }
+        ],
+        "seek_transition_count": 30612,
         "transition_count": 30798
       },
       "low_energy_seek_entries": 1,
@@ -1764,6 +2284,9 @@
         "dual_contact_entry_records": [
           {
             "action": "MOVE_FORWARD",
+            "controller_mode_after_action": "AWAY",
+            "controller_mode_at_entry": "AWAY",
+            "controller_mode_before_action": "AWAY",
             "legacy_circular_contact": true,
             "max_pair_error": 0.003553390593273642,
             "rear_minus_pair_error": 0.003553390593273642,
@@ -1789,6 +2312,17 @@
           "evaluator_distance_at_reacquisition": null,
           "legacy_circular_contact_at_entry": false,
           "minimum_max_pair_error_during_seek": 0.055562695838686484,
+          "minimum_max_pair_error_during_seek_record": {
+            "body_center": [
+              0.4949747468305832,
+              0.47175144212722014
+            ],
+            "heading": 4.71238898038469,
+            "rear_minus_pair_error": 0.055562695838686484,
+            "rear_plus_pair_error": 0.02023718456699681,
+            "transition": 24338,
+            "value": 0.055562695838686484
+          },
           "minimum_rear_minus_pair_error_during_seek": 0.020237184566996802,
           "minimum_rear_plus_pair_error_during_seek": 0.02023718456699681,
           "one_pair_only_tolerance_events": 0,

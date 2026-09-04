@@ -4,7 +4,7 @@
 - **lane:** Development
 - **date:** 2026-09-04
 - **authoritative_base_sha:** `c0ce8182d0fba97035d76899e5b188ca7f171b05`
-- **implementation_probe_sha:** `d29d65aca4542c341404216f691b53ed15720b51`
+- **implementation_probe_sha:** `f3fac6760bc1db8c599184c27bff567db8220445`
 - **development_seeds:** `18365, 18366, 18367`
 - **horizon:** `70,000` transitions per uninterrupted causal lifetime
 - **disposition:** `CONTINUING`
@@ -24,7 +24,7 @@ sensor, planning, visualization, or later-task work is included.
 ## Frozen protocol and provenance
 
 The executable implementation was frozen at
-`d29d65aca4542c341404216f691b53ed15720b51`, from the exact authorized base.
+`f3fac6760bc1db8c599184c27bff567db8220445`, from the exact authorized base.
 The exact seeds, horizon, metrics, and interpretation below were committed
 before inspecting the canonical result magnitude. Each seed is one
 uninterrupted causal lifetime with no reset or reseed.
@@ -89,23 +89,41 @@ after the frozen implementation/protocol commit. They report the number and
 outcome of each SEEK episode, dual-contact/pair-error diagnostics, inherited
 D-020 energy/thermal outcome, and recharge/redeparture state.
 
-| Seed | Transitions | Outcome | Dual entries | SEEK / reacquisition | Full recharge / re-departure | Min battery (J) | Max body temperature (°C) |
-|---:|---:|---|---:|---:|---:|---:|---:|
-| 18365 | 54,949 | energy depletion | 0 | 1 / 0 | 0 / 0 | 0.0 | 23.599709 |
-| 18366 | 54,928 | energy depletion | 0 | 1 / 0 | 0 / 0 | 0.0 | 23.599708 |
-| 18367 | 54,945 | energy depletion | 1 | 1 / 0 | 0 / 0 | 0.0 | 23.599711 |
+| Seed | Transitions | Outcome | Initial full departure / first dual-contact loss | Dual entries | SEEK / reacquisition | Full recharge / re-departure | Min battery (J) | Max body temperature (°C) |
+|---:|---:|---|---:|---:|---:|---:|---:|---:|
+| 18365 | 54,949 | energy depletion | 1 / 1 | 0 | 1 / 0 | 0 / 0 | 0.0 | 23.599709 |
+| 18366 | 54,928 | energy depletion | 1 / 1 | 0 | 1 / 0 | 0 / 0 | 0.0 | 23.599708 |
+| 18367 | 54,945 | energy depletion | 1 / 1 | 1 | 1 / 0 | 0 / 0 | 0.0 | 23.599711 |
 
+All three initial full departures occurred at transition `1`, and the first
+loss of dual contact after each departure also occurred at transition `1`.
 All three SEEK episodes began with contact false and ended as demonstrated
 failures before dual reacquisition. The single seed-18367 dual entry occurred
-at transition `23,798`, before its low-energy SEEK entry at `24,327`, so it is
+at transition `23,798`, before its low-energy SEEK entry at `24,327`, with
+`controller_mode_before_action`, `controller_mode_after_action`, and
+`controller_mode_at_entry` all explicitly recorded as `AWAY`; it is therefore
 an AWAY incidental dual-contact event rather than a SEEK docking solution. Its
 corresponding plus and minus pair errors were both approximately `0.00355339`.
-Minimum maximum pair errors during SEEK were approximately `0.043183`,
-`0.029015`, and `0.055563` for seeds 18365, 18366, and 18367 respectively.
-Seed 18366 also recorded `3,061` one-pair-only tolerance events. Legacy
-circular-contact-without-dual events occupied `30,790`, `30,783`, and `30,798`
-transitions respectively, but never granted charging. No thermal threshold was
-reached and no full-cycle success occurred.
+
+Each SEEK episode now records the first transition attaining its minimum
+`max_pair_error` (ties retain the earliest transition), the body centre and
+heading there, and both corresponding pair errors at that same transition:
+
+| Seed | SEEK entry | Minimum transition | Body centre at minimum | Heading | Plus error | Minus error | Minimum max pair error |
+|---:|---:|---:|---|---:|---:|---:|---:|
+| 18365 | 24,332 | 24,359 | `(0.518198, 0.482843)` | 5.497787 | 0.010888 | 0.043183 | 0.043183 |
+| 18366 | 24,311 | 24,326 | `(0.526777, 0.469670)` | 5.497787 | 0.009384 | 0.029015 | 0.029015 |
+| 18367 | 24,327 | 24,338 | `(0.494975, 0.471751)` | 4.712389 | 0.020237 | 0.055563 | 0.055563 |
+
+Legacy circular-contact-without-dual events occupied `30,790`, `30,783`, and
+`30,798` transitions respectively, but never granted charging. The compact
+artifact separately records the SEEK-only subset with `30,600`, `30,610`, and
+`30,612` transitions and one auditable contiguous entry record per seed (at
+transitions `24,350`, `24,319`, and `24,334` respectively), each with
+`controller_mode_at_entry = SEEK` and explicit `legacy_circular_contact = true`
+and `dual_contact = false`. Seed 18366 also recorded `3,061` one-pair-only
+tolerance events. No thermal threshold was reached and no full-cycle success
+occurred.
 
 No run was invalidated and no scientific retuning or remediation was applied.
 

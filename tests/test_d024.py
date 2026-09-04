@@ -83,10 +83,13 @@ def test_d024_predicate_is_inclusive_and_correspondence_is_not_swappable() -> No
 
 
 def test_d024_seek_diagnostics_preserve_first_minimum_and_mode_provenance() -> None:
+    tied_errors = d024.dual_contact_pair_errors(
+        (0.56, 0.50), 0.0, d024.D024_STATION_CENTER
+    )
     episode: dict[str, object] = {
-        "minimum_rear_plus_pair_error_during_seek": 0.01,
-        "minimum_rear_minus_pair_error_during_seek": 0.01,
-        "minimum_max_pair_error_during_seek": 0.01,
+        "minimum_rear_plus_pair_error_during_seek": tied_errors[0],
+        "minimum_rear_minus_pair_error_during_seek": tied_errors[1],
+        "minimum_max_pair_error_during_seek": max(tied_errors),
         "minimum_max_pair_error_during_seek_record": {
             "transition": 7,
         },
