@@ -757,6 +757,53 @@ def _pooled_behavior(results: Sequence[dict[str, object]]) -> dict[str, object]:
     }
 
 
+def _pooled_support(results: Sequence[dict[str, object]]) -> dict[str, object]:
+    action_support: dict[str, dict[str, object]] = {}
+    for action in Action:
+        name = action.name
+        sample_count = 0
+        current_contact = {"False": 0, "True": 0}
+        contact_delta = {"-1": 0, "0": 0, "+1": 0}
+        for result in results:
+            support = cast(dict[str, object], result["support"])
+            by_action = cast(dict[str, dict[str, object]], support["by_action"])
+            one_action = by_action[name]
+            sample_count += cast(int, one_action["sample_count"])
+            for key in current_contact:
+                current_contact[key] += cast(
+                    dict[str, int], one_action["current_contact_counts"]
+                )[key]
+            for key in contact_delta:
+                contact_delta[key] += cast(
+                    dict[str, int], one_action["observed_contact_delta_target_counts"]
+                )[key]
+        action_support[name] = {
+            "sample_count": sample_count,
+            "current_contact_counts": current_contact,
+            "observed_contact_delta_target_counts": contact_delta,
+        }
+    boundary_counts = {
+        category: sum(
+            cast(
+                dict[str, int],
+                cast(dict[str, object], result["support"])[
+                    "move_forward_boundary_counts"
+                ],
+            )[category]
+            for result in results
+        )
+        for category in (
+            "FULL_NOMINAL_FORWARD",
+            "BOUNDARY_CLIPPED_FORWARD",
+            "FULL_STALL_FORWARD",
+        )
+    }
+    return {
+        "by_action": action_support,
+        "move_forward_boundary_counts": boundary_counts,
+    }
+
+
 def _run_d027_seed(seed: int, *, horizon: int = D027_HORIZON) -> dict[str, object]:
     _validate_d027_seed(seed)
     if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon <= 0:
@@ -904,6 +951,7 @@ def run_d027_probe(
         },
         "organism_boundary": {"reward": 0.0, "info": {}},
         "pooled_behavior": _pooled_behavior(results),
+        "pooled_support": _pooled_support(results),
         "pooled_prediction_metrics": _metric_state_dict(pooled_metrics),
         "pooled_boundary_metrics": {
             category: {
