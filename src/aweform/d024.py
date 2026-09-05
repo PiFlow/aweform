@@ -806,12 +806,15 @@ def run_d024_lifetime_trace(
             "D-024 visualization requires the frozen 70,000-transition horizon"
         )
     trace: list[d021.D021TransitionTrace] = []
-    _run_d024_seed(
-        seed,
-        horizon=horizon,
-        trace=trace,
-        seed_validator=seed_validator,
-    )
+    if seed_validator is None:
+        _run_d024_seed(seed, horizon=horizon, trace=trace)
+    else:
+        _run_d024_seed(
+            seed,
+            horizon=horizon,
+            trace=trace,
+            seed_validator=seed_validator,
+        )
     if not trace:
         raise RuntimeError("D-024 lifetime trace contains no completed transitions")
 
