@@ -14,7 +14,7 @@ import pytest
 from matplotlib.backend_bases import KeyEvent
 
 import aweform.development_visualizer as development_visualizer_module
-from aweform import d011, d012, d013, d015, d018, d021, d023, d024
+from aweform import d011, d012, d013, d015, d018, d021, d023, d024, d025
 from aweform.d003 import run_d003_probe
 from aweform.d005 import run_d005_probe
 from aweform.d006 import run_d006_probe
@@ -33,6 +33,7 @@ from aweform.development_visualizer import (
     adapt_d005_trace,
     adapt_d006_trace,
     adapt_d024_trace,
+    adapt_d025_trace,
     build_d003_development_visualization,
     build_d005_development_visualization,
     build_d006_development_visualization,
@@ -47,6 +48,7 @@ from aweform.development_visualizer import (
     build_d021_development_visualization,
     build_d023_development_visualization,
     build_d024_development_visualization,
+    build_d025_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
     d021_replay_event_steps,
@@ -1790,6 +1792,19 @@ def test_d024_visualization_enforces_exact_seed_and_horizon() -> None:
     for seed in (18364, 50001):
         with pytest.raises(ValueError):
             build_d024_development_visualization(seed=seed, horizon=70_000)
+
+
+def test_d025_adapter_reuses_causal_geometry_and_registry() -> None:
+    trace: list[d025.D025TransitionTrace] = []
+    d025._run_d025_seed(18365, horizon=1, trace=trace)
+    data = adapt_d025_trace(tuple(trace), seed=18365)
+
+    assert DEVELOPMENT_VISUALIZATION_ADAPTERS["d025"] is (
+        build_d025_development_visualization
+    )
+    assert data.source_label.startswith("D-025")
+    assert isinstance(data.causal_geometry, DevelopmentCausalGeometry)
+    assert data.causal_geometry.contact_tolerance == d024.D024_CONTACT_TOLERANCE
 
 
 def test_d024_builder_accepts_natural_termination_and_terminal_frame() -> None:

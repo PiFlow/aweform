@@ -2905,6 +2905,41 @@ def build_d024_development_visualization(
     return adapt_d024_trace(trace, seed=seed)
 
 
+def _validate_d025_visualization_seed(seed: int) -> None:
+    """Validate one D-025 visualization seed against its frozen set."""
+    from .d025 import _validate_d025_seed
+
+    _validate_d025_seed(seed)
+
+
+def adapt_d025_trace(
+    trace: Sequence[D021TransitionTrace],
+    *,
+    seed: int,
+    source_label: str = "D-025 bounded stochastic SEEK lifetime",
+) -> DevelopmentVisualizationData:
+    """Reuse the causal D-024 geometry renderer for a D-025 trace."""
+    _validate_d025_visualization_seed(seed)
+    return adapt_d024_trace(trace, seed=seed, source_label=source_label)
+
+
+def build_d025_development_visualization(
+    *,
+    seed: int = 18365,
+    horizon: int = 70_000,
+) -> DevelopmentVisualizationData:
+    """Run one exact-horizon D-025 lifetime, then adapt its trace."""
+    from . import d025
+
+    _validate_d025_visualization_seed(seed)
+    if horizon != d025.D025_HORIZON:
+        raise ValueError(
+            "D-025 visualization requires the frozen 70,000-transition horizon"
+        )
+    trace = d025.run_d025_lifetime_trace(seed, horizon=horizon)
+    return adapt_d025_trace(trace, seed=seed)
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
@@ -2924,6 +2959,7 @@ DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     "d021": build_d021_development_visualization,
     "d023": build_d023_development_visualization,
     "d024": build_d024_development_visualization,
+    "d025": build_d025_development_visualization,
 }
 
 
