@@ -22,7 +22,7 @@ never be inherited by another source.
 
 The registered development sources are `d003`, `d005`, `d006`, `d011`,
 `d012`, `d013-reference`, `d013`, `d014`, `d015-reference`, `d015`, `d017`,
-`d018`, `d021`, and `d023`:
+`d018`, `d021`, `d023`, `d024`, `d025`, and `d026`:
 
 ```text
 uv run aweform-visualize --source d003 --seed 18141 --horizon 1000
@@ -80,6 +80,11 @@ uv run aweform-visualize \
   --source d023 \
   --seed 18365 \
   --horizon 210000
+
+uv run aweform-visualize \
+  --source d026 \
+  --seed 18379 \
+  --horizon 70000
 ```
 
 All adapters return the same neutral model. D-006 regime and learned-state
@@ -142,3 +147,11 @@ declared development seeds `18365`, `18366`, and `18367`. Deterministic display
 downsampling does not create lifecycle trajectory breaks; explicit breaks in
 neutral display data remain available for sources that contain a genuine reset
 or discontinuity.
+
+D-024, D-025, and D-026 reuse the same causal finite-body renderer and exact
+two-contact geometry. Their rear-contact markers are evaluator-only: each
+marker is colored according to the corresponding inclusive `<= 0.01` pair
+tolerance, while the organism-visible charging channel remains the unchanged
+binary dual-contact predicate. D-026 runs the real merged D-026 lifetime trace;
+its primary smoke/demo seed is `18379`, with `18382` available as a slower
+reacquisition example.

@@ -49,6 +49,7 @@ from aweform.development_visualizer import (
     build_d023_development_visualization,
     build_d024_development_visualization,
     build_d025_development_visualization,
+    build_d026_development_visualization,
     build_development_visualization,
     build_development_visualization_figure,
     d021_replay_event_steps,
@@ -1805,6 +1806,37 @@ def test_d025_adapter_reuses_causal_geometry_and_registry() -> None:
     assert data.source_label.startswith("D-025")
     assert isinstance(data.causal_geometry, DevelopmentCausalGeometry)
     assert data.causal_geometry.contact_tolerance == d024.D024_CONTACT_TOLERANCE
+
+
+def test_d026_adapter_replays_real_trace_and_shows_each_contact_state() -> None:
+    data = build_d026_development_visualization(seed=18379, horizon=70_000)
+
+    assert DEVELOPMENT_VISUALIZATION_ADAPTERS["d026"] is (
+        build_d026_development_visualization
+    )
+    assert data.source_label.startswith("D-026")
+    assert isinstance(data.causal_geometry, DevelopmentCausalGeometry)
+    assert data.causal_geometry.contact_tolerance == d024.D024_CONTACT_TOLERANCE
+    alignments = {
+        frame.rear_contact_alignment
+        for frame in data.frames
+        if frame.rear_contact_alignment is not None
+    }
+    assert {(False, False), (True, False), (False, True), (True, True)} <= alignments
+    assert any(
+        frame.charging_contact
+        and frame.rear_contact_alignment == (True, True)
+        for frame in data.frames
+    )
+
+    figure, animation = build_development_visualization_figure(data, interval_ms=1)
+    rendered_text = "\n".join(
+        artist.get_text() for axis in figure.axes for artist in axis.texts
+    )
+    assert "rear contacts aligned: 2/2" in rendered_text
+    assert "BOTH — CAUSAL CHARGING ACTIVE" in rendered_text
+    animation.event_source.stop()
+    plt.close(figure)
 
 
 def test_d024_builder_accepts_natural_termination_and_terminal_frame() -> None:
