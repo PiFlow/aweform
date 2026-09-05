@@ -7,7 +7,7 @@
 - **horizon:** `70,000` transitions per uninterrupted lifetime
 - **delegation probability:** exactly `1/3`
 - **explorer internal hazard:** exactly `1/8`
-- **implementation_probe_sha:** `5a183483a96fc592787bdf11b950b7084253806c`
+- **implementation_probe_sha:** `831c678ee4ccaa0b31e9c28c7e88dd35edebf75e`
 - **disposition:** `CONTINUING`
 - **learned mechanism:** none
 
@@ -99,6 +99,12 @@ entered false-contact SEEK, reacquired valid causal dual contact, completed a
 full recharge, and post-recharge redeparted. Every lifetime then reached the
 horizon in `AWAY`; no lifetime terminated for energy depletion or either
 thermal shutdown condition.
+
+An earlier artifact generated from `5a183483a96fc592787bdf11b950b7084253806c`
+was superseded after full-suite validation exposed a compatibility defect in
+the optional D-024 comparator seam. That source fix preserved the default
+historical call path; the earlier artifact remains in git history, and the
+results below and in the final JSON are from the corrected SHA above.
 
 | Seed | SEEK entry → reacquisition | False-contact SEEK decisions | Delegations | Effective perturbations | Minimum max pair error | Energy at reacquisition | Full cycle | Final mode |
 |---:|---:|---:|---:|---:|---:|---:|---:|---|

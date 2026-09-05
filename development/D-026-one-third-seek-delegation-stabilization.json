@@ -111,7 +111,7 @@
     "policy_rng": "RandomStreams.from_seed(seed).policy, continuous; no reseed/new stream"
   },
   "horizon": 70000,
-  "implementation_probe_sha": "5a183483a96fc592787bdf11b950b7084253806c",
+  "implementation_probe_sha": "831c678ee4ccaa0b31e9c28c7e88dd35edebf75e",
   "inferred": {
     "interpretation": "descriptive bounded-development observation only",
     "no_claim_of_robustness_or_general_sufficiency": true,
