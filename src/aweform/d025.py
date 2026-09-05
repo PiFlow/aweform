@@ -14,6 +14,7 @@ import argparse
 import json
 import math
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Final, Sequence, cast
@@ -65,6 +66,8 @@ class D025Arbitration:
 class D025Controller:
     """D-021 controller with only the authorized SEEK arbitration change."""
 
+    seek_delegation_probability = D025_SEEK_DELEGATION_PROBABILITY
+
     def __init__(self, policy_rng: np.random.Generator) -> None:
         self.policy_rng = policy_rng
         self.explorer = StochasticPersistentExplorer(policy_rng)
@@ -115,7 +118,7 @@ class D025Controller:
                 self.seek_segment_starts += 1
             greedy_action = seek_beacon_action(observation.beacon)
             delegation_draw = float(self.policy_rng.random())
-            delegated = delegation_draw < D025_SEEK_DELEGATION_PROBABILITY
+            delegated = delegation_draw < self.seek_delegation_probability
             if delegated:
                 actual_action = self.explorer.act(
                     ExternalObservation(
@@ -331,15 +334,23 @@ def _validate_pre_seek_prefix(
     prefix: Sequence[D025TransitionTrace],
     first_seek_decision: int | None,
     horizon: int,
+    comparator_seed_validator: Callable[[int], None] | None = None,
 ) -> dict[str, object]:
     """Compare D-025 with a deterministic D-024 replay before SEEK."""
     if horizon == D025_HORIZON:
         comparator_trace = d024.run_d024_lifetime_trace(
-            seed, horizon=D025_HORIZON
+            seed,
+            horizon=D025_HORIZON,
+            seed_validator=comparator_seed_validator,
         )
     else:
         comparator_trace_list: list[D025TransitionTrace] = []
-        d024._run_d024_seed(seed, horizon=horizon, trace=comparator_trace_list)
+        d024._run_d024_seed(
+            seed,
+            horizon=horizon,
+            trace=comparator_trace_list,
+            seed_validator=comparator_seed_validator,
+        )
         comparator_trace = tuple(comparator_trace_list)
     expected_count = (
         first_seek_decision - 1 if first_seek_decision is not None else len(prefix)
@@ -373,9 +384,16 @@ def _run_d025_seed(
     *,
     horizon: int = D025_HORIZON,
     trace: list[D025TransitionTrace] | None = None,
+    seed_validator: Callable[[int], None] | None = None,
+    controller_factory: Callable[[np.random.Generator], D025Controller]
+    | None = None,
+    comparator_seed_validator: Callable[[int], None] | None = None,
 ) -> dict[str, object]:
     """Run one exact-pose, uninterrupted D-025 lifetime."""
-    _validate_d025_seed(seed)
+    if seed_validator is None:
+        _validate_d025_seed(seed)
+    else:
+        seed_validator(seed)
     if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon <= 0:
         raise ValueError("horizon must be a positive integer")
 
@@ -400,7 +418,10 @@ def _run_d025_seed(
     if not environment.charging_contact:
         raise RuntimeError("D-024 exact initial pose is not in dual contact")
 
-    controller = D025Controller(streams.policy)
+    if controller_factory is None:
+        controller = D025Controller(streams.policy)
+    else:
+        controller = controller_factory(streams.policy)
     controller.reset()
     action_counts = {action.name: 0 for action in Action}
     mode_occupancy = _mode_counts()
@@ -779,7 +800,11 @@ def _run_d025_seed(
     else:
         outcome = "FAILED_SEEK"
     prefix_validation = _validate_pre_seek_prefix(
-        seed, prefix_trace, first_seek_decision, horizon
+        seed,
+        prefix_trace,
+        first_seek_decision,
+        horizon,
+        comparator_seed_validator=comparator_seed_validator,
     )
     arbitration_diagnostics = _arbitration_summary(arbitration_decisions)
     arbitration_diagnostics["first_effective_perturbation"] = (

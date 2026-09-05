@@ -13,6 +13,7 @@ import argparse
 import json
 import math
 import re
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 from typing import Final, Sequence, cast
@@ -322,9 +323,13 @@ def _run_d024_seed(
     *,
     horizon: int = D024_HORIZON,
     trace: list[d021.D021TransitionTrace] | None = None,
+    seed_validator: Callable[[int], None] | None = None,
 ) -> dict[str, object]:
     """Run one exact-pose, uninterrupted D-024 lifetime."""
-    _validate_d024_seed(seed)
+    if seed_validator is None:
+        _validate_d024_seed(seed)
+    else:
+        seed_validator(seed)
     if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon <= 0:
         raise ValueError("horizon must be a positive integer")
 
@@ -789,15 +794,27 @@ def run_d024_lifetime_trace(
     seed: int = D024_DEFAULT_DEVELOPMENT_SEEDS[0],
     *,
     horizon: int = D024_HORIZON,
+    seed_validator: Callable[[int], None] | None = None,
 ) -> tuple[d021.D021TransitionTrace, ...]:
     """Run one exact D-024 lifetime and retain completed transitions."""
-    _validate_d024_seed(seed)
+    if seed_validator is None:
+        _validate_d024_seed(seed)
+    else:
+        seed_validator(seed)
     if horizon != D024_HORIZON:
         raise ValueError(
             "D-024 visualization requires the frozen 70,000-transition horizon"
         )
     trace: list[d021.D021TransitionTrace] = []
-    _run_d024_seed(seed, horizon=horizon, trace=trace)
+    if seed_validator is None:
+        _run_d024_seed(seed, horizon=horizon, trace=trace)
+    else:
+        _run_d024_seed(
+            seed,
+            horizon=horizon,
+            trace=trace,
+            seed_validator=seed_validator,
+        )
     if not trace:
         raise RuntimeError("D-024 lifetime trace contains no completed transitions")
 
