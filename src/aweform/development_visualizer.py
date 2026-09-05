@@ -93,6 +93,7 @@ class DevelopmentVisualizationFrame:
     charging_contact: bool
     terminated: bool
     truncated: bool
+    rear_contact_alignment: tuple[bool, bool] | None = None
     beacon_left: float | None = None
     beacon_forward: float | None = None
     beacon_right: float | None = None
@@ -113,6 +114,13 @@ class DevelopmentVisualizationFrame:
             raise ValueError("action and decision_mode labels must be non-empty")
         if not isinstance(self.charging_contact, bool):
             raise ValueError("charging_contact must be a bool")
+        if self.rear_contact_alignment is not None:
+            if len(self.rear_contact_alignment) != 2 or not all(
+                isinstance(value, bool) for value in self.rear_contact_alignment
+            ):
+                raise ValueError(
+                    "rear_contact_alignment must contain two bools or be None"
+                )
         if not isinstance(self.terminated, bool) or not isinstance(
             self.truncated, bool
         ):
@@ -601,7 +609,8 @@ def build_development_visualization_figure(
     geometry = data.causal_geometry or data.shadow_geometry
     geometry_body: Polygon | None = None
     geometry_front_direction: Line2D | None = None
-    geometry_rear_contacts: Line2D | None = None
+    geometry_rear_contact_plus: Line2D | None = None
+    geometry_rear_contact_minus: Line2D | None = None
     geometry_front_midpoint: Line2D | None = None
     geometry_dock_contacts: Line2D | None = None
     geometry_dock_axis: Line2D | None = None
@@ -628,9 +637,16 @@ def build_development_visualization_figure(
             [], [], color="tab:orange", linewidth=2.0,
             label=("causal body heading" if causal else "shadow front direction"),
         )[0]
-        geometry_rear_contacts = world_axis.plot(
-            [], [], marker="s", markersize=5, linestyle="None", color="tab:red",
-            label=("causal rear contacts" if causal else "shadow rear contacts"),
+        geometry_rear_contact_plus = world_axis.plot(
+            [], [], marker="s", markersize=6, linestyle="None", color="tab:red",
+            label=(
+                "causal rear contacts (+ / −)"
+                if causal
+                else "shadow rear contacts (+ / −)"
+            ),
+        )[0]
+        geometry_rear_contact_minus = world_axis.plot(
+            [], [], marker="s", markersize=6, linestyle="None", color="tab:red",
         )[0]
         geometry_front_midpoint = world_axis.plot(
             [], [], marker="x", markersize=7, linestyle="None", color="#e377c2",
@@ -784,10 +800,10 @@ def build_development_visualization_figure(
     diagnostic_axis.axis("off")
     diagnostic_axis.set_title("EVALUATOR DIAGNOSTICS", loc="left")
     if beacon_values_available:
-        top_y = (1.06, 0.99, 0.92, 0.85, 0.78, 0.71)
+        top_y = (1.06, 0.99, 0.92, 0.85, 0.78, 0.71, 0.64)
         energy_y, thermal_y = 0.57, 0.43
     else:
-        top_y = (0.86, 0.79, 0.72, 0.65, 0.58, 0.51)
+        top_y = (0.86, 0.79, 0.72, 0.65, 0.58, 0.51, 0.44)
         energy_y, thermal_y = 0.37, 0.21
     transition_text = diagnostic_axis.text(
         0.02, top_y[0], "", family="monospace", fontsize=11
@@ -801,11 +817,14 @@ def build_development_visualization_figure(
     contact_text = diagnostic_axis.text(
         0.02, top_y[3], "", family="monospace", fontsize=11
     )
+    alignment_text = diagnostic_axis.text(
+        0.02, top_y[4], "", family="monospace", fontsize=10
+    )
     status_text = diagnostic_axis.text(
-        0.02, top_y[4], "", family="monospace", fontsize=11
+        0.02, top_y[5], "", family="monospace", fontsize=11
     )
     charger_phase_text = diagnostic_axis.text(
-        0.02, top_y[5], "", family="monospace", fontsize=11
+        0.02, top_y[6], "", family="monospace", fontsize=11
     )
 
     energy_background, energy_fill, energy_value = _make_gauge(
@@ -1049,6 +1068,20 @@ def build_development_visualization_figure(
         contact_text.set_text(
             "charging contact: " + ("YES" if frame.charging_contact else "NO")
         )
+        if frame.rear_contact_alignment is None:
+            alignment_text.set_text("rear contacts aligned: UNAVAILABLE")
+        else:
+            aligned_count = sum(frame.rear_contact_alignment)
+            alignment_label = (
+                "BOTH — CAUSAL CHARGING ACTIVE"
+                if aligned_count == 2 and frame.charging_contact
+                else "neither"
+                if aligned_count == 0
+                else f"{aligned_count}/2 within tolerance"
+            )
+            alignment_text.set_text(
+                f"rear contacts aligned: {aligned_count}/2 ({alignment_label})"
+            )
         status = (
             "TERMINATED"
             if frame.terminated
@@ -1102,6 +1135,7 @@ def build_development_visualization_figure(
             action_text,
             mode_text,
             contact_text,
+            alignment_text,
             status_text,
             charger_phase_text,
             energy_fill,
@@ -1134,7 +1168,8 @@ def build_development_visualization_figure(
             if (
                 geometry_body is None
                 or geometry_front_direction is None
-                or geometry_rear_contacts is None
+                or geometry_rear_contact_plus is None
+                or geometry_rear_contact_minus is None
                 or geometry_front_midpoint is None
                 or geometry_dock_contacts is None
                 or geometry_dock_axis is None
@@ -1161,15 +1196,24 @@ def build_development_visualization_figure(
                 [frame.x, frame.x + 0.07 * math.cos(frame.heading)],
                 [frame.y, frame.y + 0.07 * math.sin(frame.heading)],
             )
-            geometry_rear_contacts.set_data(
-                [rear_plus[0], rear_minus[0]], [rear_plus[1], rear_minus[1]]
-            )
+            geometry_rear_contact_plus.set_data([rear_plus[0]], [rear_plus[1]])
+            geometry_rear_contact_minus.set_data([rear_minus[0]], [rear_minus[1]])
+            alignment = frame.rear_contact_alignment
+            if alignment is None:
+                alignment = (frame.charging_contact, frame.charging_contact)
+            for marker, is_aligned in zip(
+                (geometry_rear_contact_plus, geometry_rear_contact_minus),
+                alignment,
+                strict=True,
+            ):
+                marker.set_color("tab:green" if is_aligned else "tab:red")
             geometry_front_midpoint.set_data([front[0]], [front[1]])
             rendered.extend(
                 (
                     geometry_body,
                     geometry_front_direction,
-                    geometry_rear_contacts,
+                    geometry_rear_contact_plus,
+                    geometry_rear_contact_minus,
                     geometry_front_midpoint,
                     geometry_dock_contacts,
                     geometry_dock_axis,
@@ -2718,6 +2762,26 @@ def d024_replay_event_steps(
             if not record.telemetry.charging_contact_before
             and record.telemetry.charging_contact_after
         ],
+        "first_plus_contact_only": [
+            record.transition_index
+            for record in trace
+            if _rear_contact_alignment(
+                record.telemetry.position_after,
+                record.telemetry.heading,
+                record.telemetry.station_center,
+            )
+            == (True, False)
+        ],
+        "first_minus_contact_only": [
+            record.transition_index
+            for record in trace
+            if _rear_contact_alignment(
+                record.telemetry.position_after,
+                record.telemetry.heading,
+                record.telemetry.station_center,
+            )
+            == (False, True)
+        ],
         "first_legacy_without_dual_entry": [
             record.transition_index
             for record in trace
@@ -2764,17 +2828,16 @@ def select_d024_replay_indices(
     return tuple(sorted(selected))
 
 
-def adapt_d024_trace(
+def _adapt_finite_body_trace(
     trace: Sequence[D021TransitionTrace],
     *,
     seed: int,
     source_label: str = "D-024 causal finite-body dual-contact lifetime",
 ) -> DevelopmentVisualizationData:
-    """Convert one completed causal D-024 trace to neutral replay data."""
+    """Convert one completed D-024-family trace to neutral replay data."""
     from . import d024
     from .d020 import D020PhysicalConfig
 
-    _validate_d024_visualization_seed(seed)
     if not trace:
         raise ValueError("D-024 replay trace must not be empty")
     config = D020PhysicalConfig()
@@ -2797,6 +2860,11 @@ def adapt_d024_trace(
             charging_contact=bool(initial_observation[4]),
             terminated=False,
             truncated=False,
+            rear_contact_alignment=_rear_contact_alignment(
+                initial.telemetry.position_before,
+                d024.D024_INITIAL_HEADING,
+                initial.telemetry.station_center,
+            ),
             beacon_left=initial_observation[1],
             beacon_forward=initial_observation[2],
             beacon_right=initial_observation[3],
@@ -2828,6 +2896,11 @@ def adapt_d024_trace(
                 charging_contact=bool(observation[4]),
                 terminated=telemetry.terminated,
                 truncated=telemetry.truncated,
+                rear_contact_alignment=_rear_contact_alignment(
+                    telemetry.position_after,
+                    telemetry.heading,
+                    telemetry.station_center,
+                ),
                 beacon_left=observation[1],
                 beacon_forward=observation[2],
                 beacon_right=observation[3],
@@ -2888,6 +2961,34 @@ def adapt_d024_trace(
     )
 
 
+def _rear_contact_alignment(
+    body_center: tuple[float, float],
+    body_heading: float,
+    station_center: tuple[float, float],
+) -> tuple[bool, bool]:
+    """Return evaluator-only per-contact status using D-024's exact predicate."""
+    from . import d024
+
+    plus_error, minus_error = d024.dual_contact_pair_errors(
+        body_center, body_heading, station_center
+    )
+    return (
+        plus_error <= d024.D024_CONTACT_TOLERANCE,
+        minus_error <= d024.D024_CONTACT_TOLERANCE,
+    )
+
+
+def adapt_d024_trace(
+    trace: Sequence[D021TransitionTrace],
+    *,
+    seed: int,
+    source_label: str = "D-024 causal finite-body dual-contact lifetime",
+) -> DevelopmentVisualizationData:
+    """Convert one completed causal D-024 trace to neutral replay data."""
+    _validate_d024_visualization_seed(seed)
+    return _adapt_finite_body_trace(trace, seed=seed, source_label=source_label)
+
+
 def build_d024_development_visualization(
     *,
     seed: int = 18365,
@@ -2940,6 +3041,41 @@ def build_d025_development_visualization(
     return adapt_d025_trace(trace, seed=seed)
 
 
+def _validate_d026_visualization_seed(seed: int) -> None:
+    """Validate one D-026 seed without running the full development probe."""
+    from .d026 import _validate_d026_seed
+
+    _validate_d026_seed(seed)
+
+
+def adapt_d026_trace(
+    trace: Sequence[D021TransitionTrace],
+    *,
+    seed: int,
+    source_label: str = "D-026 one-third SEEK delegation lifetime",
+) -> DevelopmentVisualizationData:
+    """Reuse the causal finite-body renderer for a completed D-026 trace."""
+    _validate_d026_visualization_seed(seed)
+    return _adapt_finite_body_trace(trace, seed=seed, source_label=source_label)
+
+
+def build_d026_development_visualization(
+    *,
+    seed: int = 18379,
+    horizon: int = 70_000,
+) -> DevelopmentVisualizationData:
+    """Run one exact-horizon D-026 lifetime, then adapt its evaluator trace."""
+    from . import d026
+
+    _validate_d026_visualization_seed(seed)
+    if horizon != d026.D026_HORIZON:
+        raise ValueError(
+            "D-026 visualization requires the frozen 70,000-transition horizon"
+        )
+    trace = d026.run_d026_lifetime_trace(seed, horizon=horizon)
+    return adapt_d026_trace(trace, seed=seed)
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
@@ -2960,6 +3096,7 @@ DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     "d023": build_d023_development_visualization,
     "d024": build_d024_development_visualization,
     "d025": build_d025_development_visualization,
+    "d026": build_d026_development_visualization,
 }
 
 
