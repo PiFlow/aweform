@@ -7,6 +7,7 @@
 - **horizon:** `70,000` transitions per uninterrupted lifetime
 - **delegation probability:** exactly `1/3`
 - **explorer internal hazard:** exactly `1/8`
+- **implementation_probe_sha:** `5a183483a96fc592787bdf11b950b7084253806c`
 - **disposition:** `CONTINUING`
 - **learned mechanism:** none
 
@@ -92,8 +93,48 @@ mechanism on these 20 declared lifetimes.
 
 ## Frozen-run descriptive results
 
-To be filled from the clean frozen executable SHA before the artifact is
-finalized. No run is valid evidence unless its provenance records that SHA.
+The canonical run used exactly the 20 declared seeds and the frozen
+70,000-transition ceiling from the clean executable SHA above. Every seed
+entered false-contact SEEK, reacquired valid causal dual contact, completed a
+full recharge, and post-recharge redeparted. Every lifetime then reached the
+horizon in `AWAY`; no lifetime terminated for energy depletion or either
+thermal shutdown condition.
+
+| Seed | SEEK entry → reacquisition | False-contact SEEK decisions | Delegations | Effective perturbations | Minimum max pair error | Energy at reacquisition | Full cycle | Final mode |
+|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 18368 | 24,286 → 26,627 (2,341) | 2,342 | 791 | 620 | 0.00398449 | 0.458646774 | yes | AWAY |
+| 18369 | 24,328 → 25,061 (733) | 734 | 239 | 184 | 0.00251263 | 0.487015218 | yes | AWAY |
+| 18370 | 24,310 → 24,698 (388) | 389 | 126 | 91 | 0.00725760 | 0.493109047 | yes | AWAY |
+| 18371 | 24,340 → 24,611 (271) | 272 | 81 | 58 | 0.00502525 | 0.495223343 | yes | AWAY |
+| 18372 | 24,327 → 24,416 (89) | 90 | 27 | 21 | 0.00994215 | 0.498376489 | yes | AWAY |
+| 18373 | 24,353 → 24,828 (475) | 476 | 141 | 105 | 0.00893904 | 0.491572827 | yes | AWAY |
+| 18374 | 24,374 → 24,696 (322) | 323 | 97 | 71 | 0.00934360 | 0.494282097 | yes | AWAY |
+| 18375 | 24,323 → 24,806 (483) | 484 | 189 | 152 | 0.00794562 | 0.491325080 | yes | AWAY |
+| 18376 | 24,374 → 24,913 (539) | 540 | 188 | 147 | 0.00740534 | 0.490415156 | yes | AWAY |
+| 18377 | 24,307 → 26,806 (2,499) | 2,500 | 815 | 636 | 0.00326283 | 0.455737621 | yes | AWAY |
+| 18378 | 24,366 → 26,760 (2,394) | 2,395 | 805 | 616 | 0.00893904 | 0.457609236 | yes | AWAY |
+| 18379 | 24,329 → 24,351 (22) | 23 | 7 | 4 | 0.00994215 | 0.499595523 | yes | AWAY |
+| 18380 | 24,332 → 25,637 (1,305) | 1,306 | 463 | 349 | 0.00624203 | 0.476743609 | yes | AWAY |
+| 18381 | 24,353 → 24,607 (254) | 255 | 88 | 72 | 0.00606602 | 0.495493621 | yes | AWAY |
+| 18382 | 24,334 → 26,873 (2,539) | 2,540 | 843 | 633 | 0.00291199 | 0.455079764 | yes | AWAY |
+| 18383 | 24,363 → 25,002 (639) | 640 | 232 | 177 | 0.00967555 | 0.488597035 | yes | AWAY |
+| 18384 | 24,369 → 25,742 (1,373) | 1,374 | 441 | 347 | 0.00794562 | 0.475641906 | yes | AWAY |
+| 18385 | 24,336 → 24,756 (420) | 421 | 149 | 110 | 0.00760939 | 0.492478430 | yes | AWAY |
+| 18386 | 24,330 → 25,466 (1,136) | 1,137 | 395 | 305 | 0.00768024 | 0.479751319 | yes | AWAY |
+| 18387 | 24,351 → 25,643 (1,292) | 1,293 | 438 | 328 | 0.00935354 | 0.477051437 | yes | AWAY |
+
+Aggregate descriptive outcomes:
+
+- `FULL_CYCLE`: 20; `SEEK_REACQUIRED`: 0; `FAILED_SEEK`: 0;
+  `HORIZON_CENSORED`: 0.
+- Resolved SEEK latency: mean `975.7`, median `589`, nearest-rank P90
+  `2,394`, P95 `2,499`, maximum `2,539` decisions.
+- Energy at reacquisition: mean `0.482687277`, median `0.489506096`, minimum
+  `0.455079764` normalized battery.
+- Energy/thermal terminations: `0`.
+- All per-seed outcomes, including the longest latencies, are retained; no
+  outlier was discarded from the aggregate. Full diagnostics and action-type
+  counts are in the JSON artifact.
 
 ## Cautious inference and disposition
 
