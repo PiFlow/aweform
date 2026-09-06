@@ -323,7 +323,7 @@ def alias_census(
         key: record for key, record in repeated.items() if len(record.outcomes) > 1
     }
     records: list[dict[str, object]] = []
-    for key in sorted(aliases, key=lambda value: tuple(str(item) for item in value)):
+    for key in sorted(aliased, key=lambda value: tuple(str(item) for item in value)):
         record = aliases[key]
         count = sum(record.outcomes.values())
         key_values = key[:6]
@@ -368,6 +368,8 @@ def alias_census(
             repeated_transitions / transitions if transitions else None
         ),
         "aliased_repeated_keys": len(aliased),
+        "serialized_record_scope": "aliased_repeated_keys_only",
+        "omitted_non_aliased_key_records": len(aliases) - len(aliased),
         "records": records,
     }
 

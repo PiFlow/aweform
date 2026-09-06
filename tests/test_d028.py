@@ -81,11 +81,11 @@ def test_alias_census_separates_action_and_marks_singletons_untested() -> None:
     assert census["aliased_repeated_keys"] == 1
     records = census["records"]
     assert isinstance(records, list)
-    statuses = {
-        record["executed_action"]: record["aliasing_status"] for record in records
-    }
-    assert statuses[Action.WAIT.name] == "aliased"
-    assert statuses[Action.MOVE_FORWARD.name] == "untested"
+    assert len(records) == 1
+    assert records[0]["executed_action"] == Action.WAIT.name
+    assert records[0]["aliasing_status"] == "aliased"
+    assert census["serialized_record_scope"] == "aliased_repeated_keys_only"
+    assert census["omitted_non_aliased_key_records"] == 1
 
 
 def test_batch_ols_recovers_fixed_linear_and_quadratic_mappings_without_leakage() -> (

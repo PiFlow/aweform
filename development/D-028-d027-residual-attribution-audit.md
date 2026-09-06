@@ -65,6 +65,17 @@ D-028 executable source and focused tests:
 
 No substantive D-028 output was inspected when this protocol was frozen.
 
+The first substantive run from frozen executable SHA
+`b4f8845799f8dd90af71924ad41d63e63260b33b` was invalidated after inspection
+found a reporting defect: the alias serializer retained every exact-key record,
+including approximately 1.4 million singleton/non-aliased records, producing a
+4.3 GiB artifact. The invalidated artifact SHA-256 is
+`010f635f618c9c4ae6519a1d9c7dbf086a70f58665e72d84c1a16ce112524ac7`.
+No replay semantics, frozen diagnostic definition, or measured outcome was
+accepted from that artifact. The correction retains the required exact records
+for aliased repeated keys and compact support counts for all other keys; the
+substantive audit is rerun from the corrected executable SHA.
+
 ## Required provenance and validation
 
 The accepted artifact will record the clean executable SHA, exact D-027
