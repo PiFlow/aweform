@@ -28,6 +28,31 @@ Capabilities should be added only when an experiment creates a genuine need for 
 
 Designed mechanisms, learned mechanisms, and behaviours that emerge from their interaction must be reported separately. A trajectory can be unexpected even when the underlying drives or safety gates were designed.
 
+## Scaffold transfer rather than scaffold accumulation
+
+Engineered behavioural scaffolds are legitimate developmental instruments and controls, but they should not silently become Aweform's permanent cognition architecture.
+
+As evidence permits, development should preferentially ask whether task-specific engineered competence can be transferred to experience-dependent mechanisms rather than adding another fixed rule on top. The recurring question is:
+
+> **What information can this organism construct from experience, and when can that learned information legitimately take over something currently engineered?**
+
+This does not mean that every engineered mechanism should be learned. Aweform may legitimately have engineered physiology, embodiment, sensors, actions, viability limits, and bounded plasticity machinery. The stronger developmental target is behavioural knowledge: when to conserve or seek, how to reacquire resources, when to leave, how much reserve is prudent, and how behaviour should change with competence and history.
+
+A fixed controller that genuinely solves the intended problem remains valid evidence and should not be designed away merely to make learning necessary. Scaffold transfer is justified only when a learned mechanism earns the role under fair controls.
+
+The detailed non-authorizing direction, including scaffold accounting, future dormancy, evolutionary timescales, and internal simulation, is recorded in [`developmental-direction-scaffold-transfer.md`](developmental-direction-scaffold-transfer.md).
+
+## Distinguish physiology, lifetime learning, evolution, and planning
+
+These mechanisms answer different scientific questions and must not be conflated.
+
+- **Engineered physiology/substrate** defines the conditions under which an organism can function.
+- **Within-lifetime learning** changes an organism through its own causal experience.
+- **Across-generation inheritance/evolution**, if ever introduced, changes what later organisms inherit and remains a separate future research question.
+- **Within-decision internal simulation/planning**, if ever introduced, uses learned predictions to compare possible futures and also requires a separately justified organism-internal selection criterion.
+
+No later mechanism is authorized merely because it appears in this distinction.
+
 ## Play
 
 Play is a later developmental hypothesis, not part of V0.1.
