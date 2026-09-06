@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import math
 
 import pytest
 
@@ -28,7 +29,7 @@ def test_d029_freeze_and_exact_seed_guard() -> None:
 
 
 def test_exact_support_registry_contains_only_prior_real_pairs() -> None:
-    environment, observation_array, _streams = d029._initial_environment(4, 18408)
+    environment, _observation_array, _streams = d029._initial_environment(4, 18408)
     del environment
     observation = d029._next_visible(observation_array)
     registry = d029.ExactExecutedExperienceRegistry()
@@ -81,6 +82,42 @@ def test_selected_branch_matches_real_transition_and_only_real_action_updates() 
     assert result["transitions"] == 2
 
 
+def test_move_forward_full_stall_has_its_own_metric_category() -> None:
+    environment, observation_array, _streams = d029._initial_environment(4, 18408)
+    assert environment.body is not None
+
+    environment.body.x = 0.0
+    environment.body.heading = math.pi
+    current = d029._next_visible(environment._observation().as_array())
+    full_stall = d029._branch(environment, current, Action.MOVE_FORWARD)
+    assert full_stall.full_stall is True
+    assert full_stall.boundary_class == "FULL_STALL_FORWARD"
+
+    environment.body.x = 0.98
+    environment.body.heading = 0.0
+    current = d029._next_visible(environment._observation().as_array())
+    boundary_clipped = d029._branch(environment, current, Action.MOVE_FORWARD)
+    assert boundary_clipped.full_stall is False
+    assert boundary_clipped.boundary_class == "BOUNDARY_CLIPPED_FORWARD"
+
+    groups = d029._new_metric_groups()
+    d029._record_metric(
+        groups,
+        candidate=Action.MOVE_FORWARD,
+        executed=True,
+        quarter="Q1",
+        current=current,
+        support_count=0,
+        contact_delta=d029._contact_delta_class(full_stall.delta[4]),
+        termination_class=full_stall.termination_class,
+        boundary_class=full_stall.boundary_class,
+        predicted=(0.0,) * 6,
+        actual=full_stall.delta,
+    )
+    assert groups["move_forward_boundary"]["FULL_STALL_FORWARD"].count == 1
+    assert groups["move_forward_boundary"]["BOUNDARY_CLIPPED_FORWARD"].count == 0
+
+
 def test_real_lifetime_matches_unchanged_d027_path() -> None:
     audited = d029._run_lifetime(18408, horizon=12, audit=True)
     _reference, reference_trace = d027._run_lifetime(
@@ -88,6 +125,57 @@ def test_real_lifetime_matches_unchanged_d027_path() -> None:
     )
     assert audited["trajectory_digest"] == d027._trace_digest(reference_trace)
     assert audited["_weights"] == _reference["learner"].weights  # type: ignore[index]
+
+
+def test_complete_reference_is_unbranched_and_matches_audited_lifetime(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_evaluator_helper(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("ordinary reference invoked D-029 evaluator work")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(d029, "_query_candidate_predictions", fail_evaluator_helper)
+        patch.setattr(d029, "_evaluate_branches", fail_evaluator_helper)
+        reference = d029._run_lifetime(
+            18408, horizon=d029.D029_HORIZON, audit=False
+        )
+
+    isolation = reference["isolation"]
+    assert isinstance(isolation, dict)
+    assert isolation["alternative_prediction_query_count"] == 0
+    assert isolation["alternative_branch_evaluation_count"] == 0
+    assert isolation["alternative_evaluator_work_performed"] is False
+
+    audited = d029._run_lifetime(18408, horizon=d029.D029_HORIZON, audit=True)
+    for field in (
+        "transitions",
+        "terminated",
+        "truncated",
+        "termination_reason",
+        "action_counts",
+        "mode_occupancy",
+        "mode_entry_counts",
+        "final_mode",
+        "minimum_normalized_energy",
+        "final_normalized_energy",
+        "maximum_normalized_energy",
+        "minimum_temperature",
+        "final_temperature",
+        "maximum_temperature",
+        "full_departures",
+        "physical_charger_exits",
+        "low_energy_seek_entries",
+        "physical_reacquisitions",
+        "full_recharge_events",
+        "post_recharge_redepartures",
+        "completed_energy_regulation_cycles",
+        "trajectory_digest",
+        "executed_update_digest",
+        "_weights",
+        "final_policy_rng_digest",
+        "final_environment_rng_digest",
+    ):
+        assert audited[field] == reference[field]
 
 
 def test_branch_order_invariance_and_deterministic_replay() -> None:

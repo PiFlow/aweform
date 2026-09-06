@@ -388,8 +388,10 @@ def _classify_branch_boundary(
     if action is not Action.MOVE_FORWARD:
         return None, False
     displacement = math.dist(telemetry.position_before, telemetry.position_after)
+    if displacement <= d027.D027_BOUNDARY_TOLERANCE:
+        return "FULL_STALL_FORWARD", True
     category = d027._classify_forward_displacement(displacement)
-    return category, displacement <= d027.D027_BOUNDARY_TOLERANCE
+    return category, False
 
 
 @dataclass(frozen=True, slots=True)
@@ -530,6 +532,18 @@ def _evaluate_branches(
     return {action: _branch(environment, current, action) for action in order}
 
 
+def _query_candidate_predictions(
+    learner: d027.D027ActionConsequencePredictor,
+    current: d027.D027Observation,
+) -> tuple[dict[Action, d027.D027Prediction], bool]:
+    """Query every candidate head once without changing the learner."""
+    weights_before = learner.weights
+    predictions = {
+        candidate: learner.predict(current, candidate) for candidate in Action
+    }
+    return predictions, learner.weights == weights_before
+
+
 def _update_digest(
     digest: Any,
     transition: int,
@@ -594,6 +608,8 @@ def _run_lifetime(
     all_branch_rng_checks_unchanged = True
     all_selected_branch_matches = True
     all_real_updates_executed_action_only = True
+    alternative_prediction_query_count = 0
+    alternative_branch_evaluation_count = 0
 
     while not (terminated or truncated):
         if environment.body is None or environment.station_center is None:
@@ -616,15 +632,16 @@ def _run_lifetime(
             else:
                 cycle_stage = 1
 
-        support_counts = {
-            candidate: registry.support_count(current, candidate)
-            for candidate in Action
-        }
-        weights_before = learner.weights
-        predictions = {
-            candidate: learner.predict(current, candidate) for candidate in Action
-        }
-        all_prediction_queries_read_only &= learner.weights == weights_before
+        if audit:
+            support_counts = {
+                candidate: registry.support_count(current, candidate)
+                for candidate in Action
+            }
+            predictions, prediction_queries_read_only = _query_candidate_predictions(
+                learner, current
+            )
+            alternative_prediction_query_count += len(predictions)
+            all_prediction_queries_read_only &= prediction_queries_read_only
 
         environment_before = _environment_state(environment)
         controller_before = _controller_state(controller)
@@ -633,6 +650,7 @@ def _run_lifetime(
             branches = _evaluate_branches(
                 environment, current, order=branch_order
             )
+            alternative_branch_evaluation_count += len(branches)
             all_branch_environment_checks_unchanged &= (
                 _environment_state(environment) == environment_before
             )
@@ -664,7 +682,7 @@ def _run_lifetime(
         update = learner.observe_transition(current, action, next_observation)
         all_real_updates_executed_action_only &= update.action is action
         _update_digest(update_digest, transition_index, action, update)
-        if update.prediction != predictions[action].values:
+        if audit and update.prediction != predictions[action].values:
             raise RuntimeError("D-029 executed pre-update prediction changed")
 
         trace.append(
@@ -693,8 +711,6 @@ def _run_lifetime(
                 boundary_class = branch_result.boundary_class
                 if boundary_class is not None:
                     boundary_counts[boundary_class] += 1
-                    if branch_result.full_stall:
-                        boundary_counts["FULL_STALL_FORWARD"] += 1
                 _record_metric(
                     metrics,
                     candidate=candidate,
@@ -733,7 +749,8 @@ def _run_lifetime(
                     actual=actual_contrast,
                 )
 
-        registry.record(current, action)
+        if audit:
+            registry.record(current, action)
         minimum_energy = min(minimum_energy, next_observation.energy)
         maximum_energy = max(maximum_energy, next_observation.energy)
         minimum_temperature = min(minimum_temperature, next_observation.thermal)
@@ -839,6 +856,9 @@ def _run_lifetime(
                 all_selected_branch_matches
             ),
             "real_updates_executed_action_only": all_real_updates_executed_action_only,
+            "alternative_prediction_query_count": alternative_prediction_query_count,
+            "alternative_branch_evaluation_count": alternative_branch_evaluation_count,
+            "alternative_evaluator_work_performed": audit,
             "branch_order": [action.name for action in branch_order],
         },
         "_trace": trace,
