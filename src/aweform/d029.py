@@ -806,6 +806,9 @@ def _run_lifetime(
         "pairwise_contrasts": pairwise.as_dict(),
         "support": {
             "unique_prior_real_state_action_pairs": registry.unique_pair_count,
+            "prior_physically_executed_update_count_by_candidate": dict(
+                action_counts
+            ),
             "prior_exact_support_count_distribution": dict(
                 sorted(support_distribution.items(), key=lambda item: int(item[0]))
             ),

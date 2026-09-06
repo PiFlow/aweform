@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from aweform import d029
+from aweform import d027, d029
 from aweform.env import Action
 from aweform.exp003_seed_policy import validate_exp003_development_seeds
 
@@ -67,6 +67,15 @@ def test_selected_branch_matches_real_transition_and_only_real_action_updates() 
     assert isolation["real_updates_executed_action_only"] is True
     assert result["support"]["sample_count"] == 8  # type: ignore[index]
     assert result["transitions"] == 2
+
+
+def test_real_lifetime_matches_unchanged_d027_path() -> None:
+    audited = d029._run_lifetime(18408, horizon=12, audit=True)
+    _reference, reference_trace = d027._run_lifetime(
+        18408, horizon=12, learning=True
+    )
+    assert audited["trajectory_digest"] == d027._trace_digest(reference_trace)
+    assert audited["_weights"] == _reference["learner"].weights  # type: ignore[index]
 
 
 def test_branch_order_invariance_and_deterministic_replay() -> None:
