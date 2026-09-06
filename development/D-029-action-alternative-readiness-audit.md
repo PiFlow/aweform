@@ -84,7 +84,9 @@ No raw candidate rows are serialized. The compact artifact retains per-seed and
 pooled aggregate metrics, support distributions, pairwise diagnostics,
 isolation checks, trajectory/update/weight/RNG digests, and frozen provenance.
 The ordinary reference is an unbranched D-027-compatible lifetime with the
-same seed, horizon, controller, environment, and learner order.
+same seed, horizon, controller, environment, and learner order. It performs no
+D-029 alternative-prediction queries or branch evaluations; the artifact
+records zero of each for every reference comparison.
 
 The first complete artifact from executable SHA
 `3dbccc5ee42a123d8c2b92f463e5a9fc5955813f` was invalidated before acceptance.
@@ -96,11 +98,18 @@ by the authorization. No outcome was accepted from that artifact; the learner,
 controller, protocol, seeds, horizon, and measured values were not tuned or
 changed because of the defect. The corrected executable is rerun from scratch.
 
-The accepted compact artifact was generated from clean executable SHA
-`f4c90e2cd7cecc64c1843eb5aa1d42499aa80084`. Its SHA-256 is
-`84690ef766d27efd293a9ea7c80958dc03a98eeec6ffd3f6a050898c379401de` and its
-size is approximately 1.4 MB. A full regeneration from the same executable SHA
-was byte-for-byte identical.
+The prior accepted compact artifact from clean executable SHA
+`f4c90e2cd7cecc64c1843eb5aa1d42499aa80084` is invalidated by correction round
+1. Sol found that full-stall rows were counted under the clipped metric and
+that the matched reference still performed all alternative prediction
+queries. No outcome from that artifact is accepted; only the two defects and
+their focused coverage were changed.
+
+The correction-round artifact was generated from clean executable SHA
+`91ff47c41a7c596e9956e9c29a418bcaaba37a3e`. Its SHA-256 is
+`490d64626b42bf0efe2e03f63a20fa4aa6f424f27acfc0909b5acd6f342d0210` and its
+size is 1,471,142 bytes. A full regeneration from the same executable SHA was
+byte-for-byte identical.
 
 ## Accepted substantive results
 
@@ -109,9 +118,12 @@ lifetimes: 1,400,000 real transitions and 5,600,000 candidate branch rows.
 All four candidate actions were visited on every lifetime. All branch-level
 read-only prediction, real environment/controller/RNG isolation, selected
 branch consistency, executed-action-only update, and matched-reference checks
-were true for all 20 seeds. The matched ordinary D-027-compatible reference
-also had exact real visible trajectory, executed pre-update prediction/update
-digest, complete 168-weight snapshot, policy-RNG, and environment-RNG equality.
+were true for all 20 seeds. Each audited lifetime recorded `280,000`
+alternative prediction queries and `280,000` isolated branch evaluations; each
+ordinary reference recorded zero of both. The matched ordinary D-027-compatible
+reference also had exact real visible trajectory, executed pre-update
+prediction/update digest, complete 168-weight snapshot, policy-RNG, and
+environment-RNG equality over the complete 70,000-transition lifetime.
 
 The exact prior-support registry recorded `0` support for all 5,600,000
 candidate rows; no `>=1` or `>=2` cells were visited. This is a direct sparse
@@ -130,13 +142,13 @@ Pooled candidate-row MAE (learned / zero-change comparator) was:
 | `delta_charging_contact` | `0.3351 / 0.3039` | `0.4468 / 0.4052` | `0.03292 / 0.02982` |
 | `delta_thermal` | `3.571e-7 / 4.179e-7` | `4.718e-7 / 4.419e-7` | `5.109e-8 / 1.701e-7` |
 
-The boundary branch support was `876,576` full-nominal and `523,424`
-boundary-clipped `MOVE_FORWARD` rows; full-stall support was untested. In the
-clipped overall stratum, learned beacon MAE was higher than zero-change for
-all three beacon outputs. In full-nominal support, learned energy/beacon MAE
-was lower while thermal and charging-contact MAE was higher. These are
-output/context-specific descriptive observations, not a scalar competence
-score.
+The boundary branch support was `876,576` full-nominal, `227,118`
+boundary-clipped, and `296,306` full-stall `MOVE_FORWARD` rows. The full-stall
+category is now recorded separately at both overall and Q4 levels; its
+learned/zero-change metrics, like every sparse cell, remain in the artifact.
+In full-nominal support, learned energy/beacon MAE was lower while thermal and
+charging-contact MAE was higher. These are output/context-specific descriptive
+observations, not a scalar competence score.
 
 For the six unordered action pairs, pooled Q4 pairwise non-tie sign-agreement
 rates in output order `(energy, beacon L, beacon F, beacon R, contact, thermal)`
