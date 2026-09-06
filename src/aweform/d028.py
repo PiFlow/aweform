@@ -18,12 +18,13 @@ from typing import Final, Sequence, cast
 
 import numpy as np
 
-from . import d016, d024, d025, d027
+from . import d016, d024, d025, d026, d027
 from .body import Body
 from .d020 import D020PhysicalConfig
 from .env import Action
 from .exp003 import beacon_signal, sample_directional_beacon
 from .exp003_seed_policy import validate_exp003_development_seeds
+from .rng import RandomStreams
 
 D028_DEFAULT_DEVELOPMENT_SEEDS: Final[tuple[int, ...]] = tuple(range(18388, 18408))
 D028_HORIZON: Final[int] = 70_000
@@ -514,6 +515,9 @@ class _OracleStats:
         default_factory=lambda: {label: 0 for label in D028_BOUNDARY_LABELS}
     )
     boundary_confusion: dict[str, dict[str, int]] = field(default_factory=dict)
+    displacement_count: int = 0
+    displacement_absolute_error: float = 0.0
+    displacement_max_absolute_error: float = 0.0
 
     def add_beacon(self, prediction: Sequence[float], actual: Sequence[float]) -> None:
         self.beacon_error.add(
@@ -533,6 +537,14 @@ class _OracleStats:
         self.boundary_confusion.setdefault(
             actual, {label: 0 for label in D028_BOUNDARY_LABELS}
         )[predicted] += 1
+
+    def add_displacement(self, predicted: float, actual: float) -> None:
+        error = abs(predicted - actual)
+        self.displacement_count += 1
+        self.displacement_absolute_error += error
+        self.displacement_max_absolute_error = max(
+            self.displacement_max_absolute_error, error
+        )
 
     def merge(self, other: _OracleStats) -> None:
         self.beacon_error.count += other.beacon_error.count
@@ -559,6 +571,12 @@ class _OracleStats:
             )
             for predicted, count in row.items():
                 target_row[predicted] += count
+        self.displacement_count += other.displacement_count
+        self.displacement_absolute_error += other.displacement_absolute_error
+        self.displacement_max_absolute_error = max(
+            self.displacement_max_absolute_error,
+            other.displacement_max_absolute_error,
+        )
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -578,6 +596,15 @@ class _OracleStats:
             "predicted_boundary_counts": self.boundary_predicted,
             "actual_boundary_counts": self.boundary_actual,
             "boundary_confusion": self.boundary_confusion,
+            "realized_displacement": {
+                "sample_count": self.displacement_count,
+                "mean_absolute_error": (
+                    self.displacement_absolute_error / self.displacement_count
+                    if self.displacement_count
+                    else None
+                ),
+                "max_absolute_error": self.displacement_max_absolute_error,
+            },
         }
 
 
@@ -599,6 +626,25 @@ def _load_d027_artifact() -> dict[int, dict[str, object]]:
 
 def _weight_digest(weights: object) -> str:
     encoded = json.dumps(weights, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _policy_rng_digest(seed: int, trace: Sequence[d025.D025TransitionTrace]) -> str:
+    """Replay the exact D-026 policy decisions and hash the final RNG state."""
+    streams = RandomStreams.from_seed(seed)
+    controller = d026.D026Controller(streams.policy)
+    controller.reset()
+    for record in trace:
+        current = d025._controller_observation(
+            np.asarray(record.observation_before, dtype=np.float32)
+        )
+        if controller.mode is not record.mode_before:
+            raise RuntimeError(f"D-027 policy mode replay failed for seed {seed}")
+        action = controller.act(current)
+        if action is not record.action or controller.mode is not record.mode_after:
+            raise RuntimeError(f"D-027 policy action replay failed for seed {seed}")
+    state = d027._jsonable(streams.policy.bit_generator.state)
+    encoded = json.dumps(state, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
@@ -668,6 +714,10 @@ def _replay_seed(
         raise RuntimeError(f"D-027 artifact trajectory mismatch for seed {seed}")
     if learned_result["final_weights"] != expected_weights:
         raise RuntimeError(f"D-027 artifact final-weight mismatch for seed {seed}")
+    learned_policy_rng_digest = _policy_rng_digest(seed, trace)
+    reference_policy_rng_digest = _policy_rng_digest(seed, reference_trace)
+    if learned_policy_rng_digest != reference_policy_rng_digest:
+        raise RuntimeError(f"D-027 policy RNG isolation failed for seed {seed}")
 
     current_lists: dict[Action, list[tuple[float, ...]]] = {
         action: [] for action in Action
@@ -820,6 +870,9 @@ def _replay_seed(
                 _actual_boundary_label(boundary_code),
             )
             actual_pose_displacement = displacement
+            wall_oracle.add_displacement(
+                predicted_displacement, actual_pose_displacement
+            )
             if (
                 abs(predicted_displacement - actual_pose_displacement)
                 > D028_GEOMETRY_TOLERANCE
@@ -910,6 +963,9 @@ def _replay_seed(
         "reference_trajectory_digest": reference_result["trajectory_digest"],
         "trajectory_exact_equal": True,
         "behavioral_summary_exact_equal": True,
+        "policy_rng_state_digest": learned_policy_rng_digest,
+        "reference_policy_rng_state_digest": reference_policy_rng_digest,
+        "policy_rng_exact_equal": True,
         "d027_artifact_trajectory_exact_equal": True,
         "d027_artifact_final_weights_exact_equal": True,
         "final_weight_count": len(
