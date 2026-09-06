@@ -43,6 +43,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-025 | Bounded stochastic SEEK de-trapping | CONTINUING | [`D-025-bounded-stochastic-seek-detrapping.md`](D-025-bounded-stochastic-seek-detrapping.md) |
 | D-026 | One-third SEEK delegation stabilization | CONTINUING | [`D-026-one-third-seek-delegation-stabilization.md`](D-026-one-third-seek-delegation-stabilization.md) |
 | D-027 | Shadow sensorimotor consequence learning | CONTINUING | [`D-027-shadow-sensorimotor-consequence-learning.md`](D-027-shadow-sensorimotor-consequence-learning.md) |
+| D-028 | D-027 residual-attribution audit | CONTINUING | [`D-028-d027-residual-attribution-audit.md`](D-028-d027-residual-attribution-audit.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 
