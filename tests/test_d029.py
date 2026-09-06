@@ -29,7 +29,7 @@ def test_d029_freeze_and_exact_seed_guard() -> None:
 
 
 def test_exact_support_registry_contains_only_prior_real_pairs() -> None:
-    environment, _observation_array, _streams = d029._initial_environment(4, 18408)
+    environment, observation_array, _streams = d029._initial_environment(4, 18408)
     del environment
     observation = d029._next_visible(observation_array)
     registry = d029.ExactExecutedExperienceRegistry()
@@ -147,6 +147,15 @@ def test_complete_reference_is_unbranched_and_matches_audited_lifetime(
     assert isolation["alternative_evaluator_work_performed"] is False
 
     audited = d029._run_lifetime(18408, horizon=d029.D029_HORIZON, audit=True)
+    audited_isolation = audited["isolation"]
+    assert isinstance(audited_isolation, dict)
+    assert audited_isolation["alternative_prediction_query_count"] == (
+        4 * d029.D029_HORIZON
+    )
+    assert audited_isolation["alternative_branch_evaluation_count"] == (
+        4 * d029.D029_HORIZON
+    )
+    assert audited_isolation["alternative_evaluator_work_performed"] is True
     for field in (
         "transitions",
         "terminated",

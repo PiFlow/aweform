@@ -923,6 +923,7 @@ def _run_d029_seed(
     )
     metric_groups = audited.pop("_metric_groups")
     pairwise = audited.pop("_pairwise")
+    reference_isolation = cast(dict[str, object], reference["isolation"])
     audited.pop("_trace")
     audited.pop("_support_registry")
     audited.pop("_weights")
@@ -939,6 +940,15 @@ def _run_d029_seed(
         "reference_final_weight_digest": reference["final_weight_digest"],
         "reference_policy_rng_digest": reference["final_policy_rng_digest"],
         "reference_environment_rng_digest": reference["final_environment_rng_digest"],
+        "reference_alternative_prediction_query_count": reference_isolation[
+            "alternative_prediction_query_count"
+        ],
+        "reference_alternative_branch_evaluation_count": reference_isolation[
+            "alternative_branch_evaluation_count"
+        ],
+        "reference_alternative_evaluator_work_performed": reference_isolation[
+            "alternative_evaluator_work_performed"
+        ],
     }
     audited["_metric_groups"] = metric_groups
     audited["_pairwise"] = pairwise
