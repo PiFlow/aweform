@@ -6,7 +6,7 @@
 - **base_tree_sha:** `6d91c5ce67b138298b9e416ba557a66f07b37f42`
 - **development_seeds:** `18408..18427` inclusive (20 seeds)
 - **horizon:** `70,000` real transitions per uninterrupted lifetime
-- **status before execution:** protocol frozen; substantive output pending
+- **status:** protocol frozen; substantive output complete
 - **disposition:** `CONTINUING`
 
 The machine-readable substantive artifact is
@@ -95,6 +95,62 @@ reference report omitted the explicit final environment-RNG equality required
 by the authorization. No outcome was accepted from that artifact; the learner,
 controller, protocol, seeds, horizon, and measured values were not tuned or
 changed because of the defect. The corrected executable is rerun from scratch.
+
+The accepted compact artifact was generated from clean executable SHA
+`f4c90e2cd7cecc64c1843eb5aa1d42499aa80084`. Its SHA-256 is
+`84690ef766d27efd293a9ea7c80958dc03a98eeec6ffd3f6a050898c379401de` and its
+size is approximately 1.4 MB. A full regeneration from the same executable SHA
+was byte-for-byte identical.
+
+## Accepted substantive results
+
+The exact ordered seed set produced 20 uninterrupted 70,000-transition
+lifetimes: 1,400,000 real transitions and 5,600,000 candidate branch rows.
+All four candidate actions were visited on every lifetime. All branch-level
+read-only prediction, real environment/controller/RNG isolation, selected
+branch consistency, executed-action-only update, and matched-reference checks
+were true for all 20 seeds. The matched ordinary D-027-compatible reference
+also had exact real visible trajectory, executed pre-update prediction/update
+digest, complete 168-weight snapshot, policy-RNG, and environment-RNG equality.
+
+The exact prior-support registry recorded `0` support for all 5,600,000
+candidate rows; no `>=1` or `>=2` cells were visited. This is a direct sparse
+support result, not a reason to add a similarity radius. The final cumulative
+physically executed update counts by action are retained per seed in the JSON
+artifact.
+
+Pooled candidate-row MAE (learned / zero-change comparator) was:
+
+| Output | All candidates | Unexecuted candidates | Unexecuted Q4 |
+|---|---:|---:|---:|
+| `delta_energy` | `2.064e-6 / 1.514e-5` | `2.740e-6 / 1.370e-5` | `9.443e-7 / 1.362e-5` |
+| `delta_beacon_left` | `0.02210 / 0.03135` | `0.02710 / 0.03880` | `0.01157 / 0.01845` |
+| `delta_beacon_forward` | `0.01447 / 0.02781` | `0.01709 / 0.03412` | `0.00909 / 0.01748` |
+| `delta_beacon_right` | `0.02129 / 0.03118` | `0.02602 / 0.03857` | `0.01150 / 0.01852` |
+| `delta_charging_contact` | `0.3351 / 0.3039` | `0.4468 / 0.4052` | `0.03292 / 0.02982` |
+| `delta_thermal` | `3.571e-7 / 4.179e-7` | `4.718e-7 / 4.419e-7` | `5.109e-8 / 1.701e-7` |
+
+The boundary branch support was `876,576` full-nominal and `523,424`
+boundary-clipped `MOVE_FORWARD` rows; full-stall support was untested. In the
+clipped overall stratum, learned beacon MAE was higher than zero-change for
+all three beacon outputs. In full-nominal support, learned energy/beacon MAE
+was lower while thermal and charging-contact MAE was higher. These are
+output/context-specific descriptive observations, not a scalar competence
+score.
+
+For the six unordered action pairs, pooled Q4 pairwise non-tie sign-agreement
+rates in output order `(energy, beacon L, beacon F, beacon R, contact, thermal)`
+were approximately
+`(0.984, 0.836, 0.851, 0.836, 0.0088, 0.00077)`. The artifact retains exact
+per-pair, per-output, pooled, per-seed, Q1, and Q4 MAE/sign/tie counts. The
+stronger energy or beacon directions do not establish a desirable consequence,
+utility, or learned action-selection readiness; contact and thermal contrast
+direction remained weak in Q4.
+
+These results preserve the D-018 blocker for any future learned-control claim:
+exact prior support was entirely sparse, and competence varied by output,
+action context, and boundary/contact stratum. D-029 remains Development-lane
+descriptive work and does not authorize D-030 or any causal controller use.
 
 D-029 has no binary scientific pass threshold. Weak late-lifetime alternative
 prediction, output/context-specific competence, sparse exact support, and null
