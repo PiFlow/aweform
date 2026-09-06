@@ -76,6 +76,16 @@ accepted from that artifact. The correction retains the required exact records
 for aliased repeated keys and compact support counts for all other keys; the
 substantive audit is rerun from the corrected executable SHA.
 
+That compact rerun from executable SHA
+`1e51f267db19aec90bd2c18f07ea0addaa78a584` was also invalidated during the
+final reporting audit because it did not explicitly serialize the policy-RNG
+isolation digest or heading-oracle realized-displacement error required by the
+authorization. Its artifact SHA-256 is
+`0f5f13c602bd01c3ff0d25aebd3f8779ca1b5a13175339f09287f08396438222`.
+The evaluator-only reporting correction is committed at the final executable
+SHA used for the accepted rerun; no causal replay, seed, fit, oracle input, or
+interpretation definition was changed.
+
 ## Required provenance and validation
 
 The accepted artifact will record the clean executable SHA, exact D-027
