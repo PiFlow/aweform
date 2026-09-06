@@ -488,7 +488,7 @@ def _branch(
     current: d027.D027Observation,
     action: Action,
 ) -> _BranchOutcome:
-    branch = copy.deepcopy(environment)
+    branch = _clone_environment(environment)
     observation, reward, terminated, truncated, info = branch.step(action)
     if reward != 0.0 or info != {}:
         raise RuntimeError("D-029 branch crossed the reward/info boundary")
@@ -507,6 +507,14 @@ def _branch(
         boundary_class=boundary_class,
         full_stall=full_stall,
     )
+
+
+def _clone_environment(environment: d026.D026Env) -> d026.D026Env:
+    """Clone every mutable D-020 state field without cloning static Gym spaces."""
+    branch = copy.copy(environment)
+    branch.body = copy.deepcopy(environment.body)
+    branch.last_transition = environment.last_transition
+    return branch
 
 
 def _evaluate_branches(

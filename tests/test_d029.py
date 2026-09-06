@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import copy
+
 import pytest
 
 from aweform import d027, d029
@@ -53,6 +55,16 @@ def test_all_four_predictions_and_branches_are_non_mutating() -> None:
     assert predictor.weights == before_weights
     assert d029._environment_state(environment) == before_environment
     assert d029._rng_state(streams) == before_rng
+
+
+def test_fast_environment_clone_matches_full_deepcopy_state() -> None:
+    environment, _observation, _streams = d029._initial_environment(4, 18408)
+    fast = d029._clone_environment(environment)
+    full = copy.deepcopy(environment)
+    assert d029._environment_state(fast) == d029._environment_state(full)
+    fast.step(Action.MOVE_FORWARD)
+    full.step(Action.MOVE_FORWARD)
+    assert d029._environment_state(fast) == d029._environment_state(full)
 
 
 def test_selected_branch_matches_real_transition_and_only_real_action_updates() -> None:
