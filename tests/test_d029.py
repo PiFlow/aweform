@@ -109,6 +109,12 @@ def test_branch_order_invariance_and_deterministic_replay() -> None:
         forward["isolation"]["selected_action_branch_matches_real_transition"]
         is True
     )  # type: ignore[index]
+    assert (
+        forward["isolation"]["matched_d027_reference"][
+            "environment_rng_state_exact_equal"
+        ]
+        is True
+    )  # type: ignore[index]
 
 
 def test_pairwise_contrast_tracks_ties_and_signs_per_output() -> None:

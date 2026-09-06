@@ -86,6 +86,16 @@ isolation checks, trajectory/update/weight/RNG digests, and frozen provenance.
 The ordinary reference is an unbranched D-027-compatible lifetime with the
 same seed, horizon, controller, environment, and learner order.
 
+The first complete artifact from executable SHA
+`3dbccc5ee42a123d8c2b92f463e5a9fc5955813f` was invalidated before acceptance.
+Its SHA-256 was
+`da05f15d0ac6f8d1adebbac4f83e6f51773a649c2dd09b6d8d86d8ba4590c205`.
+Branch-level policy/environment RNG checks passed, but the compact matched-
+reference report omitted the explicit final environment-RNG equality required
+by the authorization. No outcome was accepted from that artifact; the learner,
+controller, protocol, seeds, horizon, and measured values were not tuned or
+changed because of the defect. The corrected executable is rerun from scratch.
+
 D-029 has no binary scientific pass threshold. Weak late-lifetime alternative
 prediction, output/context-specific competence, sparse exact support, and null
 cells remain valid descriptive results. A positive result could motivate only

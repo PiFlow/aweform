@@ -189,7 +189,7 @@ def _record_metric(
     predicted: Sequence[float],
     actual: Sequence[float],
 ) -> None:
-    dimensions = (
+    dimensions: list[tuple[str, str]] = [
         ("all_candidates", "all"),
         ("executed_vs_unexecuted", "executed" if executed else "unexecuted"),
         ("candidate_action", candidate.name),
@@ -197,17 +197,17 @@ def _record_metric(
         ("current_contact", str(current.charging_contact)),
         ("candidate_contact_delta", contact_delta),
         ("candidate_termination", termination_class),
-    )
+    ]
     if support_count == 0:
-        dimensions += (("prior_exact_support", "0"),)
+        dimensions.append(("prior_exact_support", "0"))
     if support_count >= 1:
-        dimensions += (("prior_exact_support", ">=1"),)
+        dimensions.append(("prior_exact_support", ">=1"))
     if support_count >= 2:
-        dimensions += (("prior_exact_support", ">=2"),)
+        dimensions.append(("prior_exact_support", ">=2"))
     if boundary_class is not None:
-        dimensions += (("move_forward_boundary", boundary_class),)
+        dimensions.append(("move_forward_boundary", boundary_class))
         if quarter == "Q4":
-            dimensions += (("move_forward_boundary_Q4", boundary_class),)
+            dimensions.append(("move_forward_boundary_Q4", boundary_class))
     for dimension, category in dimensions:
         groups[dimension].setdefault(category, _MetricSums()).record(predicted, actual)
 
@@ -897,6 +897,10 @@ def _run_d029_seed(
     exact_rng = audited["final_policy_rng_digest"] == reference[
         "final_policy_rng_digest"
     ]
+    exact_environment_rng = (
+        audited["final_environment_rng_digest"]
+        == reference["final_environment_rng_digest"]
+    )
     metric_groups = audited.pop("_metric_groups")
     pairwise = audited.pop("_pairwise")
     audited.pop("_trace")
@@ -911,6 +915,7 @@ def _run_d029_seed(
             exact_updates
         ),
         "policy_rng_state_exact_equal": exact_rng,
+        "environment_rng_state_exact_equal": exact_environment_rng,
         "reference_final_weight_digest": reference["final_weight_digest"],
         "reference_policy_rng_digest": reference["final_policy_rng_digest"],
         "reference_environment_rng_digest": reference["final_environment_rng_digest"],
@@ -918,7 +923,15 @@ def _run_d029_seed(
     audited["_metric_groups"] = metric_groups
     audited["_pairwise"] = pairwise
     if not all(
-        (exact_summary, exact_trace, exact_weights, exact_updates, exact_rng)
+        value
+        for value in (
+            exact_summary,
+            exact_trace,
+            exact_weights,
+            exact_updates,
+            exact_rng,
+            exact_environment_rng,
+        )
     ):
         raise RuntimeError("D-029 matched ordinary lifetime isolation failed")
     return audited
@@ -1103,9 +1116,12 @@ def run_d029_probe(
             "prior_exact_support_count_distribution": pooled_support,
             "sample_count": sum(pooled_support.values()),
             "unique_prior_real_state_action_pairs": sum(
-                cast(dict[str, object], result["support"])[
-                    "unique_prior_real_state_action_pairs"
-                ]
+                cast(
+                    int,
+                    cast(dict[str, object], result["support"])[
+                        "unique_prior_real_state_action_pairs"
+                    ],
+                )
                 for result in compact_results
             ),
         },
