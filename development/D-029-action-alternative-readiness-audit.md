@@ -63,7 +63,8 @@ seed, mode, or transition index enters the key. Support reports exact counts,
 updates without describing that cumulative count as local support.
 
 Each candidate branch records support by executed/unexecuted candidate, action,
-`Q1..Q4`, current contact, candidate contact delta `-1/0/+1`, branch
+`Q1..Q4`, and the evaluator-only joint executed/unexecuted × quarter cells
+(`executed_Q1` through `unexecuted_Q4`), current contact, candidate contact delta `-1/0/+1`, branch
 termination/truncation class, and for `MOVE_FORWARD` full-nominal,
 boundary-clipped, and nested full-stall labels using the unchanged `0.05`
 nominal distance and `1e-12` tolerance.
@@ -98,18 +99,34 @@ by the authorization. No outcome was accepted from that artifact; the learner,
 controller, protocol, seeds, horizon, and measured values were not tuned or
 changed because of the defect. The corrected executable is rerun from scratch.
 
-The prior accepted compact artifact from clean executable SHA
-`f4c90e2cd7cecc64c1843eb5aa1d42499aa80084` is invalidated by correction round
-1. Sol found that full-stall rows were counted under the clipped metric and
-that the matched reference still performed all alternative prediction
-queries. No outcome from that artifact is accepted; only the two defects and
-their focused coverage were changed.
+The prior accepted executable SHA
+`f4c90e2cd7cecc64c1843eb5aa1d42499aa80084` and artifact
+`84690ef766d27efd293a9ea7c80958dc03a98eeec6ffd3f6a050898c379401de` are
+invalidated by the actual prior top-level Sol finding at reviewed HEAD
+`37734351db79ff5ab96be41656afedba1ad0fde9`: the compact artifact did not
+retain the unexecuted-candidate × lifetime-quarter joint aggregate, so the
+published Unexecuted Q4 six-output MAE was not directly present and
+reproducible. No outcome from that artifact is accepted.
 
-The correction-round artifact was generated from clean executable SHA
-`91ff47c41a7c596e9956e9c29a418bcaaba37a3e`. Its SHA-256 is
-`490d64626b42bf0efe2e03f63a20fa4aa6f424f27acfc0909b5acd6f342d0210` and its
-size is 1,471,142 bytes. A full regeneration from the same executable SHA was
-byte-for-byte identical.
+The full-stall metric classification and matched-reference alternative-query
+isolation were separately discovered audit defects during the same correction
+work. They remain recorded as distinct corrections in executable SHAs
+`e08eb3ccb147e17c6b31b380a7d7ae4fe4173a6a` and
+`91ff47c41a7c596e9956e9c29a418bcaaba37a3e`; neither is
+substituted for the 3773435 Sol finding. The complete correction-round
+artifact from `91ff47c41a7c596e9956e9c29a418bcaaba37a3e` is likewise not an
+accepted result because it still lacked the joint retention required above.
+
+The corrected artifact below is generated only after a new clean executable
+SHA is committed and retains all eight executed/unexecuted × Q1..Q4 aggregate
+cells, including the Unexecuted Q4 six-output MAE.
+
+The corrected executable SHA is
+`7db4ccccb28e895c4d9c81f177b3460b632156e4`. The regenerated compact artifact
+SHA-256 is
+`d584fb8352fa28cb255c44359c5f0bf071dd9f705efd7ddaa29e608369378896` and its
+size is 1,732,798 bytes. A second full regeneration from the same executable
+SHA is required to be byte-for-byte identical.
 
 ## Accepted substantive results
 
