@@ -40,6 +40,11 @@ D029_BOUNDARY_CLASSES: Final[tuple[str, ...]] = (
     "BOUNDARY_CLIPPED_FORWARD",
     "FULL_STALL_FORWARD",
 )
+D029_EXECUTION_QUARTER_CELLS: Final[tuple[str, ...]] = tuple(
+    f"{execution}_{quarter}"
+    for execution in ("executed", "unexecuted")
+    for quarter in D029_QUARTERS
+)
 D029_OUTPUTS: Final[tuple[str, ...]] = d027.D027_OUTPUTS
 D029_CHANNELS: Final[tuple[str, ...]] = d027.D027_CHANNELS
 D029_ACTION_PAIRS: Final[tuple[tuple[Action, Action], ...]] = tuple(
@@ -156,6 +161,9 @@ def _new_metric_groups() -> dict[str, dict[str, _MetricSums]]:
         },
         "candidate_action": {action.name: _MetricSums() for action in Action},
         "quarter": {quarter: _MetricSums() for quarter in D029_QUARTERS},
+        "executed_vs_unexecuted_x_quarter": {
+            cell: _MetricSums() for cell in D029_EXECUTION_QUARTER_CELLS
+        },
         "prior_exact_support": {
             category: _MetricSums() for category in D029_SUPPORT_CLASSES
         },
@@ -194,6 +202,10 @@ def _record_metric(
         ("executed_vs_unexecuted", "executed" if executed else "unexecuted"),
         ("candidate_action", candidate.name),
         ("quarter", quarter),
+        (
+            "executed_vs_unexecuted_x_quarter",
+            f"{'executed' if executed else 'unexecuted'}_{quarter}",
+        ),
         ("current_contact", str(current.charging_contact)),
         ("candidate_contact_delta", contact_delta),
         ("candidate_termination", termination_class),

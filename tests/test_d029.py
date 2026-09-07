@@ -118,6 +118,41 @@ def test_move_forward_full_stall_has_its_own_metric_category() -> None:
     assert groups["move_forward_boundary"]["BOUNDARY_CLIPPED_FORWARD"].count == 0
 
 
+def test_joint_execution_quarter_metric_is_aggregate_only_and_populated() -> None:
+    environment, observation_array, _streams = d029._initial_environment(4, 18408)
+    current = d029._next_visible(observation_array)
+    branch = d029._branch(environment, current, Action.WAIT)
+    groups = d029._new_metric_groups()
+    d029._record_metric(
+        groups,
+        candidate=Action.WAIT,
+        executed=False,
+        quarter="Q4",
+        current=current,
+        support_count=0,
+        contact_delta=d029._contact_delta_class(branch.delta[4]),
+        termination_class=branch.termination_class,
+        boundary_class=branch.boundary_class,
+        predicted=(0.0,) * 6,
+        actual=branch.delta,
+    )
+
+    joint = groups["executed_vs_unexecuted_x_quarter"]
+    assert set(joint) == {
+        f"{execution}_{quarter}"
+        for execution in ("executed", "unexecuted")
+        for quarter in d029.D029_QUARTERS
+    }
+    assert joint["unexecuted_Q4"].count == 1
+    assert joint["executed_Q4"].count == 0
+    assert groups["executed_vs_unexecuted"]["unexecuted"].count == 1
+    assert groups["quarter"]["Q4"].count == 1
+    assert groups["all_candidates"]["all"].count == 1
+    assert groups["executed_vs_unexecuted_x_quarter"] is not groups[
+        "executed_vs_unexecuted"
+    ]
+
+
 def test_real_lifetime_matches_unchanged_d027_path() -> None:
     audited = d029._run_lifetime(18408, horizon=12, audit=True)
     _reference, reference_trace = d027._run_lifetime(
