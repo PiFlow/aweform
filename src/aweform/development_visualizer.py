@@ -3076,6 +3076,69 @@ def build_d026_development_visualization(
     return adapt_d026_trace(trace, seed=seed)
 
 
+def _validate_d030_visualization_seed(seed: int) -> None:
+    """Validate one D-030 visualization seed against its frozen set."""
+    from .d030 import _validate_d030_seed
+
+    _validate_d030_seed(seed)
+
+
+def adapt_d030_trace(
+    trace: Sequence[D021TransitionTrace],
+    *,
+    seed: int,
+    arm: str,
+    source_label: str | None = None,
+) -> DevelopmentVisualizationData:
+    """Reuse the causal finite-body renderer for a completed D-030 arm trace."""
+    from . import d030
+
+    _validate_d030_visualization_seed(seed)
+    if arm not in d030.D030_ARM_NAMES:
+        raise ValueError(f"unknown D-030 arm: {arm}")
+    return _adapt_finite_body_trace(
+        trace,
+        seed=seed,
+        source_label=source_label or f"D-030 {arm} causal lifetime",
+    )
+
+
+def build_d030_development_visualization(
+    *,
+    seed: int,
+    arm: str,
+    horizon: int = 70_000,
+) -> DevelopmentVisualizationData:
+    """Run one branch-disabled D-030 arm, then adapt its evaluator trace."""
+    from . import d030
+
+    _validate_d030_visualization_seed(seed)
+    if horizon != d030.D030_HORIZON:
+        raise ValueError(
+            "D-030 visualization requires the frozen 70,000-transition horizon"
+        )
+    trace = d030.run_d030_lifetime_trace(seed, arm=arm, horizon=horizon)
+    return adapt_d030_trace(trace, seed=seed, arm=arm)
+
+
+def build_d030_development_visualizations(
+    *,
+    seed: int,
+    horizon: int = 70_000,
+) -> tuple[DevelopmentVisualizationData, ...]:
+    """Build one canonical finite-body visualization data set per D-030 arm."""
+    from . import d030
+
+    return tuple(
+        build_d030_development_visualization(
+            seed=seed,
+            arm=arm,
+            horizon=horizon,
+        )
+        for arm in d030.D030_ARM_NAMES
+    )
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
@@ -3129,6 +3192,30 @@ def show_development_visualization(
     )
     plt.show()
     return figure
+
+
+def show_d030_development_visualizations(
+    data: Sequence[DevelopmentVisualizationData],
+    *,
+    interval_ms: int = 90,
+) -> tuple[Figure, ...]:
+    """Open one shared-renderer window for each D-030 arm before one blocking show."""
+    from . import d030
+
+    if len(data) != len(d030.D030_ARM_NAMES):
+        raise ValueError("D-030 visualization requires exactly three arm data sets")
+    if tuple(item.source_label.split(" ", 2)[1] for item in data) != (
+        "REFERENCE_NO_INFLUENCE",
+        "LEARNED_FORWARD",
+        "PERMUTED_FORWARD",
+    ):
+        raise ValueError("D-030 visualization data must be ordered by arm")
+    figures = tuple(
+        build_development_visualization_figure(item, interval_ms=interval_ms)[0]
+        for item in data
+    )
+    plt.show()
+    return figures
 
 
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -3200,6 +3287,29 @@ def d024_main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     data = build_d024_development_visualization(seed=args.seed, horizon=70_000)
     show_development_visualization(data, interval_ms=args.interval_ms)
+    return 0
+
+
+def d030_main(argv: Sequence[str] | None = None) -> int:
+    """Open three matched D-030 arm visualizations with one blocking show."""
+    from .d030 import D030_DEFAULT_DEVELOPMENT_SEEDS, D030_HORIZON
+
+    parser = argparse.ArgumentParser(
+        description="Replay all three D-030 causal steering arms."
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        required=True,
+        choices=D030_DEFAULT_DEVELOPMENT_SEEDS,
+    )
+    parser.add_argument("--interval-ms", type=_positive_int, default=90)
+    args = parser.parse_args(argv)
+    data = build_d030_development_visualizations(
+        seed=args.seed,
+        horizon=D030_HORIZON,
+    )
+    show_d030_development_visualizations(data, interval_ms=args.interval_ms)
     return 0
 
 
