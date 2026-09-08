@@ -6,7 +6,7 @@
 - **base_tree_sha:** `6cbad6863b931aec7ac56f8b8094ab2f0ff825c2`
 - **development_seeds:** `18428..18447` inclusive (20 seeds)
 - **horizon:** `70,000` real transitions per uninterrupted lifetime and arm
-- **status:** protocol frozen; substantive output pending clean executable SHA
+- **status:** protocol frozen; substantive output complete
 - **disposition:** `CONTINUING`
 
 The machine-readable compact artifact is
@@ -74,6 +74,25 @@ become exact-revisit knowledge, general counterfactual reasoning, planning, or
 a world model. A positive signal could motivate only a fresh review of a
 future bounded scaffold-displacement question; it does not authorize D-031.
 
+## Substantive output
+
+The exact ordered seed set produced 20 three-arm lifetimes from one clean
+executable SHA. Arm A completed all 20 lifetimes as `FULL_CYCLE`. Arm B also
+completed all 20 as `FULL_CYCLE`, with no additional energy/thermal termination
+or loss of reacquisition relative to Arm A. Arm C produced `FAILED_SEEK` on all
+20 seeds. This is a direct negative result for the fixed-permutation control
+and is retained without rescue or retuning.
+
+Arm B and Arm C branch-disabled matched controls passed exact trajectory,
+termination, executed-update, complete-weight, policy-RNG, and
+environment-RNG comparisons for every seed. Arm A matched the ordinary D-027
+reference in real summaries, trajectory, executed-action update digest, and
+the complete 168-weight state. All enabled evaluator branch checks, read-only
+prediction checks, and selected-branch consistency checks passed.
+
+The artifact retains the complete per-seed and pooled descriptive summaries;
+these results are not confirmatory evidence and do not authorize D-031.
+
 ## Provenance
 
 The executable probe SHA and regenerated artifact checksum are recorded below
@@ -83,7 +102,6 @@ only with the exact ordered seed block above, after validation through
 learner, steering criterion, permutation, delegation probability, metric, or
 interpretation rule may be changed in response to substantive output.
 
-- **implementation_probe_sha:** pending
-- **artifact_sha256:** pending
-- **artifact_size_bytes:** pending
-
+- **implementation_probe_sha:** `c3a2a0d4c05f99c90adf39cb4e86a75a10c61cca`
+- **artifact_sha256:** `9770b027db3091371aebac57d7815f27d847030794d1f44c377baa0a84543f1b`
+- **artifact_size_bytes:** `1876381`
