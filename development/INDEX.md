@@ -45,6 +45,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-027 | Shadow sensorimotor consequence learning | CONTINUING | [`D-027-shadow-sensorimotor-consequence-learning.md`](D-027-shadow-sensorimotor-consequence-learning.md) |
 | D-028 | D-027 residual-attribution audit | CONTINUING | [`D-028-d027-residual-attribution-audit.md`](D-028-d027-residual-attribution-audit.md) |
 | D-029 | Action-alternative consequence readiness audit | CONTINUING | [`D-029-action-alternative-readiness-audit.md`](D-029-action-alternative-readiness-audit.md) |
+| D-030 | Bounded learned SEEK steering causal influence | CONTINUING | [`D-030-bounded-learned-seek-steering.md`](D-030-bounded-learned-seek-steering.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 
