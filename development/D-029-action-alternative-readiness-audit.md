@@ -153,11 +153,18 @@ Pooled candidate-row MAE (learned / zero-change comparator) was:
 | Output | All candidates | Unexecuted candidates | Unexecuted Q4 |
 |---|---:|---:|---:|
 | `delta_energy` | `2.064e-6 / 1.514e-5` | `2.740e-6 / 1.370e-5` | `9.443e-7 / 1.362e-5` |
-| `delta_beacon_left` | `0.02210 / 0.03135` | `0.02710 / 0.03880` | `0.01157 / 0.01845` |
-| `delta_beacon_forward` | `0.01447 / 0.02781` | `0.01709 / 0.03412` | `0.00909 / 0.01748` |
-| `delta_beacon_right` | `0.02129 / 0.03118` | `0.02602 / 0.03857` | `0.01150 / 0.01852` |
+| `delta_beacon_left` | `0.02210 / 0.03135` | `0.02710 / 0.03880` | `0.01245 / 0.01996` |
+| `delta_beacon_forward` | `0.01447 / 0.02781` | `0.01709 / 0.03412` | `0.00942 / 0.01878` |
+| `delta_beacon_right` | `0.02129 / 0.03118` | `0.02602 / 0.03857` | `0.01235 / 0.02004` |
 | `delta_charging_contact` | `0.3351 / 0.3039` | `0.4468 / 0.4052` | `0.03292 / 0.02982` |
 | `delta_thermal` | `3.571e-7 / 4.179e-7` | `4.718e-7 / 4.419e-7` | `5.109e-8 / 1.701e-7` |
+
+**Erratum (2026-09-08):** the three beacon values in the `Unexecuted Q4`
+column above are the joint `unexecuted_Q4` cells retained in the accepted JSON
+artifact. The previously merged Markdown record accidentally copied the
+all-candidate Q4 beacon values into those three cells. This correction changes
+only the human-readable D-029 record; no substantive run, executable, learner,
+artifact, checksum, or interpretation boundary is changed.
 
 The boundary branch support was `876,576` full-nominal, `227,118`
 boundary-clipped, and `296,306` full-stall `MOVE_FORWARD` rows. The full-stall
