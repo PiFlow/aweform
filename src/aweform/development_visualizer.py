@@ -314,6 +314,8 @@ class DevelopmentVisualizationData:
     action_alternative_provenance: str | None = None
     shadow_geometry: DevelopmentShadowGeometry | None = None
     causal_geometry: DevelopmentCausalGeometry | None = None
+    figure_title: str | None = None
+    figure_annotation: str | None = None
 
     def __post_init__(self) -> None:
         if not self.source_label:
@@ -326,6 +328,12 @@ class DevelopmentVisualizationData:
             raise ValueError("seed must be an integer or None")
         if not self.mode_display_label:
             raise ValueError("mode_display_label must be non-empty")
+        if self.figure_title is not None and not self.figure_title:
+            raise ValueError("figure_title must be non-empty when provided")
+        if self.figure_annotation is not None and not self.figure_annotation:
+            raise ValueError(
+                "figure_annotation must be non-empty when provided"
+            )
         _validate_coordinate("world_min", self.world_min)
         _validate_coordinate("world_max", self.world_max)
         if not all(
@@ -1340,16 +1348,34 @@ def build_development_visualization_figure(
             figure.canvas.draw_idle()
 
     figure.canvas.mpl_connect("key_press_event", on_key)
-    suptitle = (
-        "AWEFORM DEVELOPMENT VISUALIZER\n"
-        f"{data.source_label} — "
-        f"{'seedless fixed-state' if data.seed is None else f'seed {data.seed}'}\n"
-        "DEVELOPMENT / EVALUATOR VIEW — NOT CONFIRMATORY EVIDENCE"
-    )
-    if has_action_alternatives:
-        figure.suptitle(suptitle, y=0.995, fontsize=11, linespacing=1.0)
+    if data.figure_title is None:
+        suptitle = (
+            "AWEFORM DEVELOPMENT VISUALIZER\n"
+            f"{data.source_label} — "
+            f"{'seedless fixed-state' if data.seed is None else f'seed {data.seed}'}\n"
+            "DEVELOPMENT / EVALUATOR VIEW — NOT CONFIRMATORY EVIDENCE"
+        )
+        if has_action_alternatives:
+            figure.suptitle(suptitle, y=0.995, fontsize=11, linespacing=1.0)
+        else:
+            figure.suptitle(suptitle, fontsize=12)
     else:
-        figure.suptitle(suptitle, fontsize=12)
+        figure.suptitle(data.figure_title, fontsize=12)
+        figure.set_label(data.figure_title)
+        if data.figure_annotation is not None:
+            figure.text(
+                0.5,
+                0.965,
+                data.figure_annotation,
+                ha="center",
+                va="top",
+                fontsize=8,
+                color="0.35",
+            )
+        manager = figure.canvas.manager
+        set_window_title = getattr(manager, "set_window_title", None)
+        if callable(set_window_title):
+            set_window_title(data.figure_title)
     if not learner_axes and alternative_axis is None:
         figure.tight_layout(rect=(0.0, 0.0, 1.0, 0.91))
     setattr(figure, "_aweform_player", player)
@@ -2833,6 +2859,8 @@ def _adapt_finite_body_trace(
     *,
     seed: int,
     source_label: str = "D-024 causal finite-body dual-contact lifetime",
+    figure_title: str | None = None,
+    figure_annotation: str | None = None,
 ) -> DevelopmentVisualizationData:
     """Convert one completed D-024-family trace to neutral replay data."""
     from . import d024
@@ -2958,6 +2986,8 @@ def _adapt_finite_body_trace(
             dock_contact_minus=dock_minus,
             contact_tolerance=d024.D024_CONTACT_TOLERANCE,
         ),
+        figure_title=figure_title,
+        figure_annotation=figure_annotation,
     )
 
 
@@ -3083,6 +3113,29 @@ def _validate_d030_visualization_seed(seed: int) -> None:
     _validate_d030_seed(seed)
 
 
+_D030_VISUALIZATION_TITLES: Final[dict[str, str]] = {
+    "REFERENCE_NO_INFLUENCE": "D-030 A — REFERENCE_NO_INFLUENCE",
+    "LEARNED_FORWARD": "D-030 B — LEARNED_FORWARD",
+    "PERMUTED_FORWARD": "D-030 C — PERMUTED_FORWARD",
+}
+_D030_VISUALIZATION_SOURCE_LABELS: Final[dict[str, str]] = {
+    **_D030_VISUALIZATION_TITLES,
+    "PERMUTED_FORWARD": (
+        "D-030 C — PERMUTED_FORWARD — FIXED-PERMUTATION ABLATION/CONTROL"
+    ),
+}
+_D030_VISUALIZATION_ANNOTATIONS: Final[dict[str, str]] = {
+    "REFERENCE_NO_INFLUENCE": (
+        "DEVELOPMENT / EVALUATOR VIEW — NOT CONFIRMATORY EVIDENCE"
+    ),
+    "LEARNED_FORWARD": "DEVELOPMENT / EVALUATOR VIEW — NOT CONFIRMATORY EVIDENCE",
+    "PERMUTED_FORWARD": (
+        "FIXED-PERMUTATION ABLATION/CONTROL — "
+        "DEVELOPMENT / EVALUATOR VIEW — NOT CONFIRMATORY EVIDENCE"
+    ),
+}
+
+
 def adapt_d030_trace(
     trace: Sequence[D021TransitionTrace],
     *,
@@ -3099,7 +3152,9 @@ def adapt_d030_trace(
     return _adapt_finite_body_trace(
         trace,
         seed=seed,
-        source_label=source_label or f"D-030 {arm} causal lifetime",
+        source_label=source_label or _D030_VISUALIZATION_SOURCE_LABELS[arm],
+        figure_title=_D030_VISUALIZATION_TITLES[arm],
+        figure_annotation=_D030_VISUALIZATION_ANNOTATIONS[arm],
     )
 
 
@@ -3204,10 +3259,8 @@ def show_d030_development_visualizations(
 
     if len(data) != len(d030.D030_ARM_NAMES):
         raise ValueError("D-030 visualization requires exactly three arm data sets")
-    if tuple(item.source_label.split(" ", 2)[1] for item in data) != (
-        "REFERENCE_NO_INFLUENCE",
-        "LEARNED_FORWARD",
-        "PERMUTED_FORWARD",
+    if tuple(item.figure_title for item in data) != tuple(
+        _D030_VISUALIZATION_TITLES[arm] for arm in d030.D030_ARM_NAMES
     ):
         raise ValueError("D-030 visualization data must be ordered by arm")
     figures = tuple(
@@ -3292,7 +3345,11 @@ def d024_main(argv: Sequence[str] | None = None) -> int:
 
 def d030_main(argv: Sequence[str] | None = None) -> int:
     """Open three matched D-030 arm visualizations with one blocking show."""
-    from .d030 import D030_DEFAULT_DEVELOPMENT_SEEDS, D030_HORIZON
+    from .d030 import (
+        D030_CANONICAL_VISUALIZATION_SEED,
+        D030_DEFAULT_DEVELOPMENT_SEEDS,
+        D030_HORIZON,
+    )
 
     parser = argparse.ArgumentParser(
         description="Replay all three D-030 causal steering arms."
@@ -3300,7 +3357,7 @@ def d030_main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--seed",
         type=int,
-        required=True,
+        default=D030_CANONICAL_VISUALIZATION_SEED,
         choices=D030_DEFAULT_DEVELOPMENT_SEEDS,
     )
     parser.add_argument("--interval-ms", type=_positive_int, default=90)
