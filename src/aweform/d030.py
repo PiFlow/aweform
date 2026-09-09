@@ -253,6 +253,7 @@ def _run_arm(
     arm: str,
     horizon: int,
     evaluator_diagnostics: bool,
+    trace_sink: list[d025.D025TransitionTrace] | None = None,
 ) -> dict[str, object]:
     if arm not in D030_ARM_NAMES:
         raise ValueError(f"unknown D-030 arm: {arm}")
@@ -401,19 +402,20 @@ def _run_arm(
             if update.prediction != predictions[action].values:
                 raise RuntimeError("D-030 executed pre-update prediction changed")
 
-        trace.append(
-            d025._make_trace(
-                transition_index=transition_index,
-                mode_before=mode_before,
-                mode_after=mode_after,
-                action=action,
-                current=current,
-                observation=observation_array,
-                telemetry=telemetry,
-                reward=reward,
-                info=info,
-            )
+        record = d025._make_trace(
+            transition_index=transition_index,
+            mode_before=mode_before,
+            mode_after=mode_after,
+            action=action,
+            current=current,
+            observation=observation_array,
+            telemetry=telemetry,
+            reward=reward,
+            info=info,
         )
+        trace.append(record)
+        if trace_sink is not None:
+            trace_sink.append(record)
         transitions += 1
 
         if (
@@ -698,6 +700,52 @@ def _run_lifetime(
         horizon=horizon,
         evaluator_diagnostics=audit,
     )
+
+
+def run_d030_lifetime_trace(
+    seed: int = D030_CANONICAL_VISUALIZATION_SEED,
+    *,
+    arm: str = "REFERENCE_NO_INFLUENCE",
+    horizon: int = D030_HORIZON,
+) -> tuple[d025.D025TransitionTrace, ...]:
+    """Run one branch-disabled D-030 arm and retain its causal trace."""
+    _validate_d030_seed(seed)
+    if arm not in D030_ARM_NAMES:
+        raise ValueError(f"unknown D-030 arm: {arm}")
+    if horizon != D030_HORIZON:
+        raise ValueError(
+            "D-030 visualization requires the frozen 70,000-transition horizon"
+        )
+    trace: list[d025.D025TransitionTrace] = []
+    result = _run_arm(
+        seed,
+        arm=arm,
+        horizon=horizon,
+        evaluator_diagnostics=False,
+        trace_sink=trace,
+    )
+    if not trace:
+        raise RuntimeError("D-030 lifetime trace contains no completed transitions")
+    if result["transitions"] != len(trace):
+        raise RuntimeError("D-030 lifetime trace length disagrees with the run")
+
+    final_telemetry = trace[-1].telemetry
+    naturally_terminated = (
+        len(trace) < horizon
+        and final_telemetry.terminated
+        and not final_telemetry.truncated
+    )
+    horizon_censored = (
+        len(trace) == horizon
+        and not final_telemetry.terminated
+        and final_telemetry.truncated
+    )
+    if not naturally_terminated and not horizon_censored:
+        raise RuntimeError(
+            "D-030 lifetime trace is neither naturally terminated before the "
+            "frozen horizon nor correctly horizon-censored"
+        )
+    return tuple(trace)
 
 
 def _aggregate_diagnostics(records: Sequence[dict[str, object]]) -> dict[str, object]:
