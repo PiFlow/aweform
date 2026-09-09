@@ -4649,7 +4649,7 @@
     ]
   },
   "horizon": 70000,
-  "implementation_probe_sha": "a02630e6a5b5e87761d7c84d193bf4d87991b2e9",
+  "implementation_probe_sha": "a02630e1f40686c45479ce9f303d89c813fa2b94",
   "interpretation": {
     "argued_against": [
       "simple boundary-stall concentration as the main account, because Arm B had zero clipped/stalled forward events",
