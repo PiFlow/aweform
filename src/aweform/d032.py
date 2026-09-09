@@ -1483,6 +1483,9 @@ def run_d032_audit(
         ],
         "pooled_fixed_window_motion": _pooled_onset_windows(seed_results),
     }
+    pooled_fidelity = {
+        arm: _pooled_fidelity(seed_results, arm) for arm in D032_ARM_NAMES
+    }
     for item in seed_results:
         item.pop("_one_step_records")
         diagnostics = cast(dict[str, dict[str, object]], item["diagnostics"])
@@ -1550,9 +1553,7 @@ def run_d032_audit(
                 }
                 for item in seed_results
             },
-            "pooled": {
-                arm: _pooled_fidelity(seed_results, arm) for arm in D032_ARM_NAMES
-            },
+            "pooled": pooled_fidelity,
         },
         "arm_a_delegated_event_diagnostics": {
             str(item["seed"]): cast(
