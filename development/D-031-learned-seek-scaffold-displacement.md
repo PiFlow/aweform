@@ -6,8 +6,11 @@
 - **base_tree_sha:** `ceed52790b1fa3726fe2e44a28c6c56f10272258`
 - **development_seeds:** `18448..18467` inclusive (20 seeds, ordered)
 - **horizon:** `70,000` real transitions per uninterrupted lifetime and arm
-- **status:** protocol frozen; substantive execution pending
+- **status:** protocol frozen; substantive output complete
 - **disposition:** `CONTINUING`
+- **implementation_probe_sha:** `676499fe59d1ed45b4c2a414d4f7db207ff86ced`
+- **artifact_sha256:** `30dfa4e97909da929bf6450f8a95c7e9642f4c5196b356e28f667ee14f4179ce`
+- **artifact_size_bytes:** `2097702`
 
 The machine-readable substantive artifact will be
 [`D-031-learned-seek-scaffold-displacement.json`](D-031-learned-seek-scaffold-displacement.json).
@@ -98,6 +101,48 @@ planning, world-model, intelligence, consciousness, emotion, subjective
 experience, genuine-life, metabolism, or hardware-autonomy claim is authorized.
 No positive result authorizes D-032 or any successor.
 
+## Substantive output
+
+The corrected clean execution used the exact ordered seeds `18448..18467`,
+horizon `70,000`, and five lifetimes per seed: the three diagnostics-enabled
+arms plus matched branch-disabled runs for Arms B/C. The final artifact was
+regenerated a second time from the same executable SHA and compared byte for
+byte; both copies have SHA-256
+`30dfa4e97909da929bf6450f8a95c7e9642f4c5196b356e28f667ee14f4179ce` and size
+`2,097,702` bytes.
+
+Arm A completed `20/20 FULL_CYCLE` lifetimes with `20` reacquisitions, `20`
+full recharges, and `20` post-recharge redepartures. Its resolved SEEK latency
+mean/median/P90/P95/maximum was `1473.8 / 954.5 / 3785 / 4826 / 5477`
+transitions. Arm-A false-contact SEEK delegation was `9,768` of `29,496`
+decisions, with `7,130` effective perturbations.
+
+Arm B produced `20/20 FAILED_SEEK` outcomes, zero reacquisitions, and 20
+energy-depletion terminations. Arm C produced the same `20/20 FAILED_SEEK`,
+zero reacquisition, and 20 energy-depletion pattern. Arms B/C recorded zero
+false-contact SEEK delegation, exactly one retained legacy arbitration draw per
+false-contact SEEK decision (`665,926` B decisions/draws and `612,074` C
+decisions/draws pooled), and zero false-contact SEEK explorer calls. Their
+branch-enabled versus branch-disabled real summaries, visible trajectories,
+termination, executed-update digests, complete 168-weight states, and both
+RNG states were exactly equal for every seed. Arm C's adversarial extreme
+prediction isolation also preserved the real trajectory and update state.
+
+The pooled paired B−A and B−C latency and reacquisition-energy contrasts are
+unresolved because neither no-detrap arm reacquired on any seed. The artifact
+retains all null paired fields, all per-seed outcomes, branch-truth and
+learned/greedy diagnostics, boundary/quarter strata, and explicit counts and
+lists: `20` lost seeds, `0` learned-rescue seeds, `0` all-three-success seeds,
+and `20` seeds where both no-detrap arms failed.
+
+This is a direct Development-lane negative result for scaffold displacement at
+the current competence: the retained stochastic de-trapping scaffold remained
+functionally important on every matched seed. It does not justify a confidence
+gate, new sensor, larger learner, tuned delegation, rescue heuristic, or
+successor task. It does not establish planning, a world model, general
+counterfactual reasoning, intelligence, consciousness, emotion, subjective
+experience, genuine life, metabolism, or hardware autonomy.
+
 ## Provenance and freeze
 
 The exact ordered seed block is validated through
@@ -132,8 +177,19 @@ seeds, horizon, and measured outcomes were not tuned or changed in response;
 the reporting-only correction is followed by a complete three-arm rerun from
 scratch.
 
-**surprised_by:** Substantive output is pending at protocol freeze; no result
-or surprise is asserted.
+## Validation and disposition
 
-**disposition:** `CONTINUING` pending the authorized descriptive run. A later
-result will preserve null and negative outcomes and cannot authorize D-032.
+Focused D-031 tests pass (`6 passed`); the full suite passes (`915 passed`,
+`7 warnings`), Ruff is clean, strict mypy is clean, compileall is clean, and
+`git diff --check` is clean. The canonical reservation validator and exact
+D-031 seed guard accepted the ordered block. The deterministic second artifact
+regeneration was byte-for-byte identical. Exact-current-HEAD GitHub CI/checks
+remain required before handoff.
+
+**surprised_by:** Removing the stochastic delegation was not enough for either
+no-detrap arm: both lost resource reacquisition and depleted energy on all 20
+fresh seeds, while the unchanged D-030 learned-with-de-trapping comparator
+completed every lifetime. This is retained as a negative result, not rescued.
+
+**disposition:** `CONTINUING`. The result is descriptive Development-lane
+context only and cannot authorize D-032.
