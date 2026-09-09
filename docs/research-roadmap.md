@@ -139,6 +139,8 @@ Within a developmental stage, short harness horizons do not reset the organism. 
 
 Later developmental directions include nonstationarity, partial observability that earns memory, stronger prediction and planning, safe-surplus exploration, quiescent consolidation when its function is justified, sandboxed computer-native embodiment, and eventual physical embodiment.
 
+The non-authorizing [`World-Model Research Direction`](world-model-developmental-direction.md) preserves current JEPA/world-model research, a strict Aweform world-model definition, qualification levels, and developmental gates for future reference. It does not pre-authorize a world-model architecture, planner, learned representation, D-stage, ADR, or dependency.
+
 Darwinian evolution, heredity, and cross-stage inherited learned state remain separate later research questions rather than shortcuts for finding the first learner.
 
 ## I. Decision-log convention
