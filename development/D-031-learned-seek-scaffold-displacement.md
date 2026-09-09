@@ -119,6 +119,19 @@ the repository was still at the authorized base with uncommitted D-031 changes.
 The clean freeze SHA below supersedes those invalid smoke executions, and the
 authorized three-arm block is rerun from scratch from that SHA.
 
+### Invalidated clean execution
+
+The first clean substantive execution was produced from executable SHA
+`cfe79df70e75d568288c015e37d51ec83349e619`. Its artifact SHA-256 was
+`1ed28106fddeca06e542ec20ef70c03d51fc02c0ea30c136e5b49b3edcf894d4` and its
+size was `1,850,885` bytes. That artifact is invalidated before acceptance
+because its pooled compact report omitted the required effective-perturbation
+and delegated-action Arm-A aggregates, explicit comparison counts, and
+boundary-stratified fidelity fields. The protocol, implementation mechanism,
+seeds, horizon, and measured outcomes were not tuned or changed in response;
+the reporting-only correction is followed by a complete three-arm rerun from
+scratch.
+
 **surprised_by:** Substantive output is pending at protocol freeze; no result
 or surprise is asserted.
 

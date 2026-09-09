@@ -758,6 +758,43 @@ def _aggregate_diagnostics(records: Sequence[dict[str, object]]) -> dict[str, ob
         }
         for quarter in D031_QUARTERS
     }
+    by_boundary = {
+        category: {
+            "causal_choice_fidelity": _selection(
+                [
+                    record
+                    for record in records
+                    if record["move_forward_boundary"] == category
+                ],
+                "causal_is_optimal",
+            ),
+            "greedy_choice_fidelity": _selection(
+                [
+                    record
+                    for record in records
+                    if record["move_forward_boundary"] == category
+                ],
+                "greedy_is_optimal",
+            ),
+            "learned_choice_fidelity": _selection(
+                [
+                    record
+                    for record in records
+                    if record["move_forward_boundary"] == category
+                ],
+                "learned_is_optimal",
+            ),
+            "learned_vs_greedy": _agreement(
+                [
+                    record
+                    for record in records
+                    if record["move_forward_boundary"] == category
+                ],
+                "learned_agrees_greedy",
+            ),
+        }
+        for category in D031_BOUNDARY_CLASSES
+    }
     return {
         "non_delegated_seek_decisions": len(records),
         "causal_choice_fidelity": _selection(records, "causal_is_optimal"),
@@ -778,6 +815,7 @@ def _aggregate_diagnostics(records: Sequence[dict[str, object]]) -> dict[str, ob
         },
         "boundary_class_selection": boundary,
         "by_quarter": by_quarter,
+        "by_boundary": by_boundary,
         "selected_action_branch_consistency": {
             "sample_count": len(records),
             "exact_count": sum(
@@ -1091,7 +1129,7 @@ def _pooled_comparisons(
         "all_three_success_seeds",
         "all_no_detrap_arms_failed_seeds",
     )
-    return {
+    lists = {
         name: [
             cast(int, result["seed"])
             for result in results
@@ -1099,6 +1137,15 @@ def _pooled_comparisons(
             in cast(list[int], cast(dict[str, object], result["comparisons"])[name])
         ]
         for name in names
+    }
+    return {
+        **lists,
+        "lost_seed_count": len(lists["lost_seeds"]),
+        "learned_rescue_seed_count": len(lists["learned_rescue_seeds"]),
+        "all_three_success_seed_count": len(lists["all_three_success_seeds"]),
+        "all_no_detrap_arms_failed_seed_count": len(
+            lists["all_no_detrap_arms_failed_seeds"]
+        ),
     }
 
 
@@ -1161,6 +1208,30 @@ def run_d031_probe(
                     ]
                     for result in arm_results
                 ),
+                "effective_perturbations": sum(
+                    cast(dict[str, int], result["seek_arbitration"])[
+                        "effective_perturbations"
+                    ]
+                    for result in arm_results
+                ),
+                "delegated_effective_perturbations": sum(
+                    cast(dict[str, int], result["seek_arbitration"])[
+                        "delegated_effective_perturbations"
+                    ]
+                    for result in arm_results
+                ),
+                "delegated_actions_by_action_type": {
+                    action.name: sum(
+                        cast(
+                            dict[str, int],
+                            cast(dict[str, object], result["seek_arbitration"])[
+                                "delegated_actions_by_action_type"
+                            ],
+                        )[action.name]
+                        for result in arm_results
+                    )
+                    for action in Action
+                },
             },
         }
 
