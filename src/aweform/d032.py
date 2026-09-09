@@ -853,6 +853,28 @@ def _run_length_distribution(actions: list[Action]) -> dict[str, int]:
     return _counter_dict(runs)
 
 
+def _left_right_alternation_runs(actions: list[Action]) -> list[int]:
+    """Return maximal runs whose consecutive actions alternate left/right."""
+    runs: list[int] = []
+    index = 0
+    turn_actions = {Action.TURN_LEFT, Action.TURN_RIGHT}
+    while index < len(actions):
+        if actions[index] not in turn_actions:
+            index += 1
+            continue
+        end = index
+        while (
+            end + 1 < len(actions)
+            and actions[end + 1] in turn_actions
+            and actions[end + 1] is not actions[end]
+        ):
+            end += 1
+        if end > index:
+            runs.append(end - index + 1)
+        index = end + 1
+    return runs
+
+
 def _seek_diagnostics(
     result: dict[str, object], trace: tuple[d025.D025TransitionTrace, ...]
 ) -> dict[str, object]:
@@ -869,6 +891,9 @@ def _seek_diagnostics(
     action_counts = Counter[str]()
     action_transitions = Counter[str]()
     run_lengths = Counter[str]()
+    alternation_run_lengths = Counter[str]()
+    alternation_run_count = 0
+    longest_alternation_run = 0
     longest_move = 0
     turn_sign_reversals = 0
     episode_summaries: list[dict[str, object]] = []
@@ -884,6 +909,12 @@ def _seek_diagnostics(
             if left is Action.TURN_RIGHT and right is Action.TURN_LEFT:
                 turn_sign_reversals += 1
         run_lengths.update(_run_length_distribution(actions))
+        alternation_runs = _left_right_alternation_runs(actions)
+        alternation_run_count += len(alternation_runs)
+        longest_alternation_run = max(
+            longest_alternation_run, max(alternation_runs, default=0)
+        )
+        alternation_run_lengths.update(str(length) for length in alternation_runs)
         move_run = 0
         longest_episode_move = 0
         for action in actions:
@@ -971,6 +1002,11 @@ def _seek_diagnostics(
         ),
         "exact_same_action_run_length_distribution": _counter_dict(run_lengths),
         "longest_consecutive_move_forward_run": longest_move,
+        "left_right_alternation_run_count": alternation_run_count,
+        "left_right_alternation_run_length_distribution": _counter_dict(
+            alternation_run_lengths
+        ),
+        "longest_left_right_alternation_run": longest_alternation_run,
         "action_to_action_transition_matrix": {
             left: {
                 right: action_transitions[f"{left}->{right}"] for right in _ACTION_NAMES
@@ -1004,6 +1040,7 @@ def _merge_nested_counts(destination: dict[str, int], source: dict[str, int]) ->
 def _pooled_seek_diagnostics(items: list[dict[str, object]]) -> dict[str, object]:
     boundary_counts: dict[str, int] = {}
     run_lengths: dict[str, int] = {}
+    alternation_run_lengths: dict[str, int] = {}
     action_counts: dict[str, int] = {}
     transition_matrix = {
         left: {right: 0 for right in _ACTION_NAMES} for left in _ACTION_NAMES
@@ -1017,6 +1054,8 @@ def _pooled_seek_diagnostics(items: list[dict[str, object]]) -> dict[str, object
     final_distances: list[float] = []
     episode_count = 0
     longest_move = 0
+    alternation_run_count = 0
+    longest_alternation_run = 0
     reversals = 0
     for item in items:
         episode_count += cast(int, item["seek_episode_count"])
@@ -1026,6 +1065,13 @@ def _pooled_seek_diagnostics(items: list[dict[str, object]]) -> dict[str, object
         _merge_nested_counts(
             run_lengths,
             cast(dict[str, int], item["exact_same_action_run_length_distribution"]),
+        )
+        _merge_nested_counts(
+            alternation_run_lengths,
+            cast(
+                dict[str, int],
+                item["left_right_alternation_run_length_distribution"],
+            ),
         )
         _merge_nested_counts(action_counts, cast(dict[str, int], item["action_counts"]))
         raw = cast(dict[str, list[float]], item["_raw_distributions"])
@@ -1044,6 +1090,11 @@ def _pooled_seek_diagnostics(items: list[dict[str, object]]) -> dict[str, object
             _merge_nested_counts(transition_matrix[left], row)
         longest_move = max(
             longest_move, cast(int, item["longest_consecutive_move_forward_run"])
+        )
+        alternation_run_count += cast(int, item["left_right_alternation_run_count"])
+        longest_alternation_run = max(
+            longest_alternation_run,
+            cast(int, item["longest_left_right_alternation_run"]),
         )
         reversals += cast(int, item["consecutive_turn_heading_sign_reversals"])
     return {
@@ -1070,6 +1121,9 @@ def _pooled_seek_diagnostics(items: list[dict[str, object]]) -> dict[str, object
         ),
         "exact_same_action_run_length_distribution": run_lengths,
         "longest_consecutive_move_forward_run": longest_move,
+        "left_right_alternation_run_count": alternation_run_count,
+        "left_right_alternation_run_length_distribution": alternation_run_lengths,
+        "longest_left_right_alternation_run": longest_alternation_run,
         "action_to_action_transition_matrix": transition_matrix,
         "cumulative_absolute_heading_change_distribution": _json_number_summary(
             heading
