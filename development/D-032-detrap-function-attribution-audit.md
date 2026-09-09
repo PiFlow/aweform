@@ -68,12 +68,16 @@ confirmatory evidence:
   exact one-step truth argmax on `7/20` seeds, B's learned action was in the
   argmax on `14/20`, and the delegation changed the action on `17/20`.
   A/B candidate predictions were exactly equal on `20/20` onsets.
+- After matched treatment onset, A moved materially farther and reached
+  `20/20` reacquisitions by the `4096`-step window, while B reached `0/20`.
 - Whole-SEEK boundary counts were A: `9` clipped, `6` stalled, `5,637`
-  nominal; B: `0`, `0`, `163`; C: `0`, `0`, `123,856`.
+  nominal; B: `0`, `0`, `163`; C: `0`, `0`, `123,856`. Thus B had zero
+  clipped/stalled forward events while its failure was dominated by extreme
+  left/right alternation: `35,969` alternation runs, with a longest run of
+  `33,297`.
 - Maximal left/right alternation runs were A: `1,926` with longest length
-  `26`; B: `35,969` with longest length `33,297`; C: `0`. This is a
-  behavioural description, not proof that symmetry breaking is the sole
-  function of delegation.
+  `26`; C: `0`. This is a behavioural description, not proof that symmetry
+  breaking is the sole function of delegation.
 
 The pooled first-onset window summaries below report means across the 20
 matched seeds. Distance change is final minus onset evaluator distance to the
@@ -97,21 +101,35 @@ choice treated as evaluator-only shadow information, were:
 - B non-delegated SEEK: causal `0.8042`, greedy `0.5439`, learned `0.8042`.
 - C non-delegated SEEK: causal/greedy `0.7978`, shadow learned `0.9610`.
 
+The artifact retains the delegated-event timing per seed and the complete
+effective-versus-ineffective fixed-window family pooled across Arm-A events
+at windows `1, 4, 16, 64, 256, 1024, 4096`, including event counts,
+motion/distance/beacon/heading/energy summaries, action and boundary counts,
+and reacquisition counts. These comparisons are explicitly state-confounded
+and descriptive, not matched causal effects.
+
 ## Interpretation and limitations
 
-Fact: the unchanged stochastic scaffold is associated with the only arm that
-completed the accepted 20-seed full-cycle support, while both no-detrap arms
-failed SEEK on every reused seed. Fact: the fixed-window, branch-truth,
-whole-SEEK, run/alternation, event-timing, and D-031 fidelity diagnostics are
-available per seed and pooled in the artifact.
+Observed: the unchanged stochastic scaffold is associated with the only arm
+that completed the accepted 20-seed full-cycle support, while both no-detrap
+arms failed SEEK on every reused seed. B had no clipped/stalled forward
+events but exhibited the extreme left/right alternation described above. A's
+matched-onset continuation moved farther and reacquired on all 20 seeds by
+the 4096-step window, while B reacquired on none. At the exact matched onset,
+B was one-step truth-optimal on `14/20` seeds versus A on `7/20`.
 
-Bounded inference: the observations are directionally consistent with one or
-more of boundary/stall escape, temporal persistence or sequence generation,
-symmetry-breaking/oscillation escape, prediction/selection deficiency,
-non-myopic benefit, and experience diversification. The audit does not
-identify a unique function. Event-centred effective-versus-ineffective
-comparisons are explicitly marked state-confounded and must not be read as a
-randomized attribution of effectiveness.
+Supported inference, without a unique attribution: temporal persistence /
+sequence generation and symmetry-breaking/non-myopic diversification are
+better supported by this audit than a simple boundary-stall concentration
+account or a claim that the explorer wins mainly by choosing the immediately
+best one-step action. The absence of B boundary stalls argues against the
+first account, while B's stronger exact-onset one-step truth membership argues
+against the second. Prediction/selection deficiency remains partly unresolved
+because later SEEK fidelity is imperfect. The separate contributions of
+temporal persistence, symmetry breaking, non-myopic benefit, and experience
+diversification also remain unresolved. Event-centred
+effective-versus-ineffective comparisons are explicitly state-confounded and
+must not be read as randomized attribution of effectiveness.
 
 This is a Development-lane descriptive result. It makes no confirmatory
 claim, does not change any durable boundary, and authorizes no rescue, new

@@ -1259,6 +1259,7 @@ def _delegated_event_diagnostics(
     result: dict[str, object],
     trace: tuple[d025.D025TransitionTrace, ...],
     events: list[_CapturedDecision],
+    raw_metrics: dict[str, dict[str, list[dict[str, object]]]] | None = None,
 ) -> dict[str, object]:
     trace_map = _trace_map(trace)
     classified: dict[str, list[_CapturedDecision]] = {
@@ -1278,6 +1279,7 @@ def _delegated_event_diagnostics(
     ranges = _seek_ranges(result)
     for label, selected in classified.items():
         windows: dict[str, object] = {}
+        raw_by_window: dict[str, list[dict[str, object]]] = {}
         for window in D032_WINDOWS:
             values: list[dict[str, object]] = []
             for event in selected:
@@ -1304,7 +1306,10 @@ def _delegated_event_diagnostics(
                         trace_map=trace_map,
                     )
                 )
+            raw_by_window[str(window)] = values
             windows[str(window)] = _aggregate_event_metrics(values, window)
+        if raw_metrics is not None:
+            raw_metrics[label] = raw_by_window
         by_effectiveness[label] = {
             "event_count": len(selected),
             "state_confounded": True,
@@ -1396,17 +1401,25 @@ def _seed_result(
     onset_transition = onset.get("treatment_transition")
     onset_index = cast(int, onset_transition) if onset_transition is not None else None
     arm_diagnostics: dict[str, object] = {}
+    raw_event_metrics: dict[
+        str, dict[str, dict[str, list[dict[str, object]]]]
+    ] = {}
     for arm in D032_ARM_NAMES:
+        arm_raw_event_metrics: dict[str, dict[str, list[dict[str, object]]]] = {}
         arm_diagnostics[arm] = {
             "whole_seek": _seek_diagnostics(runs[arm], traces[arm]),
             "detrap_event_timing": _event_timing(
                 runs[arm], instrumentation[arm].events
             ),
             "delegated_event_centered": _delegated_event_diagnostics(
-                runs[arm], traces[arm], instrumentation[arm].events
+                runs[arm],
+                traces[arm],
+                instrumentation[arm].events,
+                arm_raw_event_metrics,
             ),
             "one_step_fidelity": _one_step_fidelity(runs[arm], onset_index),
         }
+        raw_event_metrics[arm] = arm_raw_event_metrics
     return {
         "seed": seed,
         "replay_equivalence": replays,
@@ -1420,6 +1433,7 @@ def _seed_result(
             for arm in D032_ARM_NAMES
         },
         "diagnostics": arm_diagnostics,
+        "_delegated_event_raw_metrics": raw_event_metrics,
         "_one_step_records": {
             arm: runs[arm]["_decision_records"] for arm in D032_ARM_NAMES
         },
@@ -1490,6 +1504,47 @@ def _pooled_onset_windows(seed_results: list[dict[str, object]]) -> dict[str, ob
     }
 
 
+def _pooled_delegated_event_diagnostics(
+    seed_results: list[dict[str, object]],
+) -> dict[str, object]:
+    pooled_raw: dict[str, dict[str, list[dict[str, object]]]] = {
+        label: {str(window): [] for window in D032_WINDOWS}
+        for label in ("effective", "ineffective")
+    }
+    for item in seed_results:
+        raw_by_arm = cast(
+            dict[str, dict[str, dict[str, list[dict[str, object]]]]],
+            item["_delegated_event_raw_metrics"],
+        )
+        arm_a_raw = raw_by_arm["LEARNED_WITH_DETRAP"]
+        for label in pooled_raw:
+            for window in D032_WINDOWS:
+                pooled_raw[label][str(window)].extend(
+                    arm_a_raw[label][str(window)]
+                )
+
+    pooled: dict[str, object] = {
+        "state_confounded": True,
+        "comparison": (
+            "Descriptive effective-versus-ineffective Arm-A delegated-event "
+            "comparisons; event classes are state-confounded and are not "
+            "randomized causal effects."
+        ),
+    }
+    for label in ("effective", "ineffective"):
+        pooled[label] = {
+            "event_count": len(pooled_raw[label][str(D032_WINDOWS[0])]),
+            "state_confounded": True,
+            "windows": {
+                str(window): _aggregate_event_metrics(
+                    pooled_raw[label][str(window)], window
+                )
+                for window in D032_WINDOWS
+            },
+        }
+    return pooled
+
+
 def _seed_whole_seek(seed_result: dict[str, object], arm: str) -> dict[str, object]:
     diagnostics = cast(dict[str, dict[str, object]], seed_result["diagnostics"])
     return cast(dict[str, object], diagnostics[arm]["whole_seek"])
@@ -1540,8 +1595,12 @@ def run_d032_audit(
     pooled_fidelity = {
         arm: _pooled_fidelity(seed_results, arm) for arm in D032_ARM_NAMES
     }
+    pooled_delegated_event_diagnostics = _pooled_delegated_event_diagnostics(
+        seed_results
+    )
     for item in seed_results:
         item.pop("_one_step_records")
+        item.pop("_delegated_event_raw_metrics")
         diagnostics = cast(dict[str, dict[str, object]], item["diagnostics"])
         for arm in D032_ARM_NAMES:
             cast(dict[str, object], diagnostics[arm]["whole_seek"]).pop(
@@ -1610,31 +1669,58 @@ def run_d032_audit(
             "pooled": pooled_fidelity,
         },
         "arm_a_delegated_event_diagnostics": {
-            str(item["seed"]): cast(
-                dict[str, object],
-                cast(dict[str, object], item["diagnostics"])["LEARNED_WITH_DETRAP"],
-            )["detrap_event_timing"]
-            for item in seed_results
+            "per_seed": {
+                str(item["seed"]): cast(
+                    dict[str, object],
+                    cast(dict[str, object], item["diagnostics"])[
+                        "LEARNED_WITH_DETRAP"
+                    ],
+                )["detrap_event_timing"]
+                for item in seed_results
+            },
+            "pooled_event_centered": pooled_delegated_event_diagnostics,
+            "state_confounded": True,
         },
         "results": seed_results,
         "interpretation": {
             "lane": "Development",
             "confirmatory_claim": False,
             "observed": (
-                "direct trajectory, action, evaluator geometry, branch-truth, and "
-                "replay-equivalence measurements"
+                "B had zero clipped/stalled forward events while its failure was "
+                "dominated by 35,969 left/right alternation runs with a longest "
+                "run of 33,297; after matched treatment onset A moved materially "
+                "farther and reached 20/20 reacquisitions by the 4096-step window "
+                "while B reached 0/20; at exact onset B was one-step truth-optimal "
+                "on 14/20 seeds versus A on 7/20, alongside direct trajectory, "
+                "action, evaluator geometry, branch-truth, and replay-equivalence "
+                "measurements"
             ),
             "supported_inference": (
-                "candidate functions may be directionally consistent with the "
-                "fixed-window and one-step contrasts, without a forced winner"
+                "Temporal persistence / sequence generation and "
+                "symmetry-breaking / non-myopic diversification are better "
+                "supported by this audit than a simple boundary-stall "
+                "concentration account or a claim that the explorer wins mainly "
+                "by choosing the immediately best one-step action. This remains "
+                "a bounded, non-unique inference: the audit does not identify "
+                "one necessary function"
             ),
+            "argued_against": [
+                "simple boundary-stall concentration as the main account, "
+                "because Arm B had zero clipped/stalled forward events",
+                "the claim that Arm A wins mainly through immediately best "
+                "one-step actions, because B was truth-optimal on 14/20 exact "
+                "onsets versus A on 7/20",
+            ],
+            "partly_unresolved": [
+                "prediction/selection deficiency remains partly unresolved "
+                "because later SEEK fidelity is imperfect",
+                "the separate causal contributions of temporal persistence, "
+                "symmetry breaking, non-myopic benefit, and experience "
+                "diversification",
+            ],
             "unresolved_hypotheses": [
-                "boundary/stall escape",
-                "temporal persistence / sequence generation",
-                "symmetry breaking / oscillation escape",
                 "prediction/selection deficiency",
-                "non-myopic benefit",
-                "experience diversification",
+                "a unique causal function of the stochastic scaffold",
             ],
             "state_confounded_event_comparisons": True,
             "no_behavior_change_authorized": True,
