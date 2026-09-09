@@ -7,9 +7,9 @@
 - **base_tree_sha:** `4940d5fcaf82ef498db6fc58d8eadc23f5724d0c`
 - **development_seeds:** `18468..18487` inclusive (20 seeds, ordered and reused from D-031R1)
 - **horizon:** `70,000` real transitions per uninterrupted lifetime and arm
-- **implementation_probe_sha:** `348aa2d4a8dd8684dc3a6506edfcfb752395594c`
-- **artifact_sha256:** `6ffe5f1b29ced5b6df5bf206ad69b9293805a8db6bd4cffbb6b29254deef64da`
-- **artifact_size_bytes:** `13,664,002`
+- **implementation_probe_sha:** `a02630e6a5b5e87761d7c84d193bf4d87991b2e9`
+- **artifact_sha256:** `d340e4f1cede19f9ca775bd07d1c436050e54e9e5148bfb4a391690612a22868`
+- **artifact_size_bytes:** `13,746,074`
 - **status:** evaluator output complete
 - **disposition:** `CONTINUING`
 
