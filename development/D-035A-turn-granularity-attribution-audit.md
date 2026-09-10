@@ -132,8 +132,13 @@ and is also stored in the JSON artifact.
 
 - **protocol_only_freeze_sha:** `fa36c8097364e224be8442f1b302656e52d21db6`
 - **implementation_probe_sha:** `fa36c8097364e224be8442f1b302656e52d21db6`
-- **artifact_sha256:** to be recorded after official deterministic generation
-- **artifact_size_bytes:** to be recorded after official deterministic generation
+- **artifact_sha256:** `c9acba47fbc8f322c494b4114feeb3012e7a9e867b0eab29ba0dc22fc7e5aab9`
+- **artifact_size_bytes:** `12,762,450`
+
+The artifact was regenerated with the same clean executable SHA and was
+byte-for-byte identical to the official artifact (`cmp` and SHA-256 both
+matched). No protocol or executable source was changed between the two
+generations.
 
 If a genuine implementation defect invalidates an official run, its executable
 SHA, artifact checksum (if any), command, reason, and provenance remain
@@ -153,7 +158,49 @@ reacquisition is not sufficient for docking. If no finer angle helps, the
 coarse-quantization hypothesis is insufficient on this support. Any failed
 45° identity invalidates treatment interpretation.
 
-**surprised_by:** to be recorded from the frozen official output without
-changing the protocol.
+## Official descriptive output
+
+The official output contains all 20 exact Arm-B replays. The
+`FIRST_FALSE_CONTACT_SEEK` anchor was available for all 20 seeds; the exact
+`ALT8_ESTABLISHED` anchor was available for 17 seeds, with the accepted null
+support retained for seeds `18471`, `18473`, and `18478`. Every available
+anchor passed 45° continuation equivalence, canonical/reverse condition order
+invariance, and read-only truth-branch order invariance. All 148 available
+condition branches ran the full 4,096-transition cap, with zero dual-contact
+reacquisitions.
+
+The pooled descriptive diagnostics are below. `truth argmax` is the fraction
+of false-contact SEEK arbitration decisions for which the learned-selected
+action was also the read-only one-step truth argmax. MAE is prequential and
+uses the branch's actual six-channel observation after each update.
+
+| anchor | condition | seeds | turn actions | strict L/R runs (max) | all-six MAE | turn MAE | truth argmax |
+|---|---|---:|---:|---:|---:|---:|---:|
+| FIRST_FALSE_CONTACT_SEEK | TURN_45_CONTROL | 20 | 81,758 | 6,618 (4,094) | 0.00129401 | 0.00125895 | 0.7903 |
+| FIRST_FALSE_CONTACT_SEEK | TURN_5 | 20 | 81,811 | 52 (4,075) | 0.00031368 | 0.00029132 | 0.2762 |
+| FIRST_FALSE_CONTACT_SEEK | TURN_2 | 20 | 81,804 | 128 (4,050) | 0.00016864 | 0.00014671 | 0.2776 |
+| FIRST_FALSE_CONTACT_SEEK | TURN_1 | 20 | 81,813 | 247 (4,008) | 0.00010648 | 0.00008735 | 0.2691 |
+| ALT8_ESTABLISHED | TURN_45_CONTROL | 17 | 69,622 | 695 (4,096) | 0.00020417 | 0.00020135 | 0.8186 |
+| ALT8_ESTABLISHED | TURN_5 | 17 | 69,611 | 37 (4,095) | 0.00003211 | 0.00002620 | 0.5298 |
+| ALT8_ESTABLISHED | TURN_2 | 17 | 69,623 | 75 (4,087) | 0.00003226 | 0.00002949 | 0.4122 |
+| ALT8_ESTABLISHED | TURN_1 | 17 | 69,632 | 164 (4,075) | 0.00002988 | 0.00002988 | 0.3829 |
+
+Relative to the 45° controls, the finer-angle branches showed substantially
+lower strict alternation-run counts and lower prequential error on both
+anchors. Their truth-argmax fractions were also lower, so the unchanged
+learner's selected action was less aligned with the evaluator-only
+one-step truth ranking under these counterfactual continuations. These are
+descriptive observations on the authorized support only: because no branch
+reacquired, the output does not show that finer turns improve docking, and
+the fixed canonical timestep and energy exposure remain a confound. The
+result is consistent with, but does not prove, a geometric/kinematic
+contribution from the 45° turn quantum to the observed oscillation.
+
+**surprised_by:** All finer-angle branches reduced alternation-run counts and
+prequential error relative to their 45° controls, but none reacquired within
+the fixed 4,096-transition window; the lower truth-argmax fractions also show
+that lower prediction error did not translate into better one-step action
+selection under this unchanged learner. This is a descriptive surprise, not
+a protocol revision or confirmatory claim.
 
 **disposition:** `CONTINUING`.
