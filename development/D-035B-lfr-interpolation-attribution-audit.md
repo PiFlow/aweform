@@ -8,7 +8,7 @@
 - **development_seeds:** `18468..18487` inclusive, reused exactly
 - **underlying lifetime horizon:** `70,000` transitions
 - **branch horizon:** `4,096` transitions from each isolated anchor
-- **status:** protocol frozen; official output pending
+- **status:** protocol frozen; substantive output complete
 - **disposition:** `CONTINUING`
 
 The executable protocol is [`src/aweform/d035b.py`](../src/aweform/d035b.py).
@@ -39,8 +39,8 @@ official output on `18468..18487`.
 
 - **protocol_only_freeze_sha:** `8a0e23fbee23f3c47a6111dd3e23882f2402b176`
 - **implementation_probe_sha:** `8a0e23fbee23f3c47a6111dd3e23882f2402b176`
-- **artifact_sha256:** pending official output
-- **artifact_size_bytes:** pending official output
+- **artifact_sha256:** `877c7355d62a5254442fa3bcb3599c251c6800a7b616442421082661151d1086`
+- **artifact_size_bytes:** `3,491,326`
 
 Only bounded pre-freeze checks used a historical non-D-035B seed (`18428`).
 They did not execute or inspect the official D-035B output.
@@ -107,10 +107,40 @@ genuine life, metabolism, or a confirmatory claim.
 
 ## Substantive output
 
-Official treatment output is pending. This section will preserve the exact
-artifact checksum, size, execution provenance, nulls, and descriptive results
-after the frozen protocol is executed.
+The official artifact was generated from clean executable SHA
+`8a0e23fbee23f3c47a6111dd3e23882f2402b176` using only the 20 authorized
+reused seeds. Its SHA-256 is
+`877c7355d62a5254442fa3bcb3599c251c6800a7b616442421082661151d1086` and its
+size is `3,491,326` bytes.
 
-**surprised_by:** pending official output.
+All 20 accepted Arm-B replays and instrumented replays matched the frozen
+identity fields, including the complete D-027 state and RNG digests. The
+`FIRST_FALSE_CONTACT_SEEK` anchor was available for `20/20` seeds. The exact
+D-033 `ALT8_ESTABLISHED` anchor was available for `17/20`; it remained
+unavailable at the lifetime boundary for `18471`, `18473`, and `18478`. No
+seed or null was discarded. All available `BASELINE_B`, fixed-cap, and
+interpolated-cap branches passed branch-order, baseline-creation-order,
+reward/info/update, no-de-trap, canonical turn time/energy, logical-action,
+and anchor-isolation checks.
+
+No branch reacquired dual contact within the frozen 4,096-transition window.
+This held for `BASELINE_B` and all six LFR branches at both available anchor
+families. The LFR branches did produce descriptive geometry changes: they
+generally moved toward a small final evaluator distance while consuming the
+canonical turn energy, but did not convert that geometry into contact
+reacquisition on this support. Interpolated branches retained the same
+discrete seek direction and reported their evaluator-only directional error,
+saturation, side-reversal, alternation, and D-027 prediction-compatibility
+diagnostics in the artifact.
+
+This is a Development-lane descriptive result. The null reacquisition result
+does not authorize rescue tuning, a new action or sensor, organism-side
+interpolation, a larger learner, planning, reward/RL, or a successor task.
+
+**surprised_by:** The capped LFR branches changed evaluator geometry
+substantially relative to the frozen Arm-B continuation, yet none reacquired
+dual contact within the branch horizon. The exact ALT8 anchor remained
+unavailable for the same three lifetime-boundary seeds as D-033, and those
+nulls are retained.
 
 **disposition:** `CONTINUING`.
