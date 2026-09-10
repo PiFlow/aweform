@@ -87,22 +87,58 @@ outliers. There is no weighted sequence score or universal pass threshold.
 
 ## Observed
 
-Pending the clean protocol freeze and authorized substantive execution. No
-official D-033 intervention outcome is recorded in this protocol-only commit.
+The frozen executable protocol ran on all 20 reused seeds from
+`fdb1e6b4ffba26d656936936ca7fb72bf34a98aa`. The resulting artifact is
+`development/D-033-short-horizon-sequence-sufficiency-audit.json`, SHA-256
+`882808043cf080c33b8fbb1e968472ff67ffb4f9ee67522e8c314ecaac77829e`.
+
+All 20 Arm-B `LEARNED_NO_DETRAP` replays matched the accepted identity fields,
+including the complete learner state; all instrumented replays were exact.
+All 20 matched first-delegation anchors were reconstructed. The first
+`ALT8_ESTABLISHED` anchor was available for 17 seeds; it was unavailable at
+the lifetime boundary for `18471`, `18473`, and `18478`. No seed was
+discarded.
+
+All available anchors passed the exact baseline-continuation, one-step
+equivalence, branch-order, and baseline-creation-order checks. Every branch
+preserved the evaluator-only boundary checks, ran the unchanged B selection
+pipeline once per forced step, and performed exactly one executed-action
+D-027 update per completed transition.
+
+| Anchor | Baseline reacquisitions | `REPEAT_B_PROPOSED` (2/4/8/16) | Other reacquisitions |
+| --- | ---: | ---: | --- |
+| `MATCHED_FIRST_DELEGATION` (20 seeds) | 0/20 | 0/20, 0/20, 0/20, 0/20 | `TURN_RIGHT_RUN:2` 1/20; `ALTERNATE_RL:16` 1/20 |
+| `ALT8_ESTABLISHED` (17 seeds) | 0/17 | 0/17, 0/17, 0/17, 0/17 | 0/17 for every frozen control |
+
+Both matched-anchor reacquisitions occurred on seed `18474`, after release:
+`TURN_RIGHT_RUN:2` reacquired at branch transition 15 and
+`ALTERNATE_RL:16` at branch transition 27. No reacquisition occurred during
+an intervention prefix. The hindsight `REPEAT_A_FIRST` reference produced
+0/20 reacquisitions at every length.
 
 ## Surprised by
 
-Pending substantive execution.
+The repeated B-proposed-action family produced no reacquisition at either
+anchor, while two directional controls succeeded on the same matched-anchor
+seed. Also, three seeds reached lifetime end without an eight-action strict
+alternating B run, so the ALT8 anchor has a smaller available support.
 
 ## Provisional reading
 
-The frozen interpretation distinguishes measured outcomes from inference. A
-positive result can support only a bounded Development-lane component-level
-inference at the observed anchors; it cannot authorize organism persistence,
-history, recurrence, planning, world-model capacity, or D-034.
+These are descriptive Development-lane outcomes, not confirmatory evidence.
+On this support, short same-action persistence matching B's proposed action
+did not break the observed oscillation. The two isolated directional-control
+reacquisitions on one matched-anchor seed are consistent with action-direction
+and local geometry effects, but do not establish a persistence mechanism or
+general sufficiency. The ALT8 results provide no positive reacquisition
+outcome at the available anchor states. The result does not distinguish the
+causal contributions of persistence, symmetry breaking, learned action
+selection, and non-myopic benefit.
+
+Nothing here authorizes organism history, persistence, multi-step policy,
+planning, a world model, or D-034.
 
 ## Next
 
-Execute the frozen artifact on the exact reused support after the freeze gate,
-then preserve nulls and competing explanations in the final record. Flow
-controls any later decision.
+Preserve the nulls and competing explanations above. Flow controls any later
+decision; no successor task is authorized by this record.
