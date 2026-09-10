@@ -129,3 +129,18 @@ consciousness, emotion, subjective experience, genuine life, or metabolism.
 protocol.
 
 **disposition:** `CONTINUING`.
+
+## Invalidated official execution
+
+The first official execution was invalidated before artifact serialization.
+
+- **invalidated_executable_sha:** `0e5405230ed9e78416426187a415392661b51a2a`
+- **artifact_sha256:** unavailable; the writer aborted before writing the JSON
+- **artifact_size_bytes:** unavailable; no artifact was serialized
+- **provenance:** `uv run python -m aweform.d034 --executed-commit-sha 0e5405230ed9e78416426187a415392661b51a2a --output development/D-034-history-triggered-detrap-recruitment-audit.json`, official seed `18468`, first delayed anchor `ALT_4`
+- **reason:** the trigger-capture replay comparison passed the accepted Arm-B artifact directly to the private-weight identity comparison instead of adding the artifact's flattened `_weights` field. This caused a false identity mismatch at `ALT_4`; no delayed outcome was interpreted.
+
+Only this provenance-comparison defect is corrected. The frozen trigger
+definitions, lengths, branch horizon, branch semantics, metrics, and
+interpretation rules are unchanged. The corrected protocol will receive a new
+clean executable SHA and the official support will be rerun from scratch.

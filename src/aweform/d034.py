@@ -411,8 +411,10 @@ def _capture_trigger_anchor(
         target_transition=selection.transition,
         seed_validator=_validate_d034_seed,
     )
+    accepted_with_private_weights = dict(arm_b)
+    accepted_with_private_weights["_weights"] = d033._flatten_final_weights(arm_b)
     comparison = d032._compare_identity_fields(
-        result, arm_b, include_private_weights=True
+        result, accepted_with_private_weights, include_private_weights=True
     )
     if not comparison["all_identity_fields_exact"]:
         raise RuntimeError(
