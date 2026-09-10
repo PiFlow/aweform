@@ -8,7 +8,7 @@
 - **development_seeds:** `18468..18487` inclusive, reused exactly
 - **underlying lifetime horizon:** `70,000` transitions
 - **delayed branch horizon:** at most `4,096` transitions from each anchor
-- **status:** protocol frozen; official output pending execution
+- **status:** protocol frozen; substantive output complete
 - **disposition:** `CONTINUING`
 
 The machine-readable result will be
@@ -109,11 +109,11 @@ inspected.
 
 - **protocol_only_freeze_sha:** `17abb0050c563aec070b46df6a026a6f93c8b9ef`
 - **implementation_probe_sha:** `17abb0050c563aec070b46df6a026a6f93c8b9ef`
-- **artifact_sha256:** to be recorded after official artifact generation
-- **artifact_size_bytes:** to be recorded after official artifact generation
+- **artifact_sha256:** `e0d5cbdffc4e3fb429eddcbcf5af0ff4f6772eaca0368459acc1e90ed6680e1d`
+- **artifact_size_bytes:** `3,252,808`
 
-The exact 40-character clean executable SHA will be copied into this record
-and the JSON artifact. If a genuine defect invalidates an official run, the
+The exact 40-character clean executable SHA is copied into this record and the
+JSON artifact. If a genuine defect invalidates an official run, the
 invalidated SHA, checksum, reason, and provenance remain recorded; only the
 defect is fixed and the official protocol is rerun from a new clean SHA.
 
@@ -125,8 +125,49 @@ sufficient to time recruitment of the existing scaffold on this Development
 support. It does not establish a learned trigger, generic failure awareness,
 consciousness, emotion, subjective experience, genuine life, or metabolism.
 
-**surprised_by:** pending frozen execution; no output has been used to tune the
-protocol.
+## Substantive output
+
+The official artifact was generated from clean executable SHA
+`17abb0050c563aec070b46df6a026a6f93c8b9ef` using only the 20 authorized
+reused seeds. Its SHA-256 is
+`e0d5cbdffc4e3fb429eddcbcf5af0ff4f6772eaca0368459acc1e90ed6680e1d` and its
+size is `3,252,808` bytes.
+
+All 20 Arm-A and Arm-B accepted replays matched every frozen identity field,
+including complete learner state and RNG digests. All 20 matched first-
+delegation reference checks passed; OFF reproduced Arm B and ON reproduced Arm
+A. All `112/112` available delayed-anchor branch pairs passed OFF continuation
+identity, branch-order invariance, anchor immutability, reward/info/update,
+policy-RNG timing, inherited explorer-state, and no-second-`begin_segment`
+checks.
+
+The delayed-anchor availability and reacquisition counts were:
+
+| frozen anchor | available | OFF reacquired | ON reacquired |
+|---|---:|---:|---:|
+| `ALT_4` | 18 | 0 | 18 |
+| `ALT_8` | 17 | 0 | 17 |
+| `ALT_16` | 17 | 0 | 16 |
+| `NO_FORWARD_PROGRESS_4` | 20 | 0 | 20 |
+| `NO_FORWARD_PROGRESS_8` | 20 | 0 | 20 |
+| `NO_FORWARD_PROGRESS_16` | 20 | 0 | 20 |
+
+The three ALT lengths were unavailable for seed `18471` and `18473`; they
+were also unavailable for seed `18478` at lengths 8 and 16. The sole
+available unresolved ON branch was `ALT_16` on seed `18484`, which reached the
+frozen 4,096-transition branch horizon. No seed or null was discarded.
+
+These are descriptive observations from evaluator interventions. On this
+support, both trigger families produced ON-over-OFF reacquisition patterns;
+the result supports that the tested bounded closure-valid histories could
+time recruitment of the existing scaffold. It does not show that the
+organism learned either trigger, and it does not authorize organism-side
+history, a stuck detector, a meta-controller, or a later task.
+
+**surprised_by:** All available `NO_FORWARD_PROGRESS` anchors and all but one
+available `ALT_16` anchor reacquired under ON, while every matched OFF branch
+remained unresolved. The three ALT availability nulls are retained rather than
+treated as failures.
 
 **disposition:** `CONTINUING`.
 
