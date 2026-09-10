@@ -19,11 +19,11 @@ import math
 import pickle
 import statistics
 from collections.abc import Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Final, cast
 
-from . import d025, d026, d027, d029, d031r1, d032, d033
+from . import d024, d025, d026, d027, d029, d031r1, d032, d033
 from .d020 import D020PhysicalConfig
 from .env import Action
 from .exp003 import seek_beacon_action
@@ -55,6 +55,20 @@ D035B_LFR_FORMULA: Final[str] = (
     "theta_hat=atan2(y,x); zero vector theta_hat=0"
 )
 D035B_BRANCH_HORIZON_EXPRESSION: Final[str] = "4096 transitions"
+D035B_PREDICTION_WINDOWS: Final[tuple[tuple[str, int, int], ...]] = (
+    ("1..16", 1, 16),
+    ("17..64", 17, 64),
+    ("65..256", 65, 256),
+    ("257..1024", 257, 1024),
+    ("1025..4096", 1025, 4096),
+)
+D035B_SUPERSEDED_PROTOCOL_SHA: Final[str] = (
+    "8a0e23fbee23f3c47a6111dd3e23882f2402b176"
+)
+D035B_SUPERSEDED_ARTIFACT_SHA256: Final[str] = (
+    "877c7355d62a5254442fa3bcb3599c251c6800a7b616442421082661151d1086"
+)
+D035B_SUPERSEDED_ARTIFACT_SIZE_BYTES: Final[int] = 3_491_326
 
 _ACTION_NAMES: Final[tuple[str, ...]] = tuple(action.name for action in Action)
 _TURN_ACTIONS: Final[frozenset[Action]] = frozenset(
@@ -103,15 +117,28 @@ class _PredictionAccumulator:
                 self.sign_comparison_count[index] += 1
                 self.sign_agreement[index] += int((left > 0.0) == (right > 0.0))
 
-    def as_dict(self) -> dict[str, object]:
+    def as_dict(
+        self, output_indices: Sequence[int] | None = None
+    ) -> dict[str, object]:
         assert self.absolute_error is not None
         assert self.signed_error is not None
         assert self.sign_agreement is not None
         assert self.sign_comparison_count is not None
+        indices = (
+            tuple(range(len(d027.D027_OUTPUTS)))
+            if output_indices is None
+            else tuple(output_indices)
+        )
         return {
             "sample_count": self.count,
+            "support_count": self.count,
             "targets": {
-                output: {
+                d027.D027_OUTPUTS[index]: {
+                    "prequential_mae": (
+                        self.absolute_error[index] / self.count
+                        if self.count
+                        else None
+                    ),
                     "mean_absolute_error": (
                         self.absolute_error[index] / self.count
                         if self.count
@@ -133,8 +160,85 @@ class _PredictionAccumulator:
                         else None
                     ),
                 }
-                for index, output in enumerate(d027.D027_OUTPUTS)
+                for index in indices
             },
+        }
+
+
+@dataclass(slots=True)
+class _PredictionDiagnostics:
+    """Prequential prediction summaries with frozen action/time strata."""
+
+    all_actions: _PredictionAccumulator = field(
+        default_factory=_PredictionAccumulator
+    )
+    turn_only: _PredictionAccumulator = field(default_factory=_PredictionAccumulator)
+    turn_left: _PredictionAccumulator = field(default_factory=_PredictionAccumulator)
+    turn_right: _PredictionAccumulator = field(
+        default_factory=_PredictionAccumulator
+    )
+    windows: dict[str, dict[str, _PredictionAccumulator]] = field(
+        default_factory=dict
+    )
+
+    def __post_init__(self) -> None:
+        if self.windows:
+            return
+        self.windows = {
+            label: {
+                "all_actions": _PredictionAccumulator(),
+                "turn_only": _PredictionAccumulator(),
+                "turn_left": _PredictionAccumulator(),
+                "turn_right": _PredictionAccumulator(),
+            }
+            for label, _, _ in D035B_PREDICTION_WINDOWS
+        }
+
+    def record(
+        self,
+        predicted: Sequence[float],
+        observed: Sequence[float],
+        action: Action,
+        transition_from_anchor: int,
+    ) -> None:
+        self.all_actions.record(predicted, observed)
+        if action in _TURN_ACTIONS:
+            self.turn_only.record(predicted, observed)
+        if action is Action.TURN_LEFT:
+            self.turn_left.record(predicted, observed)
+        if action is Action.TURN_RIGHT:
+            self.turn_right.record(predicted, observed)
+        for label, start, end in D035B_PREDICTION_WINDOWS:
+            if not start <= transition_from_anchor <= end:
+                continue
+            window = self.windows[label]
+            window["all_actions"].record(predicted, observed)
+            if action in _TURN_ACTIONS:
+                window["turn_only"].record(predicted, observed)
+            if action is Action.TURN_LEFT:
+                window["turn_left"].record(predicted, observed)
+            if action is Action.TURN_RIGHT:
+                window["turn_right"].record(predicted, observed)
+
+    def as_dict(self) -> dict[str, object]:
+        windows: dict[str, object] = {}
+        for label, start, end in D035B_PREDICTION_WINDOWS:
+            window = self.windows[label]
+            windows[label] = {
+                "start_transition_from_anchor": start,
+                "end_transition_from_anchor": end,
+                "support_count": window["all_actions"].count,
+                "all_actions": window["all_actions"].as_dict(),
+                "turn_only": window["turn_only"].as_dict(),
+                "turn_left": window["turn_left"].as_dict((2,)),
+                "turn_right": window["turn_right"].as_dict((2,)),
+            }
+        return {
+            "all_actions": self.all_actions.as_dict(),
+            "turn_only": self.turn_only.as_dict(),
+            "turn_left": self.turn_left.as_dict((2,)),
+            "turn_right": self.turn_right.as_dict((2,)),
+            "post_anchor_windows": windows,
         }
 
 
@@ -259,21 +363,18 @@ def _forward_boundary(row: d025.D025TransitionTrace) -> str | None:
 def _first_false_contact_seek_transition(
     trace: Sequence[d025.D025TransitionTrace],
 ) -> int | None:
-    """Return the first completed false-contact SEEK decision transition.
+    """Return the first transition whose pre-action state is false-contact SEEK.
 
-    This deliberately includes the inherited AWAY-to-SEEK entry transition:
-    the controller has selected SEEK after seeing a low-energy, non-contact
-    observation, and the completed transition is required to remain
-    non-contact.  The pre-action clone is therefore the exact first
-    false-contact SEEK decision state, not a later hand-selected occurrence.
+    Selection is made only from the state immediately before the ordinary
+    no-de-trap action-selection path runs.  In particular, an AWAY-to-SEEK
+    entry transition is not an eligible anchor: its pre-action controller mode
+    is AWAY even though its completed transition may end in SEEK.
     """
     for row in trace:
         if (
-            row.mode_after is d026.D026Mode.SEEK
+            row.mode_before is d026.D026Mode.SEEK
             and not row.observation_before[4]
-            and not row.observation[4]
             and not row.telemetry.charging_contact_before
-            and not row.telemetry.charging_contact_after
         ):
             return row.transition_index
     return None
@@ -365,6 +466,27 @@ def _capture_anchor(
         )
     if capture.transition != transition:
         raise RuntimeError("D-035B captured transition index changed")
+    if anchor_type == "FIRST_FALSE_CONTACT_SEEK":
+        pre_action_checks = {
+            "pre_action_controller_mode_is_seek": (
+                capture.mode_before is d026.D026Mode.SEEK
+            ),
+            "pre_action_visible_charging_contact_is_false": (
+                not capture.current.charging_contact
+            ),
+            "pre_action_evaluator_charging_contact_is_false": (
+                not capture.environment.charging_contact
+            ),
+            "ordinary_no_detrap_arbitration_is_about_to_execute": (
+                capture.delegated is False and capture.greedy_action is not None
+            ),
+        }
+        if not all(pre_action_checks.values()):
+            raise RuntimeError(
+                f"D-035B {anchor_type} pre-action identity failed for seed {seed}"
+            )
+    else:
+        pre_action_checks = {}
     anchor = d033._anchor_from_capture(seed, anchor_type, capture)
     return anchor, {
         "target_capture_replay_exact": comparison["all_identity_fields_exact"],
@@ -375,6 +497,7 @@ def _capture_anchor(
         "anchor_mode": anchor.controller.mode.name,
         "anchor_contact": anchor.current.charging_contact,
         "anchor_proposed_action": anchor.proposed_action.name,
+        "pre_action_identity": pre_action_checks,
     }
 
 
@@ -390,9 +513,9 @@ def _anchor_definition(
             "anchor_type": anchor_type,
             "transition": transition,
             "selection_rule": (
-                "first completed transition with mode_after=SEEK, visible "
-                "charging_contact before/after false, and evaluator contact "
-                "before/after false"
+                "first transition whose pre-action mode is SEEK and whose "
+                "pre-action visible and evaluator charging_contact are false; "
+                "ordinary no-de-trap arbitration is about to execute"
             ),
             "history_or_geometry_used_for_selection": False,
         }
@@ -533,10 +656,57 @@ def _lfr_action(
     return gate, magnitude if gate in _TURN_ACTIONS else None, record, next_turn_side
 
 
-def _prediction_summary(
-    accumulator: _PredictionAccumulator,
+def _pair_error_snapshot(
+    position: tuple[float, float],
+    heading: float,
+    station: tuple[float, float],
+    transition: int,
 ) -> dict[str, object]:
-    return accumulator.as_dict()
+    rear_plus, rear_minus = d024.dual_contact_pair_errors(
+        position, heading, station
+    )
+    return {
+        "transition_from_anchor": transition,
+        "rear_plus_pair_error": rear_plus,
+        "rear_minus_pair_error": rear_minus,
+        "max_pair_error": max(rear_plus, rear_minus),
+    }
+
+
+def _minimum_pair_error_snapshot(
+    states: Sequence[dict[str, object]],
+) -> dict[str, object]:
+    if not states:
+        raise RuntimeError("D-035B branch has no geometry states")
+    return {
+        "rear_plus_pair_error": min(
+            cast(float, state["rear_plus_pair_error"]) for state in states
+        ),
+        "rear_minus_pair_error": min(
+            cast(float, state["rear_minus_pair_error"]) for state in states
+        ),
+        "max_pair_error": min(
+            cast(float, state["max_pair_error"]) for state in states
+        ),
+    }
+
+
+def _opposite_turn_summary(actions: Sequence[Action]) -> dict[str, object]:
+    adjacent_pairs = list(zip(actions, actions[1:], strict=False))
+    turn_pairs = [
+        (left, right)
+        for left, right in adjacent_pairs
+        if left in _TURN_ACTIONS and right in _TURN_ACTIONS
+    ]
+    opposite = sum(int(left is not right) for left, right in turn_pairs)
+    return {
+        "next_eligible_seek_pair_count": len(adjacent_pairs),
+        "turn_to_turn_pair_count": len(turn_pairs),
+        "opposite_turn_count": opposite,
+        "opposite_turn_next_eligible_seek_fraction": (
+            opposite / len(turn_pairs) if turn_pairs else None
+        ),
+    }
 
 
 def _lfr_diagnostic_summary(
@@ -646,9 +816,14 @@ def _run_branch(
 
     trace: list[d025.D025TransitionTrace] = []
     lfr_records: list[dict[str, object]] = []
-    prediction_metrics = _PredictionAccumulator()
+    prediction_metrics = _PredictionDiagnostics()
     action_counts = _empty_action_counts()
     proposed_action_counts = _empty_action_counts()
+    forward_boundary_counts = {
+        name: 0 for name in d031r1.D031R1_BOUNDARY_CLASSES
+    }
+    eligible_seek_actions: list[Action] = []
+    contact_event_records: list[dict[str, object]] = []
     arbitration_count = 0
     explorer_calls_before = controller.false_contact_seek_explorer_calls
     previous_turn_side: Action | None = None
@@ -676,6 +851,15 @@ def _run_branch(
     all_update_predictions_exact = True
     all_turn_energy_semantics_canonical = True
     all_logical_actions_existing_enum = True
+    geometry_states = [
+        _pair_error_snapshot(
+            initial_position,
+            previous_heading,
+            station,
+            0,
+        )
+    ]
+    reacquisition_geometry: dict[str, object] | None = None
 
     for local_transition in range(1, D035B_BRANCH_HORIZON + 1):
         global_transition = anchor.transition + local_transition - 1
@@ -710,6 +894,8 @@ def _run_branch(
             )
             lfr_records.append(lfr_record)
             physical_action = gate
+        if arbitration is not None:
+            eligible_seek_actions.append(physical_action)
         prediction = learner.predict(current, physical_action)
         observation_array, reward, terminated, truncated, info = _step_with_turn_angle(
             environment, physical_action, turn_angle
@@ -732,7 +918,12 @@ def _run_branch(
             )
         next_observation = d031r1._next_visible(observation_array)
         observed_delta = _observed_delta(current, next_observation)
-        prediction_metrics.record(prediction.values, observed_delta)
+        prediction_metrics.record(
+            prediction.values,
+            observed_delta,
+            physical_action,
+            local_transition,
+        )
         update = learner.observe_transition(current, physical_action, next_observation)
         update_count += 1
         all_update_predictions_exact &= update.prediction == prediction.values
@@ -752,6 +943,31 @@ def _run_branch(
                 info=info,
             )
         )
+        boundary = _forward_boundary(trace[-1])
+        if boundary is not None:
+            forward_boundary_counts[boundary] += 1
+        if telemetry.charging_contact_before != telemetry.charging_contact_after:
+            event = {
+                "transition_from_anchor": local_transition,
+                "action": physical_action.name,
+                "event": (
+                    "entry"
+                    if telemetry.charging_contact_after
+                    else "exit"
+                ),
+                "charging_contact_before": telemetry.charging_contact_before,
+                "charging_contact_after": telemetry.charging_contact_after,
+                "dual_contact_before": telemetry.charging_contact_before,
+                "dual_contact_after": telemetry.charging_contact_after,
+            }
+            contact_event_records.append(event)
+        geometry = _pair_error_snapshot(
+            telemetry.position_after,
+            telemetry.heading,
+            station,
+            local_transition,
+        )
+        geometry_states.append(geometry)
         action_counts[physical_action.name] += 1
         path_length += math.dist(telemetry.position_before, telemetry.position_after)
         cumulative_heading_change += _angle_difference(
@@ -771,6 +987,7 @@ def _run_branch(
         current = next_observation
         if not telemetry.charging_contact_before and telemetry.charging_contact_after:
             reacquisition_transition = local_transition
+            reacquisition_geometry = geometry
             stop_reason = "reacquisition"
             break
         if terminated:
@@ -841,6 +1058,36 @@ def _run_branch(
             "minimum": minimum_distance,
             "final": final_distance,
         },
+        "rear_contact_pair_error_geometry": {
+            "start": geometry_states[0],
+            "minimum": _minimum_pair_error_snapshot(geometry_states),
+            "final": geometry_states[-1],
+            "at_reacquisition": reacquisition_geometry,
+            "state_count": len(geometry_states),
+        },
+        "contact_events": {
+            "initial_charging_contact": anchor.current.charging_contact,
+            "final_charging_contact": current.charging_contact,
+            "charging_contact_entry_count": sum(
+                int(cast(str, event["event"]) == "entry")
+                for event in contact_event_records
+            ),
+            "charging_contact_exit_count": sum(
+                int(cast(str, event["event"]) == "exit")
+                for event in contact_event_records
+            ),
+            "dual_contact_entry_count": sum(
+                int(cast(str, event["event"]) == "entry")
+                for event in contact_event_records
+            ),
+            "dual_contact_exit_count": sum(
+                int(cast(str, event["event"]) == "exit")
+                for event in contact_event_records
+            ),
+            "events": contact_event_records,
+        },
+        "charging_contact_events": contact_event_records,
+        "dual_contact_events": contact_event_records,
         "visible_beacon_forward": {
             "start": forward_values[0],
             "maximum": max(forward_values),
@@ -850,6 +1097,22 @@ def _run_branch(
         "cumulative_absolute_heading_change": cumulative_heading_change,
         "action_counts": action_counts,
         "proposed_action_counts": proposed_action_counts,
+        "forward_boundary_counts": forward_boundary_counts,
+        "forward_nominal_count": forward_boundary_counts[
+            "FULL_NOMINAL_FORWARD"
+        ],
+        "forward_clipped_count": forward_boundary_counts[
+            "BOUNDARY_CLIPPED_FORWARD"
+        ],
+        "forward_stall_count": forward_boundary_counts["FULL_STALL_FORWARD"],
+        "opposite_turn_next_eligible_seek": _opposite_turn_summary(
+            eligible_seek_actions
+        ),
+        "opposite_turn_next_eligible_seek_fraction": (
+            _opposite_turn_summary(eligible_seek_actions)[
+                "opposite_turn_next_eligible_seek_fraction"
+            ]
+        ),
         "alternation": {
             "strict_alternation_run_count": len(alternation_runs),
             "strict_alternation_run_lengths": alternation_runs,
@@ -864,7 +1127,7 @@ def _run_branch(
             "explorer_call_count": explorer_calls,
         },
         "directional_interpolation": _lfr_diagnostic_summary(lfr_records),
-        "prediction_compatibility": _prediction_summary(prediction_metrics),
+        "prediction_compatibility": prediction_metrics.as_dict(),
         "executed_action_update_count": update_count,
         "executed_action_update_digest": update_digest.hexdigest(),
         "final_learner_state_digest": _digest(tuple(learner.weights)),
@@ -1174,6 +1437,33 @@ def _pooled_anchor_summary(
                 )
                 for row in rows
             ),
+            "opposite_turn_next_eligible_seek_fraction": _number_summary(
+                _path_values(
+                    rows,
+                    "opposite_turn_next_eligible_seek_fraction",
+                )
+            ),
+            "charging_contact_entry_count": sum(
+                cast(int, cast(dict[str, object], row["contact_events"])[
+                    "charging_contact_entry_count"
+                ])
+                for row in rows
+            ),
+            "dual_contact_entry_count": sum(
+                cast(int, cast(dict[str, object], row["contact_events"])[
+                    "dual_contact_entry_count"
+                ])
+                for row in rows
+            ),
+            "forward_boundary_counts": {
+                boundary: sum(
+                    cast(int, cast(dict[str, object], row["forward_boundary_counts"])[
+                        boundary
+                    ])
+                    for row in rows
+                )
+                for boundary in d031r1.D031R1_BOUNDARY_CLASSES
+            },
             "prediction_compatibility": [
                 cast(dict[str, object], row["prediction_compatibility"])
                 for row in rows
@@ -1270,6 +1560,18 @@ def run_d035b_audit(
             "fresh_seed_block_allocated": False,
             "fresh_seed_block_inspected": False,
         },
+        "superseded_provenance": {
+            "protocol_sha": D035B_SUPERSEDED_PROTOCOL_SHA,
+            "artifact_sha256": D035B_SUPERSEDED_ARTIFACT_SHA256,
+            "artifact_size_bytes": D035B_SUPERSEDED_ARTIFACT_SIZE_BYTES,
+            "valid_for_current_protocol": False,
+            "invalidation_reason": (
+                "Invalidated after exact-current-HEAD review found that the "
+                "FIRST_FALSE_CONTACT_SEEK anchor could capture an AWAY-to-SEEK "
+                "entry state and that the required stratified prequential "
+                "prediction and mandatory reporting fields were absent."
+            ),
+        },
         "freeze": {
             "anchor_types": list(D035B_ANCHOR_TYPES),
             "branch_names": [name for name, _, _ in _branch_specs()],
@@ -1300,6 +1602,36 @@ def run_d035b_audit(
                 "exactly once from physically executed logical action and actual "
                 "next six-channel observation"
             ),
+            "prediction_diagnostics": {
+                "prequential": True,
+                "all_actions_outputs": list(d027.D027_OUTPUTS),
+                "turn_only_outputs": list(d027.D027_OUTPUTS),
+                "turn_specific_output": "delta_beacon_forward",
+                "turn_specific_actions": ["TURN_LEFT", "TURN_RIGHT"],
+                "post_anchor_windows": [
+                    {
+                        "label": label,
+                        "start_transition_from_anchor": start,
+                        "end_transition_from_anchor": end,
+                    }
+                    for label, start, end in D035B_PREDICTION_WINDOWS
+                ],
+                "support_counts_are_exact": True,
+            },
+            "required_reporting_fields": [
+                "opposite_turn_next_eligible_seek_fraction",
+                "rear_contact_pair_error_geometry.start",
+                "rear_contact_pair_error_geometry.minimum",
+                "rear_contact_pair_error_geometry.final",
+                "rear_contact_pair_error_geometry.at_reacquisition",
+                "contact_events",
+                "charging_contact_events",
+                "dual_contact_events",
+                "forward_boundary_counts",
+                "forward_nominal_count",
+                "forward_clipped_count",
+                "forward_stall_count",
+            ],
             "no_organism_boundary_change": True,
         },
         "causal_order": [

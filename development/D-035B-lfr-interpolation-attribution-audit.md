@@ -8,7 +8,7 @@
 - **development_seeds:** `18468..18487` inclusive, reused exactly
 - **underlying lifetime horizon:** `70,000` transitions
 - **branch horizon:** `4,096` transitions from each isolated anchor
-- **status:** protocol frozen; substantive output complete
+- **status:** corrected protocol implementation; prior output invalidated pending rerun
 - **disposition:** `CONTINUING`
 
 The executable protocol is [`src/aweform/d035b.py`](../src/aweform/d035b.py).
@@ -32,15 +32,23 @@ draw remains at its original decision timing.
 
 ## Freeze and provenance
 
-The complete executable protocol, exact Arm-B replay gate, exact anchor
-reconstruction, LFR formula/cap semantics, isolated branch runner, metrics,
-interpretation rules, artifact writer, and focused tests were committed before
-official output on `18468..18487`.
+The first official protocol/output pair was invalidated after exact-current-HEAD
+review found two issue-conformance defects: its `FIRST_FALSE_CONTACT_SEEK`
+selection could capture an AWAY-to-SEEK entry state, and it omitted the frozen
+prediction stratification and mandatory reporting fields. The old provenance
+is retained here and in the regenerated JSON as invalid, not as evidence for
+the corrected protocol.
 
-- **protocol_only_freeze_sha:** `8a0e23fbee23f3c47a6111dd3e23882f2402b176`
-- **implementation_probe_sha:** `8a0e23fbee23f3c47a6111dd3e23882f2402b176`
-- **artifact_sha256:** `877c7355d62a5254442fa3bcb3599c251c6800a7b616442421082661151d1086`
-- **artifact_size_bytes:** `3,491,326`
+- **invalidated_protocol_only_freeze_sha:** `8a0e23fbee23f3c47a6111dd3e23882f2402b176`
+- **invalidated_implementation_probe_sha:** `8a0e23fbee23f3c47a6111dd3e23882f2402b176`
+- **invalidated_artifact_sha256:** `877c7355d62a5254442fa3bcb3599c251c6800a7b616442421082661151d1086`
+- **invalidated_artifact_size_bytes:** `3,491,326`
+- **invalidation_reason:** exact-current-HEAD review identified an invalid
+  pre-action anchor identity and missing required stratified diagnostics/fields.
+
+The corrected executable protocol will be frozen at a new clean SHA before
+the authorized treatment is rerun. Its SHA and artifact checksum/size will be
+recorded below after deterministic regeneration.
 
 Only bounded pre-freeze checks used a historical non-D-035B seed (`18428`).
 They did not execute or inspect the official D-035B output.
@@ -56,10 +64,11 @@ the uninstrumented replay exactly.
 Two evaluator-selected pre-action anchors are reconstructed from the Arm-B
 trace and recaptured from an isolated pre-action clone:
 
-1. `FIRST_FALSE_CONTACT_SEEK` is the first completed transition whose
-   post-controller mode is SEEK and whose visible and evaluator contact bits
-   are false before and after the transition. This includes the inherited
-   AWAY-to-SEEK entry decision when it is the first qualifying decision.
+1. `FIRST_FALSE_CONTACT_SEEK` is the first transition whose **pre-action**
+   controller mode is already SEEK and whose visible and evaluator contact
+   bits are false immediately before ordinary no-de-trap arbitration/action
+   selection. An AWAY-to-SEEK entry transition is not eligible because its
+   pre-action mode is AWAY.
 2. `ALT8_ESTABLISHED` reuses D-033's exact first eight-action strict
    left/right alternation in false-contact SEEK, with no contact, forward, or
    wait action, followed by a pre-action state. Unavailable anchors remain
@@ -96,51 +105,35 @@ baseline-creation-order invariance are checked.
 The artifact retains accepted replay and anchor checks, availability/nulls,
 branch outcomes, reacquisition latency and energy, evaluator geometry and
 viability, path/displacement, visible beacon change, action counts, forward
-boundary classes, strict alternation and side reversals, LFR directional
-interpolation error against evaluator station bearing, cap saturation, and
-D-027 prediction compatibility with executed actions and actual next visible
-observations. No seed or null is discarded.
+nominal/clipped/stall counts, strict alternation, side reversals, the
+opposite-turn-next-eligible-SEEK fraction, charging/dual-contact events,
+rear-contact pair-error geometry at start/minimum/final/reacquisition,
+directional interpolation error against evaluator station bearing, cap
+saturation, and prequential D-027 prediction compatibility. Prediction
+compatibility reports all six outputs, turn-only all-six-output summaries,
+`delta_beacon_forward` separately for left and right turns, and exact support
+counts in windows `1..16`, `17..64`, `65..256`, `257..1024`, and `1025..4096`.
+No seed or null is discarded.
 
 The result is descriptive Development evidence only. It cannot establish a
 learned interpolation, consciousness, emotion, subjective experience,
 genuine life, metabolism, or a confirmatory claim.
 
-## Substantive output
+## Corrected substantive output
 
-The official artifact was generated from clean executable SHA
-`8a0e23fbee23f3c47a6111dd3e23882f2402b176` using only the 20 authorized
-reused seeds. Its SHA-256 is
-`877c7355d62a5254442fa3bcb3599c251c6800a7b616442421082661151d1086` and its
-size is `3,491,326` bytes.
+The corrected official artifact will be generated only after the corrected
+executable protocol is committed at a clean SHA, using only the 20 authorized
+reused seeds. The corrected SHA-256, size, and validation summary will be
+filled in after that rerun. The old artifact above is invalid for the corrected
+protocol.
 
-All 20 accepted Arm-B replays and instrumented replays matched the frozen
-identity fields, including the complete D-027 state and RNG digests. The
-`FIRST_FALSE_CONTACT_SEEK` anchor was available for `20/20` seeds. The exact
-D-033 `ALT8_ESTABLISHED` anchor was available for `17/20`; it remained
-unavailable at the lifetime boundary for `18471`, `18473`, and `18478`. No
-seed or null was discarded. All available `BASELINE_B`, fixed-cap, and
-interpolated-cap branches passed branch-order, baseline-creation-order,
-reward/info/update, no-de-trap, canonical turn time/energy, logical-action,
-and anchor-isolation checks.
-
-No branch reacquired dual contact within the frozen 4,096-transition window.
-This held for `BASELINE_B` and all six LFR branches at both available anchor
-families. The LFR branches did produce descriptive geometry changes: they
-generally moved toward a small final evaluator distance while consuming the
-canonical turn energy, but did not convert that geometry into contact
-reacquisition on this support. Interpolated branches retained the same
-discrete seek direction and reported their evaluator-only directional error,
-saturation, side-reversal, alternation, and D-027 prediction-compatibility
-diagnostics in the artifact.
+No corrected substantive result is claimed in this pre-rerun record.
 
 This is a Development-lane descriptive result. The null reacquisition result
 does not authorize rescue tuning, a new action or sensor, organism-side
 interpolation, a larger learner, planning, reward/RL, or a successor task.
 
-**surprised_by:** The capped LFR branches changed evaluator geometry
-substantially relative to the frozen Arm-B continuation, yet none reacquired
-dual contact within the branch horizon. The exact ALT8 anchor remained
-unavailable for the same three lifetime-boundary seeds as D-033, and those
-nulls are retained.
+**surprised_by:** To be completed from the corrected deterministic rerun; the
+invalidated output is not interpreted here.
 
 **disposition:** `CONTINUING`.
