@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "experiment": "D-033",
+  "title": "Short-horizon sequence sufficiency audit",
+  "authoritative_base_sha": "0e6fae6201ea7e36c04d4319bfbe536523c9f066",
+  "base_tree_sha": "cc5bf1fc86c29c5910c7bb9d840485957ee6c6f7",
+  "implementation_probe_sha": null,
+  "protocol_only_freeze_sha": null,
+  "development_seeds": [
+    18468, 18469, 18470, 18471, 18472, 18473, 18474, 18475, 18476, 18477,
+    18478, 18479, 18480, 18481, 18482, 18483, 18484, 18485, 18486, 18487
+  ],
+  "horizon": 70000,
+  "branch_horizon": 4096,
+  "support": {
+    "source": "accepted D-031R1/D-032 Development support",
+    "accepted_artifact": "development/D-031R1-learned-seek-scaffold-displacement-clean-rerun.json",
+    "fresh_seed_block_allocated": false,
+    "fresh_seed_block_inspected": false
+  },
+  "freeze": {
+    "underlying_arm": "LEARNED_NO_DETRAP",
+    "anchors": ["MATCHED_FIRST_DELEGATION", "ALT8_ESTABLISHED"],
+    "lengths": [2, 4, 8, 16],
+    "sequence_families": [
+      "REPEAT_B_PROPOSED", "TURN_LEFT_RUN", "TURN_RIGHT_RUN",
+      "MOVE_FORWARD_RUN", "WAIT_RUN", "ALTERNATE_LR", "ALTERNATE_RL"
+    ],
+    "matched_anchor_reference_family": "REPEAT_A_FIRST",
+    "physical_action_override_only": true,
+    "controller_selection_pipeline_unchanged": true,
+    "learner_update_once_from_executed_action_and_actual_next_observation": true,
+    "no_organism_boundary_change": true
+  },
+  "results": [],
+  "status": "protocol_frozen_pending_substantive_execution",
+  "interpretation": {
+    "lane": "Development",
+    "confirmatory_claim": false,
+    "no_successor_authorized": true
+  }
+}
