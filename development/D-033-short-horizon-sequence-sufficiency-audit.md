@@ -2,7 +2,7 @@
 
 - **id:** D-033
 - **date:** 2026-09-10
-- **exact_sha:** `<protocol freeze SHA; substantive output is executed from this clean SHA>`
+- **exact_sha:** `fdb1e6b4ffba26d656936936ca7fb72bf34a98aa` (clean executable protocol freeze; substantive output is executed from this SHA)
 - **development_seeds:** `18468..18487` inclusive, reused exactly from accepted D-031R1/D-032 support
 - **disposition:** `CONTINUING`
 

@@ -5,7 +5,7 @@
   "authoritative_base_sha": "0e6fae6201ea7e36c04d4319bfbe536523c9f066",
   "base_tree_sha": "cc5bf1fc86c29c5910c7bb9d840485957ee6c6f7",
   "implementation_probe_sha": null,
-  "protocol_only_freeze_sha": null,
+  "protocol_only_freeze_sha": "fdb1e6b4ffba26d656936936ca7fb72bf34a98aa",
   "development_seeds": [
     18468, 18469, 18470, 18471, 18472, 18473, 18474, 18475, 18476, 18477,
     18478, 18479, 18480, 18481, 18482, 18483, 18484, 18485, 18486, 18487
