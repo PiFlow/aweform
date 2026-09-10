@@ -107,8 +107,8 @@ metrics, categories, tests, and artifact writer must be committed cleanly
 before official delayed-recruitment output on `18468..18487` is executed or
 inspected.
 
-- **protocol_only_freeze_sha:** `0e5405230ed9e78416426187a415392661b51a2a`
-- **implementation_probe_sha:** `0e5405230ed9e78416426187a415392661b51a2a`
+- **protocol_only_freeze_sha:** `b58771b06086888908fe3da2dc94b8f25f656218`
+- **implementation_probe_sha:** `b58771b06086888908fe3da2dc94b8f25f656218`
 - **artifact_sha256:** to be recorded after official artifact generation
 - **artifact_size_bytes:** to be recorded after official artifact generation
 
