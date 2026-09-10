@@ -144,3 +144,16 @@ Only this provenance-comparison defect is corrected. The frozen trigger
 definitions, lengths, branch horizon, branch semantics, metrics, and
 interpretation rules are unchanged. The corrected protocol will receive a new
 clean executable SHA and the official support will be rerun from scratch.
+
+A second official execution was invalidated before delayed-anchor output was
+reached:
+
+- **invalidated_executable_sha:** `b58771b06086888908fe3da2dc94b8f25f656218`
+- **artifact_sha256:** unavailable; the writer aborted before writing the JSON
+- **artifact_size_bytes:** unavailable; no artifact was serialized
+- **provenance:** `uv run python -m aweform.d034 --executed-commit-sha b58771b06086888908fe3da2dc94b8f25f656218 --output development/D-034-history-triggered-detrap-recruitment-audit.json`, official seed `18468`, matched first-delegation reference branch
+- **reason:** the D-032 matched first-delegation pre-action state legitimately has controller mode `AWAY` immediately before the inherited AWAY→SEEK transition. The branch runner incorrectly required `SEEK`, invalidating the reference before any delayed-trigger branch result was produced.
+
+Only this reference-state validation defect is corrected. The delayed-anchor
+requirement remains false-contact SEEK, and the inherited reference
+AWAY→SEEK transition is checked rather than redefined.

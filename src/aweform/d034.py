@@ -24,6 +24,7 @@ from typing import Any, Final, cast
 from . import d025, d026, d027, d029, d031r1, d032, d033
 from .d020 import D020PhysicalConfig
 from .env import Action
+from .exp003 import EXP003_B50_ENTER_SEEK_THRESHOLD
 from .exp003_seed_policy import validate_exp003_development_seeds
 from .rng import RandomStreams
 
@@ -451,8 +452,19 @@ def _set_branch_condition(
         raise RuntimeError(
             "D-034 anchor controller is not the accepted Arm-B controller"
         )
-    if controller.mode is not d026.D026Mode.SEEK:
-        raise RuntimeError("D-034 trigger anchor is not in false-contact SEEK")
+    if controller.mode is d026.D026Mode.AWAY:
+        if anchor.anchor_type != _ANCHOR_REFERENCE:
+            raise RuntimeError(
+                "D-034 delayed trigger anchor is not in false-contact SEEK"
+            )
+        if anchor.current.charging_contact or (
+            anchor.current.energy >= EXP003_B50_ENTER_SEEK_THRESHOLD
+        ):
+            raise RuntimeError(
+                "D-034 matched reference lacks inherited AWAY-to-SEEK state"
+            )
+    elif controller.mode is not d026.D026Mode.SEEK:
+        raise RuntimeError("D-034 anchor is neither accepted SEEK nor reference AWAY")
     if condition == "DETRAP_ON":
         # The only intervention is the inherited eligibility probability.  The
         # controller and explorer object/state remain the cloned Arm-B objects.
@@ -759,8 +771,9 @@ def _run_branch(
             if condition == "DETRAP_OFF"
             else True,
             "explorer_state_inherited": initial_explorer_state == anchor_explorer_state,
-            "no_begin_segment_at_trigger": (
-                controller.seek_segment_starts == initial_seek_segment_starts
+            "no_second_begin_segment_at_trigger": (
+                controller.seek_segment_starts - initial_seek_segment_starts
+                == (0 if anchor.controller.mode is d026.D026Mode.SEEK else 1)
             ),
             "no_reseed_or_new_rng_stream": streams.policy is controller.policy_rng
             and streams.policy is controller.explorer.policy_rng,
