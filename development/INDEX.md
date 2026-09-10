@@ -47,6 +47,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-029 | Action-alternative consequence readiness audit | CONTINUING | [`D-029-action-alternative-readiness-audit.md`](D-029-action-alternative-readiness-audit.md) |
 | D-030 | Bounded learned SEEK steering causal influence | CONTINUING | [`D-030-bounded-learned-seek-steering.md`](D-030-bounded-learned-seek-steering.md) |
 | D-031R1 | Clean frozen rerun of learned SEEK scaffold displacement | CONTINUING | [`D-031R1-learned-seek-scaffold-displacement-clean-rerun.md`](D-031R1-learned-seek-scaffold-displacement-clean-rerun.md) |
+| D-032 | D-031R1 de-trap function attribution audit | CONTINUING | [`D-032-detrap-function-attribution-audit.md`](D-032-detrap-function-attribution-audit.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 
