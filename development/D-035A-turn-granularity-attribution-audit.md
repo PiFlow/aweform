@@ -130,8 +130,8 @@ are committed before official non-45° D-035A treatment output is executed or
 inspected. The clean executable SHA is copied below after that freeze commit
 and is also stored in the JSON artifact.
 
-- **protocol_only_freeze_sha:** to be recorded after the clean protocol commit
-- **implementation_probe_sha:** to be recorded after the clean protocol commit
+- **protocol_only_freeze_sha:** `fa36c8097364e224be8442f1b302656e52d21db6`
+- **implementation_probe_sha:** `fa36c8097364e224be8442f1b302656e52d21db6`
 - **artifact_sha256:** to be recorded after official deterministic generation
 - **artifact_size_bytes:** to be recorded after official deterministic generation
 
