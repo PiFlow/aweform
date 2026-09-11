@@ -109,8 +109,6 @@ _COMPACT_LFR_COLUMNS: Final[tuple[str, ...]] = (
     "visible_side_reversal",
     "evaluator_station_bearing_before_radians",
     "directional_error_radians",
-    "evaluator_station_bearing_after_radians",
-    "directional_error_after_radians",
     "rear_plus_pair_error_before",
     "rear_minus_pair_error_before",
     "max_pair_error_before",
@@ -118,7 +116,7 @@ _COMPACT_LFR_COLUMNS: Final[tuple[str, ...]] = (
     "rear_minus_pair_error_after",
     "max_pair_error_after",
 )
-_COMPACT_LFR_BINARY_FORMAT: Final[str] = "<I4d3Bd?d2b?4d6d"
+_COMPACT_LFR_BINARY_FORMAT: Final[str] = "<I4d3Bd?d2b?2d6d"
 _COMPACT_LFR_PACKER: Final[struct.Struct] = struct.Struct(_COMPACT_LFR_BINARY_FORMAT)
 
 
@@ -1973,6 +1971,10 @@ def run_d035b_audit(
                         "abs(actual_angular_displacement_radians)"
                     ),
                 },
+                "post_step_evaluator_bearing_error": (
+                    "not duplicated; pre-decision bearing/error and post-step "
+                    "heading change are retained"
+                ),
                 "decoded_record_values_are_complete": True,
             },
             "required_reporting_fields": [
