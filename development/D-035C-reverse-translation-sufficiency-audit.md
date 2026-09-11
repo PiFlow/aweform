@@ -7,7 +7,7 @@
 - **development_seeds:** `18468..18487` inclusive, reused exactly
 - **underlying lifetime horizon:** `70,000` transitions
 - **counterfactual branch horizon:** at most `256` transitions from each anchor
-- **status:** protocol frozen before official treatment output
+- **status:** official treatment completed; protocol frozen before official treatment output
 - **disposition:** `CONTINUING`
 
 The machine-readable result is
@@ -63,9 +63,10 @@ and artifact writer were committed before official D-035C treatment output
 was executed or inspected. The clean executable SHA and final artifact
 checksum are recorded below after the protocol freeze and treatment run.
 
-- **protocol_only_freeze_sha:** recorded after the freeze commit
-- **implementation_probe_sha:** recorded after official execution
-- **artifact_sha256:** recorded after official execution
+- **protocol_only_freeze_sha:** `ea36b078e262a68e5c2fa6ad63325da4762a3468`
+- **implementation_probe_sha:** `ea36b078e262a68e5c2fa6ad63325da4762a3468`
+- **artifact_sha256:** `7a4a462da68346fedd9a78028c99c8d58aa5d1e0f8c2c8f95bee75105c0ba584`
+- **artifact_size_bytes:** `2375030`
 
 No D-035B code, branch, artifact, discussion, result, or interpretation is
 used. No fresh Development or EXP seed is used. This record does not
@@ -83,6 +84,12 @@ unique reverse benefit does not support missing reverse translation as
 sufficient on this support. Baseline identity or isolation failure invalidates
 treatment interpretation.
 
-**surprised_by:** recorded after the frozen treatment output.
+**surprised_by:** Reverse was uniquely best for one-step rear-contact geometry
+on all 20 `FIRST_POST_CONTACT_LOSS` anchors and restored dual contact in that
+isolated step, while it was uniquely best on only 4 of 20
+`FIRST_FALSE_CONTACT_SEEK` anchors. Despite 26 oracle interventions on the
+first anchor family, neither baseline nor oracle reacquired dual contact
+within 256 transitions on any available anchor, so the local kinematic benefit
+did not produce short-horizon behavioural recovery under this oracle.
 
 **disposition:** `CONTINUING`.
