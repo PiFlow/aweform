@@ -29,6 +29,18 @@ D036_TARGET_HORIZONS: Final[tuple[int, ...]] = (64, 256, 1024)
 D036_ALPHA_GRID: Final[tuple[float, ...]] = (1.0e-6, 1.0e-4, 1.0e-2, 1.0)
 D036_FIXED_ALPHA: Final[float] = 1.0e-2
 D036_AUTHORITATIVE_BASE_SHA: Final[str] = "911acc5daefe2b1e3fcc7a683e9056740c6bca29"
+D036_INVALIDATED_PROTOCOL_SHA: Final[str] = (
+    "3675be49a640b519ac42d956692b93778362bf60"
+)
+D036_INVALIDATED_ARTIFACT_SHA256: Final[str] = (
+    "81260bf42f80bf42204939dbf19c304e69d131576a0803f43c53bb78ba63e343"
+)
+D036_INVALIDATED_ARTIFACT_SIZE: Final[int] = 621472
+D036_INVALIDATION_REASON: Final[str] = (
+    "invalidated after exact-current-HEAD review found that the scored decision "
+    "feature included its own executed action and the mandatory D-034 bridge "
+    "lacked a deterministic matched non-anchor comparison"
+)
 D036_ACCEPTED_D031R1_ARTIFACT: Final[str] = d033.D033_ACCEPTED_D031R1_ARTIFACT
 D036_BRIDGE_FAMILIES: Final[tuple[str, ...]] = (
     "ALT",
@@ -38,6 +50,13 @@ D036_BRIDGE_FAMILIES: Final[tuple[str, ...]] = (
 _VISIBLE_WIDTH: Final[int] = len(d027.D027_CHANNELS)
 _ACTION_WIDTH: Final[int] = len(Action)
 _FEATURE_WIDTH_PER_STEP: Final[int] = _VISIBLE_WIDTH + _ACTION_WIDTH
+
+
+def _feature_dimension(history: int) -> int:
+    """Return the explicit current-observation plus completed-history width."""
+    if history == 1:
+        return _VISIBLE_WIDTH
+    return _VISIBLE_WIDTH + history * _FEATURE_WIDTH_PER_STEP
 
 
 def _validate_seeds(seeds: tuple[int, ...] | list[int]) -> tuple[int, ...]:
@@ -82,6 +101,7 @@ class _TraceData:
     eligible: np.ndarray
     terminated: bool
     truncated: bool
+    visible_after: np.ndarray | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -162,18 +182,31 @@ def _trace_data(seed: int, trace: tuple[d025.D025TransitionTrace, ...]) -> _Trac
         eligible=eligible,
         terminated=bool(getattr(trace[-1], "telemetry").terminated),
         truncated=bool(getattr(trace[-1], "telemetry").truncated),
+        visible_after=visible_after,
     )
+
+
+def _completed_visible(data: _TraceData, indices: np.ndarray) -> np.ndarray:
+    """Return organism-visible observations after the completed transitions."""
+    if data.visible_after is not None:
+        return np.asarray(data.visible_after[indices], dtype=float)
+    # Keep the small test fixture/backward-compatible private data shape useful.
+    visible = data.visible_before[indices].copy()
+    visible[:, 2] = data.visible_after_forward[indices]
+    return np.asarray(visible, dtype=float)
 
 
 def _feature_matrix(data: _TraceData, history: int, indices: np.ndarray) -> np.ndarray:
     if history not in D036_HISTORY_LENGTHS:
         raise ValueError(f"unsupported D-036 history length: {history}")
-    if np.any(indices < history - 1):
+    if history == 1:
+        return np.asarray(data.visible_before[indices], dtype=float)
+    if np.any(indices < history):
         raise ValueError("history prefix is unavailable and must not be padded")
-    rows: list[np.ndarray] = []
-    for offset in range(history - 1, -1, -1):
+    rows: list[np.ndarray] = [data.visible_before[indices]]
+    for offset in range(history, 0, -1):
         row_indices = indices - offset
-        visible = data.visible_before[row_indices]
+        visible = _completed_visible(data, row_indices)
         actions = np.zeros((len(indices), _ACTION_WIDTH), dtype=float)
         actions[np.arange(len(indices)), data.actions[row_indices]] = 1.0
         rows.append(np.concatenate((visible, actions), axis=1))
@@ -181,7 +214,7 @@ def _feature_matrix(data: _TraceData, history: int, indices: np.ndarray) -> np.n
 
 
 def _future_status(data: _TraceData, index: int, horizon: int) -> str:
-    if index + horizon >= len(data.visible_after_forward):
+    if index + horizon > len(data.visible_after_forward):
         if data.terminated:
             return "termination"
         if data.truncated:
@@ -192,7 +225,8 @@ def _future_status(data: _TraceData, index: int, horizon: int) -> str:
 
 def _target_data(data: _TraceData, history: int, horizon: int) -> _TargetData:
     eligible_indices = np.flatnonzero(data.eligible)
-    indices = eligible_indices[eligible_indices >= history - 1]
+    minimum_index = 0 if history == 1 else history
+    indices = eligible_indices[eligible_indices >= minimum_index]
     valid: list[int] = []
     progress: list[float] = []
     reacquired: list[bool] = []
@@ -210,12 +244,12 @@ def _target_data(data: _TraceData, history: int, horizon: int) -> _TargetData:
         valid.append(index)
         progress.append(
             float(
-                data.visible_after_forward[index + horizon]
-                - data.visible_after_forward[index]
+                data.visible_after_forward[index + horizon - 1]
+                - data.visible_before[index, 2]
             )
         )
         reacquired.append(
-            bool(np.any(data.reacquisition[index + 1 : index + horizon + 1]))
+            bool(np.any(data.reacquisition[index : index + horizon]))
         )
     return _TargetData(
         indices=np.asarray(valid, dtype=np.int64),
@@ -387,7 +421,7 @@ def _evaluate_horizon(
             models[history] = {
                 "held_out_seed": held_out,
                 "history": history,
-                "feature_dimension": history * _FEATURE_WIDTH_PER_STEP,
+                "feature_dimension": _feature_dimension(history),
                 "sample_count": len(target.indices),
                 "target_status_counts": target.status_counts,
                 "training_class_balance": {
@@ -501,7 +535,7 @@ def _evaluate_horizon(
                 if metric_values("auroc")
                 else None
             ),
-            "feature_dimension": history * _FEATURE_WIDTH_PER_STEP,
+            "feature_dimension": _feature_dimension(history),
         }
     return {"horizon": horizon, "folds": folds, "pooled": pooled}
 
@@ -539,6 +573,230 @@ def _full_models(
     return models
 
 
+def _anchor_index(
+    trace: tuple[d025.D025TransitionTrace, ...], selection: object
+) -> int | None:
+    transition = getattr(selection, "transition")
+    for index, row in enumerate(trace):
+        if row.transition_index == transition:
+            return index
+    return None
+
+
+def _d034_anchor_indices(
+    trace: tuple[d025.D025TransitionTrace, ...],
+) -> set[int]:
+    indices: set[int] = set()
+    for family in D036_BRIDGE_FAMILIES:
+        for history in (4, 8, 16):
+            selection = d034._find_trigger(trace, family, history)
+            if selection is not None:
+                index = _anchor_index(trace, selection)
+                if index is not None:
+                    indices.add(index)
+    return indices
+
+
+def _matched_non_anchor_index(
+    data: _TraceData,
+    history: int,
+    anchor_index: int,
+    excluded_anchor_indices: set[int],
+) -> int | None:
+    minimum_index = 0 if history == 1 else history
+    candidates = np.asarray(
+        [
+            int(index)
+            for index in np.flatnonzero(data.eligible)
+            if index >= minimum_index and int(index) not in excluded_anchor_indices
+        ],
+        dtype=np.int64,
+    )
+    if not len(candidates):
+        return None
+    anchor_feature = _feature_matrix(
+        data, history, np.asarray([anchor_index], dtype=np.int64)
+    )[0]
+    candidate_features = _feature_matrix(data, history, candidates)
+    distances = np.sum((candidate_features - anchor_feature) ** 2, axis=1)
+    order = np.lexsort((candidates, distances))
+    return int(candidates[order[0]])
+
+
+def _prediction(
+    data: _TraceData,
+    history: int,
+    index: int,
+    model: tuple[np.ndarray, np.ndarray | None, dict[int, _TargetData]],
+) -> tuple[float, float | None]:
+    progress_beta, class_beta, _ = model
+    feature = np.concatenate(
+        (
+            np.ones((1, 1)),
+            _feature_matrix(data, history, np.asarray([index], dtype=np.int64)),
+        ),
+        axis=1,
+    )
+    predicted_progress = float((feature @ progress_beta)[0])
+    predicted_reacquisition = (
+        float(_sigmoid(feature @ class_beta)[0]) if class_beta is not None else None
+    )
+    return predicted_progress, predicted_reacquisition
+
+
+def _actual_target(
+    target: _TargetData, index: int
+) -> tuple[float | None, bool | None, str]:
+    match = np.flatnonzero(target.indices == index)
+    if len(match):
+        position = int(match[0])
+        return (
+            float(target.progress[position]),
+            bool(target.reacquired[position]),
+            "available",
+        )
+    return None, None, "null_or_unavailable"
+
+
+def _bridge_summary(records: list[dict[str, object]]) -> dict[str, object]:
+    available = [
+        record for record in records if record.get("status") == "anchor_available"
+    ]
+    matched = [
+        record
+        for record in available
+        if record.get("matched_non_anchor_status") == "matched"
+    ]
+    progress_pairs = [
+        record
+        for record in matched
+        if record.get("anchor_predicted_future_progress") is not None
+        and record.get("matched_predicted_future_progress") is not None
+    ]
+    progress_lower = [
+        record
+        for record in progress_pairs
+        if cast(float, record["anchor_predicted_future_progress"])
+        < cast(float, record["matched_predicted_future_progress"])
+    ]
+    risk_pairs = [
+        record
+        for record in progress_pairs
+        if record.get("anchor_predicted_failure_probability") is not None
+        and record.get("matched_predicted_failure_probability") is not None
+    ]
+    coherent_pairs = [
+        record
+        for record in risk_pairs
+        if cast(float, record["anchor_predicted_future_progress"])
+        < cast(float, record["matched_predicted_future_progress"])
+        and cast(float, record["anchor_predicted_failure_probability"])
+        > cast(float, record["matched_predicted_failure_probability"])
+    ]
+    per_seed: dict[str, dict[str, object]] = {}
+    for seed in D036_DEFAULT_DEVELOPMENT_SEEDS:
+        seed_records = [record for record in records if record.get("seed") == seed]
+        seed_progress = [
+            record for record in progress_pairs if record.get("seed") == seed
+        ]
+        seed_risk = [record for record in risk_pairs if record.get("seed") == seed]
+        seed_coherent = [
+            record for record in coherent_pairs if record.get("seed") == seed
+        ]
+        per_seed[str(seed)] = {
+            "anchor_records": len(seed_records),
+            "anchor_available": sum(
+                record.get("status") == "anchor_available" for record in seed_records
+            ),
+            "matched_non_anchor_available": sum(
+                record.get("matched_non_anchor_status") == "matched"
+                for record in seed_records
+            ),
+            "progress_comparison_count": len(seed_progress),
+            "anchor_lower_predicted_progress_count": sum(
+                cast(float, record["anchor_predicted_future_progress"])
+                < cast(float, record["matched_predicted_future_progress"])
+                for record in seed_progress
+            ),
+            "high_risk_low_progress_comparison_count": len(seed_coherent),
+            "high_risk_low_progress_comparison_denominator": len(seed_risk),
+            "mean_predicted_progress_delta_anchor_minus_match": (
+                float(
+                    np.mean(
+                        [
+                            cast(float, record["anchor_predicted_future_progress"])
+                            - cast(float, record["matched_predicted_future_progress"])
+                            for record in seed_progress
+                        ]
+                    )
+                )
+                if seed_progress
+                else None
+            ),
+        }
+    risk_fraction = len(coherent_pairs) / len(risk_pairs) if risk_pairs else None
+    return {
+        "matching_rule": (
+            "Within the same seed, use eligible ordinary false-contact SEEK decision "
+            "states with the required completed prefix, exclude every D-034 anchor "
+            "index, minimize squared distance on the current visible observation plus "
+            "prior completed visible/action rows, and break ties by smallest trace "
+            "index. No target, D-034 label/outcome, or hidden state is used."
+        ),
+        "availability": {
+            "record_count": len(records),
+            "anchor_available_count": len(available),
+            "anchor_unavailable_count": sum(
+                record.get("status") == "anchor_unavailable" for record in records
+            ),
+            "matched_non_anchor_available_count": len(matched),
+            "matched_non_anchor_unavailable_count": sum(
+                record.get("matched_non_anchor_status") == "unavailable"
+                for record in records
+            ),
+            "target_null_count": sum(
+                record.get("anchor_target_status") != "available"
+                or record.get("matched_target_status") != "available"
+                for record in matched
+            ),
+        },
+        "per_seed": per_seed,
+        "pooled": {
+            "matched_pair_count": len(matched),
+            "progress_comparison_count": len(progress_pairs),
+            "anchor_lower_predicted_progress_count": len(progress_lower),
+            "anchor_lower_predicted_progress_fraction": (
+                len(progress_lower) / len(progress_pairs) if progress_pairs else None
+            ),
+            "mean_predicted_progress_delta_anchor_minus_match": (
+                float(
+                    np.mean(
+                        [
+                            cast(float, record["anchor_predicted_future_progress"])
+                            - cast(float, record["matched_predicted_future_progress"])
+                            for record in progress_pairs
+                        ]
+                    )
+                )
+                if progress_pairs
+                else None
+            ),
+            "high_risk_low_progress_comparison_count": len(coherent_pairs),
+            "high_risk_low_progress_comparison_denominator": len(risk_pairs),
+            "high_risk_low_progress_fraction": risk_fraction,
+            "bridge_coherence": (
+                risk_fraction > 0.5 if risk_fraction is not None else None
+            ),
+            "no_bridge_coherence": (
+                risk_fraction <= 0.5 if risk_fraction is not None else None
+            ),
+            "binary_bridge_status": (
+                "untestable_binary_target" if not risk_pairs else "available"
+            ),
+        },
+    }
+
+
 def _bridge_records(
     data_by_seed: dict[int, _TraceData],
     traces_by_seed: dict[int, tuple[d025.D025TransitionTrace, ...]],
@@ -549,6 +807,7 @@ def _bridge_records(
     records: list[dict[str, object]] = []
     for seed in D036_DEFAULT_DEVELOPMENT_SEEDS:
         trace = traces_by_seed[seed]
+        excluded_anchor_indices = _d034_anchor_indices(trace)
         for family in D036_BRIDGE_FAMILIES:
             for history in (4, 8, 16):
                 selection = d034._find_trigger(trace, family, history)
@@ -562,55 +821,118 @@ def _bridge_records(
                         }
                     )
                     continue
-                index = selection.transition - 2
+                index = _anchor_index(trace, selection)
+                if index is None:
+                    records.append(
+                        {
+                            "seed": seed,
+                            "family": family,
+                            "history": history,
+                            "status": "anchor_unavailable",
+                            "anchor_unavailable_reason": "transition_not_in_trace",
+                        }
+                    )
+                    continue
                 model = full_models[history]
-                progress_beta, class_beta, targets = model
-                feature = np.concatenate(
-                    (
-                        np.ones((1, 1)),
+                _, _, targets = model
+                matched_index = _matched_non_anchor_index(
+                    data_by_seed[seed], history, index, excluded_anchor_indices
+                )
+                predicted_progress, predicted_reacquisition = _prediction(
+                    data_by_seed[seed], history, index, model
+                )
+                target = targets[seed]
+                actual_progress, actual_reacquisition, target_status = _actual_target(
+                    target, index
+                )
+                record: dict[str, object] = {
+                    "seed": seed,
+                    "family": family,
+                    "history": history,
+                    "status": "anchor_available",
+                    "anchor_transition": selection.transition,
+                    "anchor_trace_index": index,
+                    "anchor_feature_digest": _digest(
                         _feature_matrix(
                             data_by_seed[seed],
                             history,
                             np.asarray([index], dtype=np.int64),
-                        ),
+                        ).tolist()
                     ),
-                    axis=1,
-                )
-                predicted_progress = float((feature @ progress_beta)[0])
-                predicted_reacquisition = (
-                    float(_sigmoid(feature @ class_beta)[0])
-                    if class_beta is not None
-                    else None
-                )
-                target = targets[seed]
-                match = np.flatnonzero(target.indices == index)
-                actual_progress = (
-                    float(target.progress[match[0]]) if len(match) else None
-                )
-                actual_reacquisition = (
-                    bool(target.reacquired[match[0]]) if len(match) else None
-                )
-                records.append(
-                    {
-                        "seed": seed,
-                        "family": family,
-                        "history": history,
-                        "status": "anchor_available",
-                        "anchor_transition": selection.transition,
-                        "feature_digest": _digest(feature.tolist()),
-                        "predicted_future_progress": predicted_progress,
-                        "predicted_reacquisition_probability": predicted_reacquisition,
-                        "predicted_failure_probability": (
-                            1.0 - predicted_reacquisition
-                            if predicted_reacquisition is not None
-                            else None
-                        ),
-                        "actual_future_progress": actual_progress,
-                        "actual_reacquired": actual_reacquisition,
-                        "d034_trigger_label_used_as_feature": False,
-                        "d034_on_off_outcome_used_as_feature": False,
-                    }
-                )
+                    "anchor_predicted_future_progress": predicted_progress,
+                    "anchor_predicted_reacquisition_probability": (
+                        predicted_reacquisition
+                    ),
+                    "anchor_predicted_failure_probability": (
+                        1.0 - predicted_reacquisition
+                        if predicted_reacquisition is not None
+                        else None
+                    ),
+                    "anchor_actual_future_progress": actual_progress,
+                    "anchor_actual_reacquired": actual_reacquisition,
+                    "anchor_target_status": target_status,
+                    "d034_trigger_label_used_as_feature": False,
+                    "d034_on_off_outcome_used_as_feature": False,
+                }
+                if matched_index is None:
+                    record.update(
+                        {
+                            "matched_non_anchor_status": "unavailable",
+                            "matched_non_anchor_transition": None,
+                            "matched_target_status": "null_or_unavailable",
+                        }
+                    )
+                else:
+                    matched_progress, matched_reacquisition = _prediction(
+                        data_by_seed[seed], history, matched_index, model
+                    )
+                    (
+                        matched_actual_progress,
+                        matched_actual_reacquisition,
+                        matched_status,
+                    ) = _actual_target(
+                        target,
+                        matched_index,
+                    )
+                    record.update(
+                        {
+                            "matched_non_anchor_status": "matched",
+                            "matched_non_anchor_transition": trace[
+                                matched_index
+                            ].transition_index,
+                            "matched_non_anchor_trace_index": matched_index,
+                            "matched_feature_digest": _digest(
+                                _feature_matrix(
+                                    data_by_seed[seed],
+                                    history,
+                                    np.asarray([matched_index], dtype=np.int64),
+                                ).tolist()
+                            ),
+                            "matched_predicted_future_progress": matched_progress,
+                            "matched_predicted_reacquisition_probability": (
+                                matched_reacquisition
+                            ),
+                            "matched_predicted_failure_probability": (
+                                1.0 - matched_reacquisition
+                                if matched_reacquisition is not None
+                                else None
+                            ),
+                            "matched_actual_future_progress": matched_actual_progress,
+                            "matched_actual_reacquired": matched_actual_reacquisition,
+                            "matched_target_status": matched_status,
+                            "predicted_progress_delta_anchor_minus_match": (
+                                predicted_progress - matched_progress
+                            ),
+                            "predicted_failure_probability_delta_anchor_minus_match": (
+                                (1.0 - predicted_reacquisition)
+                                - (1.0 - matched_reacquisition)
+                                if predicted_reacquisition is not None
+                                and matched_reacquisition is not None
+                                else None
+                            ),
+                        }
+                    )
+                records.append(record)
     return records
 
 
@@ -692,8 +1014,12 @@ def run_d036_audit(
         )
         for target_horizon in D036_TARGET_HORIZONS
     }
+    bridge_summaries = {
+        horizon: _bridge_summary(records)
+        for horizon, records in bridge_by_horizon.items()
+    }
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "experiment": "D-036",
         "title": "Shadow short-history scaffold-recruitment learnability audit",
         "authoritative_base_sha": D036_AUTHORITATIVE_BASE_SHA,
@@ -710,15 +1036,22 @@ def run_d036_audit(
             ).hexdigest(),
             "fresh_development_or_exp_seeds_used": False,
         },
+        "invalidated_prior_output": {
+            "implementation_protocol_sha": D036_INVALIDATED_PROTOCOL_SHA,
+            "artifact_sha256": D036_INVALIDATED_ARTIFACT_SHA256,
+            "artifact_size_bytes": D036_INVALIDATED_ARTIFACT_SIZE,
+            "reason": D036_INVALIDATION_REASON,
+        },
         "freeze": {
             "history_lengths": list(D036_HISTORY_LENGTHS),
             "target_horizons": list(D036_TARGET_HORIZONS),
             "feature_encoding": (
-                "flattened visible-before observations and one-hot executed "
-                "action; six channels and four action codes per completed transition"
+                "H1 is the current six-channel visible-before observation only; "
+                "H4/H8/H16 append the prior 4/8/16 completed one-hot "
+                "executed-action and post-action visible-observation pairs"
             ),
             "feature_dimensions": {
-                f"H{history}": history * _FEATURE_WIDTH_PER_STEP
+                f"H{history}": _feature_dimension(history)
                 for history in D036_HISTORY_LENGTHS
             },
             "prefix_policy": (
@@ -735,9 +1068,10 @@ def run_d036_audit(
             ),
             "split_policy": "leave-one-seed-out across all 20 reused seeds",
             "target_definition": (
-                "actual continuation after the completed decision: reacquisition "
-                "within H transitions and beacon-forward change from the "
-                "post-action observation to the post-H observation"
+                "actual causal continuation from each eligible pre-action decision: "
+                "reacquisition within H transitions and beacon-forward change from "
+                "the current pre-action observation to the final observation in the "
+                "unchanged H-transition continuation"
             ),
             "null_policy": (
                 "termination, truncation, and lifetime-boundary windows remain "
@@ -745,8 +1079,10 @@ def run_d036_audit(
             ),
             "bridge": (
                 "post-hoc read-only D-034 ALT_4/8/16 and "
-                "NO_FORWARD_PROGRESS_4/8/16 anchors; no trigger labels or ON/OFF "
-                "outcomes as features"
+                "NO_FORWARD_PROGRESS_4/8/16 anchors, each paired within seed to the "
+                "nearest eligible non-anchor ordinary-support feature vector with "
+                "smallest-index tie break; no trigger labels or ON/OFF outcomes as "
+                "features"
             ),
             "organism_boundary_unchanged": True,
         },
@@ -773,6 +1109,7 @@ def run_d036_audit(
         ],
         "evaluations": evaluations,
         "d034_bridge": bridge_by_horizon,
+        "d034_bridge_summary": bridge_summaries,
         "interpretation_categories": {
             "history_adds_learnable_information": (
                 "one or more bounded histories consistently improve held-out "

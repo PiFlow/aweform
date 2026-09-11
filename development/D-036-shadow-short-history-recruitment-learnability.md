@@ -4,11 +4,11 @@
 - **lane:** Development
 - **authoritative base:** `911acc5daefe2b1e3fcc7a683e9056740c6bca29`
 - **development seeds:** `18468..18487` inclusive, reused exactly
-- **protocol freeze SHA:** `3675be49a640b519ac42d956692b93778362bf60`
-- **artifact:** `D-036-shadow-short-history-recruitment-learnability.json`
-- **artifact SHA-256:** `81260bf42f80bf42204939dbf19c304e69d131576a0803f43c53bb78ba63e343`
-- **artifact size:** `621472` bytes
-- **status:** official output complete
+- **prior invalidated protocol SHA:** `3675be49a640b519ac42d956692b93778362bf60`
+- **prior invalidated artifact:** `D-036-shadow-short-history-recruitment-learnability.json`
+- **prior invalidated artifact SHA-256:** `81260bf42f80bf42204939dbf19c304e69d131576a0803f43c53bb78ba63e343`
+- **prior invalidated artifact size:** `621472` bytes
+- **status:** corrected protocol frozen; official output pending
 - **disposition:** `CONTINUING`
 
 ## Question and boundary
@@ -35,12 +35,14 @@ post-hoc. Eligible samples are completed false-contact SEEK transitions whose
 before/after decision observations have no charging contact.
 
 Features are direct flattened rows of six visible channels (energy, beacon
-left/forward/right, charging contact, thermal) followed by a one-hot executed
-logical action. H1 is the current completed decision row; H4, H8, and H16 are
-the last 4, 8, or 16 completed rows. Prefixes without enough completed rows
-are unavailable and are counted, never padded. No pose, geometry, distance,
-heading, station state, seed/arm/branch label, future outcome, or D-034
-predicate enters a feature.
+left/forward/right, charging contact, thermal). H1 is the current pre-action
+decision observation only; H4, H8, and H16 append the prior 4, 8, or 16
+completed transition observations (the organism-visible after-observation) and
+one-hot executed-action pairs. The scored decision's own executed action is
+never a feature. Prefixes without enough completed rows are unavailable and
+are counted, never padded. No pose, geometry, distance, heading, station
+state, seed/arm/branch label, future outcome, or D-034 predicate enters a
+feature.
 
 For horizons exactly 64, 256, and 1024 transitions, the target is derived from
 the unchanged continuation after the completed decision: whether dual-contact
@@ -60,9 +62,14 @@ same-sample H4/H8/H16 versus H1 comparisons. Pooled summaries and all seeds,
 including null/untestable supports, are retained.
 
 After cross-validation, full-support shadow fits are queried read-only at the
-D-034 `ALT_4/8/16` and `NO_FORWARD_PROGRESS_4/8/16` anchors. Predictions and
-actual continuation values are descriptive bridge diagnostics only; D-034
-labels and ON/OFF outcomes are not training inputs.
+D-034 `ALT_4/8/16` and `NO_FORWARD_PROGRESS_4/8/16` anchors. Each available
+anchor is paired within its seed to the nearest eligible ordinary-support
+non-anchor state by squared distance on the same shadow feature vector, with
+smallest trace index as the deterministic tie-break. Every D-034 anchor index
+is excluded from the candidate pool. Predictions and actual continuation
+values are descriptive bridge diagnostics only; D-034 labels and ON/OFF
+outcomes are not training inputs or matching features. Availability, nulls,
+per-seed pairs, and pooled progress/high-risk comparisons are retained.
 
 ## Predeclared interpretation
 
@@ -91,6 +98,18 @@ committed before official held-out output. The exact clean executable protocol
 SHA, deterministic artifact hash/size, official results, and validation log
 are recorded in the machine-readable artifact and handoff. No fresh
 Development or EXP seeds are used.
+
+## Invalidated official output provenance
+
+The prior official output is invalidated provenance, not evidence. Its exact
+clean executable protocol SHA was
+`3675be49a640b519ac42d956692b93778362bf60`; its artifact SHA-256 was
+`81260bf42f80bf42204939dbf19c304e69d131576a0803f43c53bb78ba63e343`, and its
+size was `621472` bytes. Exact-current-HEAD review found that the scored
+decision feature included its own executed action and that the mandatory D-034
+bridge lacked a deterministic matched non-anchor comparison. The corrected
+protocol freezes the current-decision indexing and the matched bridge
+diagnostic before any corrected output is generated.
 
 `surprised_by` and final disposition are updated after the official artifact
 is generated without changing the executable protocol.
