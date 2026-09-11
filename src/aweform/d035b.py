@@ -62,13 +62,20 @@ D035B_PREDICTION_WINDOWS: Final[tuple[tuple[str, int, int], ...]] = (
     ("257..1024", 257, 1024),
     ("1025..4096", 1025, 4096),
 )
-D035B_SUPERSEDED_PROTOCOL_SHA: Final[str] = (
+D035B_HISTORICAL_SUPERSEDED_PROTOCOL_SHA: Final[str] = (
     "8a0e23fbee23f3c47a6111dd3e23882f2402b176"
 )
-D035B_SUPERSEDED_ARTIFACT_SHA256: Final[str] = (
+D035B_HISTORICAL_SUPERSEDED_ARTIFACT_SHA256: Final[str] = (
     "877c7355d62a5254442fa3bcb3599c251c6800a7b616442421082661151d1086"
 )
-D035B_SUPERSEDED_ARTIFACT_SIZE_BYTES: Final[int] = 3_491_326
+D035B_HISTORICAL_SUPERSEDED_ARTIFACT_SIZE_BYTES: Final[int] = 3_491_326
+D035B_SUPERSEDED_PROTOCOL_SHA: Final[str] = (
+    "2e791c84c3ad9c94c57d6dbddc283bb08ea6ff5b"
+)
+D035B_SUPERSEDED_ARTIFACT_SHA256: Final[str] = (
+    "b4cded422bcdb3eadfb204473cf827f3e48b7124f5473be2447e49d3a3a1e27a"
+)
+D035B_SUPERSEDED_ARTIFACT_SIZE_BYTES: Final[int] = 27_222_882
 
 _ACTION_NAMES: Final[tuple[str, ...]] = tuple(action.name for action in Action)
 _TURN_ACTIONS: Final[frozenset[Action]] = frozenset(
@@ -277,6 +284,27 @@ def _wrap_angle(value: float) -> float:
 
 def _angle_difference(left: float, right: float) -> float:
     return abs(_wrap_angle(right - left))
+
+
+def _left_right_sign(left: float, right: float) -> int:
+    difference = left - right
+    if difference > 0.0:
+        return 1
+    if difference < 0.0:
+        return -1
+    return 0
+
+
+def _visible_side_reversal(
+    action: Action, before_sign: int, after_sign: int
+) -> bool:
+    """Return whether an executed turn flips the visible L/R side sign."""
+    return (
+        action in _TURN_ACTIONS
+        and before_sign != 0
+        and after_sign != 0
+        and before_sign == -after_sign
+    )
 
 
 def _number_summary(values: Sequence[float]) -> dict[str, object]:
@@ -613,7 +641,7 @@ def _lfr_action(
         vector, cap_degrees=cap_degrees, variant=variant
     )
     true_bearing = _station_bearing(environment)
-    side_reversal = (
+    turn_direction_reversal = (
         previous_turn_side is not None
         and gate in _TURN_ACTIONS
         and previous_turn_side is not gate
@@ -623,7 +651,16 @@ def _lfr_action(
         or (gate is Action.TURN_RIGHT and vector.theta_hat > 0.0)
     )
     record = {
+        "visible_beacon_before": {
+            "left": current.beacon.left,
+            "forward": current.beacon.forward,
+            "right": current.beacon.right,
+        },
+        "lfr_left": current.beacon.left,
+        "lfr_forward": current.beacon.forward,
+        "lfr_right": current.beacon.right,
         "gate_action": gate.name,
+        "seek_action": gate.name,
         "theta_hat_radians": vector.theta_hat,
         "theta_hat_degrees": math.degrees(vector.theta_hat),
         "vector_x": vector.x,
@@ -639,7 +676,8 @@ def _lfr_action(
         "directional_signed_error_radians": _wrap_angle(
             vector.theta_hat - true_bearing
         ),
-        "turn_side_reversal": side_reversal,
+        "evaluator_station_bearing_before_radians": true_bearing,
+        "turn_direction_reversal": turn_direction_reversal,
         "direction_mismatch_with_seek_gate": direction_mismatch,
         "saturated": (
             gate in _TURN_ACTIONS
@@ -693,18 +731,28 @@ def _minimum_pair_error_snapshot(
 
 def _opposite_turn_summary(actions: Sequence[Action]) -> dict[str, object]:
     adjacent_pairs = list(zip(actions, actions[1:], strict=False))
-    turn_pairs = [
+    turn_to_turn_pairs = [
         (left, right)
         for left, right in adjacent_pairs
         if left in _TURN_ACTIONS and right in _TURN_ACTIONS
     ]
-    opposite = sum(int(left is not right) for left, right in turn_pairs)
+    eligible_prior_turn_pairs = [
+        (left, right) for left, right in adjacent_pairs if left in _TURN_ACTIONS
+    ]
+    opposite = sum(
+        int(left is not right)
+        for left, right in eligible_prior_turn_pairs
+        if right in _TURN_ACTIONS
+    )
     return {
         "next_eligible_seek_pair_count": len(adjacent_pairs),
-        "turn_to_turn_pair_count": len(turn_pairs),
+        "turn_to_turn_pair_count": len(turn_to_turn_pairs),
+        "eligible_prior_turn_decision_count": len(eligible_prior_turn_pairs),
         "opposite_turn_count": opposite,
         "opposite_turn_next_eligible_seek_fraction": (
-            opposite / len(turn_pairs) if turn_pairs else None
+            opposite / len(eligible_prior_turn_pairs)
+            if eligible_prior_turn_pairs
+            else None
         ),
     }
 
@@ -723,11 +771,16 @@ def _lfr_diagnostic_summary(
             "saturation_fraction_among_turns": None,
             "direction_mismatch_count": 0,
             "side_reversal_count": 0,
+            "side_reversal_rate_among_turns": None,
+            "turn_direction_reversal_count": 0,
             "directional_error_radians": _number_summary([]),
             "directional_error_degrees": _number_summary([]),
             "directional_signed_error_radians": _number_summary([]),
             "theta_absolute_radians": _number_summary([]),
             "applied_turn_magnitude_degrees": _number_summary([]),
+            "angular_error_support_count": 0,
+            "saturation_rate": None,
+            "side_reversal_support_count": 0,
         }
     gate_counts = _empty_action_counts()
     errors: list[float] = []
@@ -740,6 +793,7 @@ def _lfr_diagnostic_summary(
     saturation_count = 0
     mismatch_count = 0
     reversal_count = 0
+    turn_direction_reversal_count = 0
     for record in records:
         gate = cast(str, record["gate_action"])
         gate_counts[gate] += 1
@@ -755,7 +809,10 @@ def _lfr_diagnostic_summary(
             )
             saturation_count += int(cast(bool, record["saturated"]))
         mismatch_count += int(cast(bool, record["direction_mismatch_with_seek_gate"]))
-        reversal_count += int(cast(bool, record["turn_side_reversal"]))
+        reversal_count += int(cast(bool, record["visible_side_reversal"]))
+        turn_direction_reversal_count += int(
+            cast(bool, record["turn_direction_reversal"])
+        )
     return {
         "decision_count": len(records),
         "turn_decision_count": turn_count,
@@ -768,11 +825,18 @@ def _lfr_diagnostic_summary(
         ),
         "direction_mismatch_count": mismatch_count,
         "side_reversal_count": reversal_count,
+        "side_reversal_rate_among_turns": (
+            reversal_count / turn_count if turn_count else None
+        ),
+        "turn_direction_reversal_count": turn_direction_reversal_count,
         "directional_error_radians": _number_summary(errors),
         "directional_error_degrees": _number_summary(errors_degrees),
         "directional_signed_error_radians": _number_summary(signed_errors),
         "theta_absolute_radians": _number_summary(theta_values),
         "applied_turn_magnitude_degrees": _number_summary(magnitudes),
+        "angular_error_support_count": len(records),
+        "saturation_rate": saturation_count / turn_count if turn_count else None,
+        "side_reversal_support_count": turn_count,
     }
 
 
@@ -837,6 +901,12 @@ def _run_branch(
     forward_values = [current.beacon.forward]
     path_length = 0.0
     cumulative_heading_change = 0.0
+    cumulative_commanded_signed_angle = 0.0
+    cumulative_commanded_absolute_angle = 0.0
+    turn_count = 0
+    cumulative_turn_time_seconds = 0.0
+    cumulative_turn_electrical_energy_j = 0.0
+    cumulative_turn_actuator_electrical_energy_j = 0.0
     if environment.body is None or environment.station_center is None:
         raise RuntimeError("D-035B branch lacks evaluator geometry")
     initial_position = environment.body.position
@@ -863,11 +933,16 @@ def _run_branch(
 
     for local_transition in range(1, D035B_BRANCH_HORIZON + 1):
         global_transition = anchor.transition + local_transition - 1
+        if environment.body is None:
+            raise RuntimeError("D-035B branch lost evaluator body")
+        heading_before = environment.body.heading
+        position_before = environment.body.position
         mode_before = controller.mode
         proposed, arbitration = d033._propose_b_action(controller, learner, current)
         proposed_action_counts[proposed.name] += 1
         physical_action = proposed
         turn_angle: float | None = None
+        lfr_record: dict[str, object] | None = None
         if arbitration is not None:
             arbitration_count += 1
         if valid_lfr and arbitration is not None:
@@ -892,7 +967,6 @@ def _run_branch(
                     "policy_rng_draw_present": True,
                 }
             )
-            lfr_records.append(lfr_record)
             physical_action = gate
         if arbitration is not None:
             eligible_seek_actions.append(physical_action)
@@ -908,6 +982,24 @@ def _run_branch(
         if not isinstance(physical_action, Action):
             all_logical_actions_existing_enum = False
         if physical_action in _TURN_ACTIONS:
+            commanded_turn_angle = (
+                turn_angle if turn_angle is not None else environment.config.turn_angle
+            )
+            signed_commanded_angle = (
+                commanded_turn_angle
+                if physical_action is Action.TURN_LEFT
+                else -commanded_turn_angle
+            )
+            turn_count += 1
+            cumulative_commanded_signed_angle += signed_commanded_angle
+            cumulative_commanded_absolute_angle += abs(signed_commanded_angle)
+            cumulative_turn_time_seconds += environment.config.dt_seconds
+            cumulative_turn_electrical_energy_j += (
+                telemetry.total_electrical_load_w * environment.config.dt_seconds
+            )
+            cumulative_turn_actuator_electrical_energy_j += (
+                telemetry.actuator_electrical_power_w * environment.config.dt_seconds
+            )
             all_turn_energy_semantics_canonical &= (
                 telemetry.actuator_electrical_power_w
                 == environment.config.turn_actuator_electrical_power_w
@@ -968,6 +1060,87 @@ def _run_branch(
             local_transition,
         )
         geometry_states.append(geometry)
+        if valid_lfr and lfr_record is not None:
+            post_bearing = _station_bearing(environment)
+            directional_error_after = _angle_difference(
+                cast(float, lfr_record["theta_hat_radians"]), post_bearing
+            )
+            before_side_sign = _left_right_sign(
+                current.beacon.left, current.beacon.right
+            )
+            after_side_sign = _left_right_sign(
+                next_observation.beacon.left, next_observation.beacon.right
+            )
+            actual_angular_displacement = _wrap_angle(
+                telemetry.heading - heading_before
+            )
+            visible_side_reversal = _visible_side_reversal(
+                physical_action, before_side_sign, after_side_sign
+            )
+            pre_geometry = _pair_error_snapshot(
+                position_before,
+                heading_before,
+                station,
+                local_transition - 1,
+            )
+            lfr_record.update(
+                {
+                    "arm_b_would_have_executed_action": proposed.name,
+                    "seek_action": physical_action.name,
+                    "executed_logical_action": physical_action.name,
+                    "actual_angular_displacement_radians": actual_angular_displacement,
+                    "actual_angular_displacement_degrees": math.degrees(
+                        actual_angular_displacement
+                    ),
+                    "actual_angular_displacement_absolute_radians": abs(
+                        actual_angular_displacement
+                    ),
+                    "heading_before_radians": heading_before,
+                    "heading_after_radians": telemetry.heading,
+                    "heading_change_radians": actual_angular_displacement,
+                    "heading_change_absolute_radians": abs(
+                        actual_angular_displacement
+                    ),
+                    "visible_beacon_after": {
+                        "left": next_observation.beacon.left,
+                        "forward": next_observation.beacon.forward,
+                        "right": next_observation.beacon.right,
+                    },
+                    "beacon_forward_change_signed": (
+                        next_observation.beacon.forward - current.beacon.forward
+                    ),
+                    "beacon_forward_change_absolute": abs(
+                        next_observation.beacon.forward - current.beacon.forward
+                    ),
+                    "visible_left_right_sign_before": before_side_sign,
+                    "visible_left_right_sign_after": after_side_sign,
+                    "visible_left_right_difference_before": (
+                        current.beacon.left - current.beacon.right
+                    ),
+                    "visible_left_right_difference_after": (
+                        next_observation.beacon.left - next_observation.beacon.right
+                    ),
+                    "visible_side_reversal": visible_side_reversal,
+                    "turn_side_reversal": visible_side_reversal,
+                    "true_evaluator_station_bearing_after_radians": post_bearing,
+                    "evaluator_heading_error_before_radians": cast(
+                        float, lfr_record["true_evaluator_station_bearing_radians"]
+                    ),
+                    "evaluator_heading_error_after_radians": post_bearing,
+                    "evaluator_station_bearing_after_radians": post_bearing,
+                    "directional_error_after_radians": directional_error_after,
+                    "directional_error_after_degrees": math.degrees(
+                        directional_error_after
+                    ),
+                    "rear_contact_pair_error_geometry": {
+                        "before": pre_geometry,
+                        "after": geometry,
+                    },
+                    "rear_contact_pair_error_before": pre_geometry,
+                    "rear_contact_pair_error_after": geometry,
+                }
+            )
+            lfr_records.append(lfr_record)
         action_counts[physical_action.name] += 1
         path_length += math.dist(telemetry.position_before, telemetry.position_after)
         cumulative_heading_change += _angle_difference(
@@ -1031,7 +1204,9 @@ def _run_branch(
         "energy": {
             "at_anchor": anchor.current.energy,
             "minimum": minimum_energy,
+            "maximum": max(energy_values),
             "final_or_stop": current.energy,
+            "final": current.energy,
             "at_reacquisition": (
                 current.energy if reacquisition_transition is not None else None
             ),
@@ -1040,10 +1215,16 @@ def _run_branch(
         "thermal": {
             "at_anchor": anchor.current.thermal,
             "minimum": minimum_temperature,
-            "final_or_stop": current.thermal,
-            "maximum": max(row.observation[5] for row in trace)
+            "maximum": max(
+                [anchor.current.thermal, *[row.observation[5] for row in trace]]
+            )
             if trace
             else anchor.current.thermal,
+            "final_or_stop": current.thermal,
+            "final": current.thermal,
+            "at_reacquisition": (
+                current.thermal if reacquisition_transition is not None else None
+            ),
         },
         "path_length": path_length,
         "net_displacement_from_anchor": {
@@ -1095,6 +1276,29 @@ def _run_branch(
             "change": forward_values[-1] - forward_values[0],
         },
         "cumulative_absolute_heading_change": cumulative_heading_change,
+        "cumulative_commanded_signed_angle_radians": cumulative_commanded_signed_angle,
+        "cumulative_commanded_absolute_angle_radians": (
+            cumulative_commanded_absolute_angle
+        ),
+        "cumulative_commanded_signed_angle_degrees": math.degrees(
+            cumulative_commanded_signed_angle
+        ),
+        "cumulative_commanded_absolute_angle_degrees": math.degrees(
+            cumulative_commanded_absolute_angle
+        ),
+        "turn_count": turn_count,
+        "turn_exposure": {
+            "turn_count": turn_count,
+            "canonical_turn_time_seconds": cumulative_turn_time_seconds,
+            "canonical_turn_electrical_energy_j": cumulative_turn_electrical_energy_j,
+            "canonical_turn_actuator_electrical_energy_j": (
+                cumulative_turn_actuator_electrical_energy_j
+            ),
+        },
+        "cumulative_turn_time_seconds": cumulative_turn_time_seconds,
+        "cumulative_turn_electrical_energy_j": cumulative_turn_electrical_energy_j,
+        "turn_time_seconds": cumulative_turn_time_seconds,
+        "turn_energy_j": cumulative_turn_electrical_energy_j,
         "action_counts": action_counts,
         "proposed_action_counts": proposed_action_counts,
         "forward_boundary_counts": forward_boundary_counts,
@@ -1127,6 +1331,7 @@ def _run_branch(
             "explorer_call_count": explorer_calls,
         },
         "directional_interpolation": _lfr_diagnostic_summary(lfr_records),
+        "lfr_decision_records": lfr_records,
         "prediction_compatibility": prediction_metrics.as_dict(),
         "executed_action_update_count": update_count,
         "executed_action_update_digest": update_digest.hexdigest(),
@@ -1169,7 +1374,7 @@ def _run_branch(
             "same_discrete_turn_direction_as_seek_beacon_action": True,
             "learner_update_from_actual_next_observation": True,
         },
-        "lfr_decision_records_retained": False,
+        "lfr_decision_records_retained": True,
     }
     expected = d033._expected_baseline_trace(full_b_trace, anchor.transition)
     output["baseline_continuation_exact"] = (
@@ -1572,6 +1777,16 @@ def run_d035b_audit(
                 "prediction and mandatory reporting fields were absent."
             ),
         },
+        "historical_superseded_provenance": {
+            "protocol_sha": D035B_HISTORICAL_SUPERSEDED_PROTOCOL_SHA,
+            "artifact_sha256": D035B_HISTORICAL_SUPERSEDED_ARTIFACT_SHA256,
+            "artifact_size_bytes": D035B_HISTORICAL_SUPERSEDED_ARTIFACT_SIZE_BYTES,
+            "valid_for_current_protocol": False,
+            "invalidation_reason": (
+                "Superseded by the previously corrected protocol, which is now "
+                "also invalidated by the current issue-conformance correction."
+            ),
+        },
         "freeze": {
             "anchor_types": list(D035B_ANCHOR_TYPES),
             "branch_names": [name for name, _, _ in _branch_specs()],
@@ -1619,6 +1834,26 @@ def run_d035b_audit(
                 "support_counts_are_exact": True,
             },
             "required_reporting_fields": [
+                "lfr_decision_records",
+                "directional_interpolation.angular_error_support_count",
+                "directional_interpolation.saturation_rate",
+                "directional_interpolation.side_reversal_rate_among_turns",
+                "directional_interpolation.side_reversal_support_count",
+                "cumulative_commanded_signed_angle_radians",
+                "cumulative_commanded_absolute_angle_radians",
+                "turn_count",
+                "turn_exposure.canonical_turn_time_seconds",
+                "turn_exposure.canonical_turn_electrical_energy_j",
+                "energy.at_anchor",
+                "energy.minimum",
+                "energy.maximum",
+                "energy.final",
+                "energy.at_reacquisition",
+                "thermal.at_anchor",
+                "thermal.minimum",
+                "thermal.maximum",
+                "thermal.final",
+                "thermal.at_reacquisition",
                 "opposite_turn_next_eligible_seek_fraction",
                 "rear_contact_pair_error_geometry.start",
                 "rear_contact_pair_error_geometry.minimum",

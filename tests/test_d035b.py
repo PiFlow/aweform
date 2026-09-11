@@ -82,6 +82,32 @@ def test_lfr_formula_zero_vector_and_interpolated_cap_are_exact() -> None:
     ) < 5.0 * 3.141592653589793 / 180.0
 
 
+def test_visible_side_reversal_is_a_visible_left_right_sign_flip() -> None:
+    assert d035b._left_right_sign(0.8, 0.2) == 1
+    assert d035b._left_right_sign(0.2, 0.8) == -1
+    assert d035b._visible_side_reversal(Action.TURN_LEFT, 1, -1) is True
+    assert d035b._visible_side_reversal(Action.TURN_RIGHT, -1, 1) is True
+    assert d035b._visible_side_reversal(Action.TURN_LEFT, 1, 1) is False
+    assert d035b._visible_side_reversal(Action.MOVE_FORWARD, 1, -1) is False
+    assert d035b._visible_side_reversal(Action.TURN_LEFT, 0, -1) is False
+
+
+def test_opposite_turn_fraction_keeps_non_turn_successors_in_denominator() -> None:
+    summary = d035b._opposite_turn_summary(
+        (Action.TURN_LEFT, Action.MOVE_FORWARD, Action.TURN_RIGHT)
+    )
+    assert summary["eligible_prior_turn_decision_count"] == 1
+    assert summary["opposite_turn_count"] == 0
+    assert summary["opposite_turn_next_eligible_seek_fraction"] == 0.0
+
+    summary = d035b._opposite_turn_summary(
+        (Action.TURN_LEFT, Action.TURN_RIGHT, Action.WAIT)
+    )
+    assert summary["eligible_prior_turn_decision_count"] == 2
+    assert summary["opposite_turn_count"] == 1
+    assert summary["opposite_turn_next_eligible_seek_fraction"] == 0.5
+
+
 def test_first_false_contact_seek_is_pre_action_seek_not_away_entry() -> None:
     def row(
         transition: int,
@@ -231,8 +257,38 @@ def test_lfr_branch_preserves_existing_logical_action_and_update_contract() -> N
     assert state["turn_time_energy_canonical"] is True
     assert state["no_false_contact_seek_explorer_call"] is True
     assert cast(int, interp["lfr_decision_count"]) > 0
+    assert interp["lfr_decision_records_retained"] is True
+    records = cast(list[dict[str, object]], interp["lfr_decision_records"])
+    assert len(records) == interp["lfr_decision_count"]
+    assert {
+        "lfr_left",
+        "lfr_forward",
+        "lfr_right",
+        "theta_hat_radians",
+        "seek_action",
+        "arm_b_would_have_executed_action",
+        "executed_logical_action",
+        "actual_angular_displacement_radians",
+        "saturated",
+        "beacon_forward_change_signed",
+        "beacon_forward_change_absolute",
+        "visible_left_right_sign_before",
+        "visible_left_right_sign_after",
+        "visible_side_reversal",
+        "true_evaluator_station_bearing_radians",
+        "directional_error_radians",
+        "heading_change_radians",
+        "rear_contact_pair_error_geometry",
+    } <= set(records[0])
     directional = cast(dict[str, object], interp["directional_interpolation"])
     assert cast(int, directional["decision_count"]) > 0
+    assert directional["angular_error_support_count"] == len(records)
+    assert directional["side_reversal_support_count"] == directional[
+        "turn_decision_count"
+    ]
+    assert directional["saturation_rate"] == directional[
+        "saturation_fraction_among_turns"
+    ]
     assert {
         "FULL_NOMINAL_FORWARD",
         "BOUNDARY_CLIPPED_FORWARD",
@@ -244,6 +300,30 @@ def test_lfr_branch_preserves_existing_logical_action_and_update_contract() -> N
         "forward_stall_count",
     } <= set(interp)
     assert "opposite_turn_next_eligible_seek_fraction" in interp
+    assert {
+        "cumulative_commanded_signed_angle_radians",
+        "cumulative_commanded_absolute_angle_radians",
+        "turn_count",
+        "turn_exposure",
+        "cumulative_turn_time_seconds",
+        "cumulative_turn_electrical_energy_j",
+    } <= set(interp)
+    turn_exposure = cast(dict[str, object], interp["turn_exposure"])
+    assert turn_exposure["turn_count"] == interp["turn_count"]
+    assert turn_exposure["canonical_turn_time_seconds"] == interp[
+        "cumulative_turn_time_seconds"
+    ]
+    assert turn_exposure["canonical_turn_electrical_energy_j"] == interp[
+        "cumulative_turn_electrical_energy_j"
+    ]
+    energy = cast(dict[str, object], interp["energy"])
+    thermal = cast(dict[str, object], interp["thermal"])
+    assert {"at_anchor", "minimum", "maximum", "final", "at_reacquisition"} <= set(
+        energy
+    )
+    assert {"at_anchor", "minimum", "maximum", "final", "at_reacquisition"} <= set(
+        thermal
+    )
     geometry = cast(
         dict[str, object], interp["rear_contact_pair_error_geometry"]
     )
