@@ -19,6 +19,7 @@ import json
 import math
 import pickle
 import statistics
+import struct
 import zlib
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
@@ -121,6 +122,8 @@ _COMPACT_LFR_COLUMNS: Final[tuple[str, ...]] = (
     "rear_minus_pair_error_after",
     "max_pair_error_after",
 )
+_COMPACT_LFR_BINARY_FORMAT: Final[str] = "<I4d3B2d?2d2b?4d2d6d"
+_COMPACT_LFR_PACKER: Final[struct.Struct] = struct.Struct(_COMPACT_LFR_BINARY_FORMAT)
 
 
 @dataclass(frozen=True, slots=True)
@@ -371,13 +374,13 @@ def _compact_lfr_decision_records(
             else:
                 row.append(record[column])
         rows.append(row)
-    payload = json.dumps(rows, separators=(",", ":"), ensure_ascii=True).encode(
-        "utf-8"
-    )
+    payload = b"".join(_COMPACT_LFR_PACKER.pack(*row) for row in rows)
     return {
-        "encoding": "zlib+base64-json-rows",
+        "encoding": "zlib+base64-binary-rows",
         "columns": list(_COMPACT_LFR_COLUMNS),
         "action_names": list(_ACTION_NAMES),
+        "binary_format": _COMPACT_LFR_BINARY_FORMAT,
+        "record_size_bytes": _COMPACT_LFR_PACKER.size,
         "record_count": len(rows),
         "support_count": len(rows),
         "data": base64.b64encode(zlib.compress(payload, level=9)).decode("ascii"),
@@ -388,18 +391,24 @@ def _decode_compact_lfr_decision_records(
     encoded: dict[str, object],
 ) -> list[dict[str, object]]:
     """Decode the artifact representation for deterministic audit/tests."""
-    if encoded["encoding"] != "zlib+base64-json-rows":
+    if encoded["encoding"] != "zlib+base64-binary-rows":
         raise ValueError("unknown compact D-035B LFR record encoding")
     columns = tuple(cast(list[str], encoded["columns"]))
     if columns != _COMPACT_LFR_COLUMNS:
         raise ValueError("compact D-035B LFR record columns changed")
+    if encoded["binary_format"] != _COMPACT_LFR_BINARY_FORMAT:
+        raise ValueError("compact D-035B LFR binary format changed")
+    if encoded["record_size_bytes"] != _COMPACT_LFR_PACKER.size:
+        raise ValueError("compact D-035B LFR record size changed")
     action_names = tuple(cast(list[str], encoded["action_names"]))
-    rows = cast(
-        list[list[object]],
-        json.loads(
-            zlib.decompress(base64.b64decode(cast(str, encoded["data"])))
-        ),
-    )
+    payload = zlib.decompress(base64.b64decode(cast(str, encoded["data"])))
+    record_count = cast(int, encoded["record_count"])
+    if len(payload) != record_count * _COMPACT_LFR_PACKER.size:
+        raise ValueError("compact D-035B LFR payload size does not match count")
+    rows = [
+        list(_COMPACT_LFR_PACKER.unpack_from(payload, offset))
+        for offset in range(0, len(payload), _COMPACT_LFR_PACKER.size)
+    ]
     decoded: list[dict[str, object]] = []
     for row in rows:
         record = dict(zip(columns, row, strict=True))
@@ -1943,9 +1952,11 @@ def run_d035b_audit(
                 "support_counts_are_exact": True,
             },
             "lfr_decision_record_encoding": {
-                "encoding": "zlib+base64-json-rows",
+                "encoding": "zlib+base64-binary-rows",
                 "columns": list(_COMPACT_LFR_COLUMNS),
                 "action_codebook": list(_ACTION_NAMES),
+                "binary_format": _COMPACT_LFR_BINARY_FORMAT,
+                "record_size_bytes": _COMPACT_LFR_PACKER.size,
                 "decoded_record_values_are_complete": True,
             },
             "required_reporting_fields": [
