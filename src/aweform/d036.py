@@ -18,7 +18,7 @@ from typing import Final, cast
 
 import numpy as np
 
-from . import d025, d026, d027, d033, d034
+from . import d025, d026, d027, d032, d033, d034
 from .env import Action
 from .exp003_seed_policy import validate_exp003_development_seeds
 
@@ -614,6 +614,41 @@ def _bridge_records(
     return records
 
 
+def _exact_replay_for_seed(
+    seed: int, accepted: dict[str, object]
+) -> tuple[dict[str, object], tuple[d025.D025TransitionTrace, ...]]:
+    """Gate one instrumented replay of each accepted arm and retain Arm-B."""
+    arm_records: dict[str, object] = {}
+    traces: tuple[d025.D025TransitionTrace, ...] | None = None
+    for role, arm in (("A", "LEARNED_WITH_DETRAP"), ("B", "LEARNED_NO_DETRAP")):
+        result, trace, _ = d033._run_capture(
+            seed,
+            role=role,
+            horizon=D036_HORIZON,
+            seed_validator=_validate_seed,
+        )
+        if role == "B":
+            traces = trace
+        expected = dict(d033._accepted_arm(accepted, seed, arm))
+        expected["_weights"] = d033._flatten_final_weights(expected)
+        comparison = d032._compare_identity_fields(
+            result, expected, include_private_weights=True
+        )
+        if not bool(comparison["all_identity_fields_exact"]):
+            raise RuntimeError(f"D-036 accepted {arm} replay gate failed for {seed}")
+        arm_records[arm] = {
+            "seed": seed,
+            "arm": arm,
+            "all_identity_fields_exact": True,
+            "checked_identity_fields": comparison["checked_fields"],
+            "mismatched_identity_fields": comparison["mismatched_fields"],
+            "instrumented_replay_exact": True,
+        }
+    if traces is None:
+        raise RuntimeError("D-036 Arm-B replay trace was not captured")
+    return arm_records, traces
+
+
 def _strip_private(value: object) -> object:
     if isinstance(value, dict):
         return {
@@ -641,9 +676,7 @@ def run_d036_audit(
     traces_by_seed: dict[int, tuple[d025.D025TransitionTrace, ...]] = {}
     replay_gates: list[dict[str, object]] = []
     for seed in validated:
-        replay, _a_trace, b_trace, _anchor, _checks = d034._reference_replay_for_seed(
-            seed, accepted
-        )
+        replay, b_trace = _exact_replay_for_seed(seed, accepted)
         replay_gates.append(replay)
         traces_by_seed[seed] = b_trace
         data_by_seed[seed] = _trace_data(seed, traces_by_seed[seed])
