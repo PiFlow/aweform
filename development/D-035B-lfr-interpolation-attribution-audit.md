@@ -60,9 +60,9 @@ The corrected executable protocol was frozen at a new clean SHA before the
 authorized treatment was rerun. The previously corrected protocol/output pair
 was invalidated by this bounded issue-conformance correction.
 
-- **protocol_only_freeze_sha:** `7fb08461694d838cb1333b9e3d66de8345780ac4`
-- **implementation_probe_sha:** `7fb08461694d838cb1333b9e3d66de8345780ac4`
-- **corrected_artifact_sha256:** `5d1471519972ee8099a211ab61f70da897eac1640d6f190c48c49a74cc2f6814`
+- **protocol_only_freeze_sha:** `30dfdfc98c287ded46f0992ffb11a31bb6b48dee`
+- **implementation_probe_sha:** `30dfdfc98c287ded46f0992ffb11a31bb6b48dee`
+- **corrected_artifact_sha256:** `019a318a8c052d98a33cfc0825287199c51334d409a1cacfd050c727add38f9c`
 - **corrected_artifact_size_bytes:** `99,075,876`
 - **deterministic_regeneration:** byte-for-byte equal to a second clean run.
 - **superseded_protocol_sha:** `2e791c84c3ad9c94c57d6dbddc283bb08ea6ff5b`
@@ -148,9 +148,9 @@ genuine life, metabolism, or a confirmatory claim.
 ## Corrected substantive output
 
 The corrected official artifact was generated from clean executable SHA
-`7fb08461694d838cb1333b9e3d66de8345780ac4` using only the 20 authorized
+`30dfdfc98c287ded46f0992ffb11a31bb6b48dee` using only the 20 authorized
 reused seeds. Its SHA-256 is
-`5d1471519972ee8099a211ab61f70da897eac1640d6f190c48c49a74cc2f6814` and its
+`019a318a8c052d98a33cfc0825287199c51334d409a1cacfd050c727add38f9c` and its
 size is `99,075,876` bytes. A second deterministic regeneration was
 byte-for-byte identical.
 
