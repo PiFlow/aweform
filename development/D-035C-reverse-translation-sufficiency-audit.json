@@ -1,0 +1,10 @@
+{
+  "experiment": "D-035C",
+  "status": "protocol_only_freeze_before_official_treatment",
+  "authoritative_base_sha": "f694d47eb2c94cf3afbf07f327036234faceacea",
+  "base_tree_sha": "c28b9debd8f666937fd57c0e3864d48be5135417",
+  "development_seeds": [18468, 18469, 18470, 18471, 18472, 18473, 18474, 18475, 18476, 18477, 18478, 18479, 18480, 18481, 18482, 18483, 18484, 18485, 18486, 18487],
+  "protocol_only_freeze_sha": null,
+  "official_treatment_executed": false,
+  "d035b_code_or_results_used": false
+}
