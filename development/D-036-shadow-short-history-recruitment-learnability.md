@@ -4,8 +4,11 @@
 - **lane:** Development
 - **authoritative base:** `911acc5daefe2b1e3fcc7a683e9056740c6bca29`
 - **development seeds:** `18468..18487` inclusive, reused exactly
-- **status:** protocol frozen before official output; execution follows the
-  executable SHA recorded in the artifact
+- **protocol freeze SHA:** `3675be49a640b519ac42d956692b93778362bf60`
+- **artifact:** `D-036-shadow-short-history-recruitment-learnability.json`
+- **artifact SHA-256:** `81260bf42f80bf42204939dbf19c304e69d131576a0803f43c53bb78ba63e343`
+- **artifact size:** `621472` bytes
+- **status:** official output complete
 - **disposition:** `CONTINUING`
 
 ## Question and boundary
@@ -91,3 +94,23 @@ Development or EXP seeds are used.
 
 `surprised_by` and final disposition are updated after the official artifact
 is generated without changing the executable protocol.
+
+## Observed
+
+All 20 Arm-A/Arm-B identity replay gates passed. Arm-B produced no positive
+dual-contact reacquisition labels at any requested horizon, so the binary
+target is unlearnable/untestable on this support and its Brier score, balanced
+accuracy, and AUROC are reported null. The continuous progress target remains
+supported. H4/H8/H16 have higher pooled held-out correlation than H1, but
+held-out MAE is worse on average and the per-seed MAE differences are mixed:
+the descriptive reading is **history signal exists but is too weak/unstable**.
+
+This does not authorize causal temporal memory or learned scaffold
+recruitment. D-035A/B/C remain candidate later re-tests only after a learned
+temporal recruitment mechanism exists. No confirmatory or consciousness,
+emotion, genuine-life, or intelligence claim is made.
+
+**surprised_by:** The all-negative reacquisition target made the requested
+binary learner unsupported across every frozen horizon, while bounded-history
+features still changed continuous-progress correlation; increasing history
+did not improve held-out MAE on average.
