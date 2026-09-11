@@ -12,12 +12,14 @@ reward, and information boundary remain unchanged.
 from __future__ import annotations
 
 import argparse
+import base64
 import copy
 import hashlib
 import json
 import math
 import pickle
 import statistics
+import zlib
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -82,6 +84,43 @@ _TURN_ACTIONS: Final[frozenset[Action]] = frozenset(
     (Action.TURN_LEFT, Action.TURN_RIGHT)
 )
 _CAUSAL_IDENTITY_FIELDS: Final[tuple[str, ...]] = d032._CAUSAL_IDENTITY_FIELDS
+_COMPACT_LFR_ACTION_COLUMNS: Final[frozenset[str]] = frozenset(
+    {
+        "seek_action",
+        "arm_b_would_have_executed_action",
+        "executed_logical_action",
+    }
+)
+_COMPACT_LFR_COLUMNS: Final[tuple[str, ...]] = (
+    "transition",
+    "lfr_left",
+    "lfr_forward",
+    "lfr_right",
+    "theta_hat_radians",
+    "seek_action",
+    "arm_b_would_have_executed_action",
+    "executed_logical_action",
+    "actual_angular_displacement_radians",
+    "actual_angular_displacement_absolute_radians",
+    "saturated",
+    "beacon_forward_change_signed",
+    "beacon_forward_change_absolute",
+    "visible_left_right_sign_before",
+    "visible_left_right_sign_after",
+    "visible_side_reversal",
+    "evaluator_station_bearing_before_radians",
+    "directional_error_radians",
+    "evaluator_station_bearing_after_radians",
+    "directional_error_after_radians",
+    "heading_change_radians",
+    "heading_change_absolute_radians",
+    "rear_plus_pair_error_before",
+    "rear_minus_pair_error_before",
+    "max_pair_error_before",
+    "rear_plus_pair_error_after",
+    "rear_minus_pair_error_after",
+    "max_pair_error_after",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -305,6 +344,69 @@ def _visible_side_reversal(
         and after_sign != 0
         and before_sign == -after_sign
     )
+
+
+def _compact_lfr_decision_records(
+    records: Sequence[dict[str, object]],
+) -> dict[str, object]:
+    """Encode complete LFR records compactly without losing diagnostic values."""
+    rows: list[list[object]] = []
+    for record in records:
+        geometry = cast(dict[str, object], record["rear_contact_pair_error_geometry"])
+        before = cast(dict[str, object], geometry["before"])
+        after = cast(dict[str, object], geometry["after"])
+        row: list[object] = []
+        for column in _COMPACT_LFR_COLUMNS:
+            if column in _COMPACT_LFR_ACTION_COLUMNS:
+                action_name = cast(str, record[column])
+                row.append(_ACTION_NAMES.index(action_name))
+            elif column.endswith("_before") and column.startswith(
+                ("rear_plus_pair_error", "rear_minus_pair_error", "max_pair_error")
+            ):
+                row.append(before[column.removesuffix("_before")])
+            elif column.endswith("_after") and column.startswith(
+                ("rear_plus_pair_error", "rear_minus_pair_error", "max_pair_error")
+            ):
+                row.append(after[column.removesuffix("_after")])
+            else:
+                row.append(record[column])
+        rows.append(row)
+    payload = json.dumps(rows, separators=(",", ":"), ensure_ascii=True).encode(
+        "utf-8"
+    )
+    return {
+        "encoding": "zlib+base64-json-rows",
+        "columns": list(_COMPACT_LFR_COLUMNS),
+        "action_names": list(_ACTION_NAMES),
+        "record_count": len(rows),
+        "support_count": len(rows),
+        "data": base64.b64encode(zlib.compress(payload, level=9)).decode("ascii"),
+    }
+
+
+def _decode_compact_lfr_decision_records(
+    encoded: dict[str, object],
+) -> list[dict[str, object]]:
+    """Decode the artifact representation for deterministic audit/tests."""
+    if encoded["encoding"] != "zlib+base64-json-rows":
+        raise ValueError("unknown compact D-035B LFR record encoding")
+    columns = tuple(cast(list[str], encoded["columns"]))
+    if columns != _COMPACT_LFR_COLUMNS:
+        raise ValueError("compact D-035B LFR record columns changed")
+    action_names = tuple(cast(list[str], encoded["action_names"]))
+    rows = cast(
+        list[list[object]],
+        json.loads(
+            zlib.decompress(base64.b64decode(cast(str, encoded["data"])))
+        ),
+    )
+    decoded: list[dict[str, object]] = []
+    for row in rows:
+        record = dict(zip(columns, row, strict=True))
+        for column in _COMPACT_LFR_ACTION_COLUMNS:
+            record[column] = action_names[cast(int, record[column])]
+        decoded.append(record)
+    return decoded
 
 
 def _number_summary(values: Sequence[float]) -> dict[str, object]:
@@ -1537,6 +1639,13 @@ def _seed_record(
             replay,
         )
         branch_set = _run_branch_set(anchor, full_b_trace=b_trace)
+        for branch_output in (
+            cast(dict[str, object], branch_set["baseline"]),
+            *cast(list[dict[str, object]], branch_set["branches"]),
+        ):
+            branch_output["lfr_decision_records"] = _compact_lfr_decision_records(
+                cast(list[dict[str, object]], branch_output["lfr_decision_records"])
+            )
         anchors[anchor_type] = {
             "available": True,
             "status": anchor_type,
@@ -1832,6 +1941,12 @@ def run_d035b_audit(
                     for label, start, end in D035B_PREDICTION_WINDOWS
                 ],
                 "support_counts_are_exact": True,
+            },
+            "lfr_decision_record_encoding": {
+                "encoding": "zlib+base64-json-rows",
+                "columns": list(_COMPACT_LFR_COLUMNS),
+                "action_codebook": list(_ACTION_NAMES),
+                "decoded_record_values_are_complete": True,
             },
             "required_reporting_fields": [
                 "lfr_decision_records",

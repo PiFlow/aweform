@@ -280,6 +280,18 @@ def test_lfr_branch_preserves_existing_logical_action_and_update_contract() -> N
         "heading_change_radians",
         "rear_contact_pair_error_geometry",
     } <= set(records[0])
+    compact = d035b._compact_lfr_decision_records(records)
+    assert compact["record_count"] == len(records)
+    decoded = d035b._decode_compact_lfr_decision_records(compact)
+    assert decoded[0]["lfr_left"] == records[0]["lfr_left"]
+    assert decoded[0]["seek_action"] == records[0]["seek_action"]
+    assert decoded[0]["visible_side_reversal"] == records[0][
+        "visible_side_reversal"
+    ]
+    assert decoded[0]["max_pair_error_after"] == cast(
+        dict[str, object],
+        cast(dict[str, object], records[0]["rear_contact_pair_error"])['after'],
+    )["max_pair_error"]
     directional = cast(dict[str, object], interp["directional_interpolation"])
     assert cast(int, directional["decision_count"]) > 0
     assert directional["angular_error_support_count"] == len(records)
