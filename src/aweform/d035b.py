@@ -20,6 +20,7 @@ import math
 import pickle
 import statistics
 import struct
+import subprocess
 import zlib
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
@@ -79,6 +80,18 @@ D035B_SUPERSEDED_ARTIFACT_SHA256: Final[str] = (
     "b4cded422bcdb3eadfb204473cf827f3e48b7124f5473be2447e49d3a3a1e27a"
 )
 D035B_SUPERSEDED_ARTIFACT_SIZE_BYTES: Final[int] = 27_222_882
+D035B_INVALIDATED_PROTOCOL_SHA: Final[str] = (
+    "7fb0846f4f7f3d6c52785b5a7c96c1e99784a33f"
+)
+D035B_INVALIDATED_ARTIFACT_SHA256: Final[str] = (
+    "f09d605e83b991381e53810635614cc9546cb3a55181881167c7037062115236"
+)
+D035B_INVALIDATED_ARTIFACT_SIZE_BYTES: Final[int] = 99_075_381
+D035B_INVALIDATION_REASON: Final[str] = (
+    "Invalidated because the recorded clean executable SHA was not an existing "
+    "Git commit; repository evidence identifies the real executable protocol "
+    "commit as 7fb08461694d838cb1333b9e3d66de8345780ac4."
+)
 
 _ACTION_NAMES: Final[tuple[str, ...]] = tuple(action.name for action in Action)
 _TURN_ACTIONS: Final[frozenset[Action]] = frozenset(
@@ -307,7 +320,30 @@ def _validate_d035b_seed(seed: int) -> None:
 
 
 def _validate_executed_commit_sha(value: str | None) -> str | None:
-    return d031r1._validate_executed_commit_sha(value)
+    validated = d031r1._validate_executed_commit_sha(value)
+    if validated is None:
+        return None
+    repository = _repository_root()
+    try:
+        subprocess.run(
+            ["git", "cat-file", "-e", f"{validated}^{{commit}}"],
+            cwd=repository,
+            check=True,
+            capture_output=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise ValueError(
+            "executed_commit_sha must identify an existing Git commit"
+        ) from error
+    return validated
+
+
+def _repository_root() -> Path:
+    module_path = Path(__file__).resolve()
+    for parent in (module_path.parent, *module_path.parents):
+        if (parent / "pyproject.toml").is_file() and (parent / ".git").exists():
+            return parent
+    raise ValueError("could not resolve the Aweform source checkout")
 
 
 def _digest(value: object) -> str:
@@ -1904,6 +1940,13 @@ def run_d035b_audit(
                 "Superseded by the previously corrected protocol, which is now "
                 "also invalidated by the current issue-conformance correction."
             ),
+        },
+        "invalidated_provenance": {
+            "protocol_sha": D035B_INVALIDATED_PROTOCOL_SHA,
+            "artifact_sha256": D035B_INVALIDATED_ARTIFACT_SHA256,
+            "artifact_size_bytes": D035B_INVALIDATED_ARTIFACT_SIZE_BYTES,
+            "valid_for_current_protocol": False,
+            "invalidation_reason": D035B_INVALIDATION_REASON,
         },
         "freeze": {
             "anchor_types": list(D035B_ANCHOR_TYPES),

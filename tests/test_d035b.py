@@ -363,3 +363,17 @@ def test_d035b_requires_clean_executable_sha_for_official_output() -> None:
             seeds=d035b.D035B_DEFAULT_DEVELOPMENT_SEEDS,
             executed_commit_sha=None,
         )
+
+
+def test_d035b_rejects_nonexistent_executable_commit_sha() -> None:
+    with pytest.raises(ValueError, match="existing Git commit"):
+        d035b._validate_executed_commit_sha(
+            "7fb0846f4f7f3d6c52785b5a7c96c1e99784a33f"
+        )
+
+    assert (
+        d035b._validate_executed_commit_sha(
+            "7fb08461694d838cb1333b9e3d66de8345780ac4"
+        )
+        == "7fb08461694d838cb1333b9e3d66de8345780ac4"
+    )

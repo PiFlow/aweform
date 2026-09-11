@@ -46,14 +46,24 @@ the corrected protocol.
 - **invalidation_reason:** exact-current-HEAD review identified an invalid
   pre-action anchor identity and missing required stratified diagnostics/fields.
 
+The immediately prior artifact was also invalidated because its clean executable
+protocol SHA was a non-existent Git object. That typo and its artifact identity
+are retained as invalid provenance below; it is not evidence for the corrected
+protocol.
+
+- **invalidated_protocol_only_freeze_sha:** `7fb0846f4f7f3d6c52785b5a7c96c1e99784a33f`
+- **invalidated_artifact_sha256:** `f09d605e83b991381e53810635614cc9546cb3a55181881167c7037062115236`
+- **invalidated_artifact_size_bytes:** `99,075,381`
+- **invalidation_reason:** the recorded SHA was not an existing Git commit; repository evidence identifies `7fb08461694d838cb1333b9e3d66de8345780ac4` as the real executable protocol commit.
+
 The corrected executable protocol was frozen at a new clean SHA before the
 authorized treatment was rerun. The previously corrected protocol/output pair
 was invalidated by this bounded issue-conformance correction.
 
-- **protocol_only_freeze_sha:** `7fb0846f4f7f3d6c52785b5a7c96c1e99784a33f`
-- **implementation_probe_sha:** `7fb0846f4f7f3d6c52785b5a7c96c1e99784a33f`
-- **corrected_artifact_sha256:** `fc82d7a17e123e81d8712ff678017b61f515f8abeeab0ded06dabfb7fc20c74a`
-- **corrected_artifact_size_bytes:** `99,075,381`
+- **protocol_only_freeze_sha:** `7fb08461694d838cb1333b9e3d66de8345780ac4`
+- **implementation_probe_sha:** `7fb08461694d838cb1333b9e3d66de8345780ac4`
+- **corrected_artifact_sha256:** `5d1471519972ee8099a211ab61f70da897eac1640d6f190c48c49a74cc2f6814`
+- **corrected_artifact_size_bytes:** `99,075,876`
 - **deterministic_regeneration:** byte-for-byte equal to a second clean run.
 - **superseded_protocol_sha:** `2e791c84c3ad9c94c57d6dbddc283bb08ea6ff5b`
 - **superseded_artifact_sha256:** `b4cded422bcdb3eadfb204473cf827f3e48b7124f5473be2447e49d3a3a1e27a`
@@ -138,10 +148,10 @@ genuine life, metabolism, or a confirmatory claim.
 ## Corrected substantive output
 
 The corrected official artifact was generated from clean executable SHA
-`7fb0846f4f7f3d6c52785b5a7c96c1e99784a33f` using only the 20 authorized
+`7fb08461694d838cb1333b9e3d66de8345780ac4` using only the 20 authorized
 reused seeds. Its SHA-256 is
-`fc82d7a17e123e81d8712ff678017b61f515f8abeeab0ded06dabfb7fc20c74a` and its
-size is `99,075,381` bytes. A second deterministic regeneration was
+`5d1471519972ee8099a211ab61f70da897eac1640d6f190c48c49a74cc2f6814` and its
+size is `99,075,876` bytes. A second deterministic regeneration was
 byte-for-byte identical.
 
 All `20/20` accepted Arm-B replays and instrumented replays matched the exact
