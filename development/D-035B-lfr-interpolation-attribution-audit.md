@@ -8,7 +8,7 @@
 - **development_seeds:** `18468..18487` inclusive, reused exactly
 - **underlying lifetime horizon:** `70,000` transitions
 - **branch horizon:** `4,096` transitions from each isolated anchor
-- **status:** corrected protocol implementation; prior output invalidated pending rerun
+- **status:** corrected protocol frozen; corrected substantive output complete
 - **disposition:** `CONTINUING`
 
 The executable protocol is [`src/aweform/d035b.py`](../src/aweform/d035b.py).
@@ -46,9 +46,15 @@ the corrected protocol.
 - **invalidation_reason:** exact-current-HEAD review identified an invalid
   pre-action anchor identity and missing required stratified diagnostics/fields.
 
-The corrected executable protocol will be frozen at a new clean SHA before
-the authorized treatment is rerun. Its SHA and artifact checksum/size will be
+The corrected executable protocol was frozen at a new clean SHA before the
+authorized treatment was rerun. Its SHA and artifact checksum/size are
 recorded below after deterministic regeneration.
+
+- **protocol_only_freeze_sha:** `2e791c84c3ad9c94c57d6dbddc283bb08ea6ff5b`
+- **implementation_probe_sha:** `2e791c84c3ad9c94c57d6dbddc283bb08ea6ff5b`
+- **corrected_artifact_sha256:** `b4cded422bcdb3eadfb204473cf827f3e48b7124f5473be2447e49d3a3a1e27a`
+- **corrected_artifact_size_bytes:** `27,222,882`
+- **deterministic_regeneration:** byte-for-byte equal to a second clean run.
 
 Only bounded pre-freeze checks used a historical non-D-035B seed (`18428`).
 They did not execute or inspect the official D-035B output.
@@ -121,19 +127,42 @@ genuine life, metabolism, or a confirmatory claim.
 
 ## Corrected substantive output
 
-The corrected official artifact will be generated only after the corrected
-executable protocol is committed at a clean SHA, using only the 20 authorized
-reused seeds. The corrected SHA-256, size, and validation summary will be
-filled in after that rerun. The old artifact above is invalid for the corrected
-protocol.
+The corrected official artifact was generated from clean executable SHA
+`2e791c84c3ad9c94c57d6dbddc283bb08ea6ff5b` using only the 20 authorized
+reused seeds. Its SHA-256 is
+`b4cded422bcdb3eadfb204473cf827f3e48b7124f5473be2447e49d3a3a1e27a` and its
+size is `27,222,882` bytes. A second deterministic regeneration was
+byte-for-byte identical.
 
-No corrected substantive result is claimed in this pre-rerun record.
+All `20/20` accepted Arm-B replays and instrumented replays matched the exact
+identity fields. The corrected `FIRST_FALSE_CONTACT_SEEK` anchor was available
+for `20/20` seeds and each captured state was already pre-action SEEK with
+false visible/evaluator contact and ordinary no-de-trap arbitration pending.
+The exact D-033 `ALT8_ESTABLISHED` anchor was available for `17/20`; it
+remained unavailable at the lifetime boundary for `18471`, `18473`, and
+`18478`. No seed or null was discarded.
+
+All `37` available anchor sets and their `259` branch rows passed
+branch-order, baseline-creation-order, reward/info/update, no-de-trap,
+canonical turn time/energy, logical-action, and anchor-isolation checks. No
+branch reacquired dual contact within the frozen `4,096`-transition window.
+The artifact contains the required prequential all-six-output, turn-only,
+left/right `delta_beacon_forward`, and exact post-anchor-window support
+diagnostics, plus the required opposite-turn, pair-error geometry,
+charging/dual-contact, and forward nominal/clipped/stall reports.
+
+This is a corrected Development-lane descriptive result. Its null
+reacquisition result does not authorize rescue tuning, a new action or sensor,
+organism-side interpolation, a larger learner, planning, reward/RL, or a
+successor task.
 
 This is a Development-lane descriptive result. The null reacquisition result
 does not authorize rescue tuning, a new action or sensor, organism-side
 interpolation, a larger learner, planning, reward/RL, or a successor task.
 
-**surprised_by:** To be completed from the corrected deterministic rerun; the
-invalidated output is not interpreted here.
+**surprised_by:** The corrected pre-action anchor moves the treatment start
+past the AWAY-to-SEEK entry state, while the corrected branch matrix still
+shows no dual-contact reacquisition within the declared horizon. The three
+ALT8 lifetime-boundary nulls remain explicit and unchanged.
 
 **disposition:** `CONTINUING`.
