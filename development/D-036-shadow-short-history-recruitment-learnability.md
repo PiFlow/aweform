@@ -8,11 +8,11 @@
 - **prior invalidated artifact:** `D-036-shadow-short-history-recruitment-learnability.json`
 - **prior invalidated artifact SHA-256:** `81260bf42f80bf42204939dbf19c304e69d131576a0803f43c53bb78ba63e343`
 - **prior invalidated artifact size:** `621472` bytes
-- **corrected protocol freeze SHA:** `ae1b47e3d35b6198143a2138a00ac081fd62db1a`
+- **prior corrected protocol freeze SHA (invalidated):** `ae1b47e3d35b6198143a2138a00ac081fd62db1a`
 - **artifact:** `D-036-shadow-short-history-recruitment-learnability.json`
 - **artifact SHA-256:** `32df6a73953b90e109fcccf11de42bbfda63c3da5b1be846081039c91f053366`
 - **artifact size:** `936163` bytes
-- **status:** official output complete
+- **status:** correction protocol pending official rerun
 - **disposition:** `CONTINUING`
 
 ## Question and boundary
@@ -35,8 +35,10 @@ For each reused seed, the accepted D-034 replay path reproduces Arm-A
 `LEARNED_WITH_DETRAP` and Arm-B `LEARNED_NO_DETRAP`, including the complete
 learner state, RNG checks, no-de-trap isolation, reward/info boundary, and
 executed-action update semantics. Ordinary Arm-B traces are then inspected
-post-hoc. Eligible samples are completed false-contact SEEK transitions whose
-before/after decision observations have no charging contact.
+post-hoc. Eligible samples are false-contact SEEK pre-action decision states:
+`mode_before` is `SEEK` and the current visible charging-contact bit is false.
+Eligibility does not consult `mode_after`, post-action contact, or any other
+current-transition outcome.
 
 Features are direct flattened rows of six visible channels (energy, beacon
 left/forward/right, charging contact, thermal). H1 is the current pre-action
@@ -117,9 +119,18 @@ bridge lacked a deterministic matched non-anchor comparison. The corrected
 protocol freezes the current-decision indexing and the matched bridge
 diagnostic before any corrected output is generated.
 
-The corrected official output was generated from the clean protocol freeze
-SHA `ae1b47e3d35b6198143a2138a00ac081fd62db1a`. All 20 Arm-A/Arm-B replay
-gates passed. The artifact records H1/H4/H8/H16 feature dimensions `6/46/86/166`,
+The prior corrected output is additionally invalidated: its exact clean
+protocol SHA was `ae1b47e3d35b6198143a2138a00ac081fd62db1a`, artifact SHA-256 was
+`32df6a73953b90e109fcccf11de42bbfda63c3da5b1be846081039c91f053366`, and size
+was `936163` bytes. The exact conformance-defect reason was that sample
+eligibility depended on the scored transition's `mode_after` and post-action
+charging contact, which are unavailable at the pre-action decision state and
+can censor decisions based on the predicted continuation.
+
+The prior corrected official output was generated from the clean protocol
+freeze SHA `ae1b47e3d35b6198143a2138a00ac081fd62db1a`. It is additionally
+invalidated by the conformance defect recorded below. The artifact records
+H1/H4/H8/H16 feature dimensions `6/46/86/166`,
 per-fold held-out results, explicit nulls, and the deterministic bridge pairs.
 
 At each requested target horizon, 112 of 120 D-034 anchor records were
@@ -132,9 +143,10 @@ were positive (`0.00785`, `0.00789`, `0.00775`). The binary target remained
 all-negative, so high-risk/binary bridge coherence is untestable and neither
 bridge-coherence category is asserted.
 
-Required validation passed on the frozen protocol: focused D-036 tests,
-full pytest, Ruff, strict mypy, compileall, and `git diff --check`. A second
-artifact generation was byte-identical (same SHA-256 and size).
+The new corrected protocol and official output will be recorded after the
+pre-action eligibility correction is frozen and rerun. Required validation
+remains focused D-036 tests, full pytest, Ruff, strict mypy, compileall, and
+`git diff --check`, with deterministic artifact regeneration.
 
 `surprised_by` and final disposition are recorded below without changing the
 executable protocol.

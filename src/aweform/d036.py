@@ -41,6 +41,19 @@ D036_INVALIDATION_REASON: Final[str] = (
     "feature included its own executed action and the mandatory D-034 bridge "
     "lacked a deterministic matched non-anchor comparison"
 )
+D036_ADDITIONAL_INVALIDATED_PROTOCOL_SHA: Final[str] = (
+    "ae1b47e3d35b6198143a2138a00ac081fd62db1a"
+)
+D036_ADDITIONAL_INVALIDATED_ARTIFACT_SHA256: Final[str] = (
+    "32df6a73953b90e109fcccf11de42bbfda63c3da5b1be846081039c91f053366"
+)
+D036_ADDITIONAL_INVALIDATED_ARTIFACT_SIZE: Final[int] = 936163
+D036_ADDITIONAL_INVALIDATION_REASON: Final[str] = (
+    "invalidated after exact-current-HEAD review found that sample eligibility "
+    "depended on the scored transition's mode_after and post-action charging "
+    "contact, which are unavailable at the pre-action decision state and can "
+    "censor decisions based on the predicted continuation"
+)
 D036_ACCEPTED_D031R1_ARTIFACT: Final[str] = d033.D033_ACCEPTED_D031R1_ARTIFACT
 D036_BRIDGE_FAMILIES: Final[tuple[str, ...]] = (
     "ALT",
@@ -143,12 +156,8 @@ def _trace_data(seed: int, trace: tuple[d025.D025TransitionTrace, ...]) -> _Trac
     eligible = np.asarray(
         [
             getattr(row, "mode_before") is d026.D026Mode.SEEK
-            and getattr(row, "mode_after") is d026.D026Mode.SEEK
             and before[4] == 0.0
-            and after[4] == 0.0
-            for before, after, row in zip(
-                visible_before, visible_after, trace, strict=True
-            )
+            for before, row in zip(visible_before, trace, strict=True)
         ],
         dtype=bool,
     )
@@ -1042,9 +1051,22 @@ def run_d036_audit(
             "artifact_size_bytes": D036_INVALIDATED_ARTIFACT_SIZE,
             "reason": D036_INVALIDATION_REASON,
         },
+        "additional_invalidated_outputs": [
+            {
+                "implementation_protocol_sha": D036_ADDITIONAL_INVALIDATED_PROTOCOL_SHA,
+                "artifact_sha256": D036_ADDITIONAL_INVALIDATED_ARTIFACT_SHA256,
+                "artifact_size_bytes": D036_ADDITIONAL_INVALIDATED_ARTIFACT_SIZE,
+                "reason": D036_ADDITIONAL_INVALIDATION_REASON,
+            }
+        ],
         "freeze": {
             "history_lengths": list(D036_HISTORY_LENGTHS),
             "target_horizons": list(D036_TARGET_HORIZONS),
+            "eligibility": (
+                "pre-action decision state only: mode_before is SEEK and the "
+                "current visible charging_contact is false; mode_after and all "
+                "post-action/current-transition outcomes are ignored"
+            ),
             "feature_encoding": (
                 "H1 is the current six-channel visible-before observation only; "
                 "H4/H8/H16 append the prior 4/8/16 completed one-hot "

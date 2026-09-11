@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import numpy as np
 import pytest
 
 from aweform import d036
+from aweform.d026 import D026Mode
 from aweform.env import Action
 
 
@@ -95,6 +98,38 @@ def test_d036_features_exclude_scored_action_and_keep_current_observation() -> N
     )
     assert d036._feature_dimension(1) == 6
     assert d036._feature_dimension(4) == 46
+
+
+def test_d036_eligibility_uses_only_pre_action_state() -> None:
+    def row(*, mode_after: D026Mode, after_contact: bool) -> object:
+        return SimpleNamespace(
+            transition_index=0,
+            mode_before=D026Mode.SEEK,
+            mode_after=mode_after,
+            action=Action.WAIT,
+            observation_before=(0.4, 0.1, 0.2, 0.3, 0.0, 0.5),
+            observation=(0.4, 0.1, 0.2, 0.3, float(after_contact), 0.5),
+            telemetry=SimpleNamespace(
+                charging_contact_before=False,
+                charging_contact_after=after_contact,
+                terminated=False,
+                truncated=False,
+            ),
+        )
+
+    baseline = d036._trace_data(
+        18468, (row(mode_after=D026Mode.SEEK, after_contact=False),)
+    )
+    mode_changed = d036._trace_data(
+        18468, (row(mode_after=D026Mode.CHARGE, after_contact=False),)
+    )
+    contact_changed = d036._trace_data(
+        18468, (row(mode_after=D026Mode.SEEK, after_contact=True),)
+    )
+
+    assert baseline.eligible.tolist() == [True]
+    assert mode_changed.eligible.tolist() == baseline.eligible.tolist()
+    assert contact_changed.eligible.tolist() == baseline.eligible.tolist()
 
 
 def test_d036_targets_retain_unavailable_prefix_and_null_status() -> None:
