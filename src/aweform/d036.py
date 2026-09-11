@@ -652,9 +652,9 @@ def _exact_replay_for_seed(
 def _strip_private(value: object) -> object:
     if isinstance(value, dict):
         return {
-            key: _strip_private(item)
+            str(key): _strip_private(item)
             for key, item in value.items()
-            if not key.startswith("_")
+            if not isinstance(key, str) or not key.startswith("_")
         }
     if isinstance(value, list):
         return [_strip_private(item) for item in value]
