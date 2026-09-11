@@ -880,6 +880,7 @@ def _branch_metric_summary(
     trace: Sequence[d025.D025TransitionTrace],
     *,
     reverse_count: int,
+    false_contact_decision_count: int,
     proposed_actions: Sequence[str],
     reverse_records: Sequence[dict[str, object]],
     update_count: int,
@@ -983,9 +984,11 @@ def _branch_metric_summary(
             "exit_count": charging_exits,
         },
         "reverse_intervention_count": reverse_count,
-        "false_contact_seek_decision_count": len(proposed_actions),
+        "false_contact_seek_decision_count": false_contact_decision_count,
         "reverse_intervention_fraction": (
-            reverse_count / len(proposed_actions) if proposed_actions else None
+            reverse_count / false_contact_decision_count
+            if false_contact_decision_count
+            else None
         ),
         "reverse_interventions": list(reverse_records),
         "learner_update_count": update_count,
@@ -1031,6 +1034,7 @@ def _run_continuation(
     update_digest = hashlib.sha256()
     update_count = 0
     reverse_count = 0
+    false_contact_decision_count = 0
     terminated = False
     truncated = False
     stop_reason = "incomplete"
@@ -1076,11 +1080,11 @@ def _run_continuation(
         proposed_actions.append(proposed.name)
         physical_label = proposed.name
         candidates: dict[str, _CandidateOutcome] = {}
-        if (
-            oracle
-            and mode_before is d026.D026Mode.SEEK
-            and not current.charging_contact
-        ):
+        false_contact_seek = (
+            mode_before is d026.D026Mode.SEEK and not current.charging_contact
+        )
+        false_contact_decision_count += int(false_contact_seek)
+        if oracle and false_contact_seek:
             learner_before = learner.weights
             rng_before = d029._rng_state(streams)
             candidates, checks = _candidate_outcomes(
@@ -1239,6 +1243,7 @@ def _run_continuation(
         current,
         trace,
         reverse_count=reverse_count,
+        false_contact_decision_count=false_contact_decision_count,
         proposed_actions=proposed_actions,
         reverse_records=reverse_records,
         update_count=update_count,
@@ -1603,6 +1608,18 @@ def run_d035c_audit(
         "base_tree_sha": D035C_BASE_TREE_SHA,
         "implementation_probe_sha": executed_sha,
         "protocol_only_freeze_sha": executed_sha,
+        "invalidated_prior_run": {
+            "executed_sha": "f89e76033ca6d7db80265382db1b71f327bccc87",
+            "artifact_sha256": (
+                "8905c483c08148268b5f95e7c6d1184dcab5c4164a6479c48cb359580f4d4f0d"
+            ),
+            "artifact_size_bytes": 2_374_667,
+            "reason": (
+                "reverse_intervention_fraction used all branch transitions as "
+                "its denominator instead of false-contact SEEK decisions"
+            ),
+            "scientific_protocol_changed": False,
+        },
         "development_seeds": list(validated),
         "horizon": D035C_HORIZON,
         "branch_horizon": D035C_BRANCH_HORIZON,
