@@ -8,7 +8,11 @@
 - **prior invalidated artifact:** `D-036-shadow-short-history-recruitment-learnability.json`
 - **prior invalidated artifact SHA-256:** `81260bf42f80bf42204939dbf19c304e69d131576a0803f43c53bb78ba63e343`
 - **prior invalidated artifact size:** `621472` bytes
-- **status:** corrected protocol frozen; official output pending
+- **corrected protocol freeze SHA:** `ae1b47e3d35b6198143a2138a00ac081fd62db1a`
+- **artifact:** `D-036-shadow-short-history-recruitment-learnability.json`
+- **artifact SHA-256:** `32df6a73953b90e109fcccf11de42bbfda63c3da5b1be846081039c91f053366`
+- **artifact size:** `936163` bytes
+- **status:** official output complete
 - **disposition:** `CONTINUING`
 
 ## Question and boundary
@@ -46,9 +50,11 @@ feature.
 
 For horizons exactly 64, 256, and 1024 transitions, the target is derived from
 the unchanged continuation after the completed decision: whether dual-contact
-reacquisition occurs and the change in visible beacon-forward. Windows that
-reach termination, truncation, or the lifetime boundary are retained as
-explicit null statuses and excluded only from the affected fit/metric.
+reacquisition occurs and the change in visible beacon-forward from the current
+pre-action observation to the final observation in the H-transition window.
+Windows that reach termination, truncation, or the lifetime boundary are
+retained as explicit null statuses and excluded only from the affected
+fit/metric.
 
 Each history/horizon uses ridge linear regression for continuous progress and
 a ridge linear classifier transformed by a sigmoid for reacquisition only when
@@ -111,8 +117,27 @@ bridge lacked a deterministic matched non-anchor comparison. The corrected
 protocol freezes the current-decision indexing and the matched bridge
 diagnostic before any corrected output is generated.
 
-`surprised_by` and final disposition are updated after the official artifact
-is generated without changing the executable protocol.
+The corrected official output was generated from the clean protocol freeze
+SHA `ae1b47e3d35b6198143a2138a00ac081fd62db1a`. All 20 Arm-A/Arm-B replay
+gates passed. The artifact records H1/H4/H8/H16 feature dimensions `6/46/86/166`,
+per-fold held-out results, explicit nulls, and the deterministic bridge pairs.
+
+At each requested target horizon, 112 of 120 D-034 anchor records were
+available and every available anchor had a matched ordinary non-anchor state;
+the eight unavailable anchor records are retained. No bridge target was null.
+The continuous bridge comparison put the anchor below its matched prediction
+in `13/112`, `38/112`, and `38/112` pairs for horizons `64`, `256`, and `1024`,
+respectively; the pooled mean anchor-minus-match predicted progress deltas
+were positive (`0.00785`, `0.00789`, `0.00775`). The binary target remained
+all-negative, so high-risk/binary bridge coherence is untestable and neither
+bridge-coherence category is asserted.
+
+Required validation passed on the frozen protocol: focused D-036 tests,
+full pytest, Ruff, strict mypy, compileall, and `git diff --check`. A second
+artifact generation was byte-identical (same SHA-256 and size).
+
+`surprised_by` and final disposition are recorded below without changing the
+executable protocol.
 
 ## Observed
 
