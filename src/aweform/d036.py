@@ -92,7 +92,11 @@ class _TargetData:
     status_counts: dict[str, int]
 
 
-def _visible(observation: d027.D027Observation) -> tuple[float, ...]:
+def _visible(
+    observation: d027.D027Observation | tuple[float, ...],
+) -> tuple[float, ...]:
+    if isinstance(observation, tuple):
+        return observation
     return (
         observation.energy,
         observation.beacon.left,
@@ -105,17 +109,11 @@ def _visible(observation: d027.D027Observation) -> tuple[float, ...]:
 
 def _trace_data(seed: int, trace: tuple[d025.D025TransitionTrace, ...]) -> _TraceData:
     visible_before = np.asarray(
-        [
-            _visible(cast(d027.D027Observation, getattr(row, "observation_before")))
-            for row in trace
-        ],
+        [_visible(getattr(row, "observation_before")) for row in trace],
         dtype=float,
     )
     visible_after = np.asarray(
-        [
-            _visible(cast(d027.D027Observation, getattr(row, "observation")))
-            for row in trace
-        ],
+        [_visible(getattr(row, "observation")) for row in trace],
         dtype=float,
     )
     actions = np.asarray(
