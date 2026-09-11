@@ -1,4 +1,12 @@
 {
+  "additional_invalidated_outputs": [
+    {
+      "artifact_sha256": "32df6a73953b90e109fcccf11de42bbfda63c3da5b1be846081039c91f053366",
+      "artifact_size_bytes": 936163,
+      "implementation_protocol_sha": "ae1b47e3d35b6198143a2138a00ac081fd62db1a",
+      "reason": "invalidated after exact-current-HEAD review found that sample eligibility depended on the scored transition's mode_after and post-action charging contact, which are unavailable at the pre-action decision state and can censor decisions based on the predicted continuation"
+    }
+  ],
   "authoritative_base_sha": "911acc5daefe2b1e3fcc7a683e9056740c6bca29",
   "causal_order": [
     "exact accepted Arm-A/Arm-B replay gate",
@@ -20526,6 +20534,7 @@
     ],
     "alpha_policy": "fixed 0.01 selected before official output; no held-out tuning",
     "bridge": "post-hoc read-only D-034 ALT_4/8/16 and NO_FORWARD_PROGRESS_4/8/16 anchors, each paired within seed to the nearest eligible non-anchor ordinary-support feature vector with smallest-index tie break; no trigger labels or ON/OFF outcomes as features",
+    "eligibility": "pre-action decision state only: mode_before is SEEK and the current visible charging_contact is false; mode_after and all post-action/current-transition outcomes are ignored",
     "feature_dimensions": {
       "H1": 6,
       "H16": 166,
@@ -20552,7 +20561,7 @@
     ]
   },
   "horizon": 70000,
-  "implementation_protocol_sha": "ae1b47e3d35b6198143a2138a00ac081fd62db1a",
+  "implementation_protocol_sha": "661e310887ac2ffef0b52df7defa8ea6cc2a66b8",
   "interpretation": {
     "causal_organism_memory_authorized": false,
     "confirmatory_claim": false,

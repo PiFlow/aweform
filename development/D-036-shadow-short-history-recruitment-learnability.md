@@ -8,11 +8,11 @@
 - **prior invalidated artifact:** `D-036-shadow-short-history-recruitment-learnability.json`
 - **prior invalidated artifact SHA-256:** `81260bf42f80bf42204939dbf19c304e69d131576a0803f43c53bb78ba63e343`
 - **prior invalidated artifact size:** `621472` bytes
-- **prior corrected protocol freeze SHA (invalidated):** `ae1b47e3d35b6198143a2138a00ac081fd62db1a`
+- **corrected protocol freeze SHA:** `661e310887ac2ffef0b52df7defa8ea6cc2a66b8`
 - **artifact:** `D-036-shadow-short-history-recruitment-learnability.json`
-- **artifact SHA-256:** `32df6a73953b90e109fcccf11de42bbfda63c3da5b1be846081039c91f053366`
-- **artifact size:** `936163` bytes
-- **status:** correction protocol pending official rerun
+- **artifact SHA-256:** `ce767536a9002d0b605cf60df15a1f77a58d61864a8e6c986576e20e887e03d6`
+- **artifact size:** `936914` bytes
+- **status:** official output complete
 - **disposition:** `CONTINUING`
 
 ## Question and boundary
@@ -125,12 +125,12 @@ protocol SHA was `ae1b47e3d35b6198143a2138a00ac081fd62db1a`, artifact SHA-256 wa
 was `936163` bytes. The exact conformance-defect reason was that sample
 eligibility depended on the scored transition's `mode_after` and post-action
 charging contact, which are unavailable at the pre-action decision state and
-can censor decisions based on the predicted continuation.
+can censor decisions based on the predicted continuation. The earlier
+invalidated output remains recorded above.
 
-The prior corrected official output was generated from the clean protocol
-freeze SHA `ae1b47e3d35b6198143a2138a00ac081fd62db1a`. It is additionally
-invalidated by the conformance defect recorded below. The artifact records
-H1/H4/H8/H16 feature dimensions `6/46/86/166`,
+The new corrected official output was generated from the clean protocol freeze
+SHA `661e310887ac2ffef0b52df7defa8ea6cc2a66b8`. All 20 Arm-A/Arm-B replay
+gates passed. The artifact records H1/H4/H8/H16 feature dimensions `6/46/86/166`,
 per-fold held-out results, explicit nulls, and the deterministic bridge pairs.
 
 At each requested target horizon, 112 of 120 D-034 anchor records were
@@ -143,10 +143,9 @@ were positive (`0.00785`, `0.00789`, `0.00775`). The binary target remained
 all-negative, so high-risk/binary bridge coherence is untestable and neither
 bridge-coherence category is asserted.
 
-The new corrected protocol and official output will be recorded after the
-pre-action eligibility correction is frozen and rerun. Required validation
-remains focused D-036 tests, full pytest, Ruff, strict mypy, compileall, and
-`git diff --check`, with deterministic artifact regeneration.
+Required validation passed on the new frozen protocol: focused D-036 tests,
+full pytest, Ruff, strict mypy, compileall, and `git diff --check`. A second
+artifact generation was byte-identical (same SHA-256 and size).
 
 `surprised_by` and final disposition are recorded below without changing the
 executable protocol.
