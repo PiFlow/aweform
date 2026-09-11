@@ -288,6 +288,12 @@ def test_lfr_branch_preserves_existing_logical_action_and_update_contract() -> N
     assert decoded[0]["visible_side_reversal"] == records[0][
         "visible_side_reversal"
     ]
+    assert decoded[0]["heading_change_radians"] == decoded[0][
+        "actual_angular_displacement_radians"
+    ]
+    assert decoded[0]["beacon_forward_change_absolute"] == pytest.approx(
+        abs(cast(float, decoded[0]["beacon_forward_change_signed"]))
+    )
     assert decoded[0]["max_pair_error_after"] == cast(
         dict[str, object],
         cast(dict[str, object], records[0]["rear_contact_pair_error"])['after'],

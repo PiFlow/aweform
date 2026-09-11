@@ -102,10 +102,8 @@ _COMPACT_LFR_COLUMNS: Final[tuple[str, ...]] = (
     "arm_b_would_have_executed_action",
     "executed_logical_action",
     "actual_angular_displacement_radians",
-    "actual_angular_displacement_absolute_radians",
     "saturated",
     "beacon_forward_change_signed",
-    "beacon_forward_change_absolute",
     "visible_left_right_sign_before",
     "visible_left_right_sign_after",
     "visible_side_reversal",
@@ -113,8 +111,6 @@ _COMPACT_LFR_COLUMNS: Final[tuple[str, ...]] = (
     "directional_error_radians",
     "evaluator_station_bearing_after_radians",
     "directional_error_after_radians",
-    "heading_change_radians",
-    "heading_change_absolute_radians",
     "rear_plus_pair_error_before",
     "rear_minus_pair_error_before",
     "max_pair_error_before",
@@ -122,7 +118,7 @@ _COMPACT_LFR_COLUMNS: Final[tuple[str, ...]] = (
     "rear_minus_pair_error_after",
     "max_pair_error_after",
 )
-_COMPACT_LFR_BINARY_FORMAT: Final[str] = "<I4d3B2d?2d2b?4d2d6d"
+_COMPACT_LFR_BINARY_FORMAT: Final[str] = "<I4d3Bd?d2b?4d6d"
 _COMPACT_LFR_PACKER: Final[struct.Struct] = struct.Struct(_COMPACT_LFR_BINARY_FORMAT)
 
 
@@ -414,6 +410,12 @@ def _decode_compact_lfr_decision_records(
         record = dict(zip(columns, row, strict=True))
         for column in _COMPACT_LFR_ACTION_COLUMNS:
             record[column] = action_names[cast(int, record[column])]
+        actual_angle = cast(float, record["actual_angular_displacement_radians"])
+        forward_change = cast(float, record["beacon_forward_change_signed"])
+        record["actual_angular_displacement_absolute_radians"] = abs(actual_angle)
+        record["beacon_forward_change_absolute"] = abs(forward_change)
+        record["heading_change_radians"] = actual_angle
+        record["heading_change_absolute_radians"] = abs(actual_angle)
         decoded.append(record)
     return decoded
 
@@ -1957,6 +1959,20 @@ def run_d035b_audit(
                 "action_codebook": list(_ACTION_NAMES),
                 "binary_format": _COMPACT_LFR_BINARY_FORMAT,
                 "record_size_bytes": _COMPACT_LFR_PACKER.size,
+                "derived_fields": {
+                    "actual_angular_displacement_absolute_radians": (
+                        "abs(actual_angular_displacement_radians)"
+                    ),
+                    "beacon_forward_change_absolute": (
+                        "abs(beacon_forward_change_signed)"
+                    ),
+                    "heading_change_radians": (
+                        "actual_angular_displacement_radians"
+                    ),
+                    "heading_change_absolute_radians": (
+                        "abs(actual_angular_displacement_radians)"
+                    ),
+                },
                 "decoded_record_values_are_complete": True,
             },
             "required_reporting_fields": [
