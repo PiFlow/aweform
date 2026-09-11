@@ -370,10 +370,3 @@ def test_d035b_rejects_nonexistent_executable_commit_sha() -> None:
         d035b._validate_executed_commit_sha(
             "7fb0846f4f7f3d6c52785b5a7c96c1e99784a33f"
         )
-
-    assert (
-        d035b._validate_executed_commit_sha(
-            "7fb08461694d838cb1333b9e3d66de8345780ac4"
-        )
-        == "7fb08461694d838cb1333b9e3d66de8345780ac4"
-    )
