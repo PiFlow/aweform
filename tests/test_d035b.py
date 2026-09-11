@@ -296,7 +296,12 @@ def test_lfr_branch_preserves_existing_logical_action_and_update_contract() -> N
     )
     assert decoded[0]["max_pair_error_after"] == cast(
         dict[str, object],
-        cast(dict[str, object], records[0]["rear_contact_pair_error"])['after'],
+        cast(
+            dict[str, object],
+            cast(dict[str, object], records[0]["rear_contact_pair_error_geometry"])[
+                "after"
+            ],
+        ),
     )["max_pair_error"]
     directional = cast(dict[str, object], interp["directional_interpolation"])
     assert cast(int, directional["decision_count"]) > 0

@@ -47,14 +47,16 @@ the corrected protocol.
   pre-action anchor identity and missing required stratified diagnostics/fields.
 
 The corrected executable protocol was frozen at a new clean SHA before the
-authorized treatment was rerun. Its SHA and artifact checksum/size are
-recorded below after deterministic regeneration.
+authorized treatment was rerun. The previously corrected protocol/output pair
+was invalidated by this bounded issue-conformance correction.
 
-- **protocol_only_freeze_sha:** `2e791c84c3ad9c94c57d6dbddc283bb08ea6ff5b`
-- **implementation_probe_sha:** `2e791c84c3ad9c94c57d6dbddc283bb08ea6ff5b`
-- **corrected_artifact_sha256:** `b4cded422bcdb3eadfb204473cf827f3e48b7124f5473be2447e49d3a3a1e27a`
-- **corrected_artifact_size_bytes:** `27,222,882`
+- **protocol_only_freeze_sha:** `7fb0846f4f7f3d6c52785b5a7c96c1e99784a33f`
+- **implementation_probe_sha:** `7fb0846f4f7f3d6c52785b5a7c96c1e99784a33f`
+- **corrected_artifact_sha256:** `fc82d7a17e123e81d8712ff678017b61f515f8abeeab0ded06dabfb7fc20c74a`
+- **corrected_artifact_size_bytes:** `99,075,381`
 - **deterministic_regeneration:** byte-for-byte equal to a second clean run.
+- **superseded_protocol_sha:** `2e791c84c3ad9c94c57d6dbddc283bb08ea6ff5b`
+- **superseded_artifact_sha256:** `b4cded422bcdb3eadfb204473cf827f3e48b7124f5473be2447e49d3a3a1e27a`
 
 Only bounded pre-freeze checks used a historical non-D-035B seed (`18428`).
 They did not execute or inspect the official D-035B output.
@@ -115,11 +117,19 @@ nominal/clipped/stall counts, strict alternation, side reversals, the
 opposite-turn-next-eligible-SEEK fraction, charging/dual-contact events,
 rear-contact pair-error geometry at start/minimum/final/reacquisition,
 directional interpolation error against evaluator station bearing, cap
-saturation, and prequential D-027 prediction compatibility. Prediction
-compatibility reports all six outputs, turn-only all-six-output summaries,
-`delta_beacon_forward` separately for left and right turns, and exact support
-counts in windows `1..16`, `17..64`, `65..256`, `257..1024`, and `1025..4096`.
-No seed or null is discarded.
+saturation, cumulative commanded signed/absolute turn angle, turn count and
+canonical turn energy/time exposure, and energy/thermal values at anchor,
+minimum, maximum, final, and reacquisition. Every LFR decision retains L/F/R,
+theta-hat, both action identities, executed angle/heading, signed and absolute
+forward change, visible L-R signs and reversal, evaluator bearing/error, and
+before/after rear-contact pair-error geometry. These records use an exact
+deterministic `zlib+base64-binary-rows` representation with a declared schema
+and action codebook; derivable absolute-angle/forward and heading-change
+aliases are declared in the artifact. Prediction compatibility reports all
+six outputs, turn-only all-six-output summaries, `delta_beacon_forward`
+separately for left and right turns, and exact support counts in windows
+`1..16`, `17..64`, `65..256`, `257..1024`, and `1025..4096`. No seed or null
+is discarded.
 
 The result is descriptive Development evidence only. It cannot establish a
 learned interpolation, consciousness, emotion, subjective experience,
@@ -128,10 +138,10 @@ genuine life, metabolism, or a confirmatory claim.
 ## Corrected substantive output
 
 The corrected official artifact was generated from clean executable SHA
-`2e791c84c3ad9c94c57d6dbddc283bb08ea6ff5b` using only the 20 authorized
+`7fb0846f4f7f3d6c52785b5a7c96c1e99784a33f` using only the 20 authorized
 reused seeds. Its SHA-256 is
-`b4cded422bcdb3eadfb204473cf827f3e48b7124f5473be2447e49d3a3a1e27a` and its
-size is `27,222,882` bytes. A second deterministic regeneration was
+`fc82d7a17e123e81d8712ff678017b61f515f8abeeab0ded06dabfb7fc20c74a` and its
+size is `99,075,381` bytes. A second deterministic regeneration was
 byte-for-byte identical.
 
 All `20/20` accepted Arm-B replays and instrumented replays matched the exact
@@ -146,19 +156,17 @@ All `37` available anchor sets and their `259` branch rows passed
 branch-order, baseline-creation-order, reward/info/update, no-de-trap,
 canonical turn time/energy, logical-action, and anchor-isolation checks. No
 branch reacquired dual contact within the frozen `4,096`-transition window.
-The artifact contains the required prequential all-six-output, turn-only,
-left/right `delta_beacon_forward`, and exact post-anchor-window support
-diagnostics, plus the required opposite-turn, pair-error geometry,
-charging/dual-contact, and forward nominal/clipped/stall reports.
+The artifact contains `909,312` compact retained LFR decision records with the
+required per-decision attribution values, plus the required prequential
+all-six-output, turn-only, left/right `delta_beacon_forward`, and exact
+post-anchor-window support diagnostics, opposite-turn denominator, pair-error
+geometry, charging/dual-contact, forward nominal/clipped/stall, cumulative
+turn-exposure, and full energy/thermal extrema/reacquisition reports.
 
 This is a corrected Development-lane descriptive result. Its null
 reacquisition result does not authorize rescue tuning, a new action or sensor,
 organism-side interpolation, a larger learner, planning, reward/RL, or a
 successor task.
-
-This is a Development-lane descriptive result. The null reacquisition result
-does not authorize rescue tuning, a new action or sensor, organism-side
-interpolation, a larger learner, planning, reward/RL, or a successor task.
 
 **surprised_by:** The corrected pre-action anchor moves the treatment start
 past the AWAY-to-SEEK entry state, while the corrected branch matrix still
