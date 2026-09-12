@@ -26,7 +26,9 @@ def _observation() -> D011Observation:
     )
 
 
-def _capture(weights: tuple[float, ...], action: Action) -> SimpleNamespace:
+def _capture(
+    weights: tuple[float, ...], historical_action: Action, proposed_action: Action
+) -> SimpleNamespace:
     predictions = {
         candidate: tuple(
             0.0 if output != 2 else weights[list(Action).index(candidate) * 42 + 14]
@@ -37,7 +39,8 @@ def _capture(weights: tuple[float, ...], action: Action) -> SimpleNamespace:
     return SimpleNamespace(
         learner_weights=weights,
         current=_observation(),
-        historical_action=action,
+        historical_action=historical_action,
+        proposed_action=proposed_action,
         predictions=predictions,
         prediction_query_read_only=True,
     )
@@ -48,13 +51,31 @@ def test_d037_signal_formulas_are_fixed_and_use_candidate_actions() -> None:
     for action, value in zip(d037.D037_CANDIDATE_ACTIONS, (1.0, 3.0, 2.0), strict=True):
         action_index = list(Action).index(action)
         weights[action_index * 42 + 2 * 7] = value
-    signals = d037._signals_for_capture(_capture(tuple(weights), Action.TURN_LEFT))
+    signals = d037._signals_for_capture(
+        _capture(tuple(weights), Action.TURN_LEFT, Action.TURN_LEFT)
+    )
     assert signals[0] == pytest.approx(1.0)
     assert signals[1] == pytest.approx(3.0)
     assert signals[2] == pytest.approx(1.0)
     assert signals[3] == pytest.approx(np.sqrt(2.0 / 3.0))
     assert signals[4] == pytest.approx(np.sqrt(2.0))
     assert signals[5] == pytest.approx(np.sqrt(14.0))
+
+
+def test_d037_s1_uses_learned_selected_action_not_historical_greedy_action() -> None:
+    weights = [0.0] * 168
+    for action, value in zip(d037.D037_CANDIDATE_ACTIONS, (1.0, 3.0, 2.0), strict=True):
+        action_index = list(Action).index(action)
+        weights[action_index * 42 + 2 * 7] = value
+    capture = _capture(tuple(weights), Action.TURN_LEFT, Action.TURN_RIGHT)
+
+    signals = d037._signals_for_capture(
+        capture, executed_action=Action.TURN_RIGHT
+    )
+
+    assert signals[0] == pytest.approx(3.0)
+    with pytest.raises(RuntimeError, match="did not match"):
+        d037._signals_for_capture(capture, executed_action=Action.TURN_LEFT)
 
 
 def test_d037_oscillation_onset_is_first_long_strict_alternating_run() -> None:

@@ -194,10 +194,17 @@ def _weight_tensor(weights: tuple[float, ...]) -> np.ndarray:
     )
 
 
-def _signals_for_capture(capture: d033._CapturedPreAction) -> np.ndarray:
-    if capture.historical_action not in D037_CANDIDATE_ACTIONS:
+def _signals_for_capture(
+    capture: d033._CapturedPreAction, *, executed_action: Action | None = None
+) -> np.ndarray:
+    chosen_action = capture.proposed_action
+    if chosen_action not in D037_CANDIDATE_ACTIONS:
         raise RuntimeError(
-            "D-037 eligible SEEK decision selected a non-steering action"
+            "D-037 eligible SEEK decision is missing a learned steering action"
+        )
+    if executed_action is not None and chosen_action is not executed_action:
+        raise RuntimeError(
+            "D-037 learned Arm-B action did not match the real executed action"
         )
     if capture.predictions is None or capture.prediction_query_read_only is not True:
         raise RuntimeError("D-037 candidate predictions were not captured read-only")
@@ -207,7 +214,7 @@ def _signals_for_capture(capture: d033._CapturedPreAction) -> np.ndarray:
     )
     forward = predictions[:, d031r1.D031R1_FORWARD_OUTPUT_INDEX]
     ordered = np.sort(forward)[::-1]
-    chosen_position = D037_CANDIDATE_ACTIONS.index(capture.historical_action)
+    chosen_position = D037_CANDIDATE_ACTIONS.index(chosen_action)
     return np.asarray(
         (
             forward[chosen_position],
@@ -246,7 +253,9 @@ def _decision_data(
         )
     signals_by_index = np.full((len(trace), _SIGNAL_COUNT), np.nan, dtype=float)
     for index, capture in zip(indices.tolist(), captures, strict=True):
-        signals_by_index[index] = _signals_for_capture(capture)
+        signals_by_index[index] = _signals_for_capture(
+            capture, executed_action=trace[index].action
+        )
     return _DecisionData(
         seed=seed,
         trace=trace,
