@@ -133,7 +133,7 @@ def _compact_reverse_records(
                 cast(float, record["reverse_candidate_pair_error_reduction"]),
                 cast(float, record["best_treated_canonical_pair_error_reduction"]),
                 cast(float, record["strict_margin"]),
-                action_names.index(cast(str, record["proposed_canonical_action"])),
+                action_names.index(cast(str, record["selected_logical_action"])),
                 int(cast(bool, record["tie"])),
                 int(cast(bool, record["reverse_selected"])),
                 int(cast(bool, record["reverse_immediately_restored_dual_contact"])),
@@ -149,7 +149,7 @@ def _compact_reverse_records(
             "reverse_candidate_pair_error_reduction",
             "best_treated_canonical_pair_error_reduction",
             "strict_margin",
-            "proposed_canonical_action_code",
+            "selected_logical_action_code",
             "tie",
             "reverse_selected",
             "reverse_immediately_restored_dual_contact",
@@ -162,6 +162,106 @@ def _compact_reverse_records(
         "record_count": len(records),
         "complete_records": True,
         "data": base64.b64encode(payload).decode("ascii"),
+    }
+
+
+_D038_LFR_ACTION_NAMES: Final[tuple[str, ...]] = tuple(
+    action.name for action in Action
+)
+_D038_LFR_OPERATION_NAMES: Final[tuple[str, ...]] = (
+    "CANONICAL_ACTION",
+    "REVERSE_TRANSLATION",
+)
+_D038_LFR_BINARY_FORMAT: Final[str] = "<I4d5Bd?d2b?2d6d"
+_D038_LFR_PACKER: Final[struct.Struct] = struct.Struct(_D038_LFR_BINARY_FORMAT)
+
+
+def _compact_d038_lfr_decision_records(
+    records: Sequence[dict[str, object]],
+) -> dict[str, object]:
+    """Encode combined-arm LFR rows while preserving logical/physical labels."""
+    rows: list[list[object]] = []
+    for record in records:
+        geometry = cast(dict[str, object], record["rear_contact_pair_error_geometry"])
+        before = cast(dict[str, object], geometry["before"])
+        after = cast(dict[str, object], geometry["after"])
+        executed = record["executed_logical_action"]
+        rows.append(
+            [
+                int(cast(int, record["transition"])),
+                cast(float, record["lfr_left"]),
+                cast(float, record["lfr_forward"]),
+                cast(float, record["lfr_right"]),
+                cast(float, record["theta_hat_radians"]),
+                _D038_LFR_ACTION_NAMES.index(cast(str, record["seek_action"])),
+                _D038_LFR_ACTION_NAMES.index(
+                    cast(str, record["arm_b_would_have_executed_action"])
+                ),
+                (
+                    255
+                    if executed is None
+                    else _D038_LFR_ACTION_NAMES.index(cast(str, executed))
+                ),
+                _D038_LFR_ACTION_NAMES.index(
+                    cast(str, record["selected_logical_action"])
+                ),
+                _D038_LFR_OPERATION_NAMES.index(
+                    cast(str, record["executed_operation"])
+                ),
+                cast(float, record["actual_angular_displacement_radians"]),
+                bool(record["saturated"]),
+                cast(float, record["beacon_forward_change_signed"]),
+                int(cast(int, record["visible_left_right_sign_before"])),
+                int(cast(int, record["visible_left_right_sign_after"])),
+                bool(record["visible_side_reversal"]),
+                cast(float, record["evaluator_station_bearing_before_radians"]),
+                cast(float, record["directional_error_radians"]),
+                cast(float, before["rear_plus_pair_error"]),
+                cast(float, before["rear_minus_pair_error"]),
+                cast(float, before["max_pair_error"]),
+                cast(float, after["rear_plus_pair_error"]),
+                cast(float, after["rear_minus_pair_error"]),
+                cast(float, after["max_pair_error"]),
+            ]
+        )
+    payload = b"".join(_D038_LFR_PACKER.pack(*row) for row in rows)
+    return {
+        "encoding": "zlib+base64-d038-lfr-rows",
+        "columns": [
+            "transition",
+            "lfr_left",
+            "lfr_forward",
+            "lfr_right",
+            "theta_hat_radians",
+            "seek_action",
+            "arm_b_would_have_executed_action",
+            "executed_logical_action",
+            "selected_logical_action",
+            "executed_operation",
+            "actual_angular_displacement_radians",
+            "saturated",
+            "beacon_forward_change_signed",
+            "visible_left_right_sign_before",
+            "visible_left_right_sign_after",
+            "visible_side_reversal",
+            "evaluator_station_bearing_before_radians",
+            "directional_error_radians",
+            "rear_plus_pair_error_before",
+            "rear_minus_pair_error_before",
+            "max_pair_error_before",
+            "rear_plus_pair_error_after",
+            "rear_minus_pair_error_after",
+            "max_pair_error_after",
+        ],
+        "action_names": list(_D038_LFR_ACTION_NAMES),
+        "operation_names": list(_D038_LFR_OPERATION_NAMES),
+        "binary_format": _D038_LFR_BINARY_FORMAT,
+        "record_size_bytes": _D038_LFR_PACKER.size,
+        "record_count": len(rows),
+        "support_count": len(rows),
+        "complete_records": True,
+        "reverse_rows_have_null_executed_logical_action": True,
+        "data": base64.b64encode(zlib.compress(payload, level=9)).decode("ascii"),
     }
 
 
@@ -258,8 +358,11 @@ def _combined_branch(
     false_seek_count = 0
     reverse_records: list[dict[str, object]] = []
     lfr_records: list[dict[str, object]] = []
-    actions: list[Action] = []
-    action_counts = {name: 0 for name in (action.name for action in Action)}
+    logical_action_sequence: list[Action] = []
+    logical_action_counts = {name: 0 for name in (action.name for action in Action)}
+    executed_canonical_action_counts = {
+        name: 0 for name in (action.name for action in Action)
+    }
     proposed_actions: list[str] = []
     geometries: list[dict[str, object]] = []
     energy_values = [current.energy]
@@ -328,6 +431,7 @@ def _combined_branch(
                     "D-038 interpolation changed inherited turn direction"
                 )
             physical = gate
+        selected_logical_action = cast(Action, physical)
         if false_seek:
             labels = tuple(action.name for action in Action) + (
                 d035c.D035C_REVERSE_LABEL,
@@ -369,7 +473,7 @@ def _combined_branch(
             reverse_records.append(
                 {
                     "transition": global_transition,
-                    "proposed_canonical_action": proposed.name,
+                    "selected_logical_action": cast(Action, physical).name,
                     "reverse_candidate_pair_error_reduction": reverse_reduction,
                     "best_treated_canonical_pair_error_reduction": best_canonical,
                     "strict_margin": margin,
@@ -387,6 +491,8 @@ def _combined_branch(
             if selected_reverse:
                 physical = d035c.D035C_REVERSE_LABEL  # evaluator-only label
                 reverse_count += 1
+        executed_canonical_action: Action | None = None
+        executed_operation: str
         if physical == d035c.D035C_REVERSE_LABEL:
             observation_array, reward, terminated, truncated, info = (
                 d035c._reverse_step(environment)
@@ -398,8 +504,12 @@ def _combined_branch(
                 learner.weights == learner_before
             )
             trace_action = Action.MOVE_FORWARD
+            executed_operation = "REVERSE_TRANSLATION"
         else:
             trace_action = cast(Action, physical)
+            selected_logical_action = trace_action
+            executed_canonical_action = trace_action
+            executed_operation = "CANONICAL_ACTION"
             prediction_values = learner.predict(current, trace_action).values
             observation_array, reward, terminated, truncated, info = (
                 d035b._step_with_turn_angle(environment, trace_action, turn_angle)
@@ -421,10 +531,8 @@ def _combined_branch(
                 update_digest, global_transition, trace_action, update
             )
         if arbitration is not None:
-            # Match accepted D-035B behavior accounting.  Reverse remains an
-            # evaluator-only physical label; its trace identity is the
-            # canonical MOVE_FORWARD action and is separately counted above.
-            eligible_seek_actions.append(trace_action)
+            if executed_canonical_action is not None:
+                eligible_seek_actions.append(selected_logical_action)
         if reward != 0.0 or info != {}:
             raise RuntimeError("D-038 branch crossed reward/info boundary")
         next_observation = d031r1._next_visible(observation_array)
@@ -440,8 +548,10 @@ def _combined_branch(
             info=info,
         )
         trace.append(row)
-        actions.append(trace_action)
-        action_counts[trace_action.name] += 1
+        if executed_canonical_action is not None:
+            logical_action_sequence.append(executed_canonical_action)
+            logical_action_counts[executed_canonical_action.name] += 1
+            executed_canonical_action_counts[executed_canonical_action.name] += 1
         direction_counts[physical if isinstance(physical, str) else physical.name] += 1
         displacement = math.dist(telemetry.position_before, telemetry.position_after)
         actual_angle = d035b._wrap_angle(telemetry.heading - heading_before)
@@ -505,7 +615,13 @@ def _combined_branch(
                 {
                     "transition": global_transition,
                     "arm_b_would_have_executed_action": proposed.name,
-                    "executed_logical_action": trace_action.name,
+                    "selected_logical_action": selected_logical_action.name,
+                    "executed_logical_action": (
+                        executed_canonical_action.name
+                        if executed_canonical_action is not None
+                        else None
+                    ),
+                    "executed_operation": executed_operation,
                     "actual_angular_displacement_radians": actual_angle,
                     "actual_angular_displacement_degrees": math.degrees(actual_angle),
                     "cap_saturated": bool(lfr_record.get("saturated", False)),
@@ -564,7 +680,7 @@ def _combined_branch(
     if not trace:
         raise RuntimeError("D-038 branch produced no transition")
     final = geometries[-1]
-    alternation_runs = d033._alternation_run_lengths(actions)
+    alternation_runs = d033._alternation_run_lengths(logical_action_sequence)
     alternation_distribution = {
         str(length): alternation_runs.count(length)
         for length in sorted(set(alternation_runs))
@@ -660,7 +776,9 @@ def _combined_branch(
             tuple(cast(list[float], geometries[0]["position"])),
             tuple(cast(list[float], final["position"])),
         ),
-        "action_counts": action_counts,
+        "action_counts": logical_action_counts,
+        "logical_action_counts": logical_action_counts,
+        "executed_canonical_action_counts": executed_canonical_action_counts,
         "reverse_intervention_count": reverse_count,
         "reverse_interventions": reverse_records,
         "false_contact_seek_decision_count": false_seek_count,
@@ -701,7 +819,14 @@ def _combined_branch(
         "lfr_decision_records": lfr_records,
         "directional_interpolation": directional_summary,
         "behavior_structure": {
-            "logical_action_counts": action_counts,
+            "logical_action_counts": logical_action_counts,
+            "executed_canonical_action_counts": executed_canonical_action_counts,
+            "logical_action_sequence_definition": (
+                "executed canonical logical actions only; evaluator reverse "
+                "interventions are excluded"
+            ),
+            "logical_action_sequence_count": len(logical_action_sequence),
+            "reverse_interventions_excluded_from_logical_sequence": True,
             "eligible_seek_action_count": len(eligible_seek_actions),
             "strict_alternation_run_count": len(alternation_runs),
             "strict_alternation_run_lengths": alternation_runs,
@@ -744,7 +869,9 @@ def _combined_branch(
             "reverse_intervention_has_no_d027_update": update_count
             + reverse_count
             == len(trace),
-            "logical_actions_existing_enum": all(row.action in Action for row in trace),
+            "logical_actions_existing_enum": all(
+                action in Action for action in logical_action_sequence
+            ),
             "no_new_rng_stream": streams.policy is controller.policy_rng,
             "turn_time_energy_canonical": bool(
                 canonical_turn_exposure[
@@ -800,8 +927,11 @@ def _run_treatment(
     else:
         output, _ = _combined_branch(anchor, treatment)
     if isinstance(output.get("lfr_decision_records"), list):
-        output["lfr_decision_records"] = d035b._compact_lfr_decision_records(
-            cast(list[dict[str, object]], output["lfr_decision_records"])
+        records = cast(list[dict[str, object]], output["lfr_decision_records"])
+        output["lfr_decision_records"] = (
+            _compact_d038_lfr_decision_records(records)
+            if treatment in {"T3_FULL_COMBINED_5", "T4_FULL_COMBINED_2"}
+            else d035b._compact_lfr_decision_records(records)
         )
     if isinstance(output.get("reverse_interventions"), list):
         output["reverse_interventions"] = _compact_records(

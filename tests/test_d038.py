@@ -221,3 +221,38 @@ def test_d038_combined_branch_isolation_and_update_boundaries(
         "next_eligible_opposite_turn_fraction",
         "visible_side_reversal_count",
     } <= set(behavior)
+
+
+def test_reverse_rows_keep_logical_action_and_evaluator_operation_distinct(
+    _d038_mechanics_anchor: tuple[
+        d033._AnchorState, tuple[d025.D025TransitionTrace, ...]
+    ],
+) -> None:
+    anchor, _ = _d038_mechanics_anchor
+    output, branch_trace = d038._combined_branch(anchor, "T3_FULL_COMBINED_5")
+    records = cast(list[dict[str, object]], output["lfr_decision_records"])
+    reverse_rows = [row for row in records if row["reverse_selected"] is True]
+    assert reverse_rows
+    assert all(
+        row["executed_operation"] == "REVERSE_TRANSLATION"
+        and row["executed_logical_action"] is None
+        and row["selected_logical_action"] in {action.name for action in Action}
+        for row in reverse_rows
+    )
+
+    behavior = cast(dict[str, object], output["behavior_structure"])
+    logical_counts = cast(dict[str, int], behavior["logical_action_counts"])
+    executed_counts = cast(
+        dict[str, int], behavior["executed_canonical_action_counts"]
+    )
+    assert logical_counts == executed_counts
+    assert sum(logical_counts.values()) == len(branch_trace) - len(reverse_rows)
+    assert behavior["logical_action_sequence_count"] == sum(logical_counts.values())
+
+    telemetry_move_count = sum(
+        row.action is Action.MOVE_FORWARD for row in branch_trace
+    )
+    assert telemetry_move_count == (
+        executed_counts[Action.MOVE_FORWARD.name] + len(reverse_rows)
+    )
+    assert output["action_counts"] == logical_counts
