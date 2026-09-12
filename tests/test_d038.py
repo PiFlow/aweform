@@ -7,7 +7,7 @@ from typing import cast
 
 import pytest
 
-from aweform import d026, d027, d029, d035b, d038
+from aweform import d025, d026, d027, d029, d033, d035b, d038
 from aweform.env import Action
 from aweform.exp003 import BeaconObservation
 
@@ -37,6 +37,23 @@ def _observation() -> d027.D027Observation:
         ),
         thermal=0.3,
     )
+
+
+@pytest.fixture(scope="module")
+def _d038_mechanics_anchor() -> tuple[
+    d033._AnchorState, tuple[d025.D025TransitionTrace, ...]
+]:
+    # This is bounded mechanics support, not official D-038 output.  The
+    # reused seed and full trace make the baseline identity assertion exact.
+    _, trace, instrumentation = d033._run_capture(
+        18475,
+        role="B",
+        horizon=70_000,
+        target_transition=24_313,
+        seed_validator=d038._validate_seed,
+    )
+    assert instrumentation.capture is not None
+    return d033._anchor_from_capture(18475, "D038_TEST", instrumentation.capture), trace
 
 
 def test_protocol_guards_and_exact_treatment_matrix() -> None:
@@ -157,3 +174,50 @@ def test_reverse_physical_operation_preserves_reward_info_and_learner_boundary()
         len(cast(tuple[float, ...], d027.D027ActionConsequencePredictor().weights))
         == 168
     )
+
+
+def test_d038_baseline_continuation_identity(
+    _d038_mechanics_anchor: tuple[
+        d033._AnchorState, tuple[d025.D025TransitionTrace, ...]
+    ],
+) -> None:
+    anchor, trace = _d038_mechanics_anchor
+    baseline = d038._run_treatment(anchor, "T0_BASELINE_B", trace)
+    assert baseline["baseline_continuation_exact"] is True
+    assert baseline["treatment"] == "T0_BASELINE_B"
+
+
+def test_d038_combined_branch_isolation_and_update_boundaries(
+    _d038_mechanics_anchor: tuple[
+        d033._AnchorState, tuple[d025.D025TransitionTrace, ...]
+    ],
+) -> None:
+    anchor, _ = _d038_mechanics_anchor
+    output, _ = d038._combined_branch(anchor, "T3_FULL_COMBINED_5")
+    state = cast(dict[str, object], output["branch_state"])
+    reverse_count = cast(int, output["reverse_intervention_count"])
+    update_count = cast(int, output["executed_action_update_count"])
+    transition_count = cast(int, output["branch_transition_count"])
+
+    assert reverse_count > 0
+    assert update_count == transition_count - reverse_count
+    assert state["branch_did_not_mutate_anchor"] is True
+    assert state["source_state_immutable"] is True
+    assert state["candidate_order_invariant"] is True
+    assert state["policy_rng_unchanged"] is True
+    assert state["environment_rng_unchanged"] is True
+    assert state["reverse_intervention_has_no_d027_update"] is True
+    assert state["canonical_learner_update_count_matches"] is True
+    assert state["turn_time_energy_canonical"] is True
+
+    exposure = cast(dict[str, object], output["turn_exposure"])
+    assert exposure["turn_count"] == output["turn_count"]
+    assert exposure["canonical_timestep_and_electrical_semantics"] is True
+    behavior = cast(dict[str, object], output["behavior_structure"])
+    assert {
+        "strict_alternation_run_count",
+        "strict_alternation_run_length_distribution",
+        "maximum_strict_alternation_run",
+        "next_eligible_opposite_turn_fraction",
+        "visible_side_reversal_count",
+    } <= set(behavior)

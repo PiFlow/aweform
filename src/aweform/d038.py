@@ -259,6 +259,7 @@ def _combined_branch(
     reverse_records: list[dict[str, object]] = []
     lfr_records: list[dict[str, object]] = []
     actions: list[Action] = []
+    action_counts = {name: 0 for name in (action.name for action in Action)}
     proposed_actions: list[str] = []
     geometries: list[dict[str, object]] = []
     energy_values = [current.energy]
@@ -267,6 +268,13 @@ def _combined_branch(
     path_length = 0.0
     cumulative_signed_angle = 0.0
     cumulative_absolute_angle = 0.0
+    cumulative_commanded_signed_angle = 0.0
+    cumulative_commanded_absolute_angle = 0.0
+    turn_count = 0
+    cumulative_turn_time_seconds = 0.0
+    cumulative_turn_electrical_energy_j = 0.0
+    cumulative_turn_actuator_electrical_energy_j = 0.0
+    all_turn_energy_semantics_canonical = True
     entries = exits = 0
     stop_reason = "incomplete"
     terminated = truncated = False
@@ -283,6 +291,7 @@ def _combined_branch(
         "FORWARD": {"FULL_NOMINAL": 0, "BOUNDARY_CLIPPED": 0, "FULL_STALL": 0},
         "REVERSE": {"FULL_NOMINAL": 0, "BOUNDARY_CLIPPED": 0, "FULL_STALL": 0},
     }
+    eligible_seek_actions: list[Action] = []
     isolation = {
         "source_state_immutable": True,
         "candidate_order_invariant": True,
@@ -411,6 +420,11 @@ def _combined_branch(
             d031r1._update_digest(
                 update_digest, global_transition, trace_action, update
             )
+        if arbitration is not None:
+            # Match accepted D-035B behavior accounting.  Reverse remains an
+            # evaluator-only physical label; its trace identity is the
+            # canonical MOVE_FORWARD action and is separately counted above.
+            eligible_seek_actions.append(trace_action)
         if reward != 0.0 or info != {}:
             raise RuntimeError("D-038 branch crossed reward/info boundary")
         next_observation = d031r1._next_visible(observation_array)
@@ -427,6 +441,7 @@ def _combined_branch(
         )
         trace.append(row)
         actions.append(trace_action)
+        action_counts[trace_action.name] += 1
         direction_counts[physical if isinstance(physical, str) else physical.name] += 1
         displacement = math.dist(telemetry.position_before, telemetry.position_after)
         actual_angle = d035b._wrap_angle(telemetry.heading - heading_before)
@@ -436,6 +451,34 @@ def _combined_branch(
         elif trace_action is Action.TURN_RIGHT:
             cumulative_signed_angle -= actual_angle
             cumulative_absolute_angle += abs(actual_angle)
+        if trace_action in (Action.TURN_LEFT, Action.TURN_RIGHT):
+            commanded_turn_angle = (
+                turn_angle
+                if turn_angle is not None
+                else environment.config.turn_angle
+            )
+            cumulative_commanded_signed_angle += (
+                commanded_turn_angle
+                if trace_action is Action.TURN_LEFT
+                else -commanded_turn_angle
+            )
+            cumulative_commanded_absolute_angle += abs(commanded_turn_angle)
+            turn_count += 1
+            cumulative_turn_time_seconds += environment.config.dt_seconds
+            cumulative_turn_electrical_energy_j += (
+                telemetry.total_electrical_load_w * environment.config.dt_seconds
+            )
+            cumulative_turn_actuator_electrical_energy_j += (
+                telemetry.actuator_electrical_power_w * environment.config.dt_seconds
+            )
+            all_turn_energy_semantics_canonical &= (
+                telemetry.actuator_electrical_power_w
+                == environment.config.turn_actuator_electrical_power_w
+                and telemetry.total_electrical_load_w
+                == environment.config.electronics_electrical_power_w
+                + environment.config.turn_actuator_electrical_power_w
+                and telemetry.step_index == global_transition
+            )
         if trace_action is Action.MOVE_FORWARD:
             direction = (
                 "REVERSE" if physical == d035c.D035C_REVERSE_LABEL else "FORWARD"
@@ -521,6 +564,56 @@ def _combined_branch(
     if not trace:
         raise RuntimeError("D-038 branch produced no transition")
     final = geometries[-1]
+    alternation_runs = d033._alternation_run_lengths(actions)
+    alternation_distribution = {
+        str(length): alternation_runs.count(length)
+        for length in sorted(set(alternation_runs))
+    }
+    opposite_turn_summary = d035b._opposite_turn_summary(eligible_seek_actions)
+    directional_summary = d035b._lfr_diagnostic_summary(lfr_records)
+    canonical_turn_exposure = {
+        "turn_count": turn_count,
+        "canonical_timestep_seconds": environment.config.dt_seconds,
+        "canonical_turn_time_seconds": cumulative_turn_time_seconds,
+        "canonical_turn_electrical_energy_j": cumulative_turn_electrical_energy_j,
+        "canonical_turn_actuator_electrical_energy_j": (
+            cumulative_turn_actuator_electrical_energy_j
+        ),
+        "turn_actuator_electrical_power_w": (
+            environment.config.turn_actuator_electrical_power_w
+        ),
+        "electronics_electrical_power_w": (
+            environment.config.electronics_electrical_power_w
+        ),
+        "canonical_timestep_and_electrical_semantics": (
+            all_turn_energy_semantics_canonical
+            and math.isclose(
+                cumulative_turn_time_seconds,
+                turn_count * environment.config.dt_seconds,
+                rel_tol=0.0,
+                abs_tol=1e-9,
+            )
+            and math.isclose(
+                cumulative_turn_electrical_energy_j,
+                turn_count
+                * (
+                    environment.config.electronics_electrical_power_w
+                    + environment.config.turn_actuator_electrical_power_w
+                    )
+                    * environment.config.dt_seconds,
+                    rel_tol=0.0,
+                    abs_tol=1e-9,
+            )
+            and math.isclose(
+                cumulative_turn_actuator_electrical_energy_j,
+                turn_count
+                * environment.config.turn_actuator_electrical_power_w
+                * environment.config.dt_seconds,
+                rel_tol=0.0,
+                abs_tol=1e-9,
+            )
+        ),
+    }
     output: dict[str, object] = {
         "family": treatment,
         "variant": "LFR_INTERP",
@@ -567,19 +660,34 @@ def _combined_branch(
             tuple(cast(list[float], geometries[0]["position"])),
             tuple(cast(list[float], final["position"])),
         ),
-        "action_counts": {
-            name: sum(1 for action in actions if action.name == name)
-            for name in tuple(action.name for action in Action)
-        },
+        "action_counts": action_counts,
         "reverse_intervention_count": reverse_count,
         "reverse_interventions": reverse_records,
         "false_contact_seek_decision_count": false_seek_count,
+        "opposite_turn_next_eligible_seek": opposite_turn_summary,
+        "opposite_turn_next_eligible_seek_fraction": opposite_turn_summary[
+            "opposite_turn_next_eligible_seek_fraction"
+        ],
         "forward_nominal_clipped_stall_counts": clipping_counts,
-        "turn_count": sum(
-            action in (Action.TURN_LEFT, Action.TURN_RIGHT) for action in actions
+        "turn_count": turn_count,
+        "cumulative_commanded_signed_angle_radians": cumulative_commanded_signed_angle,
+        "cumulative_commanded_absolute_angle_radians": (
+            cumulative_commanded_absolute_angle
+        ),
+        "cumulative_commanded_signed_angle_degrees": math.degrees(
+            cumulative_commanded_signed_angle
+        ),
+        "cumulative_commanded_absolute_angle_degrees": math.degrees(
+            cumulative_commanded_absolute_angle
         ),
         "cumulative_signed_angle_radians": cumulative_signed_angle,
         "cumulative_absolute_angle_radians": cumulative_absolute_angle,
+        "turn_exposure": canonical_turn_exposure,
+        "cumulative_turn_time_seconds": cumulative_turn_time_seconds,
+        "cumulative_turn_electrical_energy_j": cumulative_turn_electrical_energy_j,
+        "cumulative_turn_actuator_electrical_energy_j": (
+            cumulative_turn_actuator_electrical_energy_j
+        ),
         "visible_beacon_forward": {
             "start": forward_values[0],
             "maximum": max(forward_values),
@@ -591,7 +699,27 @@ def _combined_branch(
             "charging_contact_exit_count": exits,
         },
         "lfr_decision_records": lfr_records,
-        "directional_interpolation": d035b._lfr_diagnostic_summary(lfr_records),
+        "directional_interpolation": directional_summary,
+        "behavior_structure": {
+            "logical_action_counts": action_counts,
+            "eligible_seek_action_count": len(eligible_seek_actions),
+            "strict_alternation_run_count": len(alternation_runs),
+            "strict_alternation_run_lengths": alternation_runs,
+            "strict_alternation_run_length_distribution": alternation_distribution,
+            "maximum_strict_alternation_run": max(alternation_runs, default=0),
+            "next_eligible_opposite_turn_fraction": opposite_turn_summary[
+                "opposite_turn_next_eligible_seek_fraction"
+            ],
+            "visible_side_reversal_count": directional_summary[
+                "side_reversal_count"
+            ],
+            "visible_side_reversal_rate_among_turns": directional_summary[
+                "side_reversal_rate_among_turns"
+            ],
+            "visible_side_reversal_support_count": directional_summary[
+                "side_reversal_support_count"
+            ],
+        },
         "prediction_compatibility": prediction.as_dict(),
         "executed_action_update_count": update_count,
         "executed_action_update_digest": update_digest.hexdigest(),
@@ -613,8 +741,16 @@ def _combined_branch(
             ),
             "canonical_learner_update_count_matches": update_count
             == len(trace) - reverse_count,
+            "reverse_intervention_has_no_d027_update": update_count
+            + reverse_count
+            == len(trace),
             "logical_actions_existing_enum": all(row.action in Action for row in trace),
             "no_new_rng_stream": streams.policy is controller.policy_rng,
+            "turn_time_energy_canonical": bool(
+                canonical_turn_exposure[
+                    "canonical_timestep_and_electrical_semantics"
+                ]
+            ),
         },
         "provenance": {
             "reverse_is_evaluator_only": True,
@@ -623,11 +759,16 @@ def _combined_branch(
             "proposed_actions": proposed_actions,
         },
     }
-    if not all(
-        cast(bool, value)
-        for value in cast(dict[str, object], output["branch_state"]).values()
-    ):
-        raise RuntimeError("D-038 combined branch isolation guard failed")
+    failed_guards = [
+        key
+        for key, value in cast(dict[str, object], output["branch_state"]).items()
+        if not cast(bool, value)
+    ]
+    if failed_guards:
+        raise RuntimeError(
+            "D-038 combined branch isolation guard failed: "
+            + ", ".join(failed_guards)
+        )
     return output, tuple(trace)
 
 
