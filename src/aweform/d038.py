@@ -16,6 +16,7 @@ import hashlib
 import json
 import math
 import pickle
+import struct
 import zlib
 from collections.abc import Sequence
 from pathlib import Path
@@ -116,6 +117,51 @@ def _compact_records(records: Sequence[dict[str, object]]) -> dict[str, object]:
         "record_count": len(records),
         "complete_records": True,
         "data": base64.b64encode(zlib.compress(payload, level=9)).decode("ascii"),
+    }
+
+
+def _compact_reverse_records(
+    records: Sequence[dict[str, object]],
+) -> dict[str, object]:
+    action_names = tuple(action.name for action in Action)
+    rows = []
+    for record in records:
+        rows.append(
+            struct.pack(
+                "<I3d6B",
+                int(cast(int, record["transition"])),
+                cast(float, record["reverse_candidate_pair_error_reduction"]),
+                cast(float, record["best_treated_canonical_pair_error_reduction"]),
+                cast(float, record["strict_margin"]),
+                action_names.index(cast(str, record["proposed_canonical_action"])),
+                int(cast(bool, record["tie"])),
+                int(cast(bool, record["reverse_selected"])),
+                int(cast(bool, record["reverse_immediately_restored_dual_contact"])),
+                int(cast(bool, record["candidate_source_unchanged"])),
+                int(cast(bool, record["candidate_order_invariant"])),
+            )
+        )
+    payload = zlib.compress(b"".join(rows), level=9)
+    return {
+        "encoding": "zlib+base64-fixed-reverse-rows",
+        "columns": [
+            "transition",
+            "reverse_candidate_pair_error_reduction",
+            "best_treated_canonical_pair_error_reduction",
+            "strict_margin",
+            "proposed_canonical_action_code",
+            "tie",
+            "reverse_selected",
+            "reverse_immediately_restored_dual_contact",
+            "candidate_source_unchanged",
+            "candidate_order_invariant",
+        ],
+        "action_names": list(action_names),
+        "binary_format": "<I3d6B",
+        "record_size_bytes": struct.calcsize("<I3d6B"),
+        "record_count": len(records),
+        "complete_records": True,
+        "data": base64.b64encode(payload).decode("ascii"),
     }
 
 
@@ -552,7 +598,7 @@ def _combined_branch(
         "final_learner_state_digest": _digest(tuple(learner.weights)),
         "reverse_candidate_diagnostics": {
             "available": True,
-            "records": _compact_records(reverse_records),
+            "records": _compact_reverse_records(reverse_records),
             "strict_better_only": True,
             "ties_rejected": True,
         },
