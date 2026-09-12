@@ -4,7 +4,11 @@
 - **lane:** Development
 - **authorized base:** `3b93a42e03894ffd71744f53462a23cc6ff8d497`
 - **development seeds:** `18468..18487` inclusive, reused exactly
-- **status:** protocol frozen; official output pending
+- **prior invalidated protocol SHA:** `b0d8d1ef315f66503742d2ac2ceb0ab47effc52f`
+- **prior invalidated artifact SHA-256:** `cc3cad6739c9242176ced06bed63601a7396bd3c568222993ab95f8e1579bf49`
+- **prior invalidated artifact size:** `587491` bytes
+- **invalidated-output reason:** required pooled scalar correlations and numeric per-fold target class counts were not serialized; no signal definition or outcome was changed
+- **status:** corrected protocol pending freeze; official rerun pending
 - **disposition:** `CONTINUING` pending descriptive output
 
 ## Question and boundary
@@ -84,6 +88,12 @@ The complete executable protocol, capture support, focused tests, artifact
 writer, matching rules, onset definition, null policy, and interpretation
 categories are committed before official output. The exact clean executable
 protocol SHA and artifact SHA-256/size will be recorded after the official run.
+
+The first official output was invalidated before corrected rerun because the
+artifact omitted pooled scalar correlations and numeric per-fold target class
+counts required by this record. Its protocol SHA, artifact hash, size, and
+reason remain preserved above. The corrected protocol adds only those
+serialization fields and must receive a new clean SHA before rerun.
 
 Canonical organism behavior is required to remain unchanged. No fresh
 Development or EXP seed is permitted, and the D-035A/B/C combined interaction

@@ -50,6 +50,16 @@ D037_SIGNALS: Final[tuple[str, ...]] = (
 )
 D037_CANDIDATE_ACTIONS: Final[tuple[Action, ...]] = d031r1.D031R1_STEERING_ACTIONS
 D037_ACCEPTED_D031R1_ARTIFACT: Final[str] = d033.D033_ACCEPTED_D031R1_ARTIFACT
+D037_INVALIDATED_PROTOCOL_SHA: Final[str] = "b0d8d1ef315f66503742d2ac2ceb0ab47effc52f"
+D037_INVALIDATED_ARTIFACT_SHA256: Final[str] = (
+    "cc3cad6739c9242176ced06bed63601a7396bd3c568222993ab95f8e1579bf49"
+)
+D037_INVALIDATED_ARTIFACT_SIZE: Final[int] = 587491
+D037_INVALIDATION_REASON: Final[str] = (
+    "invalidated after official-output inspection found that per-seed scalar "
+    "correlations were retained but the required pooled scalar correlations and "
+    "numeric per-fold target class counts were not serialized"
+)
 
 _SIGNAL_COUNT: Final[int] = len(D037_SIGNALS)
 _VISIBLE_WIDTH: Final[int] = len(d027.D027_CHANNELS)
@@ -309,6 +319,10 @@ def _evaluate_horizon(
             "held_out_seed": held_out,
             "sample_count": len(held_target.indices),
             "target_status_counts": held_target.status_counts,
+            "target_class_balance": {
+                "negative": int(np.sum(~held_target.reacquired)),
+                "positive": int(np.sum(held_target.reacquired)),
+            },
             "scalar_progress_correlations": _scalar_support(
                 data_by_seed[held_out], held_target
             ),
@@ -399,6 +413,40 @@ def _evaluate_horizon(
         )
         folds.append(fold)
     pooled: dict[str, object] = {}
+    pooled_progress = [
+        targets[seed].progress for seed in D037_DEFAULT_DEVELOPMENT_SEEDS
+    ]
+    pooled_scalar_values = np.concatenate(
+        [
+            data_by_seed[seed].signals_by_index[targets[seed].indices]
+            for seed in data_by_seed
+        ],
+        axis=0,
+    )
+    pooled_progress_values = np.concatenate(pooled_progress, axis=0)
+    pooled["scalar_progress_correlations"] = {
+        name: {
+            "sample_count": len(pooled_progress_values),
+            "correlation": _correlation(
+                pooled_progress_values, pooled_scalar_values[:, offset]
+            ),
+        }
+        for offset, name in enumerate(D037_SIGNALS)
+    }
+    pooled["target_class_balance"] = {
+        "negative": int(
+            sum(
+                np.sum(~targets[seed].reacquired)
+                for seed in D037_DEFAULT_DEVELOPMENT_SEEDS
+            )
+        ),
+        "positive": int(
+            sum(
+                np.sum(targets[seed].reacquired)
+                for seed in D037_DEFAULT_DEVELOPMENT_SEEDS
+            )
+        ),
+    }
     for model_name in ("S0", "S0_PLUS_S1_S6"):
         records = [
             cast(dict[str, object], cast(dict[str, object], fold["models"])[model_name])
@@ -823,6 +871,12 @@ def run_d037_audit(
                 ).read_bytes()
             ).hexdigest(),
             "fresh_development_or_exp_seeds_used": False,
+        },
+        "invalidated_prior_output": {
+            "implementation_protocol_sha": D037_INVALIDATED_PROTOCOL_SHA,
+            "artifact_sha256": D037_INVALIDATED_ARTIFACT_SHA256,
+            "artifact_size_bytes": D037_INVALIDATED_ARTIFACT_SIZE,
+            "reason": D037_INVALIDATION_REASON,
         },
         "freeze": {
             "candidate_signals": {
