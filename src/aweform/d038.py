@@ -420,6 +420,23 @@ def _combined_branch(
                     "actual_angular_displacement_radians": actual_angle,
                     "actual_angular_displacement_degrees": math.degrees(actual_angle),
                     "cap_saturated": bool(lfr_record.get("saturated", False)),
+                    "seek_action": trace_action.name,
+                    "saturated": bool(lfr_record.get("saturated", False)),
+                    "beacon_forward_change_signed": (
+                        current.beacon.forward - row.observation_before[2]
+                    ),
+                    "visible_left_right_sign_before": d035b._left_right_sign(
+                        row.observation_before[1], row.observation_before[3]
+                    ),
+                    "visible_left_right_sign_after": d035b._left_right_sign(
+                        current.beacon.left, current.beacon.right
+                    ),
+                    "evaluator_station_bearing_before_radians": lfr_record[
+                        "true_evaluator_station_bearing_radians"
+                    ],
+                    "directional_error_radians": lfr_record[
+                        "directional_error_radians"
+                    ],
                     "visible_side_reversal": d035b._visible_side_reversal(
                         trace_action,
                         d035b._left_right_sign(
@@ -437,6 +454,10 @@ def _combined_branch(
                     },
                     "rear_contact_pair_error_before": geometries[-2],
                     "rear_contact_pair_error_after": geometries[-1],
+                    "rear_contact_pair_error_geometry": {
+                        "before": geometries[-2],
+                        "after": geometries[-1],
+                    },
                 }
             )
             lfr_records.append(lfr_record)
@@ -592,7 +613,7 @@ def _run_treatment(
     else:
         output, _ = _combined_branch(anchor, treatment)
     if isinstance(output.get("lfr_decision_records"), list):
-        output["lfr_decision_records"] = _compact_records(
+        output["lfr_decision_records"] = d035b._compact_lfr_decision_records(
             cast(list[dict[str, object]], output["lfr_decision_records"])
         )
     if isinstance(output.get("reverse_interventions"), list):
