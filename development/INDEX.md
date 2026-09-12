@@ -54,6 +54,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-035A | Evaluator-only turn-granularity attribution audit | CONTINUING | [`D-035A-turn-granularity-attribution-audit.md`](D-035A-turn-granularity-attribution-audit.md) |
 | D-035C | Evaluator-only reverse-translation sufficiency audit | CONTINUING | [`D-035C-reverse-translation-sufficiency-audit.md`](D-035C-reverse-translation-sufficiency-audit.md) |
 | D-036 | Shadow short-history scaffold-recruitment learnability audit | CONTINUING | [`D-036-shadow-short-history-recruitment-learnability.md`](D-036-shadow-short-history-recruitment-learnability.md) |
+| D-037 | Endogenous prediction-state recruitment-signal audit | CONTINUING | [`D-037-endogenous-prediction-state-recruitment-signal-audit.md`](D-037-endogenous-prediction-state-recruitment-signal-audit.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 

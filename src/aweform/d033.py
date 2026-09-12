@@ -228,6 +228,8 @@ class _CapturedPreAction:
     delegated: bool | None
     delegation_draw: float | None
     proposed_action: Action | None = None
+    predictions: dict[Action, tuple[float, ...]] | None = None
+    prediction_query_read_only: bool | None = None
 
 
 class _CaptureInstrumentation:
@@ -237,10 +239,12 @@ class _CaptureInstrumentation:
         *,
         target_transition: int | None = None,
         capture_first_delegation: bool = False,
+        capture_eligible_decisions: bool = False,
     ) -> None:
         self.role = role
         self.target_transition = target_transition
         self.capture_first_delegation = capture_first_delegation
+        self.capture_eligible_decisions = capture_eligible_decisions
         self.environment: d026.D026Env | None = None
         self.streams: RandomStreams | None = None
         self.learner: _CaptureLearner | None = None
@@ -249,6 +253,7 @@ class _CaptureInstrumentation:
         self.update_digest = hashlib.sha256()
         self.pending_pre: _CapturedPreAction | None = None
         self.capture: _CapturedPreAction | None = None
+        self.decision_captures: list[_CapturedPreAction] = []
 
 
 class _CaptureLearner(d027.D027ActionConsequencePredictor):
@@ -334,6 +339,8 @@ def _finish_capture(
     pre.delegation_draw = (
         arbitration.delegation_draw if arbitration is not None else None
     )
+    if instrumentation.capture_eligible_decisions:
+        instrumentation.decision_captures.append(pre)
     if (
         instrumentation.role == "A"
         and arbitration is not None
@@ -357,11 +364,20 @@ def _instrumented_act(
     action_call: Callable[[], Action],
 ) -> Action:
     transition = instrumentation.transition_count + 1
-    needs_capture = instrumentation.target_transition == transition or (
-        instrumentation.role == "A"
-        and instrumentation.capture_first_delegation
-        and instrumentation.capture is None
-        and _potential_false_contact_seek(controller, observation)
+    needs_capture = (
+        instrumentation.target_transition == transition
+        or (
+            instrumentation.role == "A"
+            and instrumentation.capture_first_delegation
+            and instrumentation.capture is None
+            and _potential_false_contact_seek(controller, observation)
+        )
+        or (
+            instrumentation.capture_eligible_decisions
+            and instrumentation.role == "B"
+            and controller.mode is d026.D026Mode.SEEK
+            and not observation.charging_contact
+        )
     )
     instrumentation.pending_pre = (
         _capture_pre(instrumentation, controller, observation, transition)
@@ -412,6 +428,7 @@ def _run_capture(
     horizon: int,
     target_transition: int | None = None,
     capture_first_delegation: bool = False,
+    capture_eligible_decisions: bool = False,
     seed_validator: Callable[[int], None] | None = None,
 ) -> tuple[
     dict[str, object],
@@ -424,6 +441,7 @@ def _run_capture(
         role,
         target_transition=target_transition,
         capture_first_delegation=capture_first_delegation,
+        capture_eligible_decisions=capture_eligible_decisions,
     )
     trace: list[d025.D025TransitionTrace] = []
     original_initial_environment = d031r1._initial_environment
@@ -446,16 +464,33 @@ def _run_capture(
     ) -> tuple[dict[Action, d027.D027Prediction], bool]:
         result = original_query(learner, current)
         capture = instrumentation.capture
+        if capture is None and instrumentation.capture_eligible_decisions:
+            capture = next(
+                (
+                    item
+                    for item in reversed(instrumentation.decision_captures)
+                    if item.transition == instrumentation.transition_count
+                ),
+                None,
+            )
         if (
             capture is not None
-            and instrumentation.target_transition == instrumentation.transition_count
+            and (
+                instrumentation.capture_eligible_decisions
+                or instrumentation.target_transition == instrumentation.transition_count
+            )
             and instrumentation.role == "B"
         ):
-            capture.proposed_action = d031r1._choose_steering_action(
-                current,
-                result[0],
-                cast(Action, capture.greedy_action),
-            )
+            capture.predictions = {
+                action: prediction.values for action, prediction in result[0].items()
+            }
+            capture.prediction_query_read_only = result[1]
+            if capture.proposed_action is None:
+                capture.proposed_action = d031r1._choose_steering_action(
+                    current,
+                    result[0],
+                    cast(Action, capture.greedy_action),
+                )
         return result
 
     with ExitStack() as stack:
