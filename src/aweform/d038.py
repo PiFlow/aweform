@@ -420,6 +420,15 @@ def _combined_branch(
                     "actual_angular_displacement_radians": actual_angle,
                     "actual_angular_displacement_degrees": math.degrees(actual_angle),
                     "cap_saturated": bool(lfr_record.get("saturated", False)),
+                    "visible_side_reversal": d035b._visible_side_reversal(
+                        trace_action,
+                        d035b._left_right_sign(
+                            row.observation_before[1], row.observation_before[3]
+                        ),
+                        d035b._left_right_sign(
+                            current.beacon.left, current.beacon.right
+                        ),
+                    ),
                     "reverse_selected": physical == d035c.D035C_REVERSE_LABEL,
                     "visible_beacon_after": {
                         "left": current.beacon.left,
