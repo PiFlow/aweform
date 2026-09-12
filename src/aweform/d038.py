@@ -10,11 +10,13 @@ environment.
 from __future__ import annotations
 
 import argparse
+import base64
 import copy
 import hashlib
 import json
 import math
 import pickle
+import zlib
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Final, cast
@@ -103,6 +105,18 @@ def _reverse_selection(
     best_canonical = max(reductions[action.name] for action in Action)
     tie = reverse_reduction == best_canonical
     return reverse_reduction > best_canonical, reverse_reduction, best_canonical, tie
+
+
+def _compact_records(records: Sequence[dict[str, object]]) -> dict[str, object]:
+    payload = json.dumps(list(records), separators=(",", ":"), sort_keys=True).encode(
+        "utf-8"
+    )
+    return {
+        "encoding": "zlib+base64-json-records",
+        "record_count": len(records),
+        "complete_records": True,
+        "data": base64.b64encode(zlib.compress(payload, level=9)).decode("ascii"),
+    }
 
 
 def _candidate_outcomes(
@@ -501,13 +515,14 @@ def _combined_branch(
             "charging_contact_exit_count": exits,
         },
         "lfr_decision_records": lfr_records,
+        "directional_interpolation": d035b._lfr_diagnostic_summary(lfr_records),
         "prediction_compatibility": prediction.as_dict(),
         "executed_action_update_count": update_count,
         "executed_action_update_digest": update_digest.hexdigest(),
         "final_learner_state_digest": _digest(tuple(learner.weights)),
         "reverse_candidate_diagnostics": {
             "available": True,
-            "records": reverse_records,
+            "records": _compact_records(reverse_records),
             "strict_better_only": True,
             "ties_rejected": True,
         },
@@ -567,6 +582,14 @@ def _run_treatment(
         )
     else:
         output, _ = _combined_branch(anchor, treatment)
+    if isinstance(output.get("lfr_decision_records"), list):
+        output["lfr_decision_records"] = _compact_records(
+            cast(list[dict[str, object]], output["lfr_decision_records"])
+        )
+    if isinstance(output.get("reverse_interventions"), list):
+        output["reverse_interventions"] = _compact_records(
+            cast(list[dict[str, object]], output["reverse_interventions"])
+        )
     output["treatment"] = treatment
     return output
 
