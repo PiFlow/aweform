@@ -9,9 +9,14 @@
 - **earlier invalidated artifact size:** `102845850` bytes
 - **earlier invalidated-output reason:** required T3/T4 authorization-compliance diagnostics and focused tests were missing: accepted D-035B behavior-structure reporting, canonical turn time/total and actuator-only electrical exposure with guards, and explicit baseline, isolation/RNG, reverse-no-update, and exactly-one canonical-action update tests
 - **corrected protocol freeze SHA:** `83000c3764848f084d7517edfa8425b29a4b059d`
+- **corrected-output invalidation reason:** Sol found that T3/T4 behavior-
+  structure diagnostics conflated evaluator reverse interventions with
+  canonical `MOVE_FORWARD` logical-action diagnostics; the prior output is
+  preserved but not interpreted
+- **latest clean protocol freeze SHA:** `19acce381138a600ea778f98f72d2aa2b890b964`
 - **artifact:** `D-038-combined-fine-interp-reverse-sufficiency-audit.json`
-- **artifact SHA-256:** `430e41f113dedc7e2c8b8c211263816c29af52a35638fd3eb6bfc40e039f266d`
-- **artifact size:** `103114648` bytes
+- **artifact SHA-256:** `b86e9e92650555fd95751cbfbc133e7e86bf00e95f46855f1e109f5fc43f6968`
+- **artifact size:** `103341096` bytes
 - **status:** official output complete
 - **disposition:** `CONTINUING`
 
@@ -65,9 +70,11 @@ prequential diagnostics, including exact windows `1..16`, `17..64`,
 `65..256`, `257..1024`, and `1025..4096`. Reverse steps are not scored as
 canonical learner predictions.
 
-Per-decision L/F/R rows use the accepted D-035B lossless binary-row encoding;
-reverse-decision rows use a deterministic fixed-width binary encoding. Both
-are marked complete in the artifact and retain record counts and codebooks.
+T0-T2 per-decision L/F/R rows use the accepted D-035B lossless binary-row
+encoding. T3/T4 rows use a D-038 fixed-width binary encoding that retains the
+selected logical action, executed operation, nullable executed logical action,
+and reverse diagnostics. Both encodings are marked complete in the artifact
+and retain record counts and codebooks.
 
 ## Provenance and invalidated attempts
 
@@ -115,12 +122,23 @@ or interpretation rules.
 
 The authorization-compliance correction froze protocol SHA
 `83000c3764848f084d7517edfa8425b29a4b059d`. Its corrected official artifact
-has SHA-256
+had SHA-256
 `430e41f113dedc7e2c8b8c211263816c29af52a35638fd3eb6bfc40e039f266d` and size
-`103114648` bytes. A second regeneration was byte-identical. The corrected
-artifact contains all required behavior-structure fields and canonical turn
-exposure/guard fields on all `114` available T3/T4 rows; the correction did
-not change treatment mechanics, support, anchors, or interpretation rules.
+`103114648` bytes. Sol later invalidated that output because T3/T4 behavior-
+structure diagnostics still conflated evaluator reverse interventions with
+canonical `MOVE_FORWARD` logical-action diagnostics. No result from it is used
+for interpretation.
+
+The bounded correction froze clean protocol SHA
+`19acce381138a600ea778f98f72d2aa2b890b964`. Its official reused-support
+artifact has SHA-256
+`b86e9e92650555fd95751cbfbc133e7e86bf00e95f46855f1e109f5fc43f6968` and size
+`103341096` bytes. The artifact preserves the unchanged treatment mechanics,
+support, anchors, and interpretation rules while explicitly separating
+`selected_logical_action` from `executed_operation`; reverse rows have null
+`executed_logical_action` and are excluded from canonical action counts,
+strict alternation, and next-eligible-opposite-turn diagnostics. All `114`
+available T3/T4 rows use the complete corrected fixed-width record schema.
 
 One predecessor helper exposed a derived `b_proposed_action` mismatch against
 the accepted D-033 artifact for `ALT8_ESTABLISHED` on available seeds. The
@@ -135,8 +153,9 @@ Replay/identity gates passed for all 20 reused Arm-B seed replays. There were
 285 available seed+anchor treatment groups: 20 `FIRST_FALSE_CONTACT_SEEK`,
 17 `ALT8_ESTABLISHED`, and 20 `FIRST_POST_CONTACT_LOSS` seeds, each with five
 treatments. All 285 baseline continuation checks passed, and all isolation,
-reward/info, canonical-action, learner-update, RNG, behavior-structure, and
-canonical turn time/electrical semantics checks passed.
+reward/info, canonical-action, learner-update, RNG, logical-action/
+evaluator-operation separation, behavior-structure, and canonical turn
+time/electrical semantics checks passed.
 
 | Anchor | T0 | T1 | T2 | T3 | T4 |
 |---|---:|---:|---:|---:|---:|
