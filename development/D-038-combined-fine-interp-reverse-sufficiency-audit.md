@@ -4,7 +4,11 @@
 - **lane:** Development
 - **authorized base:** `b49531fe29cd5c0f83cec300369d9fd9d0c64700`
 - **development seeds:** `18468..18487` inclusive, reused exactly
-- **corrected protocol freeze SHA:** `ac336d1406a0016c445f0b9b8db3aea6c3a46e25`
+- **earlier invalidated protocol freeze SHA:** `ac336d1406a0016c445f0b9b8db3aea6c3a46e25`
+- **earlier invalidated artifact SHA-256:** `6abfe01b612f7498570851d55e5ec4eb52d875af8094fa455ab51f2db5120dc3`
+- **earlier invalidated artifact size:** `102845850` bytes
+- **earlier invalidated-output reason:** required T3/T4 authorization-compliance diagnostics and focused tests were missing: accepted D-035B behavior-structure reporting, canonical turn time/total and actuator-only electrical exposure with guards, and explicit baseline, isolation/RNG, reverse-no-update, and exactly-one canonical-action update tests
+- **corrected protocol freeze SHA:** `83000c3764848f084d7517edfa8425b29a4b059d`
 - **artifact:** `D-038-combined-fine-interp-reverse-sufficiency-audit.json`
 - **artifact SHA-256:** `6abfe01b612f7498570851d55e5ec4eb52d875af8094fa455ab51f2db5120dc3`
 - **artifact size:** `102845850` bytes
@@ -66,6 +70,20 @@ reverse-decision rows use a deterministic fixed-width binary encoding. Both
 are marked complete in the artifact and retain record counts and codebooks.
 
 ## Provenance and invalidated attempts
+
+The official output produced from protocol SHA
+`ac336d1406a0016c445f0b9b8db3aea6c3a46e25` is preserved but invalidated under
+the issue #133 freeze rules. Its artifact SHA-256 is
+`6abfe01b612f7498570851d55e5ec4eb52d875af8094fa455ab51f2db5120dc3` and its
+size is `102845850` bytes. The exact reason is that authorization-compliance
+diagnostics and focused tests were missing: T3/T4 accepted-D-035B
+behavior-structure reporting (strict L/R alternation run count, length
+distribution, maximum, next-eligible opposite-turn fraction, and explicit
+visible-side-reversal reporting), canonical turn time/total and actuator-only
+electrical exposure with guards, and explicit tests for baseline identity,
+branch/source plus RNG isolation, reverse no-update, and exactly-one
+executed-canonical-action D-027 update behavior. No result from that output is
+used for interpretation.
 
 The first frozen protocol was `f77b5c62521e66389c463bc903cfaf528254bd2d`.
 Its official artifact was generated before inspection with SHA-256
