@@ -358,8 +358,11 @@ def _combined_branch(
     false_seek_count = 0
     reverse_records: list[dict[str, object]] = []
     lfr_records: list[dict[str, object]] = []
-    logical_action_sequence: list[Action] = []
-    logical_action_counts = {name: 0 for name in (action.name for action in Action)}
+    selected_logical_action_sequence: list[Action] = []
+    executed_canonical_action_sequence: list[Action] = []
+    selected_logical_action_counts = {
+        name: 0 for name in (action.name for action in Action)
+    }
     executed_canonical_action_counts = {
         name: 0 for name in (action.name for action in Action)
     }
@@ -432,6 +435,14 @@ def _combined_branch(
                 )
             physical = gate
         selected_logical_action = cast(Action, physical)
+        # The unchanged Arm-B selection is the logical action even when the
+        # evaluator subsequently replaces its physical operation with reverse.
+        selected_logical_action_sequence.append(selected_logical_action)
+        selected_logical_action_counts[selected_logical_action.name] += 1
+        if arbitration is not None:
+            # Match accepted D-035B semantics: this is the selected action at
+            # each eligible SEEK decision, before any evaluator intervention.
+            eligible_seek_actions.append(selected_logical_action)
         if false_seek:
             labels = tuple(action.name for action in Action) + (
                 d035c.D035C_REVERSE_LABEL,
@@ -506,9 +517,8 @@ def _combined_branch(
             trace_action = Action.MOVE_FORWARD
             executed_operation = "REVERSE_TRANSLATION"
         else:
-            trace_action = cast(Action, physical)
-            selected_logical_action = trace_action
-            executed_canonical_action = trace_action
+            trace_action = selected_logical_action
+            executed_canonical_action = selected_logical_action
             executed_operation = "CANONICAL_ACTION"
             prediction_values = learner.predict(current, trace_action).values
             observation_array, reward, terminated, truncated, info = (
@@ -530,9 +540,6 @@ def _combined_branch(
             d031r1._update_digest(
                 update_digest, global_transition, trace_action, update
             )
-        if arbitration is not None:
-            if executed_canonical_action is not None:
-                eligible_seek_actions.append(selected_logical_action)
         if reward != 0.0 or info != {}:
             raise RuntimeError("D-038 branch crossed reward/info boundary")
         next_observation = d031r1._next_visible(observation_array)
@@ -549,8 +556,7 @@ def _combined_branch(
         )
         trace.append(row)
         if executed_canonical_action is not None:
-            logical_action_sequence.append(executed_canonical_action)
-            logical_action_counts[executed_canonical_action.name] += 1
+            executed_canonical_action_sequence.append(executed_canonical_action)
             executed_canonical_action_counts[executed_canonical_action.name] += 1
         direction_counts[physical if isinstance(physical, str) else physical.name] += 1
         displacement = math.dist(telemetry.position_before, telemetry.position_after)
@@ -625,7 +631,7 @@ def _combined_branch(
                     "actual_angular_displacement_radians": actual_angle,
                     "actual_angular_displacement_degrees": math.degrees(actual_angle),
                     "cap_saturated": bool(lfr_record.get("saturated", False)),
-                    "seek_action": trace_action.name,
+                    "seek_action": selected_logical_action.name,
                     "saturated": bool(lfr_record.get("saturated", False)),
                     "beacon_forward_change_signed": (
                         current.beacon.forward - row.observation_before[2]
@@ -642,14 +648,20 @@ def _combined_branch(
                     "directional_error_radians": lfr_record[
                         "directional_error_radians"
                     ],
-                    "visible_side_reversal": d035b._visible_side_reversal(
-                        trace_action,
-                        d035b._left_right_sign(
-                            row.observation_before[1], row.observation_before[3]
-                        ),
-                        d035b._left_right_sign(
-                            current.beacon.left, current.beacon.right
-                        ),
+                    "visible_side_reversal": (
+                        executed_canonical_action in (
+                            Action.TURN_LEFT,
+                            Action.TURN_RIGHT,
+                        )
+                        and d035b._visible_side_reversal(
+                            executed_canonical_action,
+                            d035b._left_right_sign(
+                                row.observation_before[1], row.observation_before[3]
+                            ),
+                            d035b._left_right_sign(
+                                current.beacon.left, current.beacon.right
+                            ),
+                        )
                     ),
                     "reverse_selected": physical == d035c.D035C_REVERSE_LABEL,
                     "visible_beacon_after": {
@@ -680,7 +692,9 @@ def _combined_branch(
     if not trace:
         raise RuntimeError("D-038 branch produced no transition")
     final = geometries[-1]
-    alternation_runs = d033._alternation_run_lengths(logical_action_sequence)
+    alternation_runs = d033._alternation_run_lengths(
+        selected_logical_action_sequence
+    )
     alternation_distribution = {
         str(length): alternation_runs.count(length)
         for length in sorted(set(alternation_runs))
@@ -776,8 +790,9 @@ def _combined_branch(
             tuple(cast(list[float], geometries[0]["position"])),
             tuple(cast(list[float], final["position"])),
         ),
-        "action_counts": logical_action_counts,
-        "logical_action_counts": logical_action_counts,
+        "action_counts": selected_logical_action_counts,
+        "logical_action_counts": selected_logical_action_counts,
+        "selected_logical_action_counts": selected_logical_action_counts,
         "executed_canonical_action_counts": executed_canonical_action_counts,
         "reverse_intervention_count": reverse_count,
         "reverse_interventions": reverse_records,
@@ -819,14 +834,35 @@ def _combined_branch(
         "lfr_decision_records": lfr_records,
         "directional_interpolation": directional_summary,
         "behavior_structure": {
-            "logical_action_counts": logical_action_counts,
+            "logical_action_counts": selected_logical_action_counts,
+            "selected_logical_action_counts": selected_logical_action_counts,
             "executed_canonical_action_counts": executed_canonical_action_counts,
-            "logical_action_sequence_definition": (
-                "executed canonical logical actions only; evaluator reverse "
-                "interventions are excluded"
+            "selected_logical_action_sequence_definition": (
+                "one unchanged Arm-B selected logical Action per real branch "
+                "transition, after the fixed L/F/R direction gate and before "
+                "optional evaluator reverse; reverse-selected steps retain "
+                "their selected Action"
             ),
-            "logical_action_sequence_count": len(logical_action_sequence),
-            "reverse_interventions_excluded_from_logical_sequence": True,
+            "executed_canonical_action_sequence_definition": (
+                "physically executed canonical logical Actions only; evaluator "
+                "reverse interventions have null executed logical action and "
+                "are excluded"
+            ),
+            "selected_logical_action_sequence_count": len(
+                selected_logical_action_sequence
+            ),
+            "executed_canonical_action_sequence_count": len(
+                executed_canonical_action_sequence
+            ),
+            "reverse_interventions_included_in_selected_logical_action_sequence": True,
+            "reverse_interventions_excluded_from_executed_canonical_action_sequence": (
+                True
+            ),
+            "strict_alternation_sequence": "selected_logical_action_sequence",
+            "next_eligible_opposite_turn_sequence": (
+                "selected_logical_action_sequence restricted to unchanged "
+                "Arm-B false-contact SEEK arbitration decisions"
+            ),
             "eligible_seek_action_count": len(eligible_seek_actions),
             "strict_alternation_run_count": len(alternation_runs),
             "strict_alternation_run_lengths": alternation_runs,
@@ -870,7 +906,18 @@ def _combined_branch(
             + reverse_count
             == len(trace),
             "logical_actions_existing_enum": all(
-                action in Action for action in logical_action_sequence
+                action in Action for action in selected_logical_action_sequence
+            ),
+            "selected_logical_action_count_matches": sum(
+                selected_logical_action_counts.values()
+            )
+            == len(trace),
+            "executed_canonical_action_count_matches": sum(
+                executed_canonical_action_counts.values()
+            )
+            == len(trace) - reverse_count,
+            "executed_canonical_actions_existing_enum": all(
+                action in Action for action in executed_canonical_action_sequence
             ),
             "no_new_rng_stream": streams.policy is controller.policy_rng,
             "turn_time_energy_canonical": bool(

@@ -242,12 +242,37 @@ def test_reverse_rows_keep_logical_action_and_evaluator_operation_distinct(
 
     behavior = cast(dict[str, object], output["behavior_structure"])
     logical_counts = cast(dict[str, int], behavior["logical_action_counts"])
+    selected_counts = cast(
+        dict[str, int], behavior["selected_logical_action_counts"]
+    )
     executed_counts = cast(
         dict[str, int], behavior["executed_canonical_action_counts"]
     )
-    assert logical_counts == executed_counts
-    assert sum(logical_counts.values()) == len(branch_trace) - len(reverse_rows)
-    assert behavior["logical_action_sequence_count"] == sum(logical_counts.values())
+    assert logical_counts == selected_counts
+    assert sum(logical_counts.values()) == len(branch_trace)
+    assert sum(executed_counts.values()) == len(branch_trace) - len(reverse_rows)
+    assert behavior["selected_logical_action_sequence_count"] == len(branch_trace)
+    assert (
+        behavior["executed_canonical_action_sequence_count"]
+        == sum(executed_counts.values())
+    )
+    assert behavior["strict_alternation_sequence"] == (
+        "selected_logical_action_sequence"
+    )
+    assert behavior["next_eligible_opposite_turn_sequence"].startswith(
+        "selected_logical_action_sequence"
+    )
+
+    selected_reverse_counts = {
+        action.name: sum(
+            row["selected_logical_action"] == action.name for row in reverse_rows
+        )
+        for action in Action
+    }
+    assert all(
+        logical_counts[name] == executed_counts[name] + selected_reverse_counts[name]
+        for name in logical_counts
+    )
 
     telemetry_move_count = sum(
         row.action is Action.MOVE_FORWARD for row in branch_trace
@@ -256,3 +281,8 @@ def test_reverse_rows_keep_logical_action_and_evaluator_operation_distinct(
         executed_counts[Action.MOVE_FORWARD.name] + len(reverse_rows)
     )
     assert output["action_counts"] == logical_counts
+    assert all(
+        row["seek_action"] == row["selected_logical_action"]
+        for row in reverse_rows
+    )
+    assert all(row["executed_logical_action"] is None for row in reverse_rows)

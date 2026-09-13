@@ -13,6 +13,14 @@
   structure diagnostics conflated evaluator reverse interventions with
   canonical `MOVE_FORWARD` logical-action diagnostics; the prior output is
   preserved but not interpreted
+- **latest invalidated protocol freeze SHA:** `19acce381138a600ea778f98f72d2aa2b890b964`
+- **latest invalidated artifact SHA-256:** `b86e9e92650555fd95751cbfbc133e7e86bf00e95f46855f1e109f5fc43f6968`
+- **latest invalidated artifact size:** `103341096` bytes
+- **latest invalidated-output reason:** the required all-four logical action
+  counts still omit selected Arm-B logical actions on evaluator
+  reverse-intervention steps; the prior output therefore fails the declared
+  selected-vs-executed logical-action diagnostic semantics and is preserved
+  but not interpreted
 - **latest clean protocol freeze SHA:** `19acce381138a600ea778f98f72d2aa2b890b964`
 - **artifact:** `D-038-combined-fine-interp-reverse-sufficiency-audit.json`
 - **artifact SHA-256:** `b86e9e92650555fd95751cbfbc133e7e86bf00e95f46855f1e109f5fc43f6968`
@@ -129,16 +137,17 @@ structure diagnostics still conflated evaluator reverse interventions with
 canonical `MOVE_FORWARD` logical-action diagnostics. No result from it is used
 for interpretation.
 
-The bounded correction froze clean protocol SHA
-`19acce381138a600ea778f98f72d2aa2b890b964`. Its official reused-support
+The next bounded correction freezes a new clean protocol SHA after the
+selected-vs-executed logical-action implementation and focused regression test
+are committed. Its official reused-support
 artifact has SHA-256
 `b86e9e92650555fd95751cbfbc133e7e86bf00e95f46855f1e109f5fc43f6968` and size
 `103341096` bytes. The artifact preserves the unchanged treatment mechanics,
 support, anchors, and interpretation rules while explicitly separating
 `selected_logical_action` from `executed_operation`; reverse rows have null
-`executed_logical_action` and are excluded from canonical action counts,
-strict alternation, and next-eligible-opposite-turn diagnostics. All `114`
-available T3/T4 rows use the complete corrected fixed-width record schema.
+`executed_logical_action` and are excluded from executed-canonical counts.
+This output is invalidated under the latest reason above; no result from it is
+used for interpretation.
 
 One predecessor helper exposed a derived `b_proposed_action` mismatch against
 the accepted D-033 artifact for `ALT8_ESTABLISHED` on available seeds. The
