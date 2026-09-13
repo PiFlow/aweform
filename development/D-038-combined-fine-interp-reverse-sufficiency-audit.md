@@ -21,10 +21,10 @@
   reverse-intervention steps; the prior output therefore fails the declared
   selected-vs-executed logical-action diagnostic semantics and is preserved
   but not interpreted
-- **latest clean protocol freeze SHA:** `19acce381138a600ea778f98f72d2aa2b890b964`
+- **latest clean protocol freeze SHA:** `79c7cef9da5f5772752406357367e4b6a3f113d5`
 - **artifact:** `D-038-combined-fine-interp-reverse-sufficiency-audit.json`
-- **artifact SHA-256:** `b86e9e92650555fd95751cbfbc133e7e86bf00e95f46855f1e109f5fc43f6968`
-- **artifact size:** `103341096` bytes
+- **artifact SHA-256:** `4e5f0ca22b7583029d76c32d557d5edbf9bac9d9ad4347a999f4c873d7de25a3`
+- **artifact size:** `103496012` bytes
 - **status:** official output complete
 - **disposition:** `CONTINUING`
 
@@ -137,17 +137,18 @@ structure diagnostics still conflated evaluator reverse interventions with
 canonical `MOVE_FORWARD` logical-action diagnostics. No result from it is used
 for interpretation.
 
-The next bounded correction freezes a new clean protocol SHA after the
-selected-vs-executed logical-action implementation and focused regression test
-are committed. Its official reused-support
+The latest bounded correction froze clean protocol SHA
+`79c7cef9da5f5772752406357367e4b6a3f113d5`. Its official reused-support
 artifact has SHA-256
-`b86e9e92650555fd95751cbfbc133e7e86bf00e95f46855f1e109f5fc43f6968` and size
-`103341096` bytes. The artifact preserves the unchanged treatment mechanics,
-support, anchors, and interpretation rules while explicitly separating
-`selected_logical_action` from `executed_operation`; reverse rows have null
-`executed_logical_action` and are excluded from executed-canonical counts.
-This output is invalidated under the latest reason above; no result from it is
-used for interpretation.
+`4e5f0ca22b7583029d76c32d557d5edbf9bac9d9ad4347a999f4c873d7de25a3` and size
+`103496012` bytes. Deterministic regeneration was byte-identical. The artifact
+preserves unchanged treatment mechanics, support, anchors, and interpretation
+rules while making `logical_action_counts` the selected Arm-B logical-action
+counts, including reverse-selected steps. It separately reports
+`executed_canonical_action_counts`; reverse rows have null
+`executed_logical_action` and are excluded from that executed-canonical
+sequence. Strict alternation and next-eligible-opposite-turn diagnostics name
+their selected-logical sequence semantics explicitly.
 
 One predecessor helper exposed a derived `b_proposed_action` mismatch against
 the accepted D-033 artifact for `ALT8_ESTABLISHED` on available seeds. The
