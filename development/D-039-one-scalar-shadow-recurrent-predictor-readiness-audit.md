@@ -128,6 +128,23 @@ the mixed `9/17` onset sign split as coherent. The fixed protocol serializes
 the pooled strata and reserves coherence for a genuinely same-direction
 contrast; it reruns the same support from scratch.
 
+### Latest invalidated completed artifact
+
+The next official execution used executable SHA
+`c9fd57b31881124bdbcc67afd6f121a972959bd7` and produced
+`development/D-039-one-scalar-shadow-recurrent-predictor-readiness-audit.json`
+with SHA-256
+`6f6a2f9c1475ab6b22c510499a4b015f34b3acf37dc17ce43e9179a9eec6ad70` and
+size `505355` bytes. It is invalidated before interpretation because
+`_pooled_error_summary()` concatenated per-seed local index arrays and then
+used those reset indices on the already-concatenated prediction/target arrays.
+Later seeds therefore repeatedly selected the beginning of the pooled arrays,
+so the serialized pooled one-step MAE and support multiset were wrong despite
+the total sample count being correct. The bounded fix aggregates the already
+concatenated arrays directly, adds a two-seed regression, and reruns the exact
+same support without changing the recurrence, analyses, matching/null rules,
+interpretation categories, alpha values, or scientific scope.
+
 ## Official output
 
 The official artifact was generated from clean executable protocol SHA

@@ -179,6 +179,29 @@ def test_d039_s0_plus_h_and_d036_preaction_target_null_rules() -> None:
     assert target.indices.tolist() == [0, 1, 2]
 
 
+def test_d039_pooled_error_summary_uses_each_seed_once() -> None:
+    first = replace(
+        _data(2),
+        baseline_prediction=np.zeros(2),
+        recurrent_prediction=np.zeros(2),
+        observed_delta=np.zeros(2),
+    )
+    second = replace(
+        _data(2),
+        seed=18469,
+        baseline_prediction=np.full(2, 10.0),
+        recurrent_prediction=np.full(2, 10.0),
+        observed_delta=np.zeros(2),
+    )
+
+    pooled = d039._pooled_error_summary({first.seed: first, second.seed: second})
+
+    assert pooled["sample_count"] == 4
+    assert pooled["baseline_mae"] == pytest.approx(5.0)
+    assert pooled["recurrent_mae"] == pytest.approx(5.0)
+    assert pooled["recurrent_minus_baseline_mae"] == pytest.approx(0.0)
+
+
 def test_d039_s0_matching_ignores_h_and_excludes_anchor_candidates() -> None:
     data = _data()
     matched = d039._matched_index(data, 4, {4, 5})

@@ -41,6 +41,18 @@ D039_OSCILLATION_WINDOWS: Final[tuple[tuple[str, int], ...]] = (
     ("after", 16),
 )
 D039_ACCEPTED_D031R1_ARTIFACT: Final[str] = d033.D033_ACCEPTED_D031R1_ARTIFACT
+D039_INVALIDATED_PROTOCOL_SHA: Final[str] = (
+    "c9fd57b31881124bdbcc67afd6f121a972959bd7"
+)
+D039_INVALIDATED_ARTIFACT_SHA256: Final[str] = (
+    "6f6a2f9c1475ab6b22c510499a4b015f34b3acf37dc17ce43e9179a9eec6ad70"
+)
+D039_INVALIDATED_ARTIFACT_SIZE: Final[int] = 505355
+D039_INVALIDATION_REASON: Final[str] = (
+    "invalidated after exact-current-HEAD review found that the pooled one-step "
+    "summary indexed reset per-seed local ranges into concatenated arrays, so "
+    "later seeds repeatedly selected the beginning of the pooled arrays"
+)
 
 _FORWARD_INDEX: Final[int] = d027.D027_OUTPUTS.index("delta_beacon_forward")
 _ACTION_NAMES: Final[tuple[str, ...]] = tuple(action.name for action in Action)
@@ -466,9 +478,6 @@ def _one_step_summary(data: _TraceData) -> dict[str, object]:
 
 
 def _pooled_error_summary(data_by_seed: dict[int, _TraceData]) -> dict[str, object]:
-    merged = np.concatenate(
-        [np.arange(len(data.trace), dtype=np.int64) for data in data_by_seed.values()]
-    )
     baseline = np.concatenate(
         [data.baseline_prediction for data in data_by_seed.values()]
     )
@@ -476,25 +485,7 @@ def _pooled_error_summary(data_by_seed: dict[int, _TraceData]) -> dict[str, obje
         [data.recurrent_prediction for data in data_by_seed.values()]
     )
     observed = np.concatenate([data.observed_delta for data in data_by_seed.values()])
-    pooled = _TraceData(
-        seed=0,
-        trace=tuple(),
-        trace_digest="",
-        visible_before=np.empty((len(observed), 6)),
-        visible_after=np.empty((len(observed), 6)),
-        visible_after_forward=np.empty(len(observed)),
-        actions=np.zeros(len(observed), dtype=np.int8),
-        eligible=np.zeros(len(observed), dtype=bool),
-        reacquisition=np.zeros(len(observed), dtype=bool),
-        terminated=False,
-        truncated=False,
-        h_before=np.zeros(len(observed)),
-        h_after=np.zeros(len(observed)),
-        baseline_prediction=baseline,
-        recurrent_prediction=recurrent,
-        observed_delta=observed,
-    )
-    return _error_summary(pooled, merged)
+    return _error_summary_arrays(baseline, recurrent, observed)
 
 
 def _pooled_mask_summary(
@@ -1165,6 +1156,12 @@ def run_d039_audit(
                 ).read_bytes()
             ).hexdigest(),
             "fresh_development_or_exp_seeds_used": False,
+        },
+        "invalidated_prior_output": {
+            "implementation_protocol_sha": D039_INVALIDATED_PROTOCOL_SHA,
+            "artifact_sha256": D039_INVALIDATED_ARTIFACT_SHA256,
+            "artifact_size_bytes": D039_INVALIDATED_ARTIFACT_SIZE,
+            "reason": D039_INVALIDATION_REASON,
         },
         "freeze": {
             "initial_h": 0.0,
