@@ -45,9 +45,10 @@ The scalar is initialized once and never reset at mode transitions, SEEK entry,
 logging windows, anchors, or analysis windows. It uses no RNG and no evaluator
 geometry, labels, outcomes, seed identity, future observation, or Arm-A value.
 
-The clean executable protocol SHA is recorded in this section immediately
-after the freeze commit and is passed unchanged to the official artifact
-writer. No official output is executed before that clean freeze. The official artifact
+The clean executable protocol SHA is
+`eb462805be013131cfc9fe844c1ded0b2e81179c` and is passed unchanged to the
+official artifact writer. No official output was executed before that clean
+freeze. The official artifact
 hash and size, exact replay gate, validation log, and descriptive output are
 the authoritative machine-readable record below.
 
