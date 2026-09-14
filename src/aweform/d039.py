@@ -372,22 +372,38 @@ def _trace_data(
 
 
 def _error_summary(data: _TraceData, indices: np.ndarray) -> dict[str, object]:
-    baseline_signed = data.baseline_prediction[indices] - data.observed_delta[indices]
-    recurrent_signed = data.recurrent_prediction[indices] - data.observed_delta[indices]
+    return _error_summary_arrays(
+        data.baseline_prediction[indices],
+        data.recurrent_prediction[indices],
+        data.observed_delta[indices],
+    )
+
+
+def _error_summary_arrays(
+    baseline_prediction: np.ndarray,
+    recurrent_prediction: np.ndarray,
+    observed_delta: np.ndarray,
+) -> dict[str, object]:
+    baseline_signed = baseline_prediction - observed_delta
+    recurrent_signed = recurrent_prediction - observed_delta
     baseline_abs = np.abs(baseline_signed)
     recurrent_abs = np.abs(recurrent_signed)
     return {
-        "sample_count": int(len(indices)),
-        "baseline_mae": float(np.mean(baseline_abs)) if len(indices) else None,
-        "recurrent_mae": float(np.mean(recurrent_abs)) if len(indices) else None,
+        "sample_count": int(len(baseline_signed)),
+        "baseline_mae": float(np.mean(baseline_abs))
+        if len(baseline_signed)
+        else None,
+        "recurrent_mae": float(np.mean(recurrent_abs))
+        if len(baseline_signed)
+        else None,
         "recurrent_minus_baseline_mae": float(np.mean(recurrent_abs - baseline_abs))
-        if len(indices)
+        if len(baseline_signed)
         else None,
         "baseline_signed_error_mean": float(np.mean(baseline_signed))
-        if len(indices)
+        if len(baseline_signed)
         else None,
         "recurrent_signed_error_mean": float(np.mean(recurrent_signed))
-        if len(indices)
+        if len(baseline_signed)
         else None,
         "baseline_signed_error": _number_summary(baseline_signed.tolist()),
         "recurrent_signed_error": _number_summary(recurrent_signed.tolist()),
@@ -479,6 +495,21 @@ def _pooled_error_summary(data_by_seed: dict[int, _TraceData]) -> dict[str, obje
         observed_delta=observed,
     )
     return _error_summary(pooled, merged)
+
+
+def _pooled_mask_summary(
+    data_by_seed: dict[int, _TraceData], masks: dict[int, np.ndarray]
+) -> dict[str, object]:
+    baseline = np.concatenate(
+        [data.baseline_prediction[masks[seed]] for seed, data in data_by_seed.items()]
+    )
+    recurrent = np.concatenate(
+        [data.recurrent_prediction[masks[seed]] for seed, data in data_by_seed.items()]
+    )
+    observed = np.concatenate(
+        [data.observed_delta[masks[seed]] for seed, data in data_by_seed.items()]
+    )
+    return _error_summary_arrays(baseline, recurrent, observed)
 
 
 def _feature_rows(data: _TraceData, indices: np.ndarray, with_h: bool) -> np.ndarray:
@@ -1021,14 +1052,21 @@ def _interpretation(
     predictive = predictive_one_step or predictive_loso
     anchor_pooled = cast(dict[str, object], anchor["pooled"])
     onset_pooled = cast(dict[str, object], oscillation["onset_minus_matched_control"])
+    anchor_paired = int(cast(int, anchor_pooled["paired_count"]))
+    onset_paired = int(cast(int, onset_pooled["paired_count"]))
+    anchor_positive = int(cast(int, anchor_pooled["positive_count"]))
+    anchor_negative = int(cast(int, anchor_pooled["negative_count"]))
+    onset_positive = int(cast(int, onset_pooled["positive_count"]))
+    onset_negative = int(cast(int, onset_pooled["negative_count"]))
+    # "Coherent" is reserved for a same-direction contrast with no opposing
+    # paired signs in one of the predeclared bridge summaries.  A bare
+    # majority is deliberately reported as mixed rather than promoted.
     coherence = (
-        int(cast(int, anchor_pooled["positive_count"]))
-        > int(cast(int, anchor_pooled["negative_count"]))
-        or int(cast(int, onset_pooled["positive_count"]))
-        > int(cast(int, onset_pooled["negative_count"]))
-    ) and (
-        int(cast(int, anchor_pooled["paired_count"])) > 0
-        or int(cast(int, onset_pooled["paired_count"])) > 0
+        anchor_paired > 0
+        and (anchor_positive == anchor_paired or anchor_negative == anchor_paired)
+    ) or (
+        onset_paired > 0
+        and (onset_positive == onset_paired or onset_negative == onset_paired)
     )
     if predictive and coherence:
         return [
@@ -1074,8 +1112,22 @@ def run_d039_audit(
         for seed in validated
     ]
     pooled = _pooled_error_summary(data_by_seed)
+    pooled_masks: dict[str, dict[int, np.ndarray]] = {
+        "false_contact_seek": {
+            seed: np.flatnonzero(data.eligible) for seed, data in data_by_seed.items()
+        }
+    }
+    for action in Action:
+        pooled_masks[f"action:{action.name}"] = {
+            seed: np.flatnonzero(data.actions == list(Action).index(action))
+            for seed, data in data_by_seed.items()
+        }
     one_step = {
         "pooled": pooled,
+        "pooled_by_stratum": {
+            name: _pooled_mask_summary(data_by_seed, masks)
+            for name, masks in pooled_masks.items()
+        },
         "per_seed": per_seed,
         "within_seed_sign_counts": {
             "improved": sum(delta < 0.0 for delta in seed_deltas),

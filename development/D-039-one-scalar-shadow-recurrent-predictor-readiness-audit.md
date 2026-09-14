@@ -56,8 +56,9 @@ the authoritative machine-readable record below.
 
 1. Prequential baseline versus recurrent forward-prediction signed/absolute
    errors: pooled, per seed, false-contact SEEK, controller mode, lifetime
-   quarter, all four actions, and finite `h` range/final summaries. All 20
-   within-seed MAE directions are retained.
+   quarter, all four actions, and finite `h` range/final summaries. Pooled
+   overall, false-contact SEEK, and per-action summaries are serialized. All
+   20 within-seed MAE directions are retained.
 2. Exact D-036 pre-action eligibility and target/null semantics at horizons
    `64`, `256`, and `1024`. Strict deterministic leave-one-seed-out ridge uses
    intercept plus S0 or S0 plus current pre-action `h`, with fixed alpha
@@ -71,6 +72,11 @@ the authoritative machine-readable record below.
 4. Exact D-037 first contiguous eligible false-contact SEEK strict left/right
    alternating run of at least 16 decisions. Before/at/after 16-decision
    windows and one same-seed S0-only non-onset control preserve boundary nulls.
+
+Recruitment/oscillation coherence is reported only when one predeclared pooled
+bridge or onset contrast has a single direction with no opposing paired signs;
+a bare majority is retained as mixed and cannot receive the coherence
+category.
 
 No p-value, universal pass percentage, hidden detector, threshold, or causal
 recruitment rule is introduced. The only interpretation categories are the
@@ -107,6 +113,20 @@ prediction. The correction binds `p_t` at the real D-027
 `observe_transition(action=...)` call; the scalar, analysis rules, support,
 and interpretation categories are unchanged. The corrected protocol receives
 a new clean executable SHA and reruns the complete support from scratch.
+
+### Invalidated completed artifact
+
+The next official execution used corrected executable SHA
+`5a9ccb952ef6fd074a678e5221a907370422ab32` and produced
+`development/D-039-one-scalar-shadow-recurrent-predictor-readiness-audit.json`
+with SHA-256
+`989545b6086ae12be14106b8665ec3832885502ad780fcbd30f91f31064f4b10` and
+size `501391` bytes. It is invalidated before interpretation. Replay gates
+passed, but the artifact did not serialize the required top-level pooled
+false-contact SEEK summary, and its automatic coherence classification treated
+the mixed `9/17` onset sign split as coherent. The fixed protocol serializes
+the pooled strata and reserves coherence for a genuinely same-direction
+contrast; it reruns the same support from scratch.
 
 ## Official output
 
