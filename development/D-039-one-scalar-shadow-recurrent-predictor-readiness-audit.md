@@ -46,7 +46,7 @@ logging windows, anchors, or analysis windows. It uses no RNG and no evaluator
 geometry, labels, outcomes, seed identity, future observation, or Arm-A value.
 
 The clean executable protocol SHA is
-`5a9ccb952ef6fd074a678e5221a907370422ab32` and is passed unchanged to the
+`c9fd57b31881124bdbcc67afd6f121a972959bd7` and is passed unchanged to the
 official artifact writer. No official output was executed before that clean
 freeze. The official artifact
 hash and size, exact replay gate, validation log, and descriptive output are
