@@ -130,11 +130,66 @@ contrast; it reruns the same support from scratch.
 
 ## Official output
 
-The exact current results, support/null statuses, replay gates, validation
-commands, artifact provenance, interpretation category, and all required
-summary tables are recorded in the JSON artifact. This record makes no
-confirmatory claim and does not authorize D-040, EXP work, causal scaffold
-recruitment, or a larger recurrent mechanism.
+The official artifact was generated from clean executable protocol SHA
+`c9fd57b31881124bdbcc67afd6f121a972959bd7` using only the exact reused seeds
+`18468..18487`. Its SHA-256 is
+`6f6a2f9c1475ab6b22c510499a4b015f34b3acf37dc17ce43e9179a9eec6ad70` and its
+size is `505355` bytes. A second generation to a temporary path was
+byte-identical (`cmp` exit `0`, same SHA and size).
 
-**surprised_by:** To be filled only from the frozen official artifact; no
-pre-output expectation is treated as a result.
+All `20/20` accepted Arm-B replay gates passed on outcome/termination, action
+and visible trajectory, complete D-027 update/state digest, policy and
+environment RNG digests, mode/arbitration counters, zero false-contact SEEK
+explorer calls, one legacy policy draw per false-contact SEEK decision, reward
+`0.0`, and `info == {}`. All scalar updates were finite, used the actual
+executed action's pre-update D-027 prediction, and matched both recurrence
+forms at every transition.
+
+Pooled one-step forward prediction used `1,152,541` transitions: baseline MAE
+`0.00571652`, recurrent MAE `0.00424098`, delta `-0.00147554`. Every seed
+improved (`20/20`, `0` worsened, `0` ties). On the exact false-contact SEEK
+support (`665,908` transitions), baseline MAE was `0.00090611` versus
+recurrent `0.00114207`, delta `+0.00023596`; the scalar worsened this
+recruitment-relevant stratum. Pooled per-action summaries, mode/quarter
+strata, per-seed MAE signs, and finite `h` ranges are retained in JSON.
+
+The exact D-036 LOSO S0 versus S0+H results were:
+
+| horizon | S0 MAE / correlation | S0+H MAE / correlation | mean paired MAE delta | improved / worsened |
+|---:|---:|---:|---:|---:|
+| 64 | `0.00069746 / 0.06450` | `0.00090057 / 0.16852` | `+0.00020311` | `7 / 13` |
+| 256 | `0.00070086 / 0.06537` | `0.00088451 / 0.16196` | `+0.00018365` | `7 / 13` |
+| 1024 | `0.00072163 / 0.06612` | `0.00087543 / 0.14795` | `+0.00015380` | `7 / 13` |
+
+Support was identical for S0 and S0+H at every fold and horizon. The binary
+reacquisition target was all-negative/untestable and is reported null.
+
+The D-034 bridge had `112/120` available anchors and `112/112` matched controls
+across `ALT_4/8/16` and `NO_FORWARD_PROGRESS_4/8/16`. Pooled anchor-minus-
+control `h` was mixed: `50` positive, `62` negative, `0` ties; mean delta
+`-0.00068449`. Per-family/per-length availability and distributions are
+retained in JSON.
+
+The exact D-037 oscillation onset was available on `17/20` seeds, with `17/17`
+same-seed controls. The before window was available on `9/17`; at and after
+windows were `17/17`. Onset-minus-control `h` was mixed: `9` positive,
+`8` negative, `0` ties; mean delta `+0.00079130`. Window summaries and nulls
+are retained in JSON.
+
+Interpretation: **Predictive but not recruitment-coherent**. The one-step
+reduction is descriptive predictive support on this replay, but the
+recruitment-relevant false-contact SEEK error worsened, S0+H held-out
+future-progress MAE worsened at all three horizons, and both bridge contrasts
+were mixed. This is not confirmatory evidence and does not authorize a
+threshold, causal scaffold recruitment, D-040, EXP work, or a larger recurrent
+mechanism.
+
+The scalar remained shadow-only. Canonical Arm-B behavior, D-027 weights and
+update semantics, four actions, six visible channels, physics, RNG, reward,
+and organism-facing `info` were unchanged. No D-040, EXP, or causal
+recruitment work was started.
+
+**surprised_by:** The scalar improved one-step MAE on every seed and raised
+future-progress correlation, yet worsened the exact false-contact SEEK
+one-step MAE and held-out future-progress MAE. This separates generic
+prequential residual correction from a recruitment-coherent temporal signal.
