@@ -172,6 +172,7 @@ class _Instrumentation:
         self,
         predictor: d027.D027ActionConsequencePredictor,
         observation: d027.D027Observation,
+        action: Action,
         next_observation: d027.D027Observation,
     ) -> d027.D027Prediction:
         pending = self.pending
@@ -179,7 +180,11 @@ class _Instrumentation:
             raise RuntimeError("D-039 update was not paired with the executed action")
         if pending.transition != self.transition_count + 1:
             raise RuntimeError("D-039 transition timing diverged")
-        prediction = predictor.predict(observation, pending.action)
+        # D-031R1 may replace the controller proposal with its learned
+        # steering action after controller.act returns.  The learner call is
+        # the authoritative executed-action seam.
+        pending.action = action
+        prediction = predictor.predict(observation, action)
         observed_delta = next_observation.beacon.forward - observation.beacon.forward
         p = prediction.values[_FORWARD_INDEX]
         h_before = pending.h_before
@@ -226,7 +231,7 @@ class _D039Learner(d027.D027ActionConsequencePredictor):
     ) -> d027.D027LearningUpdate:
         instrumentation = self._d039_instrumentation
         prediction = instrumentation.record_transition(
-            self, observation, next_observation
+            self, observation, action, next_observation
         )
         update = super().observe_transition(observation, action, next_observation)
         if (

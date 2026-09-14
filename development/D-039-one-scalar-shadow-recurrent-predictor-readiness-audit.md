@@ -89,6 +89,25 @@ Official output was generated from the clean protocol SHA above using only
 invalidated SHA/artifact/hash/size/reason and require a clean rerun without
 tuning from output.
 
+### Invalidated official attempt
+
+The first official attempt used executable SHA
+`eb462805be013131cfc9fe844c1ded0b2e81179c` and produced no artifact
+(checksum and size unavailable). Its provenance was:
+
+```text
+uv run python -m aweform.d039 --executed-commit-sha eb462805be013131cfc9fe844c1ded0b2e81179c --output development/D-039-one-scalar-shadow-recurrent-predictor-readiness-audit.json
+```
+
+It was invalidated before any result was interpreted because the shadow
+wrapper initially retained the controller proposal rather than the actual
+executed Arm-B action after D-031R1 learned steering replaced that proposal.
+The recurrence was therefore not evaluated from the declared executed-action
+prediction. The correction binds `p_t` at the real D-027
+`observe_transition(action=...)` call; the scalar, analysis rules, support,
+and interpretation categories are unchanged. The corrected protocol receives
+a new clean executable SHA and reruns the complete support from scratch.
+
 ## Official output
 
 The exact current results, support/null statuses, replay gates, validation
