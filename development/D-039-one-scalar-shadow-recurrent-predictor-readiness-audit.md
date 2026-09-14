@@ -46,10 +46,10 @@ logging windows, anchors, or analysis windows. It uses no RNG and no evaluator
 geometry, labels, outcomes, seed identity, future observation, or Arm-A value.
 
 The clean executable protocol SHA is
-`c9fd57b31881124bdbcc67afd6f121a972959bd7` and is passed unchanged to the
+`c864f57dd1458d139bea2882bfac06ed8334fa52` and is passed unchanged to the
 official artifact writer. No official output was executed before that clean
-freeze. The official artifact
-hash and size, exact replay gate, validation log, and descriptive output are
+freeze. The artifact hash and size, exact replay gate, validation log, and
+descriptive output are
 the authoritative machine-readable record below.
 
 ## Frozen analyses
@@ -147,12 +147,12 @@ interpretation categories, alpha values, or scientific scope.
 
 ## Official output
 
-The official artifact was generated from clean executable protocol SHA
-`c9fd57b31881124bdbcc67afd6f121a972959bd7` using only the exact reused seeds
-`18468..18487`. Its SHA-256 is
-`6f6a2f9c1475ab6b22c510499a4b015f34b3acf37dc17ce43e9179a9eec6ad70` and its
-size is `505355` bytes. A second generation to a temporary path was
-byte-identical (`cmp` exit `0`, same SHA and size).
+The corrected official artifact was generated from clean executable protocol
+SHA `c864f57dd1458d139bea2882bfac06ed8334fa52` using only the exact reused
+seeds `18468..18487`. Its SHA-256 is
+`c1733686a038a193223c61d6259169ce46bd05838f04540ffb7706c2a2e87cca` and its
+size is `505829` bytes. A second generation to `/private/tmp/d039-regenerated.json`
+was byte-identical (`cmp` exit `0`, same SHA and size).
 
 All `20/20` accepted Arm-B replay gates passed on outcome/termination, action
 and visible trajectory, complete D-027 update/state digest, policy and
@@ -163,7 +163,7 @@ executed action's pre-update D-027 prediction, and matched both recurrence
 forms at every transition.
 
 Pooled one-step forward prediction used `1,152,541` transitions: baseline MAE
-`0.00571652`, recurrent MAE `0.00424098`, delta `-0.00147554`. Every seed
+`0.00593019`, recurrent MAE `0.00466482`, delta `-0.00126537`. Every seed
 improved (`20/20`, `0` worsened, `0` ties). On the exact false-contact SEEK
 support (`665,908` transitions), baseline MAE was `0.00090611` versus
 recurrent `0.00114207`, delta `+0.00023596`; the scalar worsened this

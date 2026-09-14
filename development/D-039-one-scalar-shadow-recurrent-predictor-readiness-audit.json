@@ -6183,7 +6183,7 @@
     }
   },
   "horizon": 70000,
-  "implementation_protocol_sha": "c9fd57b31881124bdbcc67afd6f121a972959bd7",
+  "implementation_protocol_sha": "c864f57dd1458d139bea2882bfac06ed8334fa52",
   "interpretation": {
     "categories": [
       "Predictive but not recruitment-coherent"
@@ -6204,6 +6204,12 @@
     "No supported one-scalar temporal signal",
     "Target unsupported"
   ],
+  "invalidated_prior_output": {
+    "artifact_sha256": "6f6a2f9c1475ab6b22c510499a4b015f34b3acf37dc17ce43e9179a9eec6ad70",
+    "artifact_size_bytes": 505355,
+    "implementation_protocol_sha": "c9fd57b31881124bdbcc67afd6f121a972959bd7",
+    "reason": "invalidated after exact-current-HEAD review found that the pooled one-step summary indexed reset per-seed local ranges into concatenated arrays, so later seeds repeatedly selected the beginning of the pooled arrays"
+  },
   "one_step": {
     "per_seed": {
       "18468": {
@@ -12648,25 +12654,25 @@
       }
     },
     "pooled": {
-      "baseline_mae": 0.005716519977705113,
+      "baseline_mae": 0.005930187605275666,
       "baseline_signed_error": {
-        "maximum": 0.2391967370864686,
-        "mean": 5.175352156010273e-05,
-        "median": -5.032040912480301e-07,
-        "minimum": -0.1956323349314054,
+        "maximum": 0.25085337340210256,
+        "mean": 5.0782248294779806e-05,
+        "median": -8.557543261476785e-07,
+        "minimum": -0.26547624013688564,
         "sample_count": 1152541
       },
-      "baseline_signed_error_mean": 5.175352156010273e-05,
-      "recurrent_mae": 0.00424097886736897,
-      "recurrent_minus_baseline_mae": -0.0014755411103361425,
+      "baseline_signed_error_mean": 5.078224829477981e-05,
+      "recurrent_mae": 0.004664820481026485,
+      "recurrent_minus_baseline_mae": -0.00126536712424918,
       "recurrent_signed_error": {
-        "maximum": 0.3049215061868564,
-        "mean": 1.290074615216028e-07,
-        "median": -5.37895614178413e-07,
-        "minimum": -0.24486126929201174,
+        "maximum": 0.3409300156467775,
+        "mean": 2.268712210864992e-09,
+        "median": -7.947225006549319e-09,
+        "minimum": -0.3302447366659195,
         "sample_count": 1152541
       },
-      "recurrent_signed_error_mean": 1.2900746152160966e-07,
+      "recurrent_signed_error_mean": 2.268712210863991e-09,
       "sample_count": 1152541
     },
     "pooled_by_stratum": {
