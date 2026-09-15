@@ -55,6 +55,20 @@ D040_INVALIDATED_PROVENANCE: Final[tuple[dict[str, object], ...]] = (
         "reason": "six bounded Sol-requested D-040 protocol corrections",
         "interpret_as_valid_d040_output": False,
     },
+    {
+        "executable_sha": "c9b017e63d4f4b01f32afa55efab257153d1d7bb",
+        "reused_artifact_sha256": (
+            "a28fa81cdd6f00665b162ead6e25dc5ad3ffd8a01924d4147406f1d228bf457f"
+        ),
+        "reused_artifact_size_bytes": 168_791_151,
+        "holdout_artifact_sha256": (
+            "2458da4a3d09f86a362a6c3910d6b3bf8dd3d3ce28ac62f77f81211e9351be41"
+        ),
+        "holdout_artifact_size_bytes": 336_622_010,
+        "status": "invalidated_by_Sol",
+        "reason": "D-040 artifact contract was not compact or independently reviewable",
+        "interpret_as_valid_d040_output": False,
+    },
 )
 D040_REUSED_SEEDS: Final[tuple[int, ...]] = tuple(range(18468, 18488))
 D040_HOLDOUT_SEEDS: Final[tuple[int, ...]] = tuple(range(18488, 18508))
@@ -147,6 +161,13 @@ _ACTION_NAMES: Final[tuple[str, ...]] = tuple(action.name for action in Action)
 
 def _digest(value: object) -> str:
     return hashlib.sha256(pickle.dumps(value, protocol=5)).hexdigest()
+
+
+def _canonical_json_digest(value: object) -> str:
+    encoded = json.dumps(value, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _validate_seed_block(
@@ -338,7 +359,7 @@ def _trigger_history(selection: _TriggerSelection) -> dict[str, object]:
         "anchor_transition": selection.transition,
         "starting_beacon_forward": selection.starting_forward,
         "completed_actions": [row["action"] for row in rows],
-        "completed_observations": rows,
+        "completed_observation_count": len(rows),
         "closure_valid_history_digest": _digest(rows),
         "uses_only_executed_actions_and_six_channel_observations": True,
         "hidden_geometry_or_future_outcome_used": False,
@@ -806,7 +827,8 @@ def _independent_arm_b(
     mode_counts = {mode.name: 0 for mode in d026.D026Mode}
     mode_entries = {mode.name: 0 for mode in d026.D026Mode}
     mode_entries[controller.mode.name] = 1
-    arbitration_records: list[dict[str, object]] = []
+    arbitration_digest = hashlib.sha256()
+    arbitration_count = 0
     anchors: dict[str, _Anchor | None] = {
         f"OFFSET_{offset}": None for offset in D040_ANCHOR_OFFSETS
     }
@@ -931,15 +953,24 @@ def _independent_arm_b(
             action = _choose_steering_action(
                 current, predictions, arbitration.greedy_action
             )
-            arbitration_records.append(
-                {
-                    "transition": len(trace) + 1,
-                    "greedy_action": arbitration.greedy_action.name,
-                    "action": action.name,
-                    "draw": arbitration.delegation_draw,
-                    "delegated": arbitration.delegated,
-                }
+            arbitration_record = {
+                "transition": len(trace) + 1,
+                "greedy_action": arbitration.greedy_action.name,
+                "action": action.name,
+                "draw": arbitration.delegation_draw,
+                "delegated": arbitration.delegated,
+            }
+            arbitration_digest.update(
+                (
+                    json.dumps(
+                        arbitration_record,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    )
+                    + "\n"
+                ).encode()
             )
+            arbitration_count += 1
         observation_array, reward, terminated, truncated, info = environment.step(
             action
         )
@@ -1075,16 +1106,17 @@ def _independent_arm_b(
         "post_recharge_redepartures": redepartures,
         "completed_energy_regulation_cycles": completed_cycles,
         "seek_arbitration": {
-            "false_contact_seek_decisions": len(arbitration_records),
+            "false_contact_seek_decisions": arbitration_count,
             "stochastic_delegation_decisions": 0,
             "delegation_probability": 0.0,
             "explorer_internal_hazard": 1.0 / 8.0,
             "one_policy_rng_draw_per_decision": True,
-            "legacy_arbitration_draw_count": len(arbitration_records),
+            "legacy_arbitration_draw_count": arbitration_count,
             "false_contact_seek_explorer_calls": (
                 controller.false_contact_seek_explorer_calls
             ),
-            "decision_records": arbitration_records,
+            "decision_record_count": arbitration_count,
+            "decision_records_digest": arbitration_digest.hexdigest(),
         },
         "trajectory_digest": d027._trace_digest(trace),
         "executed_update_digest": update_digest.hexdigest(),
@@ -1097,10 +1129,7 @@ def _independent_arm_b(
         "organism_info_empty_every_transition": info_empty,
         "isolation": {
             "zero_false_contact_seek_delegation": True,
-            "one_legacy_arbitration_draw_per_false_contact_seek_decision": len(
-                arbitration_records
-            )
-            == len(arbitration_records),
+            "one_legacy_arbitration_draw_per_false_contact_seek_decision": True,
             "no_false_contact_seek_explorer_call": (
                 controller.false_contact_seek_explorer_calls == 0
             ),
@@ -1999,16 +2028,118 @@ def _ridge_fit_predict(
     return float(np.asarray([1.0, *test_x], dtype=float) @ coefficients)
 
 
+def _compact_seek_arbitration(value: dict[str, object]) -> None:
+    """Replace raw per-decision records with auditable fixed-size metadata."""
+    records = value.pop("decision_records", None)
+    if records is not None:
+        if not isinstance(records, list):
+            raise TypeError("D-040 decision_records must be a list")
+        value["decision_record_count"] = len(records)
+        value["decision_records_digest"] = _canonical_json_digest(records)
+
+
+def _compact_trigger(value: dict[str, object]) -> None:
+    """Keep history identity while removing repeated raw observation rows."""
+    observations = value.pop("completed_observations", None)
+    if observations is not None:
+        if not isinstance(observations, list):
+            raise TypeError("D-040 completed_observations must be a list")
+        value["completed_observation_count"] = len(observations)
+        value.setdefault(
+            "completed_observations_digest", _canonical_json_digest(observations)
+        )
+
+
+def _compact_seed_result(result: dict[str, object]) -> dict[str, object]:
+    """Copy one result while retaining only fixed summaries and digests."""
+    compact = copy.deepcopy(result)
+
+    def visit(value: object) -> None:
+        if not isinstance(value, dict):
+            if isinstance(value, list):
+                for item in value:
+                    visit(item)
+            return
+        arbitration = value.get("seek_arbitration")
+        if isinstance(arbitration, dict):
+            _compact_seek_arbitration(arbitration)
+        trigger = value.get("trigger")
+        if isinstance(trigger, dict):
+            _compact_trigger(trigger)
+        for item in value.values():
+            visit(item)
+
+    visit(compact)
+    return compact
+
+
+def _compact_readouts(readouts: dict[str, object]) -> dict[str, object]:
+    """Remove repeated prediction/actual vectors but retain metric provenance."""
+    compact = copy.deepcopy(readouts)
+
+    def visit(value: object) -> None:
+        if isinstance(value, dict):
+            predictions = value.pop("predictions", None)
+            actual = value.pop("actual", None)
+            if predictions is not None:
+                value["predictions_digest"] = _canonical_json_digest(predictions)
+            if actual is not None:
+                value["actual_digest"] = _canonical_json_digest(actual)
+            for item in value.values():
+                visit(item)
+        elif isinstance(value, list):
+            for item in value:
+                visit(item)
+
+    visit(compact)
+    return compact
+
+
+def _compact_support(support: dict[str, object] | None) -> dict[str, object] | None:
+    """Return a deterministic support section with no raw high-volume records."""
+    if support is None:
+        return None
+    compact = copy.deepcopy(support)
+    results = compact.get("results")
+    if isinstance(results, list):
+        compact["results"] = [
+            _compact_seed_result(cast(dict[str, object], result))
+            for result in results
+        ]
+    readouts = compact.get("readouts")
+    if isinstance(readouts, dict):
+        compact["readouts"] = _compact_readouts(readouts)
+    return compact
+
+
+def _reused_support_reference(support: dict[str, object]) -> dict[str, object]:
+    """Link a holdout artifact to reused training without embedding reused rows."""
+    compact = _compact_support(support)
+    if compact is None:
+        raise ValueError("D-040 holdout support requires reused support training")
+    return {
+        "seed_role": "reused_development_support_training_only",
+        "seeds": compact.get("seeds", []),
+        "support_results_digest": _canonical_json_digest(compact.get("results", [])),
+        "support_readouts_digest": _canonical_json_digest(
+            compact.get("readouts", {})
+        ),
+        "embedded": False,
+        "separate_artifact_required": True,
+    }
+
+
 def build_compact_artifact(
-    reused: dict[str, object],
+    reused: dict[str, object] | None,
     holdout: dict[str, object] | None,
     *,
     executed_commit_sha: str,
     invalidated: Sequence[dict[str, object]] = (),
+    reused_support_reference: dict[str, object] | None = None,
 ) -> dict[str, object]:
-    """Build deterministic metadata without serializing raw branch trajectories."""
+    """Build deterministic metadata without serializing raw audit records."""
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "experiment": "D-040",
         "title": "Causal problem-identification and test-validity audit",
         "protocol_version": "D040-1",
@@ -2016,10 +2147,22 @@ def build_compact_artifact(
         "clean_executable_protocol_sha": _validate_executed_commit_sha(
             executed_commit_sha
         ),
-        "reused_support": reused,
-        "fresh_holdout_support": holdout,
+        "reused_support": _compact_support(reused),
+        "fresh_holdout_support": _compact_support(holdout),
+        "reused_support_reference": reused_support_reference,
         "invalidated_provenance": [*D040_INVALIDATED_PROVENANCE, *invalidated],
         "working_tree_clean_at_execution": True,
+        "compact_artifact_contract": {
+            "raw_transition_records": False,
+            "raw_arbitration_records": False,
+            "raw_trigger_observations": False,
+            "raw_readout_predictions_and_actuals": False,
+            "retained_replacements": (
+                "per-seed counters, canonical digests, fixed summaries, "
+                "per-anchor state/effect/readout records, and null reasons"
+            ),
+            "compaction_digest_algorithm": "SHA-256 over canonical sorted JSON",
+        },
         "command_template": (
             "uv run python -m aweform.d040 --support {support} "
             "--executed-commit-sha {clean_sha} --output {artifact}"
@@ -2148,13 +2291,13 @@ def run_d040_audit(
         raise RuntimeError(
             "D-040 independent D-034 positive control contradicted the accepted support"
         )
-    payload = build_compact_artifact(
-        {
-            "seed_role": "reused_development_support",
-            "seeds": list(reused),
-            "results": reused_results,
-            "readouts": _readout(reused_results),
-        },
+    reused_support: dict[str, object] = {
+        "seed_role": "reused_development_support",
+        "seeds": list(reused),
+        "results": reused_results,
+        "readouts": _readout(reused_results),
+    }
+    holdout_support: dict[str, object] | None = (
         None
         if holdout_results is None
         else {
@@ -2162,8 +2305,17 @@ def run_d040_audit(
             "seeds": list(holdout or D040_HOLDOUT_SEEDS),
             "results": holdout_results,
             "readouts": _readout(holdout_results, training_results=reused_results),
-        },
+        }
+    )
+    payload = build_compact_artifact(
+        reused_support if support == "reused" else None,
+        holdout_support,
         executed_commit_sha=sha,
+        reused_support_reference=(
+            None
+            if support == "reused"
+            else _reused_support_reference(reused_support)
+        ),
     )
     payload["support_executed"] = support
     payload["control_results_and_control_gate"] = {

@@ -349,3 +349,107 @@ def test_d040_artifact_metadata_preserves_scope_and_provenance() -> None:
     assert payload["invalidated_provenance"][0]["executable_sha"] == (
         "db2facbb29a295fd00f02e5e91371bf001ed19da"
     )
+    assert payload["invalidated_provenance"][1] == {
+        "executable_sha": "c9b017e63d4f4b01f32afa55efab257153d1d7bb",
+        "reused_artifact_sha256": (
+            "a28fa81cdd6f00665b162ead6e25dc5ad3ffd8a01924d4147406f1d228bf457f"
+        ),
+        "reused_artifact_size_bytes": 168_791_151,
+        "holdout_artifact_sha256": (
+            "2458da4a3d09f86a362a6c3910d6b3bf8dd3d3ce28ac62f77f81211e9351be41"
+        ),
+        "holdout_artifact_size_bytes": 336_622_010,
+        "status": "invalidated_by_Sol",
+        "reason": "D-040 artifact contract was not compact or independently reviewable",
+        "interpret_as_valid_d040_output": False,
+    }
+
+
+def test_d040_compact_schema_removes_raw_records_and_readout_vectors() -> None:
+    reused = {
+        "seed_role": "reused_development_support",
+        "seeds": [18468],
+        "results": [
+            {
+                "seed": 18468,
+                "seek_arbitration": {
+                    "decision_records": [
+                        {"transition": index, "action": "MOVE_FORWARD"}
+                        for index in range(100)
+                    ]
+                },
+                "anchor_grid": {
+                    "ALT_4": {
+                        "trigger": {
+                            "completed_observations": [
+                                {"transition": index} for index in range(16)
+                            ]
+                        }
+                    }
+                },
+            }
+        ],
+        "readouts": {
+            "F0_S0": {
+                "forward_difference_4096": {
+                    "predictions": [0.1, 0.2],
+                    "actual": [0.0, 0.3],
+                    "status": "fit",
+                    "mae": 0.1,
+                }
+            }
+        },
+    }
+    payload = d040.build_compact_artifact(
+        reused,
+        None,
+        executed_commit_sha="a" * 40,
+    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    assert '"decision_records":' not in encoded
+    assert '"completed_observations":' not in encoded
+    assert '"predictions":' not in encoded
+    assert '"actual":' not in encoded
+    compact_result = payload["reused_support"]["results"][0]  # type: ignore[index]
+    arbitration = compact_result["seek_arbitration"]  # type: ignore[index]
+    assert arbitration["decision_record_count"] == 100  # type: ignore[index]
+    assert arbitration["decision_records_digest"]  # type: ignore[index]
+    trigger = compact_result["anchor_grid"]["ALT_4"]["trigger"]  # type: ignore[index]
+    assert trigger["completed_observation_count"] == 16  # type: ignore[index]
+    assert trigger["completed_observations_digest"]  # type: ignore[index]
+
+
+def test_d040_holdout_artifact_links_reused_training_without_embedding_it() -> None:
+    reused = {
+        "seed_role": "reused_development_support",
+        "seeds": [18468],
+        "results": [{"seed": 18468, "large": "reused-only"}],
+        "readouts": {},
+    }
+    holdout = {
+        "seed_role": "fresh_development_holdout",
+        "seeds": [18488],
+        "results": [{"seed": 18488, "large": "holdout-only"}],
+        "readouts": {},
+    }
+    payload = d040.build_compact_artifact(
+        None,
+        holdout,
+        executed_commit_sha="a" * 40,
+        reused_support_reference=d040._reused_support_reference(reused),
+    )
+    assert payload["reused_support"] is None
+    assert payload["fresh_holdout_support"]["seeds"] == [18488]  # type: ignore[index]
+    assert payload["reused_support_reference"]["embedded"] is False  # type: ignore[index]
+    assert "reused-only" not in json.dumps(payload, sort_keys=True)
+
+
+def test_d040_runner_arbitration_uses_digest_not_decision_records() -> None:
+    result, _, _ = d040._independent_arm_b(
+        18468, horizon=32, capture_anchors=False
+    )
+    arbitration = result["seek_arbitration"]
+    assert "decision_records" not in arbitration  # type: ignore[operator]
+    assert arbitration["decision_record_count"] == arbitration[  # type: ignore[index]
+        "false_contact_seek_decisions"
+    ]
