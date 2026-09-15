@@ -405,6 +405,16 @@ def test_d040_compact_schema_removes_raw_records_and_readout_vectors() -> None:
         None,
         executed_commit_sha="a" * 40,
     )
+    regenerated = d040.build_compact_artifact(
+        reused,
+        None,
+        executed_commit_sha="a" * 40,
+    )
+    assert json.dumps(payload, sort_keys=True, separators=(",", ":")) == json.dumps(
+        regenerated,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     assert '"decision_records":' not in encoded
     assert '"completed_observations":' not in encoded
