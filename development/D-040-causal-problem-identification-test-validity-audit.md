@@ -9,7 +9,7 @@
 - **fresh_development_holdout:** `18488..18507` inclusive, in order
 - **lifetime_horizon:** `70,000` real transitions
 - **branch_horizon:** at most `4,096` real transitions from an anchor
-- **status:** protocol frozen; corrected official reused and fresh-holdout support runs complete
+- **status:** protocol frozen; compact-artifact correction frozen; support rerun pending
 - **disposition:** `CONTINUING`
 
 The intended compact artifacts are
@@ -324,7 +324,9 @@ confirmatory claim.
 
 ## Compact artifact and provenance schema
 
-Each artifact is deterministic compact JSON with no raw transition dump and
+Each artifact is deterministic compact JSON with no raw transition dump,
+per-decision arbitration records, completed history observations, or readout
+prediction/actual vectors. It retains their deterministic digests/counts and
 contains:
 
 ```text
@@ -345,13 +347,21 @@ outcome/termination, mode/arbitration/delegation counts, anchor availability
 and causal-state digest, branch outcomes at every frozen horizon, latencies,
 paired signs, readout support, null reasons, and evaluator-only diagnostics.
 Use a declared codebook and store derivable values once. Keep reused and
-holdout sections separate and include D-031R1/D-034 source artifact hashes.
+holdout sections separate; a holdout artifact may link the separate reused
+training artifact by digest but must not embed its results. Include
+D-031R1/D-034 source artifact hashes.
 
-The corrected implementation and official support runs are now recorded:
+The prior corrected implementation and support runs are preserved as invalidated
+provenance, not as usable D-040 output:
 
-- **clean executable protocol SHA:** `c9b017e63d4f4b01f32afa55efab257153d1d7bb`
+- **clean executable protocol SHA:** `c9b017e63d4f4b01f32afa55efab257153d1d7bb` (invalidated for artifact contract)
 - **reused artifact SHA-256 / size:** `a28fa81cdd6f00665b162ead6e25dc5ad3ffd8a01924d4147406f1d228bf457f` / `168,791,151`
 - **holdout artifact SHA-256 / size:** `2458da4a3d09f86a362a6c3910d6b3bf8dd3d3ce28ac62f77f81211e9351be41` / `336,622,010`
+- **invalidated reason:** Sol found the artifacts non-compact and not independently reviewable; the full reused support was embedded in the holdout artifact.
+- **new clean executable/schema SHA:** `29a4fb19d6d3853e1dcb79cfc62aed86fac6b0c3` (local correction-2 commit)
+- **new reused artifact SHA-256 / size:** pending complete rerun from the new clean SHA
+- **new holdout artifact SHA-256 / size:** pending complete rerun from the same new clean SHA
+- **new deterministic regeneration checks:** pending artifact generation; no reused or holdout result is claimed here
 - **invalidated D-040 run:** executable SHA
   `db2facbb29a295fd00f02e5e91371bf001ed19da`; reused artifact SHA-256
   `88cf8d0872f966e4f867ab236e9b991c6508c9489d25e8d100c1dec3ca96d113`
@@ -363,7 +373,7 @@ The corrected implementation and official support runs are now recorded:
   incomplete official Arm-B identity gate, collapsed F1 history reporting,
   and missing D-027 trajectory summaries). These artifacts are not valid
   D-040 output and are never pooled or interpreted.
-- **exact final PR HEAD handed to Sol:** `c9b017e63d4f4b01f32afa55efab257153d1d7bb`
+- **exact final PR HEAD handed to Sol:** pending final local provenance-record commit
 
 Any invalidated run records executable SHA, artifact hash/size when written,
 command, seed role/support, write status, and exact defect. A record-only edit

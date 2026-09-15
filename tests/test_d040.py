@@ -453,3 +453,43 @@ def test_d040_runner_arbitration_uses_digest_not_decision_records() -> None:
     assert arbitration["decision_record_count"] == arbitration[  # type: ignore[index]
         "false_contact_seek_decisions"
     ]
+
+
+def test_d040_holdout_run_does_not_embed_reused_support(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_seed_audit(seed: int, *, horizon: int) -> dict[str, object]:
+        return {"seed": seed, "horizon": horizon}
+
+    monkeypatch.setattr(d040, "_seed_audit", fake_seed_audit)
+    monkeypatch.setattr(
+        d040,
+        "_arm_identity_gate",
+        lambda results: {"all_seeds_exact": len(results) == 40},
+    )
+    monkeypatch.setattr(
+        d040,
+        "_d034_control",
+        lambda results: {"passed": len(results) == 20},
+    )
+    monkeypatch.setattr(
+        d040,
+        "_d034_anchor_identity_control",
+        lambda results: {"all_per_seed_anchor_identities_exact": True},
+    )
+    monkeypatch.setattr(
+        d040,
+        "_readout",
+        lambda *args, **kwargs: {"fixed": True},
+    )
+    payload = d040.run_d040_audit(
+        seeds=d040.D040_REUSED_SEEDS,
+        holdout_seeds=d040.D040_HOLDOUT_SEEDS,
+        executed_commit_sha="a" * 40,
+        support="holdout",
+    )
+    assert payload["reused_support"] is None
+    assert payload["fresh_holdout_support"]["seeds"] == list(  # type: ignore[index]
+        d040.D040_HOLDOUT_SEEDS
+    )
+    assert payload["reused_support_reference"]["embedded"] is False  # type: ignore[index]
