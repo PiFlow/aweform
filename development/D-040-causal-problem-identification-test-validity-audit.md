@@ -9,7 +9,7 @@
 - **fresh_development_holdout:** `18488..18507` inclusive, in order
 - **lifetime_horizon:** `70,000` real transitions
 - **branch_horizon:** at most `4,096` real transitions from an anchor
-- **status:** protocol frozen before substantive D-040 causal-map output; output pending
+- **status:** protocol frozen; corrected official reused and fresh-holdout support runs complete
 - **disposition:** `CONTINUING`
 
 The intended compact artifacts are
@@ -347,12 +347,11 @@ paired signs, readout support, null reasons, and evaluator-only diagnostics.
 Use a declared codebook and store derivable values once. Keep reused and
 holdout sections separate and include D-031R1/D-034 source artifact hashes.
 
-The following are intentional placeholders until implementation and official
-runs exist:
+The corrected implementation and official support runs are now recorded:
 
-- **clean executable protocol SHA:** `<pending corrected clean protocol freeze>`
-- **reused artifact SHA-256 / size:** `<pending>` / `<pending>`
-- **holdout artifact SHA-256 / size:** `<pending>` / `<pending>`
+- **clean executable protocol SHA:** `c9b017e63d4f4b01f32afa55efab257153d1d7bb`
+- **reused artifact SHA-256 / size:** `a28fa81cdd6f00665b162ead6e25dc5ad3ffd8a01924d4147406f1d228bf457f` / `168,791,151`
+- **holdout artifact SHA-256 / size:** `2458da4a3d09f86a362a6c3910d6b3bf8dd3d3ce28ac62f77f81211e9351be41` / `336,622,010`
 - **invalidated D-040 run:** executable SHA
   `db2facbb29a295fd00f02e5e91371bf001ed19da`; reused artifact SHA-256
   `88cf8d0872f966e4f867ab236e9b991c6508c9489d25e8d100c1dec3ca96d113`
@@ -364,7 +363,7 @@ runs exist:
   incomplete official Arm-B identity gate, collapsed F1 history reporting,
   and missing D-027 trajectory summaries). These artifacts are not valid
   D-040 output and are never pooled or interpreted.
-- **exact final PR HEAD handed to Sol:** `<pending>`
+- **exact final PR HEAD handed to Sol:** `c9b017e63d4f4b01f32afa55efab257153d1d7bb`
 
 Any invalidated run records executable SHA, artifact hash/size when written,
 command, seed role/support, write status, and exact defect. A record-only edit
