@@ -34,6 +34,28 @@ from .exp003_seed_policy import validate_exp003_development_seeds
 from .rng import RandomStreams
 
 D040_AUTHORITATIVE_BASE_SHA: Final[str] = "833beeabd0d50ad94e1c265873b1c024634c87e4"
+D040_D031R1_ACCEPTED_ARTIFACT_SHA256: Final[str] = (
+    "ae5095135f4a9618fb81b815bd201312a7c2bc979eca88499f7b097dc8905b61"
+)
+D040_D034_ACCEPTED_ARTIFACT_SHA256: Final[str] = (
+    "e0d5cbdffc4e3fb429eddcbcf5af0ff4f6772eaca0368459acc1e90ed6680e1d"
+)
+D040_INVALIDATED_PROVENANCE: Final[tuple[dict[str, object], ...]] = (
+    {
+        "executable_sha": "db2facbb29a295fd00f02e5e91371bf001ed19da",
+        "reused_artifact_sha256": (
+            "88cf8d0872f966e4f867ab236e9b991c6508c9489d25e8d100c1dec3ca96d113"
+        ),
+        "reused_artifact_size_bytes": 162_684_976,
+        "holdout_artifact_sha256": (
+            "05da0c2728e7c009520a0b1d5002a8cc021ae2a90b30423c00858f991b9052c5"
+        ),
+        "holdout_artifact_size_bytes": 324_675_921,
+        "status": "invalidated_by_Sol",
+        "reason": "six bounded Sol-requested D-040 protocol corrections",
+        "interpret_as_valid_d040_output": False,
+    },
+)
 D040_REUSED_SEEDS: Final[tuple[int, ...]] = tuple(range(18468, 18488))
 D040_HOLDOUT_SEEDS: Final[tuple[int, ...]] = tuple(range(18488, 18508))
 D040_DEFAULT_DEVELOPMENT_SEEDS: Final[tuple[int, ...]] = D040_REUSED_SEEDS
@@ -65,7 +87,9 @@ D040_TRAJECTORY_WINDOWS: Final[tuple[int, ...]] = (16, 64, 256, 1024)
 D040_READOUT_ALPHA: Final[float] = 0.01
 D040_FEATURE_FAMILIES: Final[tuple[str, ...]] = (
     "F0_S0",
-    "F1_S0_H",
+    "F1_S0_H4",
+    "F1_S0_H8",
+    "F1_S0_H16",
     "F2_S0_D027",
     "F3_S0_h",
     "F4_CLOSURE_TIMING",
@@ -191,12 +215,17 @@ def _next_visible(observation: np.ndarray) -> d027.D027Observation:
 def _is_false_contact_seek(row: d025.D025TransitionTrace) -> bool:
     """Return the pre-action eligibility predicate for a trace row.
 
-    The post-action observation and mode are deliberately not consulted.  A
-    row is eligible because the organism was in SEEK with no visible contact
-    immediately before arbitration; using the consequence would leak the
-    scored transition into anchor selection.
+    Both sides of the transition are part of the accepted D-034 eligibility
+    semantics.  This keeps a contact or mode transition from closing a
+    history window while still preventing any branch outcome from entering
+    anchor selection.
     """
-    return row.mode_before is d026.D026Mode.SEEK and row.observation_before[4] == 0.0
+    return (
+        row.mode_before is d026.D026Mode.SEEK
+        and row.mode_after is d026.D026Mode.SEEK
+        and row.observation_before[4] == 0.0
+        and row.observation[4] == 0.0
+    )
 
 
 def _is_eligible_current(
@@ -597,9 +626,9 @@ def _run_branch(
     delegation_count = 0
     max_alternation = 0
     alternation_run = 0
-    h = 0.0
     reward_zero = True
     info_empty = True
+    d027_summaries: list[dict[str, object]] = []
     for local in range(1, horizon + 1):
         mode_before = controller.mode
         mode_counts[mode_before.name] += 1
@@ -647,7 +676,19 @@ def _run_branch(
         next_observation = _next_visible(observation_array)
         update = learner.observe_transition(current, action, next_observation)
         _update_digest_item(update_digest, local, action, update)
-        h = h  # retained as an explicitly non-causal diagnostic placeholder
+        d027_summaries.append(
+            {
+                "transition": local,
+                "action": action.name,
+                "prediction_forward": update.prediction[2],
+                "observed_delta_forward": update.observed_delta[2],
+                "error_forward": update.errors[2],
+                "normalizer": update.normalizer,
+                "update_l2_norm": float(
+                    np.linalg.norm(np.asarray(update.errors, dtype=float))
+                ),
+            }
+        )
         row = d025._make_trace(
             transition_index=anchor.transition + local - 1,
             mode_before=mode_before,
@@ -682,7 +723,7 @@ def _run_branch(
             alternation_run = 0
         max_alternation = max(max_alternation, alternation_run)
         current = next_observation
-        if terminated or truncated:
+        if reacquisition is not None or terminated or truncated:
             break
     reason = d027._termination_reason(environment, terminated, truncated)
     result = {
@@ -725,6 +766,9 @@ def _run_branch(
         ),
         "reward_zero_every_transition": reward_zero,
         "organism_info_empty_every_transition": info_empty,
+        # Retained only for evaluator-side window summaries below; this is
+        # deliberately not part of the branch artifact or any causal input.
+        "_d027_summaries": d027_summaries,
         "evaluator_only": True,
         "organism_state_changed": False,
     }
@@ -783,12 +827,36 @@ def _independent_arm_b(
     full_recharges = redepartures = completed_cycles = 0
     recharge_active = recharge_ready = False
     cycle_stage = 0
+    active_seek = False
     first_episode_started = False
     first_episode_complete = False
     alternation_run = 0
+    oscillation_run_start: _Anchor | None = None
     while not (terminated or truncated) and len(trace) < horizon:
         # Every capture happens before controller.act and therefore cannot see
         # this transition's action, consequence, branch result, or outcome.
+        pre_action_oscillation_candidate: _Anchor | None = None
+        if (
+            capture_anchors
+            and not first_episode_complete
+            and _is_eligible_current(controller, current)
+        ):
+            # The action may later prove to be the first action of a run.  Keep
+            # the exact pre-action state so a run that reaches H16 can point
+            # back to its first action without looking into the future.
+            pre_action_oscillation_candidate = _capture_anchor(
+                seed,
+                "_OSCILLATION_CANDIDATE",
+                len(trace) + 1,
+                None,
+                current,
+                environment,
+                controller,
+                streams,
+                learner,
+                trace,
+                h,
+            )
         for offset in D040_ANCHOR_OFFSETS:
             if (
                 ordinal == offset
@@ -837,28 +905,6 @@ def _independent_arm_b(
                             h,
                             _trigger_history(selection),
                         )
-        if (
-            anchors["OSCILLATION_ONSET"] is None
-            and trace
-            and not first_episode_complete
-            and alternation_run >= 16
-            and controller.mode is d026.D026Mode.SEEK
-            and not current.charging_contact
-        ):
-            anchors["OSCILLATION_ONSET"] = _capture_anchor(
-                seed,
-                "OSCILLATION_ONSET",
-                len(trace) + 1,
-                None,
-                current,
-                environment,
-                controller,
-                streams,
-                learner,
-                trace,
-                h,
-                {"run_length": _current_alternation_run(trace)},
-            )
         mode_before = controller.mode
         if _is_eligible_current(controller, current):
             first_episode_started = True
@@ -911,6 +957,7 @@ def _independent_arm_b(
             and mode_after is d026.D026Mode.SEEK
             and current.energy < EXP003_B50_ENTER_SEEK_THRESHOLD
         ):
+            active_seek = True
             cycle_stage = 3
         next_observation = _next_visible(observation_array)
         update = learner.observe_transition(current, action, next_observation)
@@ -931,30 +978,63 @@ def _independent_arm_b(
         )
         trace.append(row)
         actions[action.name] += 1
+        continues_alternation = (
+            alternation_run > 0
+            and len(trace) > 1
+            and _is_false_contact_seek(trace[-2])
+            and trace[-2].action in _TURN_ACTIONS
+            and action in _TURN_ACTIONS
+            and trace[-2].action is not action
+        )
         if _is_false_contact_seek(row):
-            if (
-                alternation_run
-                and trace[-2].action in _TURN_ACTIONS
-                and action in _TURN_ACTIONS
-                and trace[-2].action is not action
-            ):
+            if continues_alternation:
                 alternation_run += 1
             else:
                 alternation_run = 1 if action in _TURN_ACTIONS else 0
+                oscillation_run_start = (
+                    pre_action_oscillation_candidate
+                    if action in _TURN_ACTIONS
+                    else None
+                )
         else:
             alternation_run = 0
+            oscillation_run_start = None
         ordinal += int(_is_false_contact_seek(row))
         current = next_observation
+        if (
+            anchors["OSCILLATION_ONSET"] is None
+            and alternation_run >= 16
+            and oscillation_run_start is not None
+        ):
+            completed = tuple(trace[-alternation_run:])
+            anchors["OSCILLATION_ONSET"] = replace(
+                oscillation_run_start,
+                anchor_id="OSCILLATION_ONSET",
+                trigger={
+                    "run_start_transition": oscillation_run_start.transition,
+                    "completion_transition": row.transition_index,
+                    "run_length": alternation_run,
+                    "completed_actions": [item.action.name for item in completed],
+                    "eligible_mode_and_contact_semantics": (
+                        "mode_before=SEEK, mode_after=SEEK, "
+                        "pre_contact=false, post_contact=false"
+                    ),
+                    "uses_only_completed_actions_and_visible_observations": True,
+                    "hidden_geometry_or_future_outcome_used": False,
+                },
+            )
         if (
             telemetry.charging_contact_before is False
             and telemetry.charging_contact_after
         ):
-            reacquisitions += 1
-            if first_episode_started:
-                first_episode_complete = True
-            recharge_active = True
-            if cycle_stage == 3:
-                cycle_stage = 4
+            if active_seek:
+                reacquisitions += 1
+                if first_episode_started:
+                    first_episode_complete = True
+                recharge_active = True
+                if cycle_stage == 3:
+                    cycle_stage = 4
+                active_seek = False
         if (
             recharge_active
             and telemetry.battery_after_j >= environment.config.battery_capacity_j
@@ -1085,6 +1165,154 @@ def compare_identity_fields(
     }
 
 
+def _load_accepted_json(filename: str, expected_sha256: str) -> dict[str, object]:
+    """Load a repository fixture only after verifying its frozen digest."""
+    path = Path(__file__).resolve().parents[2] / "development" / filename
+    encoded = path.read_bytes()
+    if hashlib.sha256(encoded).hexdigest() != expected_sha256:
+        raise RuntimeError(f"D-040 accepted fixture digest changed: {filename}")
+    return cast(dict[str, object], json.loads(encoded.decode("utf-8")))
+
+
+def _accepted_d034_anchor_identity() -> dict[int, dict[str, dict[str, object]]]:
+    artifact = _load_accepted_json(
+        "D-034-history-triggered-detrap-recruitment-audit.json",
+        D040_D034_ACCEPTED_ARTIFACT_SHA256,
+    )
+    expected: dict[int, dict[str, dict[str, object]]] = {}
+    for seed_result in cast(list[dict[str, object]], artifact["results"]):
+        seed = int(cast(int, seed_result["seed"]))
+        expected[seed] = {
+            anchor_id: {
+                "available": bool(anchor["available"]),
+                "transition": anchor.get("transition"),
+            }
+            for anchor_id, anchor in cast(
+                dict[str, dict[str, object]], seed_result["anchors"]
+            ).items()
+        }
+    return expected
+
+
+def _d034_anchor_identity_control(
+    results: Sequence[dict[str, object]],
+) -> dict[str, object]:
+    """Compare every reused-seed anchor status and transition to D-034."""
+    expected = _accepted_d034_anchor_identity()
+    observed: dict[int, dict[str, dict[str, object]]] = {}
+    mismatches: dict[str, object] = {}
+    for seed_result in results:
+        seed = int(cast(int, seed_result["seed"]))
+        anchors = cast(dict[str, object], seed_result["anchor_grid"])
+        observed[seed] = {}
+        for anchor_id, expected_anchor in expected[seed].items():
+            anchor = anchors.get(anchor_id)
+            actual = {
+                "available": anchor is not None,
+                "transition": (
+                    None
+                    if anchor is None
+                    else cast(dict[str, object], anchor).get("transition")
+                ),
+            }
+            observed[seed][anchor_id] = actual
+            if actual != expected_anchor:
+                mismatches[f"{seed}:{anchor_id}"] = {
+                    "expected": expected_anchor,
+                    "observed": actual,
+                }
+    return {
+        "fixture": "accepted D-034 artifact",
+        "fixture_sha256": D040_D034_ACCEPTED_ARTIFACT_SHA256,
+        "observed": observed,
+        "mismatches": mismatches,
+        "all_per_seed_anchor_identities_exact": not mismatches,
+    }
+
+
+def _arm_identity_gate(
+    independent_results: Sequence[dict[str, object]],
+) -> dict[str, object]:
+    """Run the canonical D-031R1 comparator over the complete support."""
+    # This import is intentionally local: the validity-critical runner above
+    # remains independent of the later audit stack.  D-031R1 is a comparator,
+    # never the implementation of D-040's causal path.
+    from . import d031r1
+
+    accepted = _load_accepted_json(
+        "D-031R1-learned-seek-scaffold-displacement-clean-rerun.json",
+        D040_D031R1_ACCEPTED_ARTIFACT_SHA256,
+    )
+    accepted_by_seed = {
+        int(cast(int, row["seed"])): cast(dict[str, object], row["arms"])[
+            "LEARNED_NO_DETRAP"
+        ]
+        for row in cast(list[dict[str, object]], accepted["results"])
+    }
+    per_seed: dict[int, dict[str, object]] = {}
+    for independent in independent_results:
+        seed = int(cast(int, independent["seed"]))
+        is_holdout = seed in D040_HOLDOUT_SEEDS
+        canonical = d031r1._run_arm(
+            seed,
+            arm="LEARNED_NO_DETRAP",
+            horizon=D040_HORIZON,
+            evaluator_diagnostics=False,
+            seed_validator=lambda value: _validate_seed(
+                value, holdout=value in D040_HOLDOUT_SEEDS
+            ),
+        )
+        canonical_identity = compare_identity_fields(independent, canonical)
+        accepted_identity: dict[str, object] | None = None
+        if not is_holdout:
+            accepted_result = dict(
+                cast(dict[str, object], accepted_by_seed[seed])
+            )
+            # The accepted artifact predates explicit organism-boundary
+            # booleans; its replay has the same frozen zero/info semantics.
+            accepted_result["reward_zero_every_transition"] = True
+            accepted_result["organism_info_empty_every_transition"] = True
+            accepted_identity = compare_identity_fields(canonical, accepted_result)
+        isolation = {
+            "zero_explorer_calls": cast(
+                dict[str, object], independent["seek_arbitration"]
+            )["false_contact_seek_explorer_calls"]
+            == 0,
+            "zero_delegation": cast(
+                dict[str, object], independent["seek_arbitration"]
+            )["stochastic_delegation_decisions"]
+            == 0,
+            "one_legacy_draw_per_decision": cast(
+                dict[str, object], independent["seek_arbitration"]
+            )["legacy_arbitration_draw_count"]
+            == cast(dict[str, object], independent["seek_arbitration"])[
+                "false_contact_seek_decisions"
+            ],
+            "reward_zero": independent["reward_zero_every_transition"] is True,
+            "info_empty": independent["organism_info_empty_every_transition"] is True,
+        }
+        per_seed[seed] = {
+            "seed_role": "fresh_holdout" if is_holdout else "reused_accepted",
+            "horizon_configured": D040_HORIZON,
+            "independent_vs_canonical": canonical_identity,
+            "canonical_vs_accepted": accepted_identity,
+            "passed": bool(canonical_identity["all_identity_fields_exact"])
+            and all(isolation.values())
+            and (
+                accepted_identity is None
+                or bool(accepted_identity["all_identity_fields_exact"])
+            ),
+            "required_independent_isolation": isolation,
+        }
+    passed = all(bool(row["passed"]) for row in per_seed.values())
+    return {
+        "canonical_runner": "d031r1._run_arm comparator only",
+        "accepted_artifact_sha256": D040_D031R1_ACCEPTED_ARTIFACT_SHA256,
+        "per_seed": per_seed,
+        "all_seeds_exact": passed,
+    }
+
+
 def _branch_identity(
     off_a: dict[str, object], off_b: dict[str, object]
 ) -> dict[str, object]:
@@ -1143,9 +1371,15 @@ def _feature_row(anchor: _Anchor, family: str) -> tuple[float, ...] | None:
     )
     if family == "F0_S0":
         return s0
-    if family == "F1_S0_H":
-        history = anchor.prefix[-16:]
-        if len(history) < 16:
+    history_lengths = {
+        "F1_S0_H4": 4,
+        "F1_S0_H8": 8,
+        "F1_S0_H16": 16,
+    }
+    if family in history_lengths:
+        history_length = history_lengths[family]
+        history = anchor.prefix[-history_length:]
+        if len(history) < history_length:
             return None
         values: list[float] = list(s0)
         for row in history:
@@ -1250,6 +1484,14 @@ def _horizon_summary(
         return {
             "status": "null",
             "null_reason": "branch_ended_before_horizon_without_reacquisition",
+            "stop_reason": (
+                "termination"
+                if result["terminated"]
+                else "truncation"
+                if result["truncated"]
+                else "unknown"
+            ),
+            "transitions": len(rows),
         }
     last = rows[-1]
     first_position = (
@@ -1292,10 +1534,13 @@ def _horizon_summary(
             for index, row in enumerate(rows)
         )
     )
+    stopped_early = len(trace) < horizon
     return {
         "status": "reacquired"
         if latency is not None and latency <= horizon
         else "available",
+        "stop_reason": "reacquisition" if latency is not None else None,
+        "stopped_before_requested_horizon": stopped_early,
         "reacquired": latency is not None and latency <= horizon,
         "reacquisition_latency": latency
         if latency is not None and latency <= horizon
@@ -1319,13 +1564,16 @@ def _horizon_summary(
 
 
 def _window_summary(
-    rows: Sequence[d025.D025TransitionTrace], start: int, width: int
+    rows: Sequence[d025.D025TransitionTrace],
+    start: int,
+    width: int,
+    d027_rows: Sequence[dict[str, object]] = (),
 ) -> dict[str, object] | None:
     window = tuple(rows[start : start + width])
     if not window:
         return None
     visible = np.asarray([row.observation for row in window], dtype=float)
-    return {
+    summary: dict[str, object] = {
         "transitions": len(window),
         "action_counts": _action_counts(window),
         "longest_strict_alternation": _current_alternation_run(window),
@@ -1355,12 +1603,62 @@ def _window_summary(
         ),
         "visible_channel_variance_mean": float(np.var(visible, axis=0).mean()),
     }
+    if d027_rows:
+        update_window = tuple(d027_rows[start : start + len(window)])
+        if update_window:
+            summary["d027_prediction_update_summary"] = {
+                "transitions": len(update_window),
+                "prediction_forward_mean": float(
+                    np.asarray(
+                        [
+                            cast(float, row["prediction_forward"])
+                            for row in update_window
+                        ],
+                        dtype=np.float64,
+                    ).mean()
+                ),
+                "observed_delta_forward_mean": float(
+                    np.asarray(
+                        [
+                            cast(float, row["observed_delta_forward"])
+                            for row in update_window
+                        ],
+                        dtype=np.float64,
+                    ).mean()
+                ),
+                "error_forward_mean": float(
+                    np.asarray(
+                        [cast(float, row["error_forward"]) for row in update_window],
+                        dtype=np.float64,
+                    ).mean()
+                ),
+                "normalizer_mean": float(
+                    np.asarray(
+                        [cast(float, row["normalizer"]) for row in update_window],
+                        dtype=np.float64,
+                    ).mean()
+                ),
+                "update_l2_norm_mean": float(
+                    np.asarray(
+                        [
+                            cast(float, row["update_l2_norm"])
+                            for row in update_window
+                        ],
+                        dtype=np.float64,
+                    ).mean()
+                ),
+                "digest": _digest(update_window),
+                "evaluator_only": True,
+            }
+    return summary
 
 
 def _trajectory_distribution_pair(
     off: Sequence[d025.D025TransitionTrace],
     on: Sequence[d025.D025TransitionTrace],
     first_delegation: int | None,
+    off_d027: Sequence[dict[str, object]] = (),
+    on_d027: Sequence[dict[str, object]] = (),
 ) -> dict[str, object]:
     if first_delegation is None:
         return {"status": "no_on_delegation"}
@@ -1371,12 +1669,14 @@ def _trajectory_distribution_pair(
     }
     for width in D040_TRAJECTORY_WINDOWS:
         result[f"before_{width}"] = {
-            "off": _window_summary(off, max(0, index - width), width),
-            "on": _window_summary(on, max(0, index - width), width),
+            "off": _window_summary(
+                off, max(0, index - width), width, off_d027
+            ),
+            "on": _window_summary(on, max(0, index - width), width, on_d027),
         }
         result[f"after_{width}"] = {
-            "off": _window_summary(off, index, width),
-            "on": _window_summary(on, index, width),
+            "off": _window_summary(off, index, width, off_d027),
+            "on": _window_summary(on, index, width, on_d027),
         }
     return result
 
@@ -1439,12 +1739,20 @@ def _anchor_pair(anchor: _Anchor) -> dict[str, object]:
             ).get("classification")
     return {
         "branches": {
-            "DETRAP_OFF": {key: value for key, value in off.items() if key != "trace"},
-            "DETRAP_ON": {key: value for key, value in on.items() if key != "trace"},
+            "DETRAP_OFF": {
+                key: value for key, value in off.items() if not key.startswith("_")
+            },
+            "DETRAP_ON": {
+                key: value for key, value in on.items() if not key.startswith("_")
+            },
         },
         "effects_by_horizon": effects,
         "trajectory_distribution_diagnostics": _trajectory_distribution_pair(
-            off_trace, on_trace, first
+            off_trace,
+            on_trace,
+            first,
+            cast(Sequence[dict[str, object]], off["_d027_summaries"]),
+            cast(Sequence[dict[str, object]], on["_d027_summaries"]),
         ),
         "one_step_truth_around_first_on_delegation": on.get("first_delegation_truth"),
     }
@@ -1710,7 +2018,7 @@ def build_compact_artifact(
         ),
         "reused_support": reused,
         "fresh_holdout_support": holdout,
-        "invalidated_provenance": list(invalidated),
+        "invalidated_provenance": [*D040_INVALIDATED_PROVENANCE, *invalidated],
         "working_tree_clean_at_execution": True,
         "command_template": (
             "uv run python -m aweform.d040 --support {support} "
@@ -1720,7 +2028,33 @@ def build_compact_artifact(
         "lifetime_horizon": D040_HORIZON,
         "branch_horizon": D040_BRANCH_HORIZON,
         "anchor_offsets": list(D040_ANCHOR_OFFSETS),
+        "comparison_anchor_definitions": {
+            "D034": {
+                "families": list(D040_D034_FAMILIES),
+                "lengths": list(D040_D034_LENGTHS),
+                "eligibility": (
+                    "mode_before=SEEK, mode_after=SEEK, "
+                    "pre_contact=false, post_contact=false"
+                ),
+                "accepted_artifact_sha256": D040_D034_ACCEPTED_ARTIFACT_SHA256,
+            },
+            "OSCILLATION_ONSET": (
+                "first action of first contiguous eligible strict L/R run "
+                "reaching length 16"
+            ),
+        },
         "branch_horizons": list(D040_HORIZONS),
+        "branch_stop_semantics": (
+            "stop at first reacquisition, termination, or truncation; "
+            "later horizon summaries retain explicit stop/null metadata"
+        ),
+        "arm_identity_gate_definition": {
+            "configured_horizon": D040_HORIZON,
+            "reused": "independent_vs_canonical_and_canonical_vs_accepted",
+            "holdout": "independent_vs_canonical",
+            "accepted_artifact_sha256": D040_D031R1_ACCEPTED_ARTIFACT_SHA256,
+            "comparable_fields": list(D040_COMPARABLE_FIELDS),
+        },
         "feature_families": list(D040_FEATURE_FAMILIES),
         "readout_alpha": D040_READOUT_ALPHA,
         "readout_definition": (
@@ -1791,11 +2125,6 @@ def run_d040_audit(
     if support not in ("reused", "holdout"):
         raise ValueError("D-040 support must be 'reused' or 'holdout'")
     reused_results = [_seed_audit(seed, horizon=horizon) for seed in reused]
-    control = _d034_control(reused_results)
-    if not control["passed"]:
-        raise RuntimeError(
-            "D-040 independent D-034 positive control contradicted the accepted support"
-        )
     holdout_results = (
         None
         if support == "reused"
@@ -1804,6 +2133,21 @@ def run_d040_audit(
             for seed in (holdout or D040_HOLDOUT_SEEDS)
         ]
     )
+    identity = _arm_identity_gate(
+        reused_results
+        if holdout_results is None
+        else (*reused_results, *holdout_results)
+    )
+    if not identity["all_seeds_exact"]:
+        raise RuntimeError("D-040 Arm-B identity gate failed")
+    control = _d034_control(reused_results)
+    anchor_identity = _d034_anchor_identity_control(reused_results)
+    if not control["passed"] or not anchor_identity[
+        "all_per_seed_anchor_identities_exact"
+    ]:
+        raise RuntimeError(
+            "D-040 independent D-034 positive control contradicted the accepted support"
+        )
     payload = build_compact_artifact(
         {
             "seed_role": "reused_development_support",
@@ -1822,7 +2166,11 @@ def run_d040_audit(
         executed_commit_sha=sha,
     )
     payload["support_executed"] = support
-    payload["control_results_and_control_gate"] = control
+    payload["control_results_and_control_gate"] = {
+        "aggregate": control,
+        "per_seed_anchor_identity": anchor_identity,
+        "arm_b_identity": identity,
+    }
     return payload
 
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -57,7 +59,9 @@ def test_d040_freeze_seed_blocks_offsets_and_scope() -> None:
     assert d040.D040_BRANCHES == ("DETRAP_OFF", "DETRAP_ON")
     assert d040.D040_FEATURE_FAMILIES == (
         "F0_S0",
-        "F1_S0_H",
+        "F1_S0_H4",
+        "F1_S0_H8",
+        "F1_S0_H16",
         "F2_S0_D027",
         "F3_S0_h",
         "F4_CLOSURE_TIMING",
@@ -95,7 +99,7 @@ def test_d040_trigger_reconstruction_is_visible_and_exact() -> None:
     assert d040._find_d034_trigger(rows[:4], "ALT", 4) is None
 
 
-def test_d040_trigger_uses_pre_action_state_not_transition_outcome() -> None:
+def test_d040_trigger_requires_accepted_before_and_after_eligibility() -> None:
     contact = tuple(
         _row(
             index,
@@ -104,15 +108,15 @@ def test_d040_trigger_uses_pre_action_state_not_transition_outcome() -> None:
         )
         for index in range(1, 6)
     )
-    # Post-action contact is a consequence, not an eligibility input.
-    assert d040._find_d034_trigger(contact, "ALT", 4) is not None
+    # Accepted D-034 closes eligibility when contact appears after an action.
+    assert d040._find_d034_trigger(contact, "ALT", 4) is None
     repeated = tuple(_row(index, Action.TURN_LEFT) for index in range(1, 6))
     assert d040._find_d034_trigger(repeated, "ALT", 4) is None
     with pytest.raises(ValueError, match="unknown"):
         d040._find_d034_trigger(repeated, "ORACLE", 4)
 
 
-def test_d040_trigger_ignores_mode_after_and_future_fields() -> None:
+def test_d040_trigger_rejects_mode_or_contact_transition_rows() -> None:
     rows = tuple(
         _row(
             index,
@@ -122,10 +126,37 @@ def test_d040_trigger_ignores_mode_after_and_future_fields() -> None:
         )
         for index in range(1, 6)
     )
-    selection = d040._find_d034_trigger(rows, "ALT", 4)
-    assert selection is not None
-    assert selection.transition == 5
-    assert d040._is_false_contact_seek(rows[-1]) is True
+    assert d040._find_d034_trigger(rows, "ALT", 4) is None
+    assert d040._is_false_contact_seek(rows[3]) is False
+
+
+def test_d040_d034_anchor_identity_matches_every_accepted_seed() -> None:
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "development"
+        / "D-034-history-triggered-detrap-recruitment-audit.json"
+    )
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    results = []
+    for seed_result in artifact["results"]:
+        results.append(
+            {
+                "seed": seed_result["seed"],
+                "anchor_grid": {
+                    anchor_id: (
+                        None
+                        if not anchor["available"]
+                        else {"transition": anchor["transition"]}
+                    )
+                    for anchor_id, anchor in seed_result["anchors"].items()
+                },
+            }
+        )
+    control = d040._d034_anchor_identity_control(results)
+    assert control["all_per_seed_anchor_identities_exact"] is True
+    results[0]["anchor_grid"]["ALT_4"]["transition"] += 1
+    changed = d040._d034_anchor_identity_control(results)
+    assert changed["all_per_seed_anchor_identities_exact"] is False
 
 
 def test_d040_critical_path_has_no_later_audit_import_coupling() -> None:
@@ -205,6 +236,19 @@ def test_d040_real_anchor_checks_one_draw_zero_explorer_and_branch_isolation() -
     assert anchor.state_digest == before
 
 
+def test_d040_oscillation_onset_is_first_action_of_completed_h16_run() -> None:
+    _, _, anchors = d040._independent_arm_b(18468, capture_anchors=True)
+    anchor = anchors["OSCILLATION_ONSET"]
+    assert anchor is not None
+    trigger = anchor.trigger
+    assert trigger is not None
+    assert trigger["run_start_transition"] == anchor.transition
+    assert trigger["completion_transition"] - anchor.transition + 1 == 16
+    assert len(trigger["completed_actions"]) == 16
+    actions = [Action[name] for name in trigger["completed_actions"]]
+    assert d040._strict_alternation(actions)
+
+
 def test_d040_off_clone_and_branch_order_controls_are_identity_invariant() -> None:
     environment, observation_array, streams = d040._initial_environment(32, 18468)
     controller = d031r1.D031R1NoDetrapController(streams.policy)
@@ -240,6 +284,52 @@ def test_d040_off_clone_and_branch_order_controls_are_identity_invariant() -> No
     assert anchor.state_digest == before
 
 
+def test_d040_history_variants_are_separate_and_null_until_available() -> None:
+    environment, observation_array, streams = d040._initial_environment(32, 18468)
+    controller = d031r1.D031R1NoDetrapController(streams.policy)
+    controller.reset()
+    anchor = d040._capture_anchor(
+        18468,
+        "EMPTY_PREFIX",
+        1,
+        0,
+        d040._next_visible(observation_array),
+        environment,
+        controller,
+        streams,
+        d027.D027ActionConsequencePredictor(),
+        (),
+        0.0,
+    )
+    features = d040.feature_families(anchor)
+    assert features["F1_S0_H4"] is None
+    assert features["F1_S0_H8"] is None
+    assert features["F1_S0_H16"] is None
+    _, _, anchors = d040._independent_arm_b(18468, capture_anchors=True)
+    anchor = anchors["OFFSET_8191"]
+    assert anchor is not None
+    features = d040.feature_families(anchor)
+    assert len(features["F1_S0_H4"] or ()) == 46
+    assert len(features["F1_S0_H8"] or ()) == 86
+    assert len(features["F1_S0_H16"] or ()) == 166
+
+
+def test_d040_branches_stop_at_reacquisition_and_report_d027_diagnostics() -> None:
+    _, _, anchors = d040._independent_arm_b(18468, capture_anchors=True)
+    anchor = anchors["ALT_4"]
+    assert anchor is not None
+    on, on_trace = d040._run_branch(anchor, condition="DETRAP_ON")
+    if on["reacquired"]:
+        assert on["transitions"] == on["reacquisition_latency"]
+        summary = d040._horizon_summary(anchor, on, on_trace, 4096)
+        assert summary["stop_reason"] == "reacquisition"
+        assert summary["stopped_before_requested_horizon"] is True
+    pair = d040._anchor_pair(anchor)
+    diagnostics = pair["trajectory_distribution_diagnostics"]
+    if diagnostics["status"] == "available":
+        assert "d027_prediction_update_summary" in diagnostics["after_16"]["on"]
+
+
 def test_d040_artifact_metadata_preserves_scope_and_provenance() -> None:
     payload = d040.build_compact_artifact(
         {"seeds": [18468], "results": []},
@@ -252,6 +342,10 @@ def test_d040_artifact_metadata_preserves_scope_and_provenance() -> None:
     assert payload["organism_changes"] is False
     assert payload["reward"] == 0.0
     assert payload["info"] == {}
-    assert payload["invalidated_provenance"] == [
-        {"sha": "b" * 40, "reason": "test-only invalidation"}
-    ]
+    assert payload["invalidated_provenance"][-1] == {
+        "sha": "b" * 40,
+        "reason": "test-only invalidation",
+    }
+    assert payload["invalidated_provenance"][0]["executable_sha"] == (
+        "db2facbb29a295fd00f02e5e91371bf001ed19da"
+    )

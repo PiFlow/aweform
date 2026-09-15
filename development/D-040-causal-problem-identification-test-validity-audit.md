@@ -146,6 +146,37 @@ match accepted D-031R1 fields on reused support, and instrumented and
 uninstrumented independent replays must agree. Any mismatch blocks treatment
 interpretation.
 
+## Sol-requested protocol corrections
+
+The initial executable candidate `db2facbb29a295fd00f02e5e91371bf001ed19da`
+was invalidated by Sol before its outputs could be interpreted. The bounded
+correction freezes the following details:
+
+1. D-034 comparison anchors use the accepted eligibility predicate on every
+   completed row: `mode_before == SEEK`, `mode_after == SEEK`, pre-contact
+   false, and post-contact false. The runner checks availability and anchor
+   transition identity for every reused seed against the hash-verified
+   accepted D-034 record.
+2. `OSCILLATION_ONSET` is the pre-action state at the first action of the
+   first contiguous eligible strict L/R alternating run that reaches length
+   16. The completion transition is recorded separately and cannot select the
+   anchor.
+3. Each branch stops immediately after first reacquisition, termination, or
+   truncation. Fixed later horizons retain explicit stop/null metadata and do
+   not include charging or departure transitions after reacquisition.
+4. Official execution runs the exact configured 70,000-transition Arm-B
+   protocol for every reused seed through both the independent and canonical
+   comparator paths, and compares independent versus canonical for every
+   holdout seed. The gate includes action/visible-trajectory, outcome,
+   termination, mode/arbitration, D-027 update and final-weight, both RNG,
+   zero explorer/delegation, one legacy draw, reward, and empty-info fields.
+5. F1 is reported as separate fixed `H4`, `H8`, and `H16` families. Prefixes
+   that are unavailable remain null; all three use the same target semantics.
+6. Trajectory-distribution windows include evaluator-only D-027
+   prediction/update summaries before and after first ON delegation. These
+   summaries never enter the controller, learner, RNG, environment, reward,
+   or `info`.
+
 ## D-034 positive control and negative controls
 
 Independently reconstruct exact pre-action D-034 `ALT_4/8/16` and
@@ -216,10 +247,10 @@ generation, and never affect trajectories. Families are reported separately.
 
 - **F0 / S0:** six visible channels: normalized own energy, beacon L/F/R,
   binary physical charging contact, and normalized own temperature.
-- **F1 / S0+H:** exact D-036 closure-valid completed H4/H8/H16 histories,
+- **F1 / S0+H4, H8, H16:** exact D-036 closure-valid completed histories,
   prior after-observations plus one-hot executed-action pairs; exclude the
-  scored action. Preserve frozen dimensions `46/86/166`; insufficient prefixes
-  are null, never padded or imputed.
+  scored action. Preserve frozen dimensions `46/86/166` separately;
+  insufficient prefixes are null, never padded or imputed.
 - **F2 / S0+D027:** exact D-037 pre-action S1–S6: predicted forward delta
   for the exact executed learned action; max forward delta; largest-minus-
   second; population SD of the three forward deltas; centered 3×6 predicted
@@ -319,10 +350,20 @@ holdout sections separate and include D-031R1/D-034 source artifact hashes.
 The following are intentional placeholders until implementation and official
 runs exist:
 
-- **clean executable protocol SHA:** `<pending clean protocol freeze>`
+- **clean executable protocol SHA:** `<pending corrected clean protocol freeze>`
 - **reused artifact SHA-256 / size:** `<pending>` / `<pending>`
 - **holdout artifact SHA-256 / size:** `<pending>` / `<pending>`
-- **invalidated D-040 runs:** `<none recorded before execution>`
+- **invalidated D-040 run:** executable SHA
+  `db2facbb29a295fd00f02e5e91371bf001ed19da`; reused artifact SHA-256
+  `88cf8d0872f966e4f867ab236e9b991c6508c9489d25e8d100c1dec3ca96d113`
+  (`162,684,976` bytes); holdout artifact SHA-256
+  `05da0c2728e7c009520a0b1d5002a8cc021ae2a90b30423c00858f991b9052c5`
+  (`324,675,921` bytes). Status: invalidated by Sol. Reasons: the six
+  bounded protocol defects corrected above (D-034 eligibility/identity,
+  delayed oscillation onset capture, post-reacquisition branch continuation,
+  incomplete official Arm-B identity gate, collapsed F1 history reporting,
+  and missing D-027 trajectory summaries). These artifacts are not valid
+  D-040 output and are never pooled or interpreted.
 - **exact final PR HEAD handed to Sol:** `<pending>`
 
 Any invalidated run records executable SHA, artifact hash/size when written,
