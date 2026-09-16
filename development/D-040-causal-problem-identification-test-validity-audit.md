@@ -9,7 +9,7 @@
 - **fresh_development_holdout:** `18488..18507` inclusive, in order
 - **lifetime_horizon:** `70,000` real transitions
 - **branch_horizon:** at most `4,096` real transitions from an anchor
-- **status:** protocol frozen; compact-artifact correction frozen; support rerun pending
+- **status:** protocol frozen; compact artifacts committed; final-run provenance recorded
 - **disposition:** `CONTINUING`
 
 The intended compact artifacts are
@@ -358,10 +358,18 @@ provenance, not as usable D-040 output:
 - **reused artifact SHA-256 / size:** `a28fa81cdd6f00665b162ead6e25dc5ad3ffd8a01924d4147406f1d228bf457f` / `168,791,151`
 - **holdout artifact SHA-256 / size:** `2458da4a3d09f86a362a6c3910d6b3bf8dd3d3ce28ac62f77f81211e9351be41` / `336,622,010`
 - **invalidated reason:** Sol found the artifacts non-compact and not independently reviewable; the full reused support was embedded in the holdout artifact.
-- **new clean executable/schema SHA:** `29a4fb19d6d3853e1dcb79cfc62aed86fac6b0c3` (local correction-2 commit)
-- **new reused artifact SHA-256 / size:** pending complete rerun from the new clean SHA
-- **new holdout artifact SHA-256 / size:** pending complete rerun from the same new clean SHA
-- **new deterministic regeneration checks:** pending artifact generation; no reused or holdout result is claimed here
+- **manager-integrated clean executable/schema SHA:** `bfeef5bb72deb78182d08069d359d497452a9363`
+  (the worker-local `29a4fb19d6d3853e1dcb79cfc62aed86fac6b0c3` SHA is not official
+  provenance)
+- **final reused artifact SHA-256 / size:**
+  `764c1b09f18c250cb55682d434c2b6f372a9e66d82380b88c0bc08ab85cd495d` /
+  `19,502,181` bytes
+- **final holdout artifact SHA-256 / size:**
+  `c31edd4c919f7cf6713feb59cd49b32dd69c38180bd26f65c0fab5d279d55f98` /
+  `18,761,262` bytes
+- **final deterministic regeneration checks:** reused regeneration hash and size
+  matched exactly with `cmp PASS`; holdout regeneration hash and size are recorded
+  above, but the independent `cmp` remains pending manager verification.
 - **invalidated D-040 run:** executable SHA
   `db2facbb29a295fd00f02e5e91371bf001ed19da`; reused artifact SHA-256
   `88cf8d0872f966e4f867ab236e9b991c6508c9489d25e8d100c1dec3ca96d113`
@@ -373,12 +381,59 @@ provenance, not as usable D-040 output:
   incomplete official Arm-B identity gate, collapsed F1 history reporting,
   and missing D-027 trajectory summaries). These artifacts are not valid
   D-040 output and are never pooled or interpreted.
-- **exact final PR HEAD handed to Sol:** pending final local provenance-record commit
+- **exact final local provenance-record commit:** this local commit; no PR is opened
+  or pushed by this worker
 
 Any invalidated run records executable SHA, artifact hash/size when written,
 command, seed role/support, write status, and exact defect. A record-only edit
 does not change the executable protocol SHA; executable correction requires a
 new clean SHA and both-support rerun.
+
+## Final compact-artifact provenance
+
+The official committed D-040 support artifacts were generated from the
+manager-integrated clean executable/schema SHA
+`bfeef5bb72deb78182d08069d359d497452a9363`. The worker-local correction SHA
+`29a4fb19d6d3853e1dcb79cfc62aed86fac6b0c3` is not used for this provenance.
+The reused support contains official seeds `18468..18487` inclusive; the fresh
+holdout contains official seeds `18488..18507` inclusive. Both artifacts use
+compact schema v2. Their raw-transition, raw-arbitration, raw-trigger-observation,
+and raw-readout-prediction/actual flags are all `false`. The holdout has no
+embedded reused support result arrays and carries only a separate reused-support
+reference with `embedded: false`.
+
+The exact official generation commands were:
+
+```text
+uv run python -m aweform.d040 --support reused --executed-commit-sha bfeef5bb72deb78182d08069d359d497452a9363 --output development/D-040-causal-problem-identification-test-validity-audit-reused.json
+uv run python -m aweform.d040 --support holdout --executed-commit-sha bfeef5bb72deb78182d08069d359d497452a9363 --output development/D-040-causal-problem-identification-test-validity-audit-holdout.json
+```
+
+The manager independently regenerated the reused artifact with:
+
+```text
+uv run python -m aweform.d040 --support reused --executed-commit-sha bfeef5bb72deb78182d08069d359d497452a9363 --output /private/tmp/aweform-d040-compact-reused-regenerated.json
+cmp development/D-040-causal-problem-identification-test-validity-audit-reused.json /private/tmp/aweform-d040-compact-reused-regenerated.json
+```
+
+The regenerated reused file had SHA-256
+`764c1b09f18c250cb55682d434c2b6f372a9e66d82380b88c0bc08ab85cd495d` and size
+`19,502,181` bytes; `cmp` passed. The corresponding holdout regeneration
+command is:
+
+```text
+uv run python -m aweform.d040 --support holdout --executed-commit-sha bfeef5bb72deb78182d08069d359d497452a9363 --output /private/tmp/aweform-d040-compact-holdout-regenerated.json
+cmp development/D-040-causal-problem-identification-test-validity-audit-holdout.json /private/tmp/aweform-d040-compact-holdout-regenerated.json
+```
+
+The holdout artifact has SHA-256
+`c31edd4c919f7cf6713feb59cd49b32dd69c38180bd26f65c0fab5d279d55f98` and size
+`18,761,262` bytes. Its regeneration `cmp` remains pending manager verification;
+no holdout regeneration PASS is claimed here.
+
+This is compact, reviewer-accessible committed support only. It makes no
+substantive causal interpretation and authorizes neither D-041 nor any EXP
+execution.
 
 ## Required validation
 
@@ -396,10 +451,10 @@ uv run ruff check .
 uv run mypy src --strict
 uv run python -m compileall -q src tests
 git diff --check
-uv run python -m aweform.d040 --support reused --executed-commit-sha <clean-sha> --output <reused-artifact>
-uv run python -m aweform.d040 --support holdout --executed-commit-sha <same-clean-sha> --output <holdout-artifact>
-cmp <reused-artifact> <reused-regenerated-artifact>
-cmp <holdout-artifact> <holdout-regenerated-artifact>
+uv run python -m aweform.d040 --support reused --executed-commit-sha bfeef5bb72deb78182d08069d359d497452a9363 --output development/D-040-causal-problem-identification-test-validity-audit-reused.json
+uv run python -m aweform.d040 --support holdout --executed-commit-sha bfeef5bb72deb78182d08069d359d497452a9363 --output development/D-040-causal-problem-identification-test-validity-audit-holdout.json
+cmp development/D-040-causal-problem-identification-test-validity-audit-reused.json /private/tmp/aweform-d040-compact-reused-regenerated.json
+cmp development/D-040-causal-problem-identification-test-validity-audit-holdout.json /private/tmp/aweform-d040-compact-holdout-regenerated.json
 ```
 
 Also record exact-current-HEAD GitHub CI. A SHA-tied validation claim requires
