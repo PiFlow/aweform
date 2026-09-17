@@ -1,15 +1,15 @@
 # Aweform — World-Model Research Direction
 
 **Status:** non-authorizing research direction  
-**Research cut-off:** 2026-09-09  
-**Repository state reviewed:** `PiFlow/aweform` `main` at `b25fe711549ba4e98f9759f8358316b94712ca64`  
+**External research cut-off:** 2026-09-09  
+**Repository status refreshed:** 2026-09-17, after accepted D-040 and while D-041 is authorized but not yet a committed D-record  
 **Purpose:** preserve useful world-model research and define future developmental gates without authorizing a new architecture, D-stage, ADR, learner, planner, reward, JEPA implementation, or dependency.
 
 ## 1. Claim boundary
 
 This document is research input only. It does not authorize:
 
-- D-032 or any later successor D-stage;
+- any current or future `D-NNN` stage;
 - a world-model architecture or interface;
 - model-guided multi-step planning;
 - reinforcement learning, value learning, actor-critic, reward shaping, or a LeCun-style cost/critic module;
@@ -18,7 +18,7 @@ This document is research input only. It does not authorize:
 - evolutionary optimization;
 - any change to evaluator/organism information boundaries.
 
-Any future durable architecture, information, plasticity, or safety boundary remains governed by `AGENTS.md` and the accepted ADR/review process.
+Any future durable architecture, information, plasticity, sensory, or safety boundary remains governed by `AGENTS.md` and the accepted ADR/review process.
 
 ## 2. Operational definition for Aweform
 
@@ -144,11 +144,40 @@ D-030 allowed one narrow prediction to influence one narrow decision: during spe
 
 This is important causal evidence that learned action-consequence structure can matter to behaviour. It is still not planning or a world model: it is one-step, one-output, narrowly gated action selection.
 
-### D-031R1 — scaffold-displacement failure is important world-model evidence
+### D-031R1 — scaffold-displacement failure
 
 D-031R1 tested whether the learned SEEK steering could retain reacquisition when the engineered `1/3` stochastic de-trapping delegation was disabled. It could not: the unchanged learned-with-de-trapping arm completed all 20 full cycles, while both no-de-trapping arms failed SEEK and depleted energy on every fresh seed.
 
-This negative result is strategically important. It shows that a predictor can be causally useful in a narrow intervention without yet being competent enough to replace an engineered exploration/de-trapping scaffold. Aweform should therefore resist the temptation to call narrow prediction success a mature world model or to enlarge the model automatically. The next question must identify what is actually missing: predictive support, state/history, exploration coverage, uncertainty, or another specific developmental limitation.
+This showed that a predictor can be causally useful in a narrow intervention without yet being competent enough to replace an engineered exploration/de-trapping scaffold.
+
+### D-032→D-039 — diagnose the missing capability before enlarging the model
+
+The subsequent development deliberately tested candidate explanations rather than jumping to a bigger architecture.
+
+- D-032 attributed the function of the de-trap scaffold without claiming a unique mechanism.
+- D-033 tested short forced action sequences and did not establish that local same-action persistence solved the failure.
+- D-034 found closure-valid history-defined states at which enabling the existing de-trap scaffold had strong matched causal benefit. That established evaluator-side history sufficiency for selecting useful intervention points, not a learned trigger or organism-side stuck detector.
+- D-035A/B/C separately audited turn granularity, L/F/R interpolation, and reverse-translation sufficiency. Local physical benefits did not establish robust reacquisition or authorize new organism actions/sensors.
+- D-036 tested short-history scaffold-recruitment learnability; the accepted result did not provide stable held-out improvement.
+- D-037 tested endogenous D-027/D-030 predictor-state signals; it likewise did not provide a stable recruitment signal.
+- D-038 combined fine-turn/interpolation/reverse evaluator interventions without restoring the missing recovery competence.
+- D-039 added one scalar shadow recurrent correction. It improved bounded one-step prediction but did not produce recruitment-coherent held-out benefit.
+
+These negative/partial results are strategically important world-model evidence. They argue against treating recurrence, more action resolution, or more model capacity as automatically earned merely because D-031R1 failed.
+
+### D-040 — independent causal/test-validity audit
+
+D-040 paused mechanism design and independently re-checked the recent causal machinery. Its accepted implementation reproduced the relevant Arm-B path and D-034 positive control using a task-local path that avoided the recent high-level helper stack for critical validity claims. It added full identity gates, OFF/OFF clone controls, branch-order invariance, explicit reused/fresh support separation, compact deterministic artifacts, and preserved invalidated provenance.
+
+The accepted review concluded that the audit machinery was valid enough for interpretation while retaining important scientific caution: **partial observability remains plausible**, and **privileged evaluator geometry is strongly informative** in the tested failure regime. Those findings do not authorize privileged geometry as organism input and do not identify a unique mechanism.
+
+D-040 therefore does **not** advance Aweform to WM0. It strengthens the diagnosis that the next problem may concern missing physically obtainable information or state representation before deeper rollout/planning is justified.
+
+### D-041 — current evaluator-only sensory-sufficiency question
+
+D-041 is authorized by issue #140 but is not yet a committed D-record at this documentation refresh. It asks whether a minimal pair of physically realizable front-facing charging-beacon receptors contains enough information to resolve relevant reacquisition/front-docking ambiguity.
+
+This is deliberately **not** camera vision, a sensory-boundary change, or a world-model implementation. A positive evaluator-only result would only motivate a separate future sensory-boundary decision.
 
 ## 6. Aweform world-model qualification ladder
 
@@ -165,7 +194,7 @@ These names are research categories, not reserved D-stage identifiers.
 | **WM3 — learned latent world model** | Learned representation beats raw-state model where abstraction is actually needed | Predictive representation is functionally useful | JEPA superiority |
 | **WM4 — hierarchical world model** | Multiple learned time scales/abstraction levels improve long-horizon prediction/planning | Hierarchical predictive cognition is useful | Human-like reasoning |
 
-On this taxonomy, current Aweform has reached **P2 in one narrow D-030 intervention**, while D-031R1 shows that this competence is not yet sufficient to displace the stochastic de-trapping scaffold. The broader six-output model remains uneven and one-step.
+On this taxonomy, Aweform has reached **P2 in one narrow D-030 intervention**. D-031R1 through D-040 show that this competence is not yet sufficient to displace the stochastic de-trapping scaffold and that the missing factor has not been cleanly reduced to model capacity or recurrence. The broader six-output model remains uneven and one-step.
 
 ## 7. Developmental gates toward WM0–WM4
 
@@ -194,6 +223,8 @@ On this taxonomy, current Aweform has reached **P2 in one narrow D-030 intervent
 **Minimum mechanism:** add the smallest bounded history/latent state that resolves the ambiguity. A tiny recurrent state is preferable to a transformer unless evidence demands more capacity.
 
 **Falsifier:** current observation plus one or two explicit permitted history features solve the problem.
+
+D-036, D-039, and D-040 make this gate more concrete rather than automatically satisfying it. Short history and one-scalar recurrence did not provide a stable recruitment solution, while D-040 retained partial observability as plausible and found privileged geometry strongly informative. Before adding explicit memory, test whether the missing information can be obtained through a physically justified sensor or already exists in organism-visible embodied dynamics.
 
 ### Gate D — uncertainty before planning
 
@@ -320,6 +351,8 @@ Do not produce one aggregate "world-model score" that hides output-specific fail
 10. **Architecture capture:** adopting JEPA/Dreamer/TD-MPC because the literature is impressive rather than because Aweform earned the mechanism.
 11. **Vision capture:** treating cameras/pixels as inherently more cognitive than machine-native energy, thermal, timing, electrical, radio, or actuator signals.
 12. **Cross-lifetime contamination:** learned state is inherited without an explicit heredity/evolution experiment.
+13. **Static-trigger capture:** assuming a scaffold's benefit can be reduced to a pre-action stuck-state classifier when the scaffold may instead alter the future experience distribution.
+14. **Common-mode audit failure:** reusing the same high-level helper stack for both the original result and its supposed independent validation.
 
 ## 13. What to reuse from existing world-model research
 
@@ -352,19 +385,11 @@ evaluator-only state
 
 A future evolutionary experiment could test whether selection shapes learning priors, model capacity, sensor morphology, or learning rates. It should not silently optimize the same evidence seeds or inherit lifetime-learned knowledge unless that inheritance is the explicit research question.
 
-## 15. Recommended repository change now
+## 15. Repository posture now
 
-The correct near-term repository action is **documentation only**, not implementation.
+This document already serves as the non-authorizing durable research artifact. It should be updated only when later repository evidence materially changes the developmental gates; it should never be treated as an implementation authorization.
 
-Recommended durable artifact:
-
-```text
-docs/world-model-developmental-direction.md
-```
-
-This document can be the initial content. Add one non-authorizing link from `docs/research-roadmap.md` under Later Directions.
-
-Do **not** at this stage:
+Do **not** infer permission from this document to:
 
 ```text
 create a WorldModel interface
@@ -376,15 +401,16 @@ change D-027/D-030 behavior
 change reward or viability semantics
 add replay/history/recurrence
 create a planner
+add camera input or expose evaluator-only D-041 beacon signals
 ```
 
-A future implementation should begin only from an exact-current-HEAD developmental question and the smallest mechanism that addresses it.
+A future implementation must begin from an exact-current-HEAD developmental problem and the smallest mechanism that addresses it.
 
 ## 16. Source register
 
 ### Project/repository sources
 
-- `AGENTS.md` at reviewed main.
+- `AGENTS.md`.
 - `docs/north-star.md`.
 - `docs/developmental-principles.md`.
 - `docs/research-roadmap.md`.
@@ -392,6 +418,9 @@ A future implementation should begin only from an exact-current-HEAD development
 - `development/D-029-action-alternative-readiness-audit.md`.
 - `development/D-030-bounded-learned-seek-steering.md`.
 - `development/D-031R1-learned-seek-scaffold-displacement-clean-rerun.md`.
+- `development/D-032-detrap-function-attribution-audit.md` through `development/D-040-causal-problem-identification-test-validity-audit.md`.
+- D-040 accepted PR #138 review/provenance record.
+- D-041 authorization issue #140, for current status only; it is not a result source.
 
 ### Primary / peer-reviewed external sources
 
@@ -419,6 +448,4 @@ A future implementation should begin only from an exact-current-HEAD development
 
 Aweform should not "adopt JEPA." It should **grow into the problem that makes JEPA-like representation learning useful**.
 
-The current D-027 → D-029 → D-030 → D-031R1 lineage is already the correct developmental bridge: learn consequences from actual experience, audit alternative-action prediction, allow one narrowly bounded prediction to influence one decision under strong controls, then test whether that learned competence can actually displace an engineered scaffold. D-031R1 correctly preserved the answer **no** when it failed.
-
-The next genuine world-model milestone should be earned when the ecology creates a delayed, partially observed, or multi-step consequence problem that a one-step predictor cannot solve. At that point, the smallest justified move is multi-step shadow prediction, not a billion-parameter visual foundation model.
+The D-031R1→D-040 sequence reinforces that rule: when learned control fails, first determine whether the missing ingredient is information, support, experience distribution, temporal state, action affordance, or model capacity. Only then add the smallest mechanism the evidence actually earns.
