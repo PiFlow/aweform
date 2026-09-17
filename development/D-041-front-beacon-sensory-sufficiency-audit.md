@@ -22,8 +22,10 @@ by SHA-256 `764c1b09f18c250cb55682d434c2b6f372a9e66d82380b88c0bc08ab85cd495d`.
 ## Frozen protocol
 
 The declared support is reused Development seeds `18468..18487` and fresh
-Development holdout seeds `18488..18507`, with the D-040 70,000-transition
-Arm-B lifetime and the following predeclared anchor IDs:
+Development holdout seeds `18488..18507`. D-040's accepted Arm-B lifetime is
+70,000 transitions; D-041 replays each seed through a frozen 40,000-transition
+anchor-capture cap, which covers every selected anchor before the first D-040
+failure episode ends. The following anchor IDs are predeclared:
 
 `OFFSET_0`, `OFFSET_15`, `OFFSET_63`, `OFFSET_255`, `OFFSET_1023`,
 `OFFSET_4095`, `ALT_16`, and `NO_FORWARD_PROGRESS_16`.
@@ -81,3 +83,10 @@ was a control-cost defect, not a scientific result. The corrected protocol
 checks branch-order invariance on the primary pair branch per anchor; the
 scientific branch set and outcome definitions are unchanged. The interrupted
 attempt is not D-041 evidence and will not be pooled.
+
+The second attempt used the corrected primary-branch order control from
+executable SHA `491acd1a562ee3a949ec1afc8c352093dc838c50` but was also
+interrupted before artifact writing or outcome inspection because it replayed
+the full 70,000 transitions for every seed. The 40,000-transition cap is a
+mechanical execution correction, explicitly recorded here before support
+outcomes are inspected.

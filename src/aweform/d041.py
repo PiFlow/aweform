@@ -31,6 +31,7 @@ D041_D040_REUSED_ARTIFACT_SHA256: Final[str] = (
 D041_REUSED_SEEDS: Final[tuple[int, ...]] = d040.D040_REUSED_SEEDS
 D041_HOLDOUT_SEEDS: Final[tuple[int, ...]] = d040.D040_HOLDOUT_SEEDS
 D041_HORIZON: Final[int] = d040.D040_HORIZON
+D041_ANCHOR_REPLAY_HORIZON: Final[int] = 40_000
 D041_BRANCH_HORIZON: Final[int] = d040.D040_BRANCH_HORIZON
 D041_HORIZONS: Final[tuple[int, ...]] = d040.D040_HORIZONS
 D041_IDENTITY_HORIZON: Final[int] = 128
@@ -557,7 +558,7 @@ def _canonical_identity(seed: int) -> dict[str, object]:
 def _seed_result(seed: int) -> dict[str, object]:
     _validate_seed(seed, holdout=seed in D041_HOLDOUT_SEEDS)
     _, _, anchors = d040._independent_arm_b(
-        seed, horizon=D041_HORIZON, capture_anchors=True
+        seed, horizon=D041_ANCHOR_REPLAY_HORIZON, capture_anchors=True
     )
     records = []
     for anchor_id in D041_ANCHOR_IDS:
@@ -670,6 +671,7 @@ def build_artifact(
         ),
         "ordered_seeds": list(seeds),
         "lifetime_horizon": D041_HORIZON,
+        "anchor_replay_horizon": D041_ANCHOR_REPLAY_HORIZON,
         "branch_horizon": D041_BRANCH_HORIZON,
         "branch_horizons": list(D041_HORIZONS),
         "anchor_ids": list(D041_ANCHOR_IDS),
