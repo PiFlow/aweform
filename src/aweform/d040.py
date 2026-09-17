@@ -338,6 +338,36 @@ def _find_prefix_trigger(
     return None
 
 
+def _prefix_trigger_at_boundary(
+    trace: Sequence[d025.D025TransitionTrace], family: str, length: int
+) -> _TriggerSelection | None:
+    """Check only the newly completed window at the current prefix boundary.
+
+    The runner calls this before each action.  Any earlier matching window
+    would already have been captured at its own boundary, so rescanning every
+    completed prefix is equivalent but needlessly quadratic.
+    """
+    if family not in D040_D034_FAMILIES:
+        raise ValueError(f"unknown D-040 trigger family: {family}")
+    if length not in D040_D034_LENGTHS:
+        raise ValueError(f"D-034 history length must be one of {D040_D034_LENGTHS}")
+    if len(trace) < length:
+        return None
+    rows = tuple(trace[-length:])
+    matches, starting_forward = _trigger_matches(family, rows)
+    if not matches:
+        return None
+    last_transition = rows[-1].transition_index
+    return _TriggerSelection(
+        family,
+        length,
+        last_transition + 1,
+        last_transition,
+        rows,
+        starting_forward,
+    )
+
+
 def _log_spaced_offsets() -> tuple[int, ...]:
     return D040_ANCHOR_OFFSETS
 
@@ -945,7 +975,7 @@ def _independent_arm_b(
                     and controller.mode is d026.D026Mode.SEEK
                     and not current.charging_contact
                 ):
-                    selection = _find_prefix_trigger(trace, family, length)
+                    selection = _prefix_trigger_at_boundary(trace, family, length)
                     if selection is not None and selection.transition == len(trace) + 1:
                         anchors[key] = _capture_anchor(
                             seed,

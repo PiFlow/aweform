@@ -31,7 +31,10 @@ D041_D040_REUSED_ARTIFACT_SHA256: Final[str] = (
 D041_REUSED_SEEDS: Final[tuple[int, ...]] = d040.D040_REUSED_SEEDS
 D041_HOLDOUT_SEEDS: Final[tuple[int, ...]] = d040.D040_HOLDOUT_SEEDS
 D041_HORIZON: Final[int] = d040.D040_HORIZON
-D041_ANCHOR_REPLAY_HORIZON: Final[int] = 40_000
+# D-041 must replay the complete accepted D-040 Arm-B lifetime.  This is an
+# alias rather than a shorter capture bound: anchor availability is part of the
+# frozen protocol, and the runner must not turn the lifetime into a harness cap.
+D041_ANCHOR_REPLAY_HORIZON: Final[int] = D041_HORIZON
 D041_BRANCH_HORIZON: Final[int] = d040.D040_BRANCH_HORIZON
 D041_HORIZONS: Final[tuple[int, ...]] = d040.D040_HORIZONS
 D041_IDENTITY_HORIZON: Final[int] = 128

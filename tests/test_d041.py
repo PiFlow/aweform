@@ -54,6 +54,8 @@ def test_d041_protocol_freezes_authority_seeds_and_no_history() -> None:
     )
     assert d041.D041_REUSED_SEEDS == tuple(range(18468, 18488))
     assert d041.D041_HOLDOUT_SEEDS == tuple(range(18488, 18508))
+    assert d041.D041_HORIZON == 70_000
+    assert d041.D041_ANCHOR_REPLAY_HORIZON == d041.D041_HORIZON
     assert d041.D041_BRANCH_HORIZON == 4096
     assert d041.D041_ANCHOR_IDS == (
         "OFFSET_0",
