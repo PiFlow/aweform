@@ -28,12 +28,9 @@ The ADR file itself is authoritative for its exact status, scope, supersession/a
 
 ## Supporting registries are not ADR numbers
 
-The historical file `0009-bohs-registry.md` was originally titled "ADR 0009 — BOHS Registry" even though ADR 0009 is actually [`0009-v0.2-bounded-observation-history-state.md`](0009-v0.2-bounded-observation-history-state.md).
+The historical path [`0009-bohs-registry.md`](0009-bohs-registry.md) is a machine-checked supporting manifest required by ADR 0009 Section D. Its old title made it look like a second ADR 0009, but the actual ADR 0009 is [`0009-v0.2-bounded-observation-history-state.md`](0009-v0.2-bounded-observation-history-state.md).
 
-To remove that ambiguity without renumbering historical ADRs or breaking old links:
-
-- the canonical BOHS supporting registry now lives at [`../registries/bohs.md`](../registries/bohs.md);
-- `0009-bohs-registry.md` remains only as a compatibility pointer.
+The supporting registry therefore remains at its historical path so the existing enforcement tests and links continue to address one canonical manifest, while its title and status now make clear that it is **not** a separate ADR.
 
 Do not assign an ADR number to a registry, manifest, evidence table, or implementation inventory unless it is itself an architecture decision record.
 
