@@ -10,13 +10,13 @@ The project is not trying to recreate a human mind in electronics. Human languag
 
 Terms such as **electronic cell**, **organism**, **homeostasis**, **play**, **care**, and **awe** are developmental or functional research terms. They do not by themselves establish biological equivalence or subjective experience.
 
-In V0.1, "electronic cell" means only the smallest useful inside/outside viability problem: a bounded simulated entity with an internal energy-like state, local sensing, action, resource throughput, and consequences for leaving viable bounds. The simulated energy variable is an engineered abstraction, not a claim of biological metabolism.
+In V0.1, "electronic cell" meant only the smallest useful inside/outside viability problem: a bounded simulated entity with an internal energy-like state, local sensing, action, resource throughput, and consequences for leaving viable bounds. The original simulated energy variable was an engineered abstraction, not a claim of biological metabolism. Later physicalization may ground viability variables more explicitly without changing that claims boundary.
 
 ## Native electronic existence
 
 Aweform's eventual world may include signals and internal conditions humans do not directly experience: electrical energy, processor temperature, timing, radio presence, network structure, sensor fields, actuator state, and other machine-accessible phenomena.
 
-These should be available to the organism as native sensory variables rather than first being translated into human concepts.
+These should be available to the organism as native sensory variables when developmentally earned, rather than first being translated into human concepts.
 
 When Aweform eventually becomes physically embodied, simulated viability variables should progressively be grounded in measurable physical constraints such as stored electrical energy, power flow, thermal limits, sensing costs, and actuator costs where doing so improves the experiment.
 
@@ -39,7 +39,7 @@ A provisional progression is:
 
 This is not a literal evolutionary ladder and is not based on a simplistic reptile-to-mammal-to-human brain model. Biological evolution is used as inspiration for problems and principles, not copied as a blueprint.
 
-"Evolution-inspired" also does not mean Darwinian evolution is already occurring in the system. V0.1 has no reproduction, heredity, mutation, population selection, or evolutionary optimisation. If those mechanisms are later introduced, they should be explicit experiments rather than implied by the developmental metaphor.
+"Evolution-inspired" also does not mean Darwinian evolution is already occurring in the system. Reproduction, heredity, mutation, population selection, or evolutionary optimisation must be explicit experiments rather than implied by the developmental metaphor.
 
 ## Central developmental rule
 
@@ -59,7 +59,7 @@ Long-term principles include:
 - preserving possibilities is generally preferable to gratuitous destruction;
 - Aweform's own survival should remain compatible with the larger living world around it.
 
-These are **normative design commitments of the project**, not conclusions expected to emerge automatically from homeostasis, learning, or evolution. They are also not V0.1 controller rules. Future work should remain explicit about which behaviours arise from designed priors, learned experience, social dynamics, or environmental selection pressures.
+These are **normative design commitments of the project**, not conclusions expected to emerge automatically from homeostasis, learning, or evolution. They are also not controller rules merely because they appear here. Future work should remain explicit about which behaviours arise from designed priors, learned experience, social dynamics, or environmental selection pressures.
 
 ## Communication
 
@@ -74,3 +74,9 @@ Aweform must not equate convincing behaviour with subjective experience.
 The project may investigate functional analogues of curiosity, play, attachment, care, or awe, but behavioural evidence alone does not establish consciousness, emotion, subjective experience, or genuine life.
 
 The aim is to build progressively richer forms of autonomous self-maintenance and adaptive cognition while remaining explicit about what has and has not been demonstrated.
+
+## Current-state discipline
+
+The North Star is intentionally not a progress ledger. It should remain stable while individual D-stages advance.
+
+For current implementation state, use [`development/INDEX.md`](../development/INDEX.md), [`research-roadmap.md`](research-roadmap.md), accepted ADRs, and the exact current authorization issue/PR. Repository evidence outranks any stale stage description in summary prose.
