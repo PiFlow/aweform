@@ -70,3 +70,14 @@ regeneration are required before handoff.
 support inspection.
 
 **disposition:** `CONTINUING`.
+
+## Invalidated pre-artifact execution
+
+The first frozen implementation attempt was started from executable SHA
+`fa6ea7e0495d7706319c2eb7d03c790545f94b78` with the reused-support command but
+was interrupted before any artifact was written or any result was inspected.
+It redundantly reran all seven branches in both orders for every anchor. This
+was a control-cost defect, not a scientific result. The corrected protocol
+checks branch-order invariance on the primary pair branch per anchor; the
+scientific branch set and outcome definitions are unchanged. The interrupted
+attempt is not D-041 evidence and will not be pooled.

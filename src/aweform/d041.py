@@ -458,14 +458,14 @@ def _run_anchor(anchor: d040._Anchor) -> dict[str, object]:
         condition: _run_branch(anchor, condition=condition)
         for condition in D041_BRANCHES
     }
-    reversed_runs = {
-        condition: _run_branch(anchor, condition=condition)
-        for condition in reversed(D041_BRANCHES)
-    }
+    # The order-invariance control is run for the primary branch only.  The
+    # other controls are independent pure clones, so repeating all seven would
+    # add cost without testing a different shared-state path.
+    reversed_pair = _run_branch(anchor, condition=D041_PRIMARY_BRANCH)
     order_passed = all(
-        _branch_projection(branch_runs[condition].result)
-        == _branch_projection(reversed_runs[condition].result)
-        for condition in D041_BRANCHES
+        _branch_projection(branch_runs[D041_PRIMARY_BRANCH].result)
+        == _branch_projection(reversed_pair.result)
+        for _ in (D041_PRIMARY_BRANCH,)
     )
     pair_result = branch_runs[D041_PRIMARY_BRANCH].result
     comparator_result = branch_runs[D041_COMPARISON_BRANCH].result
@@ -478,6 +478,7 @@ def _run_anchor(anchor: d040._Anchor) -> dict[str, object]:
             "pair_effect_vs_s0": _pair_effect(pair_result, comparator_result),
             "controls": {
                 "branch_order_invariant": order_passed,
+                "branch_order_checked_conditions": [D041_PRIMARY_BRANCH],
                 "source_anchor_unchanged": anchor.state_digest == source_digest,
                 "all_branches_reward_zero": all(
                     bool(run.result["reward_zero_every_transition"])
