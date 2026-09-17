@@ -401,7 +401,10 @@ def _run_branch_order(
         raise ValueError("D-041 branch-order conditions must be unique")
     if set(conditions) != set(D041_BRANCHES):
         raise ValueError("D-041 branch order must contain exactly the frozen branches")
-    return {condition: _run_branch(anchor, condition=condition) for condition in conditions}
+    return {
+        condition: _run_branch(anchor, condition=condition)
+        for condition in conditions
+    }
 
 
 def _branch_projection(result: dict[str, object]) -> dict[str, object]:
