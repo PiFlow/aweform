@@ -388,6 +388,22 @@ def _run_branch(
     return _BranchRun(result=result, trace=tuple(trace))
 
 
+def _run_branch_order(
+    anchor: d040._Anchor, conditions: Sequence[str]
+) -> dict[str, _BranchRun]:
+    """Run independent cloned branches in the supplied order.
+
+    The order control deliberately runs the primary branch after the S0
+    comparator in a second pass.  This catches accidental shared state in a
+    future branch harness without duplicating all seven controls.
+    """
+    if tuple(conditions) != tuple(dict.fromkeys(conditions)):
+        raise ValueError("D-041 branch-order conditions must be unique")
+    if set(conditions) != set(D041_BRANCHES):
+        raise ValueError("D-041 branch order must contain exactly the frozen branches")
+    return {condition: _run_branch(anchor, condition=condition) for condition in conditions}
+
+
 def _branch_projection(result: dict[str, object]) -> dict[str, object]:
     return {
         key: result[key]
@@ -458,18 +474,15 @@ def _anchor_record(anchor: d040._Anchor) -> dict[str, object]:
 
 def _run_anchor(anchor: d040._Anchor) -> dict[str, object]:
     source_digest = anchor.state_digest
-    branch_runs = {
+    branch_runs = _run_branch_order(anchor, D041_BRANCHES)
+    reversed_order = (D041_COMPARISON_BRANCH, D041_PRIMARY_BRANCH)
+    reversed_runs = {
         condition: _run_branch(anchor, condition=condition)
-        for condition in D041_BRANCHES
+        for condition in reversed_order
     }
-    # The order-invariance control is run for the primary branch only.  The
-    # other controls are independent pure clones, so repeating all seven would
-    # add cost without testing a different shared-state path.
-    reversed_pair = _run_branch(anchor, condition=D041_PRIMARY_BRANCH)
-    order_passed = all(
+    order_passed = (
         _branch_projection(branch_runs[D041_PRIMARY_BRANCH].result)
-        == _branch_projection(reversed_pair.result)
-        for _ in (D041_PRIMARY_BRANCH,)
+        == _branch_projection(reversed_runs[D041_PRIMARY_BRANCH].result)
     )
     pair_result = branch_runs[D041_PRIMARY_BRANCH].result
     comparator_result = branch_runs[D041_COMPARISON_BRANCH].result
@@ -482,7 +495,7 @@ def _run_anchor(anchor: d040._Anchor) -> dict[str, object]:
             "pair_effect_vs_s0": _pair_effect(pair_result, comparator_result),
             "controls": {
                 "branch_order_invariant": order_passed,
-                "branch_order_checked_conditions": [D041_PRIMARY_BRANCH],
+                "branch_order_checked_conditions": list(reversed_order),
                 "source_anchor_unchanged": anchor.state_digest == source_digest,
                 "all_branches_reward_zero": all(
                     bool(run.result["reward_zero_every_transition"])
@@ -662,13 +675,15 @@ def build_artifact(
 ) -> dict[str, object]:
     if support not in ("reused", "holdout"):
         raise ValueError("support must be reused or holdout")
+    sha = _validate_executed_commit_sha(executed_commit_sha)
     seeds = D041_REUSED_SEEDS if support == "reused" else D041_HOLDOUT_SEEDS
     return {
         "schema_version": 1,
         "experiment": "D-041",
         "protocol_version": D041_PROTOCOL_VERSION,
         "authorized_base_sha": D041_AUTHORITATIVE_BASE_SHA,
-        "clean_executable_protocol_sha": executed_commit_sha,
+        "executed_commit_sha": sha,
+        "clean_executable_protocol_sha": sha,
         "support_executed": support,
         "seed_role": (
             "fresh_development_holdout"

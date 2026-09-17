@@ -48,6 +48,15 @@ def test_d041_pair_readout_has_only_declared_signal_semantics() -> None:
         d041.receptor_readout(d041.ReceptorPair(1.1, 0.0))
 
 
+def test_d041_branch_order_requires_frozen_unique_branch_set() -> None:
+    with pytest.raises(ValueError, match="exactly"):
+        d041._run_branch_order(None, d041.D041_BRANCHES[:-1])  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="unique"):
+        d041._run_branch_order(
+            None, (*d041.D041_BRANCHES[:-1], d041.D041_BRANCHES[-2])  # type: ignore[arg-type]
+        )
+
+
 def test_d041_protocol_freezes_authority_seeds_and_no_history() -> None:
     assert d041.D041_AUTHORITATIVE_BASE_SHA == (
         "8b51d6e143a906a83f1fd8d760aace5ed46abb9e"
@@ -111,3 +120,5 @@ def test_d041_empty_artifact_serialization_is_byte_deterministic() -> None:
         "energy_thermal_reward_info_rng_changed": False,
         "receptor_values_reach_organism": False,
     }
+    assert payload["executed_commit_sha"] == "a" * 40
+    assert payload["clean_executable_protocol_sha"] == "a" * 40
