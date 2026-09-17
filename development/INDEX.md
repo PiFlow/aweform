@@ -57,6 +57,7 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-037 | Endogenous prediction-state recruitment-signal audit | CONTINUING | [`D-037-endogenous-prediction-state-recruitment-signal-audit.md`](D-037-endogenous-prediction-state-recruitment-signal-audit.md) |
 | D-038 | Combined fine-turn, L/F/R interpolation, and reverse sufficiency audit | CONTINUING | [`D-038-combined-fine-interp-reverse-sufficiency-audit.md`](D-038-combined-fine-interp-reverse-sufficiency-audit.md) |
 | D-039 | One-scalar shadow recurrent predictor readiness audit | CONTINUING | [`D-039-one-scalar-shadow-recurrent-predictor-readiness-audit.md`](D-039-one-scalar-shadow-recurrent-predictor-readiness-audit.md) |
+| D-040 | Causal problem-identification and test-validity audit | CONTINUING | [`D-040-causal-problem-identification-test-validity-audit.md`](D-040-causal-problem-identification-test-validity-audit.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
 
