@@ -4,7 +4,7 @@
 - **issue:** [#140](https://github.com/PiFlow/aweform/issues/140)
 - **lane:** Development
 - **authorized_base_sha:** `8b51d6e143a906a83f1fd8d760aace5ed46abb9e`
-- **status:** protocol frozen; substantive support pending
+- **status:** completed; support and holdout results recorded
 - **disposition:** `CONTINUING`
 
 ## Question and boundary
@@ -58,6 +58,38 @@ a separate boundary proposal. The implementation reports `PARTIAL` only when
 pair-only support is reproducible on at least two seeds and two frozen anchor
 regimes, with a broader boundary decision still required.
 
+## Observed result
+
+Both declared supports were executed with the frozen protocol. Reused support
+produced 157 available anchors from 20 seeds; fresh holdout produced 154
+available anchors from 20 seeds. Across every available anchor, the `PAIR`,
+`S0_READOUT`, one-receptor, swap, null, and out-of-range branches had zero
+reacquisitions. Pair-only support was therefore `0` on both supports, and both
+artifacts classify the result as `NULL/INSUFFICIENT`.
+
+The canonical diagnostic ON/OFF identity, source-anchor immutability, branch
+order, evaluator-only, reward-zero, and info-empty controls passed for all 311
+available anchors. At the frozen 0.001 S0 bucket width, neither support had an
+ambiguous S0 anchor group separated by the receptor pair. These are
+descriptive development results only; they do not prove that every possible
+beacon model is insufficient.
+
+The compact artifacts are:
+
+- [reused support](D-041-front-beacon-sensory-sufficiency-audit-reused.json),
+  SHA-256 `f1bfc39175a153312f88f77b30803f6826d64c8ea1f0335ecb8f801a09ae7f7a`,
+  4,660,980 bytes, executed at exact clean commit
+  `f1eac015e886616ff04657230d56a2dc0df66e2e`;
+- [fresh holdout](D-041-front-beacon-sensory-sufficiency-audit-holdout.json),
+  SHA-256 `387c139c81c45d6b57c9f55f1ec5e83ec0ddfdb420a223a1aa3eb7a5e1a3be43`,
+  4,568,471 bytes, executed at exact clean commit
+  `94c43f2646c2f8f890c6f7d58ccc65bc0b0652b0`.
+
+The holdout artifact was regenerated from the same clean exact commit and was
+byte-identical. The result remains evaluator-only. No receptor value was
+exposed to Aweform, and D-041 authorizes neither a sensory-boundary change nor
+D-042; stop here pending Flow/Sol interpretation.
+
 ## Provenance and validation
 
 The executable protocol SHA is the exact clean commit recorded in each compact
@@ -67,8 +99,13 @@ support outcome inspection. Focused D-041 tests, full tests, Ruff, strict
 mypy, compile/import checks, `git diff --check`, and byte-identical artifact
 regeneration are required before handoff.
 
-**surprised_by:** Not yet observed; the question and controls are frozen before
-support inspection.
+**surprised_by:** The null result was consistent across both supports: no
+available anchor showed pair-only reacquisition, and the frozen receptor pair
+did not separate any ambiguous S0 bucket at the declared resolution. The
+receptor measurements were also zero at many early anchors because the
+declared physical range/front-facing model placed the station outside the
+candidate response regime; this is a property of the frozen model, not a
+post-hoc exclusion.
 
 **disposition:** `CONTINUING`.
 
@@ -79,7 +116,8 @@ The first frozen implementation attempt was started from executable SHA
 was interrupted before any artifact was written or any result was inspected.
 It redundantly reran all seven branches in both orders for every anchor. This
 was a control-cost defect, not a scientific result. The corrected protocol
-checks branch-order invariance on the primary pair branch per anchor; the
+checks branch-order invariance by running the S0 comparator before the primary
+pair branch on a second pass per anchor; the
 scientific branch set and outcome definitions are unchanged. The interrupted
 attempt is not D-041 evidence and will not be pooled.
 
