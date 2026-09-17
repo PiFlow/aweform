@@ -367,9 +367,8 @@ provenance, not as usable D-040 output:
 - **final holdout artifact SHA-256 / size:**
   `c31edd4c919f7cf6713feb59cd49b32dd69c38180bd26f65c0fab5d279d55f98` /
   `18,761,262` bytes
-- **final deterministic regeneration checks:** reused regeneration hash and size
-  matched exactly with `cmp PASS`; holdout regeneration hash and size are recorded
-  above, but the independent `cmp` remains pending manager verification.
+- **final deterministic regeneration checks:** reused and holdout regeneration
+  hashes and sizes matched exactly with `cmp PASS`.
 - **invalidated D-040 run:** executable SHA
   `db2facbb29a295fd00f02e5e91371bf001ed19da`; reused artifact SHA-256
   `88cf8d0872f966e4f867ab236e9b991c6508c9489d25e8d100c1dec3ca96d113`
@@ -428,8 +427,9 @@ cmp development/D-040-causal-problem-identification-test-validity-audit-holdout.
 
 The holdout artifact has SHA-256
 `c31edd4c919f7cf6713feb59cd49b32dd69c38180bd26f65c0fab5d279d55f98` and size
-`18,761,262` bytes. Its regeneration `cmp` remains pending manager verification;
-no holdout regeneration PASS is claimed here.
+`18,761,262` bytes. The independently regenerated holdout file matched the
+committed holdout file byte-for-byte with `cmp PASS`; no holdout regeneration
+verification remains pending.
 
 This is compact, reviewer-accessible committed support only. It makes no
 substantive causal interpretation and authorizes neither D-041 nor any EXP
