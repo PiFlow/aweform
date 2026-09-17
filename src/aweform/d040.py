@@ -338,6 +338,36 @@ def _find_prefix_trigger(
     return None
 
 
+def _prefix_trigger_at_boundary(
+    trace: Sequence[d025.D025TransitionTrace], family: str, length: int
+) -> _TriggerSelection | None:
+    """Check only the newly completed window at the current prefix boundary.
+
+    The runner calls this before each action.  Any earlier matching window
+    would already have been captured at its own boundary, so rescanning every
+    completed prefix is equivalent but needlessly quadratic.
+    """
+    if family not in D040_D034_FAMILIES:
+        raise ValueError(f"unknown D-040 trigger family: {family}")
+    if length not in D040_D034_LENGTHS:
+        raise ValueError(f"D-034 history length must be one of {D040_D034_LENGTHS}")
+    if len(trace) < length:
+        return None
+    rows = tuple(trace[-length:])
+    matches, starting_forward = _trigger_matches(family, rows)
+    if not matches:
+        return None
+    last_transition = rows[-1].transition_index
+    return _TriggerSelection(
+        family,
+        length,
+        last_transition + 1,
+        last_transition,
+        rows,
+        starting_forward,
+    )
+
+
 def _log_spaced_offsets() -> tuple[int, ...]:
     return D040_ANCHOR_OFFSETS
 
@@ -811,10 +841,41 @@ def _independent_arm_b(
     *,
     horizon: int = D040_HORIZON,
     capture_anchors: bool = True,
+    capture_anchor_ids: Sequence[str] | None = None,
 ) -> tuple[
     dict[str, object], tuple[d025.D025TransitionTrace, ...], dict[str, _Anchor | None]
 ]:
     """Run Arm-B sequencing without any later audit helper."""
+    all_anchor_ids = {
+        *(f"OFFSET_{offset}" for offset in D040_ANCHOR_OFFSETS),
+        *(
+            f"{family}_{length}"
+            for family in D040_D034_FAMILIES
+            for length in D040_D034_LENGTHS
+        ),
+        "OSCILLATION_ONSET",
+    }
+    if capture_anchor_ids is not None:
+        unknown_anchor_ids = set(capture_anchor_ids) - all_anchor_ids
+        if unknown_anchor_ids:
+            raise ValueError(
+                f"unknown D-040 anchor IDs: {sorted(unknown_anchor_ids)}"
+            )
+    requested_anchor_ids = (
+        all_anchor_ids if capture_anchor_ids is None else set(capture_anchor_ids)
+    )
+    requested_offsets = {
+        offset
+        for offset in D040_ANCHOR_OFFSETS
+        if f"OFFSET_{offset}" in requested_anchor_ids
+    }
+    requested_triggers = {
+        (family, length)
+        for family in D040_D034_FAMILIES
+        for length in D040_D034_LENGTHS
+        if f"{family}_{length}" in requested_anchor_ids
+    }
+    capture_oscillation = "OSCILLATION_ONSET" in requested_anchor_ids
     _validate_seed(seed, holdout=seed in D040_HOLDOUT_SEEDS)
     environment, observation_array, streams = _initial_environment(horizon, seed)
     controller = _IndependentController(streams.policy)
@@ -860,6 +921,7 @@ def _independent_arm_b(
         pre_action_oscillation_candidate: _Anchor | None = None
         if (
             capture_anchors
+            and capture_oscillation
             and not first_episode_complete
             and _is_eligible_current(controller, current)
         ):
@@ -881,7 +943,8 @@ def _independent_arm_b(
             )
         for offset in D040_ANCHOR_OFFSETS:
             if (
-                ordinal == offset
+                offset in requested_offsets
+                and ordinal == offset
                 and not first_episode_complete
                 and capture_anchors
                 and controller.mode is d026.D026Mode.SEEK
@@ -904,14 +967,15 @@ def _independent_arm_b(
             for length in D040_D034_LENGTHS:
                 key = f"{family}_{length}"
                 if (
-                    anchors[key] is None
+                    (family, length) in requested_triggers
+                    and anchors[key] is None
                     and trace
                     and capture_anchors
                     and not first_episode_complete
                     and controller.mode is d026.D026Mode.SEEK
                     and not current.charging_contact
                 ):
-                    selection = _find_prefix_trigger(trace, family, length)
+                    selection = _prefix_trigger_at_boundary(trace, family, length)
                     if selection is not None and selection.transition == len(trace) + 1:
                         anchors[key] = _capture_anchor(
                             seed,
@@ -1033,7 +1097,8 @@ def _independent_arm_b(
         ordinal += int(_is_false_contact_seek(row))
         current = next_observation
         if (
-            anchors["OSCILLATION_ONSET"] is None
+            capture_oscillation
+            and anchors["OSCILLATION_ONSET"] is None
             and alternation_run >= 16
             and oscillation_run_start is not None
         ):

@@ -87,6 +87,9 @@ def test_d040_trigger_reconstruction_is_visible_and_exact() -> None:
     selection = d040._find_d034_trigger(rows, "ALT", 4)
     assert selection is not None
     assert selection.transition == 5
+    boundary_rows = rows[:4]
+    boundary_selection = d040._prefix_trigger_at_boundary(boundary_rows, "ALT", 4)
+    assert boundary_selection == d040._find_prefix_trigger(boundary_rows, "ALT", 4)
     history = d040._trigger_history(selection)
     assert history["uses_only_executed_actions_and_six_channel_observations"] is True
     assert history["hidden_geometry_or_future_outcome_used"] is False
@@ -112,6 +115,7 @@ def test_d040_trigger_requires_accepted_before_and_after_eligibility() -> None:
     assert d040._find_d034_trigger(contact, "ALT", 4) is None
     repeated = tuple(_row(index, Action.TURN_LEFT) for index in range(1, 6))
     assert d040._find_d034_trigger(repeated, "ALT", 4) is None
+    assert d040._prefix_trigger_at_boundary(repeated, "ALT", 4) is None
     with pytest.raises(ValueError, match="unknown"):
         d040._find_d034_trigger(repeated, "ORACLE", 4)
 
