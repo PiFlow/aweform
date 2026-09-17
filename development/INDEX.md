@@ -6,15 +6,27 @@ Development records are not confirmatory evidence. They may motivate a later `EX
 
 See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workflow.md) for the lane rules.
 
-## Status vocabulary
+## Source-of-truth role
+
+This file is the canonical **committed D-record ledger**. Add one row when a meaningful D-record is committed. Historical EXP-000 through EXP-003 are not relabelled into this index.
+
+Do not use roadmap prose or README text as a replacement for this ledger. Work that is authorized in GitHub but does not yet have a committed D-record belongs in the current authorization issue/PR, not as a premature row here.
+
+At this update, committed records extend through **D-040**. **D-041 — Front-beacon sensory sufficiency audit** is authorized by [issue #140](https://github.com/PiFlow/aweform/issues/140) but has not yet become a committed D-record on `main`, so it is intentionally not added to the table below.
+
+## Disposition vocabulary
+
+The status column below records the **disposition written by the D-record**, not whether the numbered experiment is still waiting to run.
 
 - `ABANDONED` — mechanism/question not being continued in its current form.
-- `CONTINUING` — development thread remains active.
+- `CONTINUING` — the scientific thread proceeds; the numbered record itself may already be fully executed and closed as a historical record.
 - `PROMOTED→EXP-NNN` — development motivated a formal evidence protocol; the D-results remain developmental context only.
+
+A future cleanup may add a separate execution-state column if it becomes useful, but should not retroactively rewrite record dispositions merely to make the table look finished.
 
 ## Records
 
-| ID | Question | Status | Record |
+| ID | Question | Disposition | Record |
 |---|---|---|---|
 | D-001 | Current EXP-003 ecology degeneracy probe | CONTINUING | [`D-001-current-ecology-degeneracy.md`](D-001-current-ecology-degeneracy.md) |
 | D-002 | Minimal thermal ecology | CONTINUING | [`D-002-minimal-thermal-ecology.md`](D-002-minimal-thermal-ecology.md) |
@@ -50,8 +62,8 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-032 | D-031R1 de-trap function attribution audit | CONTINUING | [`D-032-detrap-function-attribution-audit.md`](D-032-detrap-function-attribution-audit.md) |
 | D-033 | Short-horizon sequence sufficiency audit | CONTINUING | [`D-033-short-horizon-sequence-sufficiency-audit.md`](D-033-short-horizon-sequence-sufficiency-audit.md) |
 | D-034 | Closure-valid history-triggered de-trap recruitment audit | CONTINUING | [`D-034-history-triggered-detrap-recruitment-audit.md`](D-034-history-triggered-detrap-recruitment-audit.md) |
-| D-035B | L/F/R interpolation attribution audit | CONTINUING | [`D-035B-lfr-interpolation-attribution-audit.md`](D-035B-lfr-interpolation-attribution-audit.md) |
 | D-035A | Evaluator-only turn-granularity attribution audit | CONTINUING | [`D-035A-turn-granularity-attribution-audit.md`](D-035A-turn-granularity-attribution-audit.md) |
+| D-035B | L/F/R interpolation attribution audit | CONTINUING | [`D-035B-lfr-interpolation-attribution-audit.md`](D-035B-lfr-interpolation-attribution-audit.md) |
 | D-035C | Evaluator-only reverse-translation sufficiency audit | CONTINUING | [`D-035C-reverse-translation-sufficiency-audit.md`](D-035C-reverse-translation-sufficiency-audit.md) |
 | D-036 | Shadow short-history scaffold-recruitment learnability audit | CONTINUING | [`D-036-shadow-short-history-recruitment-learnability.md`](D-036-shadow-short-history-recruitment-learnability.md) |
 | D-037 | Endogenous prediction-state recruitment-signal audit | CONTINUING | [`D-037-endogenous-prediction-state-recruitment-signal-audit.md`](D-037-endogenous-prediction-state-recruitment-signal-audit.md) |
@@ -59,6 +71,4 @@ See [`docs/development-evidence-workflow.md`](../docs/development-evidence-workf
 | D-039 | One-scalar shadow recurrent predictor readiness audit | CONTINUING | [`D-039-one-scalar-shadow-recurrent-predictor-readiness-audit.md`](D-039-one-scalar-shadow-recurrent-predictor-readiness-audit.md) |
 | D-040 | Causal problem-identification and test-validity audit | CONTINUING | [`D-040-causal-problem-identification-test-validity-audit.md`](D-040-causal-problem-identification-test-validity-audit.md) |
 
-`D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeds to the next ecology question rather than that D-001 remains unexecuted.
-
-Add one row when a meaningful D-record is committed. Historical EXP-000 through EXP-003 are not relabelled into this index.
+`D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeded to the next ecology question rather than that D-001 remains unexecuted. The same distinction applies to later records whose own work is complete but whose scientific thread continues.

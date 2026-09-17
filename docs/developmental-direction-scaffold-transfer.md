@@ -144,20 +144,26 @@ A milestone becomes especially strong when learned competence removes the need f
 
 This does not imply that lower engineered-scaffold count is always better. A simple fixed controller that genuinely solves the intended problem remains valid evidence. The purpose of the ledger is attribution, not aesthetic minimalism.
 
-## 10. Near-term directional implications after D-028
+## 10. What D-029→D-040 changed about the near-term direction
 
-D-028 diagnosed a residual-prediction problem but did not authorize a new causal state or sensor. The next learning-oriented work should continue the same attribution discipline.
+The earlier version of this document proposed, immediately after D-028, a provisional sequence from causal-history sufficiency toward a smallest retained state, first causal learned influence, scaffold displacement, non-stationarity, and eventually short-horizon prediction. Repository evidence has now executed and stress-tested much of the beginning of that sequence.
 
-A plausible non-authorizing sequence is:
+The durable lessons are more specific:
 
-1. **causal-history sufficiency:** evaluator-only test whether short observation/action history or other closure-valid causal history explains part of the D-028 residual without privileged world-frame heading;
-2. **smallest justified retained state:** only if history proves informative, test the minimum organism-owned recurrent/internal state needed to retain it;
-3. **first causal learned influence:** allow one learned prediction to modulate one existing decision under matched no-influence and shuffled controls;
-4. **scaffold displacement:** test whether learned competence can replace or outperform one engineered compensation such as stochastic docking de-trapping;
-5. **controlled non-stationarity:** introduce one world change that creates a genuine reason for plasticity and test history-conditioned adaptation;
-6. **short-horizon internal prediction:** only after one-step prediction has demonstrated behavioural usefulness, test whether composed near-future prediction adds capability.
+1. **First causal learned influence has been achieved, narrowly.** D-030 showed that the D-027 learned consequence predictor could causally influence one bounded SEEK steering decision under matched controls: the correctly associated learned arm retained full-cycle competence while the fixed-permutation control failed. This is genuine experience-dependent behavioural influence, but not general planning or a mature world model.
+2. **Scaffold displacement has not been achieved.** D-031R1 showed that learned SEEK steering could not replace the engineered stochastic de-trapping scaffold on the tested fresh seeds.
+3. **Do not interpret that failure as permission to add capacity.** D-032→D-039 separately tested de-trap function, short action sequences, closure-valid history, turn granularity, interpolation, reverse motion, short-history learnability, predictor-state signals, combined physical/action alternatives, and one-scalar recurrence. Several were locally informative; none established a stable organism-available replacement for the scaffold.
+4. **Useful scaffold intervention can be strongly causal without implying a simple learnable trigger.** D-034 identified history-defined states where enabling the existing scaffold had strong matched causal benefit, but this was evaluator-side sufficiency, not a learned stuck detector.
+5. **The causal/test machinery itself required auditing.** D-040 independently rebuilt critical replay/branch semantics, reproduced the accepted causal path and positive control, added identity/clone/order controls, and preserved invalidated provenance. The accepted interpretation keeps partial observability plausible and reports privileged geometry as strongly informative in the tested regime.
+6. **Missing information is now a live hypothesis.** Because short permitted history, endogenous predictor-state summaries, and one-scalar recurrence did not solve the recruitment problem while privileged geometry remains informative, a physically obtainable sensory affordance deserves testing before deeper memory or a larger predictor is added.
 
-This ordering is provisional. Repository evidence at the exact future HEAD outranks this roadmap suggestion.
+The currently authorized D-041 question therefore tests a minimal pair of front-facing charging-beacon receptors **outside the organism first**. It is a sensory-sufficiency audit, not permission to add those receptors. If the evaluator-only pair is insufficient, that negative result should be preserved rather than tuning increasingly rich sensors until docking succeeds.
+
+The resulting near-term principle is:
+
+> **Before transferring a behavioural scaffold into learning, first establish that the organism has access to enough physically legitimate information for the replacement problem to be learnable at all.**
+
+This does not supersede the longer-term scaffold-transfer direction. It strengthens its attribution discipline: learned competence can only displace engineered competence when the information, action affordances, experience distribution, and causal learning mechanism required for that role have each been earned.
 
 ## 11. Anti-shortcuts
 

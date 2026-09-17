@@ -14,7 +14,9 @@ Before intelligence, Aweform needs conditions that make continued existence non-
 
 An internal variable such as energy should matter because actions and environmental conditions change it, and because leaving viable bounds has consequences for the simulated organism.
 
-In V0.1 this energy state is deliberately an engineered accounting variable. It is not biological metabolism and should not be described as such. Its scientific value comes from being causally coupled to sensing, action, resource uptake, and episode viability rather than serving as a decorative score.
+In V0.1 this energy state was deliberately an engineered accounting variable. It was not biological metabolism and should not be described as such. Its scientific value came from being causally coupled to sensing, action, resource uptake, and episode viability rather than serving as a decorative score.
+
+Later V0.4 development grounds energy and thermal state more explicitly in bounded simulated physical bookkeeping. That improves the physical interpretation of the experiment but still does not make Aweform's simulated energy system biological metabolism.
 
 The first developmental question is therefore not "Can it solve a task?" but "Does informative access to its internal condition alter behaviour in ways that improve viability?"
 
@@ -55,7 +57,7 @@ No later mechanism is authorized merely because it appears in this distinction.
 
 ## Play
 
-Play is a later developmental hypothesis, not part of V0.1.
+Play is a later developmental hypothesis, not part of the initial homeostasis stages.
 
 A useful functional interpretation is that when immediate energetic and safety needs are adequately satisfied, the organism can spend surplus capacity on interactions that have no immediate survival payoff.
 
@@ -108,3 +110,7 @@ Individuality through development is a desired research property, not something 
 Future communication may use modalities unavailable to humans directly, including structured radio or digital signalling. Human-language translation should remain conceptually separate from the organism's native internal representations.
 
 The long-term question is whether useful conventions can develop between artificial organisms before or independently of human natural language.
+
+## Current-state discipline
+
+This file records durable developmental principles, not the active D-number. Current implementation status belongs in [`development/INDEX.md`](../development/INDEX.md), the [`research roadmap`](research-roadmap.md), and the exact authorization issue/PR. Do not rewrite these principles every time the D-series advances.

@@ -1,9 +1,14 @@
-# ADR 0009 — BOHS Registry
+# BOHS Registry — ADR 0009 supporting manifest
 
-**Status:** In effect for controllers carrying bounded one-step
+**Status:** Supporting registry in effect for controllers carrying bounded one-step
 observation-history state (BOHS), as required by
 [`0009-v0.2-bounded-observation-history-state.md`](0009-v0.2-bounded-observation-history-state.md)
 Section D.
+
+This file is a supporting manifest, **not a second ADR 0009**. The actual ADR 0009 is
+[`0009-v0.2-bounded-observation-history-state.md`](0009-v0.2-bounded-observation-history-state.md).
+The historical path is retained because the enforcement tests machine-check this exact
+manifest path and existing links may depend on it.
 
 **Covered controllers:** `StationB50Controller` and its subclass
 `StationB50TrendController` in `src/aweform/exp003.py`. `StationB50FullController`
