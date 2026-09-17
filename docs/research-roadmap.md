@@ -2,9 +2,11 @@
 
 ## A. Purpose
 
-Aweform is being developed from minimal self-maintenance toward adaptive, machine-native cognition and eventual physical embodiment. The project’s long-term orientation and humility boundaries are defined in the [`North Star`](north-star.md); this document adds chronological context and decision memory without replacing the North Star, developmental principles, ADRs, development records, or frozen experiment protocols.
+Aweform is being developed from minimal self-maintenance toward adaptive, machine-native cognition and eventual physical embodiment. The project’s long-term orientation and humility boundaries are defined in the [`North Star`](north-star.md); this document adds chronological context and decision memory without replacing the North Star, developmental principles, ADRs, committed development records, or frozen experiment protocols.
 
-Aweform now operates with two research lanes described in [`development-evidence-workflow.md`](development-evidence-workflow.md): fast descriptive `D-NNN` development and formal `EXP-NNN` evidence.
+Aweform uses two research lanes described in [`development-evidence-workflow.md`](development-evidence-workflow.md): fast descriptive `D-NNN` development and formal `EXP-NNN` evidence.
+
+This roadmap summarizes developmental **arcs**. The canonical per-record D-series ledger is [`development/INDEX.md`](../development/INDEX.md). Current authorized work that has not yet become a committed D-record is tracked by its GitHub issue/PR rather than predicted here.
 
 ## B. Completed / evidence ledger
 
@@ -22,11 +24,11 @@ Formal calibration completed and selected B50 under the recorded rule. Confirmat
 
 ## C. Historical development foundation
 
-### EXP-003 — Localized charging station + IR-like beacon
+### EXP-003 — Localized charging station + bounded observation history
 
-EXP-003 is development/instrumentation only. It separates sensing from energy acquisition, requires physical station occupancy to recharge, and established the station/beacon interface used by the current development substrate. Its historical records remain canonical under the EXP-003 identifier; they are not retrospectively renamed into the new D-series. The localized-charging interface remains governed by [`ADR 0008`](adr/0008-exp-003-localized-charging-interface.md).
+EXP-003 is historical development/instrumentation rather than confirmatory evidence. It separates sensing from energy acquisition, requires physical station occupancy to recharge, and established the station/beacon interface used by later development. Its historical records retain the EXP-003 identifier; they are not retrospectively renamed into the D-series.
 
-ADR 0009 subsequently opened V0.2 bounded observation-history state and remains the valid historical authorization for the V0.2 work performed under it.
+The localized-charging interface remains governed by [`ADR 0008`](adr/0008-exp-003-localized-charging-interface.md). [`ADR 0009`](adr/0009-v0.2-bounded-observation-history-state.md) subsequently opened V0.2 bounded one-step observation-history state and remains the valid authorization for the V0.2 work performed under it.
 
 ## D. Developmental process reset
 
@@ -39,115 +41,110 @@ The project now separates:
 
 Development results may motivate evidence experiments but cannot count as confirmatory evidence for their claims.
 
-## E. Active provisional D-sequence
+## E. Executed D-series development arcs
 
-The sequence below is intentionally provisional. Development evidence may reorder, split, merge, or abandon items.
+The earlier predicted D-001→D-008 sequence has been superseded by actual development. The summary below is retrospective and deliberately coarser than the canonical ledger.
 
-### D-001 — Current ecology degeneracy probe
+### D-001→D-004 — remove ecological degeneracy and establish continuous lifetime
 
-Empirically verify the already-identified current EXP-003 ecological degeneracy and cheap constant policies before changing the world.
+This arc began by testing the inherited localized-charging ecology rather than assuming it created a meaningful regulatory problem. D-001 exposed the post-contact ecological degeneracy. D-002 introduced the minimal thermal ecology. D-003 established a fixed non-learning thermostatic shuttle as a legitimate simple control. D-004 consolidated continuous-lifetime execution so harness segmentation would remain invisible to the organism.
 
-The current source arithmetic predicts that a docked organism can `WAIT` indefinitely while gaining energy until clipping at maximum. D-001 should establish the actual behavioural consequence using development seeds and lightweight descriptive records.
+This established a durable rule: a competent simple controller solving the intended conflict is a result, not a reason to redesign the world merely to force learning.
 
-No thermal mechanism is required for D-001.
+### D-005→D-010 — first within-lifetime adaptation and predictive-support diagnostics
 
-### D-002 — Minimal thermal ecology
+D-005 and D-006 tested small experience-dependent thermal consequence mechanisms. D-007 used matched common probes to ask whether different lifetime histories could leave load-bearing retained state. D-008 introduced a tiny action-conditioned one-step consequence model. D-009 deliberately acquired overlapping action experience before asking unsupported counterfactual questions. D-010 then audited visited-support consequence aliasing.
 
-Introduce temperature as a second interoceptive viability dimension with the smallest coherent dynamics needed to study energy/heat coupling.
+This arc established the project's current discipline that prediction quality cannot be interpreted without state/action support, and that poor prediction may reflect partial observability, omitted state, data coverage, or causal aliasing rather than insufficient model size.
 
-Candidate ingredients include charging heat, actuator heat, passive cooling, thermal interoception, and thermal consequences such as reduced charge efficiency and/or viability threat.
+### D-011→D-018 — autonomous thermal-beacon reacquisition and consequence diagnostics
 
-**Distance-dependent cooling is not pre-frozen.** Start with the smallest coherent thermal world and let development reveal whether station-local heat or distance-dependent cooling is needed.
+D-011 established a fixed non-learning thermal-beacon reacquisition controller; D-012 broadened its seed robustness. D-013 attached a full-observation shadow viability-consequence learner with zero behavioral influence. D-014 corrected the full-charge-or-thermal departure scaffold. D-015 audited consequence support under that corrected scaffold. D-016 tested current-beacon contact observability, D-017 decomposed rear-docking pose information in shadow, and D-018 compared action alternatives through evaluator-only causal branches.
 
-Before execution, the D-record should state what regulatory conflict the ecology is intended to create so a degenerate shortcut can be distinguished from a legitimate simple solution without post-hoc reinterpretation.
+The result was not a mature world model. It was a progressively better map of what the current closure could predict and where docking/contact consequences remained ambiguous.
 
-Thermal implementation must explicitly declare what physical quantity drives heat. In the existing energy system, charger input can be offered while realized stored-energy increase is zero at the energy ceiling. Tying heat only to accepted storage increase could silently re-admit indefinite docking. Charge-efficiency throttling alone may also fail to remove docking if effective charging remains above basal cost.
+### D-019→D-026 — V0.4 physicalization, finite-body docking, and de-trapping
 
-### D-003 — Fixed-policy / fixed-parameter sufficiency
+D-019 audited the smallest physically grounded V0.4 embodiment/thermal budget before causal adoption. D-020 introduced physical bookkeeping and a fixed-action probe. D-021 established an autonomous energy-regulation baseline; D-022 measured incidental charging contribution; D-023 tested repeated-cycle endurance.
 
-Characterize whether cheap non-learning policies already regulate the thermal ecology.
+D-024 then introduced the causal finite body with a dual-contact docking boundary. D-025 added bounded stochastic SEEK de-trapping, and D-026 stabilized it as one-third false-contact SEEK delegation. These stages produced the physical/controller scaffold on which the subsequent learning questions depend.
 
-Useful controls include obvious degeneracies, fixed excursion patterns, random walk, and a non-learning `THERMOSTATIC_SHUTTLE`-type controller using organism-visible temperature/contact plus minimal phase state.
+Accepted durable physical boundaries are recorded in [`ADR 0012`](adr/0012-v0.4-minimal-physical-energy-thermal-boundary.md), [`ADR 0014`](adr/0014-v0.4-thermal-operating-and-failure-thresholds.md), and [`ADR 0015`](adr/0015-v0.4-finite-body-dual-contact-docking-boundary.md).
 
-A competent fixed feedback controller solving a coherent world is **evidence**, not a reason to make the world harder. Do not redesign the ecology merely to force learning to become necessary.
+### D-027→D-031R1 — learned sensorimotor prediction becomes causal, then fails scaffold displacement
 
-### D-004 — Continuous-lifetime harness / infrastructure consolidation
+D-027 introduced a 168-weight action-conditioned linear predictor over the six organism-visible channels. It learned only from physically executed actions and remained behaviorally shadow-only at first.
 
-Consolidate duplicated development infrastructure only where doing so materially increases iteration speed or is required for continuous lifetime execution.
+D-028 audited residual attribution. D-029 asked read-only alternative-action questions and measured support/readiness. D-030 then allowed one narrow learned prediction — predicted next forward-beacon consequence — to influence one narrow false-contact SEEK steering decision under matched controls. This was the first bounded causal use of learned consequence prediction.
 
-Do not pre-build speculative world-model, serialization, checkpoint, or learner frameworks. Harness segmentation remains invisible to the organism under ADR 0010.
+D-031R1 tested whether that learned SEEK steering could displace the engineered stochastic de-trapping scaffold. It could not: the learned-with-de-trapping arm retained full-cycle competence, while the no-de-trapping arms failed SEEK across the fresh support. This negative result became the central diagnostic problem for the next arc.
 
-### D-005 — Cheapest adaptive scalar learner
+### D-032→D-040 — diagnose why learned steering cannot replace the scaffold
 
-Introduce the smallest genuinely experience-dependent scalar adaptation worth testing. Preserve inspectability and lifetime continuity.
+Rather than immediately adding a larger learner, the project decomposed the failure.
 
-The goal is to determine whether plasticity changes future behaviour through organism-visible consequences, not to maximize benchmark performance.
+D-032 attributed what the de-trap scaffold actually does. D-033 tested short forced action sequences. D-034 demonstrated that closure-valid history-defined anchors could identify states where enabling the existing de-trap scaffold had strong causal benefit, without establishing a learned trigger. D-035A/B/C separately audited turn granularity, L/F/R interpolation, and reverse-translation sufficiency. D-036 tested short-history recruitment learnability; D-037 tested endogenous D-027/D-030 predictor-state signals; D-038 combined several physical/action-space evaluator interventions; D-039 tested one-scalar shadow recurrence.
 
-### D-006 — Fixed life-inspired circuits, zero plasticity
+The important pattern was repeated: several proposed explanations were informative locally but did not establish a stable organism-available trigger or a sufficient replacement for the scaffold. D-039 improved one-step shadow prediction in a bounded sense but did not produce recruitment-coherent held-out benefit.
 
-Introduce the structural computation needed for a fair ablation before the first richer plastic candidate. Candidate circuits may include delay-and-compare temporal beacon processing plus energy and thermal feedback, but exact structure remains developmental rather than frozen here.
+D-040 therefore stopped proposing mechanisms and audited the causal/test machinery itself. It independently reconstructed the recent Arm-B path and D-034 effect, added exact identity/clone/order controls, preserved invalidated provenance, and mapped scaffold benefit under reused and fresh development support. The accepted review concluded that the causal machinery was valid enough for the audit, that **partial observability remains plausible**, and that **privileged geometry is strongly informative** in the tested regime. Those findings are diagnostic only: D-040 does not authorize privileged organism inputs, a new memory mechanism, a stuck detector, recurrence, or any successor architecture.
 
-### D-007 — First plastic candidates
+## F. Current frontier — D-041 sensory sufficiency audit
 
-Compare small plastic candidates only after D-006 supplies the zero-plasticity structural control.
+The current authorized development question is **D-041 — Front-beacon sensory sufficiency audit**, authorized by [GitHub issue #140](https://github.com/PiFlow/aweform/issues/140).
 
-Current candidates include:
+D-041 is deliberately evaluator-only. It asks whether a minimal, physically realizable pair of front-facing charging-beacon receptors contains sufficient information to resolve relevant D-040 charger-reacquisition/front-docking ambiguity, and whether a transparent readout using only those signals can improve matched causal branches.
 
-- minimal learned/adaptive gains;
-- a tiny action-conditioned predictor;
-- a tiny reservoir/readout only as a capacity diagnostic if useful.
+A positive result would mean only that the candidate information deserves consideration in a later sensory-boundary proposal. A null result would be equally informative. D-041 does **not** authorize exposing the receptor values to Aweform, camera vision, a new sensor boundary, a new controller mechanism, or D-042.
 
-The first prediction target and horizon remain unresolved. A clean starting diagnostic may be one-step action-conditioned prediction of `Δenergy` and `Δtemperature` from controller-visible state plus the organism’s own action. If one-step prediction is trivial, that is information rather than a reason to manufacture a harder horizon.
+A separate future note, [`low-level-autonomy-and-sensor-layering-future-question.md`](low-level-autonomy-and-sensor-layering-future-question.md), records why simple docking competence may remain useful even if richer perception is introduced much later; it is non-authorizing.
 
-Poor prediction must not automatically be interpreted as evidence that a larger learner is required. It may instead reflect omitted organism-visible state, partial observability, stochasticity, retained-state insufficiency, or true model-capacity failure.
+## G. Candidate EXP-004 evidence milestone
 
-Before interpreting action-conditioned counterfactual queries, record suitable evaluator-side state/mode-action visitation diagnostics. On-policy learning can otherwise lock in false beliefs about rarely sampled actions.
+`EXP-004` remains a conceptual placeholder for a future major evidence milestone, not an implementation task and not a reserved seed range.
 
-### D-008 — Different histories → matched common probe
+The older provisional proposal described EXP-004 as an ecological-robustness/station-relocation experiment. That remains project history, not the active protocol.
 
-Give identically initialized organisms different lifetime histories, then compare them under a common matched probe to ask whether retained experience is behaviourally load-bearing.
+A stronger later evidence direction may ask whether lifetime experience causally alters later homeostatic behavior under a frozen matched probe. That claim is **not frozen**. Current D-development must first establish a mechanism and a scientifically useful question worth the cost of formal evidence.
 
-A future clean probe should equalize non-plastic state, match the probe world/RNG, freeze learning where appropriate, and inject the **complete declared plastic state** rather than only headline weights.
-
-## F. Candidate EXP-004 evidence milestone
-
-`EXP-004` is reserved conceptually as the next major evidence milestone, not as the next implementation step. No EXP-004 seed range is reserved by this roadmap.
-
-The previous provisional roadmap described EXP-004 as an ecological-robustness/station-relocation experiment. That proposal remains part of project history but is no longer the active next protocol after the developmental-process reset.
-
-The current candidate direction is stronger and later: **does lifetime experience causally alter later homeostatic behaviour?** A particularly sharp candidate is history-conditioned behavioural divergence in a matched common probe world between identically initialized organisms.
-
-This claim is not frozen. D-development must establish the mechanism, appropriate matched controls, complete plastic-state semantics, and a useful probe before an evidence protocol is opened.
-
-## G. Durable scientific rules for development
+## H. Durable scientific rules for development
 
 ### Do not design worlds to require the capability you want to celebrate
 
-A simple controller that genuinely regulates the intended competing constraints is a legitimate result.
-
-Distinguish it from a **degenerate solution** that maintains viability by bypassing the intended regulatory problem through an accounting loophole, indefinite docking/stillness, meaningless boundary oscillation, or similar shortcut.
+A simple controller that genuinely regulates the intended competing constraints is a legitimate result. Distinguish it from a degenerate solution that bypasses the intended regulatory problem through an accounting loophole, indefinite docking/stillness, meaningless boundary oscillation, or similar shortcut.
 
 ### Learning is not the default explanation for prediction failure
 
-When a predictive mechanism fails, development records should distinguish partial observability, omitted state, stochasticity, causal mis-specification, data coverage, and learner capacity before increasing model size.
+When prediction or learned control fails, distinguish partial observability, omitted permitted state, stochasticity, causal mis-specification, support/data coverage, collapsed experience distribution, intervention timing, and learner capacity before increasing model size.
+
+### Evaluator sufficiency is not organism permission
+
+Privileged geometry, counterfactual branches, shadow sensors, and post-hoc labels may diagnose what information could solve a problem. They do not become organism inputs without a separately authorized information/sensory boundary change.
 
 ### Continuous lifetime is causal, not merely a logging convention
 
-Within a developmental stage, short harness horizons do not reset the organism. A deliberate stage reset is an explicit lifecycle/new-lifetime event under ADR 0010.
+Within a developmental stage, harness horizons do not reset the organism. A deliberate stage reset is an explicit lifecycle/new-lifetime event under ADR 0010.
 
-## H. Later directions
+### Validate high-leverage causal machinery independently when necessary
 
-Later developmental directions include nonstationarity, partial observability that earns memory, stronger prediction and planning, safe-surplus exploration, quiescent consolidation when its function is justified, sandboxed computer-native embodiment, and eventual physical embodiment.
+If a chain of developmental analyses shares high-level helpers, a later audit may need an independently implemented replay/branch path to rule out correlated common-mode error. D-040 is the current example of this discipline.
+
+## I. Later directions
+
+Later developmental directions include nonstationarity, partial observability that genuinely earns memory, stronger prediction and bounded planning, safe-surplus exploration, quiescent consolidation when its function is justified, sandboxed computer-native embodiment, and eventual physical embodiment.
 
 The non-authorizing [`World-Model Research Direction`](world-model-developmental-direction.md) preserves current JEPA/world-model research, a strict Aweform world-model definition, qualification levels, and developmental gates for future reference. It does not pre-authorize a world-model architecture, planner, learned representation, D-stage, ADR, or dependency.
 
+The non-authorizing [`Embodied Dynamics Before Explicit Memory`](embodied-dynamics-future-question.md) note preserves the question of whether useful temporal information can already exist in ongoing body/environment dynamics before explicit memory machinery is added.
+
 Darwinian evolution, heredity, and cross-stage inherited learned state remain separate later research questions rather than shortcuts for finding the first learner.
 
-## I. Decision-log convention
+## J. Decision-log convention
 
 - Lightweight development records live in `development/`.
+- The committed D-series ledger lives in [`development/INDEX.md`](../development/INDEX.md).
 - Experiment-specific frozen evidence decisions live in `experiments/`.
 - Durable architecture and information-boundary decisions live in `docs/adr/`.
-- This roadmap gives chronological context and provisional future direction.
-- Result artifacts remain canonical evidence.
-- Roadmap prose must never silently overwrite historical experiment records.
+- Dated research notes preserve non-authorizing research questions and should not be silently rewritten as if they were current protocols.
+- This roadmap summarizes chronological arcs and the current scientific frontier; it does not duplicate every D-record.
+- Result artifacts and exact committed records remain authoritative over roadmap prose.
