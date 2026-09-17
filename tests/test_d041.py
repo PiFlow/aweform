@@ -55,13 +55,43 @@ def test_d041_protocol_freezes_authority_seeds_and_no_history() -> None:
     assert d041.D041_REUSED_SEEDS == tuple(range(18468, 18488))
     assert d041.D041_HOLDOUT_SEEDS == tuple(range(18488, 18508))
     assert d041.D041_BRANCH_HORIZON == 4096
-    assert d041.D041_ANCHOR_IDS[-2:] == ("ALT_16", "NO_FORWARD_PROGRESS_16")
+    assert d041.D041_ANCHOR_IDS == (
+        "OFFSET_0",
+        "OFFSET_15",
+        "OFFSET_63",
+        "OFFSET_255",
+        "OFFSET_1023",
+        "OFFSET_4095",
+        "ALT_16",
+        "NO_FORWARD_PROGRESS_16",
+    )
     with pytest.raises(ValueError, match="exactly"):
         d041._validate_seed_block((18468,), d041.D041_REUSED_SEEDS, "reused")
     with pytest.raises(ValueError, match="reserved"):
         d041._validate_seed(50001, holdout=False)
     with pytest.raises(ValueError, match="exact clean"):
         d041.run_d041_audit(executed_commit_sha=None)
+
+
+def test_d041_capture_filter_preserves_anchor_contract() -> None:
+    _, _, anchors = d041.d040._independent_arm_b(
+        18468,
+        horizon=1,
+        capture_anchor_ids=d041.D041_ANCHOR_IDS,
+    )
+    assert tuple(anchors) == (
+        *(f"OFFSET_{offset}" for offset in d041.d040.D040_ANCHOR_OFFSETS),
+        *(
+            f"{family}_{length}"
+            for family in d041.d040.D040_D034_FAMILIES
+            for length in d041.d040.D040_D034_LENGTHS
+        ),
+        "OSCILLATION_ONSET",
+    )
+    with pytest.raises(ValueError, match="unknown D-040 anchor IDs"):
+        d041.d040._independent_arm_b(
+            18468, horizon=1, capture_anchor_ids=("NOT_ANCHOR",)
+        )
 
 
 def test_d041_empty_artifact_serialization_is_byte_deterministic() -> None:

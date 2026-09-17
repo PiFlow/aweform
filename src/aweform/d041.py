@@ -558,7 +558,10 @@ def _canonical_identity(seed: int) -> dict[str, object]:
 def _seed_result(seed: int) -> dict[str, object]:
     _validate_seed(seed, holdout=seed in D041_HOLDOUT_SEEDS)
     _, _, anchors = d040._independent_arm_b(
-        seed, horizon=D041_ANCHOR_REPLAY_HORIZON, capture_anchors=True
+        seed,
+        horizon=D041_ANCHOR_REPLAY_HORIZON,
+        capture_anchors=True,
+        capture_anchor_ids=D041_ANCHOR_IDS,
     )
     records = []
     for anchor_id in D041_ANCHOR_IDS:
