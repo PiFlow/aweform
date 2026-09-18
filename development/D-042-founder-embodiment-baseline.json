@@ -1,0 +1,281 @@
+{
+  "aggregate": {
+    "lifetime_count": 3,
+    "outcome_counts": {
+      "FAILED_SEEK": 0,
+      "HORIZON_CENSORED": 0,
+      "INITIAL_LIFETIME_ONLY": 0,
+      "SEEK_REACQUIRED": 3
+    },
+    "termination_reason_counts": {
+      "emergency_hard_thermal_shutdown": 0,
+      "energy_depletion": 0,
+      "horizon_truncation": 3,
+      "protective_thermal_shutdown": 0
+    },
+    "total_contact_entries": 3,
+    "total_full_recharge_events": 2,
+    "total_physical_reacquisitions": 3,
+    "total_transitions": 210000
+  },
+  "authoritative_base_sha": "ad0fa81083d37cd3976e77777ffe22a04b965d59",
+  "canonical_organism": {
+    "actions": [
+      "WAIT",
+      "TURN_LEFT",
+      "TURN_RIGHT",
+      "MOVE_FORWARD"
+    ],
+    "controller": "unchanged d026.D026Controller / D-030 semantics",
+    "de_trap": "unchanged D-026 delegation and explorer streams",
+    "info": {},
+    "learner": "unchanged d027.D027ActionConsequencePredictor",
+    "reward": 0.0,
+    "steering": "unchanged D-030 LEARNED_FORWARD action arbitration",
+    "visible_channels": [
+      "energy",
+      "beacon.left",
+      "beacon.forward",
+      "beacon.right",
+      "charging_contact",
+      "thermal"
+    ]
+  },
+  "development_seeds": [
+    19042,
+    19043,
+    19044
+  ],
+  "embodiment": {
+    "body_front_contacts_body_frame": [
+      [
+        0.05,
+        0.025
+      ],
+      [
+        0.05,
+        -0.025
+      ]
+    ],
+    "body_length": 0.1,
+    "body_width": 0.08,
+    "contact_tolerance_inclusive": 0.01,
+    "dock_contacts_station_offsets": [
+      [
+        0.0,
+        0.025
+      ],
+      [
+        0.0,
+        -0.025
+      ]
+    ],
+    "dock_orientation": 0.0,
+    "initial_body_center": [
+      0.45,
+      0.5
+    ],
+    "initial_heading": 0.0,
+    "initial_station_center": [
+      0.5,
+      0.5
+    ],
+    "turn_action_seconds": 0.1,
+    "turn_actuator_electrical_power_w": 0.65,
+    "turn_angle_degrees": 5.0,
+    "turn_angle_expression": "pi / 36",
+    "turn_angle_radians": 0.08726646259971647
+  },
+  "experiment": "D-042",
+  "historical_protection": {
+    "d041_receptors_exposed": false,
+    "historical_d020_default_turn_preserved": true,
+    "historical_d024_through_d041_modules_untouched": true
+  },
+  "horizon": 70000,
+  "implementation_probe_sha": "26377e04c871085831726ae73a4210adc9a44ca3",
+  "interpretation": "Descriptive Development characterization only; embodiment choice is separated from observed canonical-organism behaviour.",
+  "lifetime": "one uninterrupted causal lifetime per seed",
+  "organism_boundary": {
+    "coordinates_heading_and_contact_errors_visible": false,
+    "evaluator_only_geometry": true
+  },
+  "results": [
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 26799,
+        "TURN_LEFT": 5888,
+        "TURN_RIGHT": 4307,
+        "WAIT": 33006
+      },
+      "battery_normalized": {
+        "final": 0.9256278276443481,
+        "maximum": 1.0,
+        "minimum": 0.342883825302124,
+        "start": 1.0
+      },
+      "contact_entries": 1,
+      "contact_exits": 2,
+      "full_recharge_events": 1,
+      "initial_dual_contact": true,
+      "low_energy_seek_entries": 1,
+      "max_body_temperature_c": 24.348990628837683,
+      "mode_entry_counts": {
+        "AWAY": 2,
+        "CHARGE": 2,
+        "DEPART": 2,
+        "SEEK": 1
+      },
+      "mode_occupancy": {
+        "AWAY": 27964,
+        "CHARGE": 33007,
+        "DEPART": 2,
+        "SEEK": 9027
+      },
+      "outcome": "SEEK_REACQUIRED",
+      "physical_reacquisitions": 1,
+      "physical_seconds": 7000.0,
+      "post_recharge_redepartures": 1,
+      "seed": 19042,
+      "temperature_normalized": {
+        "final": 0.29688283801078796,
+        "maximum": 0.30436238646507263,
+        "minimum": 0.2874999940395355,
+        "start": 0.2874999940395355
+      },
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "transitions": 70000,
+      "truncated": true,
+      "turns": {
+        "absolute_count": 10195,
+        "commanded_absolute_angle_radians": 889.6815862041094,
+        "commanded_signed_angle_radians": 137.96827737015175,
+        "count": 10195,
+        "electrical_energy_j": 662.67500000011,
+        "signed_count": 1581,
+        "timestep_seconds": 1019.5
+      }
+    },
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 31893,
+        "TURN_LEFT": 4133,
+        "TURN_RIGHT": 4054,
+        "WAIT": 29920
+      },
+      "battery_normalized": {
+        "final": 0.7473451495170593,
+        "maximum": 1.0,
+        "minimum": 0.441360741853714,
+        "start": 1.0
+      },
+      "contact_entries": 1,
+      "contact_exits": 2,
+      "full_recharge_events": 1,
+      "initial_dual_contact": true,
+      "low_energy_seek_entries": 1,
+      "max_body_temperature_c": 24.308857552386083,
+      "mode_entry_counts": {
+        "AWAY": 2,
+        "CHARGE": 2,
+        "DEPART": 2,
+        "SEEK": 1
+      },
+      "mode_occupancy": {
+        "AWAY": 36638,
+        "CHARGE": 29921,
+        "DEPART": 2,
+        "SEEK": 3439
+      },
+      "outcome": "SEEK_REACQUIRED",
+      "physical_reacquisitions": 1,
+      "physical_seconds": 7000.0,
+      "post_recharge_redepartures": 1,
+      "seed": 19043,
+      "temperature_normalized": {
+        "final": 0.29555457830429077,
+        "maximum": 0.30386072397232056,
+        "minimum": 0.2874999940395355,
+        "start": 0.2874999940395355
+      },
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "transitions": 70000,
+      "truncated": true,
+      "turns": {
+        "absolute_count": 8187,
+        "commanded_absolute_angle_radians": 714.4505293038787,
+        "commanded_signed_angle_radians": 6.894050545377602,
+        "count": 8187,
+        "electrical_energy_j": 532.1550000000004,
+        "signed_count": 79,
+        "timestep_seconds": 818.7
+      }
+    },
+    {
+      "action_counts": {
+        "MOVE_FORWARD": 28591,
+        "TURN_LEFT": 8575,
+        "TURN_RIGHT": 10447,
+        "WAIT": 22387
+      },
+      "battery_normalized": {
+        "final": 0.8116084933280945,
+        "maximum": 1.0,
+        "minimum": 0.09729541838169098,
+        "start": 1.0
+      },
+      "contact_entries": 1,
+      "contact_exits": 1,
+      "full_recharge_events": 0,
+      "initial_dual_contact": true,
+      "low_energy_seek_entries": 1,
+      "max_body_temperature_c": 24.38550193192587,
+      "mode_entry_counts": {
+        "AWAY": 1,
+        "CHARGE": 2,
+        "DEPART": 1,
+        "SEEK": 1
+      },
+      "mode_occupancy": {
+        "AWAY": 24360,
+        "CHARGE": 22387,
+        "DEPART": 1,
+        "SEEK": 23252
+      },
+      "outcome": "SEEK_REACQUIRED",
+      "physical_reacquisitions": 1,
+      "physical_seconds": 7000.0,
+      "post_recharge_redepartures": 0,
+      "seed": 19044,
+      "temperature_normalized": {
+        "final": 0.3048187792301178,
+        "maximum": 0.3048187792301178,
+        "minimum": 0.2874999940395355,
+        "start": 0.2874999940395355
+      },
+      "terminated": false,
+      "termination_reason": "horizon_truncation",
+      "transitions": 70000,
+      "truncated": true,
+      "turns": {
+        "absolute_count": 19022,
+        "commanded_absolute_angle_radians": 1659.9826515718069,
+        "commanded_signed_angle_radians": -163.36281798666923,
+        "count": 19022,
+        "electrical_energy_j": 1236.4300000005917,
+        "signed_count": -1872,
+        "timestep_seconds": 1902.2
+      }
+    }
+  ],
+  "schema_version": 1,
+  "seed_policy": {
+    "canonical_validator": "validate_exp003_development_seeds",
+    "formal_reservation_guard_preserved": true,
+    "formal_reserved_ranges_excluded": true
+  },
+  "timestep_seconds": 0.1,
+  "title": "Founder-selected fine-turn and front dual-contact baseline"
+}
