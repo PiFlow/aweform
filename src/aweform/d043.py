@@ -311,8 +311,20 @@ def _run_d043_seed(seed: int, *, horizon: int = D043_HORIZON) -> dict[str, objec
                 reacquisition_transitions, reacquisition_transitions[1:], strict=False
             )
         ],
+        "reacquisition_physical_spacing": [
+            (right - left) * D043_DT_SECONDS
+            for left, right in zip(
+                reacquisition_transitions, reacquisition_transitions[1:], strict=False
+            )
+        ],
         "recharge_transition_spacing": [
             right - left
+            for left, right in zip(
+                recharge_transitions, recharge_transitions[1:], strict=False
+            )
+        ],
+        "recharge_physical_spacing": [
+            (right - left) * D043_DT_SECONDS
             for left, right in zip(
                 recharge_transitions, recharge_transitions[1:], strict=False
             )
@@ -366,6 +378,7 @@ def _aggregate(results: Sequence[dict[str, object]]) -> dict[str, object]:
         for episode in seek_episodes
         if episode["outcome"] == "reacquired"
     ]
+    latency_seconds = [latency * D043_DT_SECONDS for latency in latencies]
     termination_failures = sum(
         int(
             result["termination_reason"]
@@ -433,6 +446,15 @@ def _aggregate(results: Sequence[dict[str, object]]) -> dict[str, object]:
             "mean": statistics.fmean(latencies) if latencies else None,
             "median": statistics.median(latencies) if latencies else None,
             "p90_nearest_rank": _nearest_rank(latencies, 0.90),
+            "percentile_method": "nearest-rank",
+        },
+        "reacquisition_latency_seconds": {
+            "count": len(latency_seconds),
+            "minimum": min(latency_seconds, default=None),
+            "maximum": max(latency_seconds, default=None),
+            "mean": statistics.fmean(latency_seconds) if latency_seconds else None,
+            "median": statistics.median(latency_seconds) if latency_seconds else None,
+            "p90_nearest_rank": _nearest_rank(latency_seconds, 0.90),
             "percentile_method": "nearest-rank",
         },
         "outcome_counts": {
