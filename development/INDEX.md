@@ -71,5 +71,6 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-039 | One-scalar shadow recurrent predictor readiness audit | CONTINUING | [`D-039-one-scalar-shadow-recurrent-predictor-readiness-audit.md`](D-039-one-scalar-shadow-recurrent-predictor-readiness-audit.md) |
 | D-040 | Causal problem-identification and test-validity audit | CONTINUING | [`D-040-causal-problem-identification-test-validity-audit.md`](D-040-causal-problem-identification-test-validity-audit.md) |
 | D-042 | Founder-selected fine-turn and front-contact baseline | CONTINUING | [`D-042-founder-embodiment-baseline.md`](D-042-founder-embodiment-baseline.md) |
+| D-043 | Fresh-seed repeated-cycle robustness of accepted D-042 embodiment | CONTINUING | [`D-043-d042-embodiment-robustness.md`](D-043-d042-embodiment-robustness.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeded to the next ecology question rather than that D-001 remains unexecuted. The same distinction applies to later records whose own work is complete but whose scientific thread continues.
