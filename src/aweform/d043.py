@@ -262,6 +262,14 @@ def _run_d043_seed(seed: int, *, horizon: int = D043_HORIZON) -> dict[str, objec
     )
     if terminated and active_seek is not None:
         unresolved = 1
+    horizon_censored_seek_episodes = sum(
+        int(episode["outcome"] == "horizon_censored")
+        for episode in seek_episodes
+    )
+    terminated_unresolved_seek_episodes = sum(
+        int(episode["outcome"] == "terminated_before_reacquisition")
+        for episode in seek_episodes
+    )
     if completed_cycles:
         outcome = "REPEATED_CYCLE" if completed_cycles >= 2 else "FULL_CYCLE"
     elif recharge_events:
@@ -289,6 +297,8 @@ def _run_d043_seed(seed: int, *, horizon: int = D043_HORIZON) -> dict[str, objec
         "low_energy_seek_entries": len(seek_episodes),
         "seek_episodes": seek_episodes,
         "unresolved_seek_episodes": unresolved,
+        "horizon_censored_seek_episodes": horizon_censored_seek_episodes,
+        "terminated_unresolved_seek_episodes": terminated_unresolved_seek_episodes,
         "physical_reacquisitions": len(reacquisition_transitions),
         "full_recharge_events": len(recharge_events),
         "recharge_events": recharge_events,
@@ -397,7 +407,12 @@ def _aggregate(results: Sequence[dict[str, object]]) -> dict[str, object]:
             for result in results
         ),
         "unresolved_seek_episodes_at_horizon": sum(
-            cast(int, result["unresolved_seek_episodes"]) for result in results
+            cast(int, result["horizon_censored_seek_episodes"])
+            for result in results
+        ),
+        "unresolved_seek_episodes_at_termination": sum(
+            cast(int, result["terminated_unresolved_seek_episodes"])
+            for result in results
         ),
         "termination_reason_counts": {
             reason: sum(
