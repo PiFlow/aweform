@@ -12,7 +12,23 @@ The actual source registry in `src/aweform/development_visualizer.py` is authori
 
 At this documentation refresh, the generic `DEVELOPMENT_VISUALIZATION_ADAPTERS` registry contains:
 
-`d003`, `d005`, `d006`, `d011`, `d012`, `d013-reference`, `d013`, `d014`, `d015-reference`, `d015`, `d017`, `d018`, `d021`, `d023`, `d024`, `d025`, and `d026`.
+`d003`, `d005`, `d006`, `d011`, `d012`, `d013-reference`, `d013`, `d014`, `d015-reference`, `d015`, `d017`, `d018`, `d021`, `d023`, `d024`, `d025`, `d026`, and `d043`.
+
+D-043 is also registered as `d043` and replays the accepted D-042 front-contact
+embodiment over the merged D-043 support. The specialized command defaults to
+the two-cycle example seed `19045`; seed `19048` is an artifact-confirmed
+energy-depletion example:
+
+```text
+uv run aweform-visualize-d043 --seed 19045 --interval-ms 90
+uv run aweform-visualize-d043 --seed 19048 --interval-ms 90
+```
+
+The replay retains deterministic stride samples plus windows around mode,
+front-contact/reacquisition, full-recharge, departure, and terminal events.
+Coordinates, heading, contact geometry, event labels, and display sampling are
+evaluator-only; the canonical six-channel organism observation, actions,
+learner, reward, and `info == {}` remain unchanged.
 
 Representative commands:
 
@@ -88,6 +104,7 @@ aweform-visualize-d020
 aweform-visualize-d021
 aweform-visualize-d024
 aweform-visualize-d030
+aweform-visualize-d043
 ```
 
 D-030 is the important current example. `development_visualizer.py` contains matched D-030 shared-renderer adapters for `REFERENCE_NO_INFLUENCE`, `LEARNED_FORWARD`, and `PERMUTED_FORWARD`, exposed through:

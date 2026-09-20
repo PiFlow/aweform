@@ -103,6 +103,8 @@ class DevelopmentVisualizationFrame:
     simulated_seconds: float | None = None
     charging_contact_before: bool | None = None
     trajectory_break_before: bool = False
+    front_contact_alignment: tuple[bool, bool] | None = None
+    event_label: str | None = None
 
     def __post_init__(self) -> None:
         if self.transition_index < 0:
@@ -156,6 +158,15 @@ class DevelopmentVisualizationFrame:
             raise ValueError("charging_contact_before must be a bool")
         if not isinstance(self.trajectory_break_before, bool):
             raise ValueError("trajectory_break_before must be a bool")
+        if self.front_contact_alignment is not None:
+            if len(self.front_contact_alignment) != 2 or not all(
+                isinstance(value, bool) for value in self.front_contact_alignment
+            ):
+                raise ValueError(
+                    "front_contact_alignment must contain two bools or be None"
+                )
+        if self.event_label is not None and not self.event_label:
+            raise ValueError("event_label must be non-empty when provided")
 
 
 @dataclass(frozen=True, slots=True)
@@ -259,13 +270,16 @@ class DevelopmentCausalGeometry:
 
     body_length: float
     body_width: float
-    rear_contact_plus: Coordinate
-    rear_contact_minus: Coordinate
+    rear_contact_plus: Coordinate | None
+    rear_contact_minus: Coordinate | None
     front_midpoint: Coordinate
     dock_orientation: float
     dock_contact_plus: Coordinate
     dock_contact_minus: Coordinate
     contact_tolerance: float
+    contact_label: str | None = None
+    front_contact_plus: Coordinate | None = None
+    front_contact_minus: Coordinate | None = None
 
     def __post_init__(self) -> None:
         for name in ("body_length", "body_width", "contact_tolerance"):
@@ -274,14 +288,50 @@ class DevelopmentCausalGeometry:
                 raise ValueError(f"{name} must be finite and positive")
         if not math.isfinite(self.dock_orientation):
             raise ValueError("dock_orientation must be finite")
-        for name in (
-            "rear_contact_plus",
-            "rear_contact_minus",
-            "front_midpoint",
-            "dock_contact_plus",
-            "dock_contact_minus",
-        ):
+        for name in ("front_midpoint", "dock_contact_plus", "dock_contact_minus"):
             _validate_coordinate(name, getattr(self, name))
+        if (self.front_contact_plus is None) != (
+            self.front_contact_minus is None
+        ):
+            raise ValueError(
+                "front contact coordinates must be complete or absent"
+            )
+        if self.rear_contact_plus is None or self.rear_contact_minus is None:
+            if self.front_contact_plus is None or self.front_contact_minus is None:
+                raise ValueError("causal geometry requires a contact pair")
+        else:
+            _validate_coordinate("rear_contact_plus", self.rear_contact_plus)
+            _validate_coordinate("rear_contact_minus", self.rear_contact_minus)
+        if self.front_contact_plus is not None:
+            _validate_coordinate("front_contact_plus", self.front_contact_plus)
+            if self.front_contact_minus is None:
+                raise RuntimeError("front contact pair unexpectedly incomplete")
+            _validate_coordinate("front_contact_minus", self.front_contact_minus)
+        if self.contact_label is not None and not self.contact_label:
+            raise ValueError("contact_label must be non-empty when provided")
+
+    @property
+    def body_contact_plus(self) -> Coordinate:
+        """Return the causal body contact point used by the renderer."""
+        if self.front_contact_plus is not None:
+            return self.front_contact_plus
+        if self.rear_contact_plus is None:
+            raise RuntimeError("causal geometry has no plus contact")
+        return self.rear_contact_plus
+
+    @property
+    def body_contact_minus(self) -> Coordinate:
+        """Return the causal body contact point used by the renderer."""
+        if self.front_contact_minus is not None:
+            return self.front_contact_minus
+        if self.rear_contact_minus is None:
+            raise RuntimeError("causal geometry has no minus contact")
+        return self.rear_contact_minus
+
+    @property
+    def body_contact_label(self) -> str:
+        """Return the evaluator label for the causal body contact pair."""
+        return self.contact_label or "rear contacts"
 
 
 @dataclass(frozen=True, slots=True)
@@ -615,6 +665,7 @@ def build_development_visualization_figure(
         )
 
     geometry = data.causal_geometry or data.shadow_geometry
+    causal_geometry = data.causal_geometry
     geometry_body: Polygon | None = None
     geometry_front_direction: Line2D | None = None
     geometry_rear_contact_plus: Line2D | None = None
@@ -626,7 +677,17 @@ def build_development_visualization_figure(
     if geometry is not None:
         if data.station_center is None:
             raise RuntimeError("geometry has no station center")
-        causal = data.causal_geometry is not None
+        causal = causal_geometry is not None
+        if causal_geometry is not None:
+            contact_plus = causal_geometry.body_contact_plus
+            contact_minus = causal_geometry.body_contact_minus
+            contact_label = causal_geometry.body_contact_label
+        else:
+            if data.shadow_geometry is None:
+                raise RuntimeError("shadow geometry disappeared")
+            contact_plus = data.shadow_geometry.rear_contact_plus
+            contact_minus = data.shadow_geometry.rear_contact_minus
+            contact_label = "rear contacts"
         geometry_body = Polygon(
             _shadow_body_corners(
                 (0.0, 0.0), 0.0, geometry.body_length, geometry.body_width
@@ -648,9 +709,9 @@ def build_development_visualization_figure(
         geometry_rear_contact_plus = world_axis.plot(
             [], [], marker="s", markersize=6, linestyle="None", color="tab:red",
             label=(
-                "causal rear contacts (+ / −)"
+                f"causal {contact_label} (+ / −)"
                 if causal
-                else "shadow rear contacts (+ / −)"
+                else f"shadow {contact_label} (+ / −)"
             ),
         )[0]
         geometry_rear_contact_minus = world_axis.plot(
@@ -694,11 +755,15 @@ def build_development_visualization_figure(
             ),
         )[0]
         if causal:
-            causal_geometry = data.causal_geometry
             if causal_geometry is None:
                 raise RuntimeError("causal geometry disappeared")
+            geometry_title = (
+                "CAUSAL D-042 FRONT DUAL-CONTACT GEOMETRY"
+                if contact_label == "front contacts"
+                else "CAUSAL D-024 FINITE-BODY DUAL-CONTACT GEOMETRY"
+            )
             geometry_text = (
-                "CAUSAL D-024 FINITE-BODY DUAL-CONTACT GEOMETRY\n"
+                f"{geometry_title}\n"
                 "CONTROLS THE BINARY CHARGING CONTACT PREDICATE\n"
                 f"FIXED DOCK: phi={geometry.dock_orientation:g}; "
                 f"PAIR TOLERANCE <= {causal_geometry.contact_tolerance:g}\n"
@@ -1076,10 +1141,15 @@ def build_development_visualization_figure(
         contact_text.set_text(
             "charging contact: " + ("YES" if frame.charging_contact else "NO")
         )
-        if frame.rear_contact_alignment is None:
-            alignment_text.set_text("rear contacts aligned: UNAVAILABLE")
+        alignment = frame.front_contact_alignment
+        alignment_label_name = "front contacts"
+        if alignment is None:
+            alignment = frame.rear_contact_alignment
+            alignment_label_name = "rear contacts"
+        if alignment is None:
+            alignment_text.set_text(f"{alignment_label_name} aligned: UNAVAILABLE")
         else:
-            aligned_count = sum(frame.rear_contact_alignment)
+            aligned_count = sum(alignment)
             alignment_label = (
                 "BOTH — CAUSAL CHARGING ACTIVE"
                 if aligned_count == 2 and frame.charging_contact
@@ -1088,7 +1158,8 @@ def build_development_visualization_figure(
                 else f"{aligned_count}/2 within tolerance"
             )
             alignment_text.set_text(
-                f"rear contacts aligned: {aligned_count}/2 ({alignment_label})"
+                f"{alignment_label_name} aligned: "
+                f"{aligned_count}/2 ({alignment_label})"
             )
         status = (
             "TERMINATED"
@@ -1097,7 +1168,10 @@ def build_development_visualization_figure(
             if frame.truncated
             else "RUNNING"
         )
-        status_text.set_text(f"status: {status}")
+        status_label = f"status: {status}"
+        if frame.event_label is not None:
+            status_label += f"\nevent: {frame.event_label}"
+        status_text.set_text(status_label)
         charger_phase_text.set_text(
             "charger phase: "
             + (
@@ -1194,24 +1268,30 @@ def build_development_visualization_figure(
             front = _translate_and_rotate(
                 (frame.x, frame.y), frame.heading, geometry.front_midpoint
             )
-            rear_plus = _translate_and_rotate(
-                (frame.x, frame.y), frame.heading, geometry.rear_contact_plus
+            contact_plus_world = _translate_and_rotate(
+                (frame.x, frame.y), frame.heading, contact_plus
             )
-            rear_minus = _translate_and_rotate(
-                (frame.x, frame.y), frame.heading, geometry.rear_contact_minus
+            contact_minus_world = _translate_and_rotate(
+                (frame.x, frame.y), frame.heading, contact_minus
             )
             geometry_front_direction.set_data(
                 [frame.x, frame.x + 0.07 * math.cos(frame.heading)],
                 [frame.y, frame.y + 0.07 * math.sin(frame.heading)],
             )
-            geometry_rear_contact_plus.set_data([rear_plus[0]], [rear_plus[1]])
-            geometry_rear_contact_minus.set_data([rear_minus[0]], [rear_minus[1]])
-            alignment = frame.rear_contact_alignment
-            if alignment is None:
-                alignment = (frame.charging_contact, frame.charging_contact)
+            geometry_rear_contact_plus.set_data(
+                [contact_plus_world[0]], [contact_plus_world[1]]
+            )
+            geometry_rear_contact_minus.set_data(
+                [contact_minus_world[0]], [contact_minus_world[1]]
+            )
+            contact_alignment = frame.front_contact_alignment
+            if contact_alignment is None:
+                contact_alignment = frame.rear_contact_alignment
+            if contact_alignment is None:
+                contact_alignment = (frame.charging_contact, frame.charging_contact)
             for marker, is_aligned in zip(
                 (geometry_rear_contact_plus, geometry_rear_contact_minus),
-                alignment,
+                contact_alignment,
                 strict=True,
             ):
                 marker.set_color("tab:green" if is_aligned else "tab:red")
@@ -3194,6 +3274,298 @@ def build_d030_development_visualizations(
     )
 
 
+def _validate_d043_visualization_seed(seed: int) -> None:
+    from . import d042, d043
+
+    if seed not in d043.D043_DEFAULT_DEVELOPMENT_SEEDS:
+        raise ValueError(
+            "D-043 visualization requires one of the accepted development "
+            f"seeds {d043.D043_DEFAULT_DEVELOPMENT_SEEDS}; got {seed}"
+        )
+    d042._validate_d042_seed(seed)
+
+
+def _d043_replay_event_label(record: D021TransitionTrace) -> str | None:
+    from .d020 import D020PhysicalConfig
+
+    labels: list[str] = []
+    if record.mode_after is not record.mode_before:
+        labels.append(f"ENTER {record.mode_after.value}")
+    if (
+        not record.telemetry.charging_contact_before
+        and record.telemetry.charging_contact_after
+    ):
+        labels.append("FRONT CONTACT / REACQUISITION")
+    elif (
+        record.telemetry.charging_contact_before
+        and not record.telemetry.charging_contact_after
+    ):
+        labels.append("DEPARTURE / CONTACT EXIT")
+    if (
+        record.telemetry.battery_before_j < D020PhysicalConfig().battery_capacity_j
+        and record.telemetry.battery_after_j >= D020PhysicalConfig().battery_capacity_j
+        and record.telemetry.charger_termination_latched_after
+    ):
+        labels.append("FULL RECHARGE")
+    if record.telemetry.terminated:
+        reason = record.telemetry.termination_reason
+        labels.append(
+            reason.value.replace("_", " ") if reason is not None else "TERMINATED"
+        )
+    elif record.telemetry.truncated:
+        labels.append("HORIZON TRUNCATION")
+    return " | ".join(labels) if labels else None
+
+
+def d043_replay_event_steps(
+    trace: Sequence[D021TransitionTrace],
+) -> dict[str, int]:
+    """Return every D-043 transition that should remain visible in replay."""
+    from .d020 import D020PhysicalConfig
+
+    if not trace:
+        raise ValueError("D-043 replay trace must not be empty")
+    events: dict[str, int] = {"initial": 0}
+    battery_capacity_j = D020PhysicalConfig().battery_capacity_j
+    contact_entries = 0
+    contact_exits = 0
+    recharges = 0
+    mode_entries = 0
+    for record in trace:
+        transition = record.transition_index
+        if record.mode_after is not record.mode_before:
+            mode_entries += 1
+            events[f"mode_entry_{mode_entries}_{record.mode_after.value}"] = transition
+        if (
+            not record.telemetry.charging_contact_before
+            and record.telemetry.charging_contact_after
+        ):
+            contact_entries += 1
+            events[f"contact_entry_{contact_entries}"] = transition
+        elif (
+            record.telemetry.charging_contact_before
+            and not record.telemetry.charging_contact_after
+        ):
+            contact_exits += 1
+            events[f"contact_exit_{contact_exits}"] = transition
+        if (
+            record.telemetry.battery_before_j < battery_capacity_j
+            and record.telemetry.battery_after_j >= battery_capacity_j
+            and record.telemetry.charger_termination_latched_after
+        ):
+            recharges += 1
+            events[f"full_recharge_{recharges}"] = transition
+        if record.telemetry.terminated or record.telemetry.truncated:
+            events["final"] = transition
+    events.setdefault("final", trace[-1].transition_index)
+    return events
+
+
+def select_d043_replay_indices(
+    trace: Sequence[D021TransitionTrace],
+) -> tuple[int, ...]:
+    """Select a deterministic stride while retaining D-043 event windows."""
+    if not trace:
+        raise ValueError("D-043 replay trace must not be empty")
+    event_steps = d043_replay_event_steps(trace)
+    trace_by_step = {record.transition_index: record for record in trace}
+    selected = {
+        step for step in event_steps.values() if step in trace_by_step
+    }
+    for step in event_steps.values():
+        if step not in trace_by_step:
+            continue
+        selected.update(
+            candidate
+            for candidate in range(step - 2, step + 3)
+            if candidate in trace_by_step
+        )
+    stride = (len(trace) + 699) // 700
+    selected.update(record.transition_index for record in trace[::stride])
+    selected.add(trace[-1].transition_index)
+    return tuple(sorted(selected))
+
+
+def _d043_front_contact_alignment(
+    body_center: tuple[float, float],
+    body_heading: float,
+    station_center: tuple[float, float],
+) -> tuple[bool, bool]:
+    from . import d042
+
+    plus_error, minus_error = d042.dual_contact_pair_errors(
+        body_center, body_heading, station_center
+    )
+    return (
+        plus_error <= d042.D042_CONTACT_TOLERANCE,
+        minus_error <= d042.D042_CONTACT_TOLERANCE,
+    )
+
+
+def adapt_d043_trace(
+    trace: Sequence[D021TransitionTrace],
+    *,
+    seed: int,
+    source_label: str = "D-043 accepted D-042 repeated-cycle lifetime",
+) -> DevelopmentVisualizationData:
+    """Convert a completed evaluator-only D-043 trace to neutral replay data."""
+    from . import d042
+    from .d020 import D020PhysicalConfig
+
+    _validate_d043_visualization_seed(seed)
+    if not trace:
+        raise ValueError("D-043 replay trace must not be empty")
+    config = D020PhysicalConfig()
+    selected_steps = select_d043_replay_indices(trace)
+    by_step = {record.transition_index: record for record in trace}
+    initial = trace[0]
+    if len(initial.observation_before) != 6:
+        raise RuntimeError("D-043 initial observation must contain six channels")
+    initial_observation = initial.observation_before
+    initial_alignment = _d043_front_contact_alignment(
+        initial.telemetry.position_before,
+        d042.D042_INITIAL_HEADING,
+        initial.telemetry.station_center,
+    )
+    frames: list[DevelopmentVisualizationFrame] = [
+        DevelopmentVisualizationFrame(
+            transition_index=0,
+            x=initial.telemetry.position_before[0],
+            y=initial.telemetry.position_before[1],
+            heading=d042.D042_INITIAL_HEADING,
+            action="INITIAL",
+            decision_mode=initial.mode_before.value,
+            energy=initial_observation[0],
+            thermal=initial_observation[5],
+            charging_contact=bool(initial_observation[4]),
+            terminated=False,
+            truncated=False,
+            front_contact_alignment=initial_alignment,
+            event_label="INITIAL FRONT DUAL CONTACT",
+            beacon_left=initial_observation[1],
+            beacon_forward=initial_observation[2],
+            beacon_right=initial_observation[3],
+            thermal_normalized=initial_observation[5],
+            thermal_absolute_c=initial.telemetry.body_temperature_before_c,
+            charger_phase=initial.telemetry.charge_phase.value,
+            simulated_seconds=0.0,
+            charging_contact_before=initial.telemetry.charging_contact_before,
+        )
+    ]
+    for step in selected_steps:
+        record = by_step[step]
+        if len(record.observation) != 6:
+            raise RuntimeError("D-043 observation must contain exactly six channels")
+        if record.reward != 0.0 or record.info != {}:
+            raise RuntimeError("D-043 replay crossed the reward/info boundary")
+        observation = record.observation
+        telemetry = record.telemetry
+        frames.append(
+            DevelopmentVisualizationFrame(
+                transition_index=record.transition_index,
+                x=telemetry.position_after[0],
+                y=telemetry.position_after[1],
+                heading=telemetry.heading,
+                action=record.action.name,
+                decision_mode=record.mode_after.value,
+                energy=observation[0],
+                thermal=observation[5],
+                charging_contact=bool(observation[4]),
+                terminated=telemetry.terminated,
+                truncated=telemetry.truncated,
+                front_contact_alignment=_d043_front_contact_alignment(
+                    telemetry.position_after,
+                    telemetry.heading,
+                    telemetry.station_center,
+                ),
+                event_label=_d043_replay_event_label(record),
+                beacon_left=observation[1],
+                beacon_forward=observation[2],
+                beacon_right=observation[3],
+                thermal_normalized=observation[5],
+                thermal_absolute_c=telemetry.body_temperature_after_c,
+                charger_phase=telemetry.charge_phase.value,
+                simulated_seconds=record.transition_index * config.dt_seconds,
+                charging_contact_before=telemetry.charging_contact_before,
+            )
+        )
+    dock_plus, dock_minus = d042.dock_contacts_world(d042.D042_STATION_CENTER)
+    return DevelopmentVisualizationData(
+        source_label=source_label,
+        seed=seed,
+        world_min=config.world_min,
+        world_max=config.world_max,
+        station_center=trace[0].telemetry.station_center,
+        charging_radius=None,
+        energy_range=DevelopmentVisualizationRange(0.0, 1.0),
+        thermal_range=DevelopmentVisualizationRange(0.0, 1.0),
+        frames=tuple(frames),
+        visibility=DevelopmentVisualizationVisibility(
+            position_heading="EVALUATOR ONLY — CAUSAL BODY GEOMETRY",
+            station_location="EVALUATOR ONLY",
+            energy="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
+            thermal=(
+                "ORGANISM-VISIBLE NORMALIZED OWN TEMPERATURE + "
+                "EVALUATOR ABSOLUTE °C"
+            ),
+            charging_contact="ORGANISM-VISIBLE BINARY FRONT DUAL CONTACT + EVALUATOR",
+            action_decision_mode=(
+                "CONTROLLER MODE SHOWN; CHARGER PHASE EVALUATOR ONLY"
+            ),
+        ),
+        probe_distance=config.probe_distance,
+        sensor_angle=config.sensor_angle,
+        thermal_threshold=(
+            config.preferred_operating_ceiling_c - config.visible_temperature_min_c
+        ) / (config.visible_temperature_max_c - config.visible_temperature_min_c),
+        thermal_threshold_label="PREFERRED 45°C — EVALUATOR ONLY",
+        energy_label="BATTERY (NORMALIZED)",
+        mode_display_label="controller mode",
+        causal_geometry=DevelopmentCausalGeometry(
+            body_length=d042.D042_BODY_LENGTH,
+            body_width=d042.D042_BODY_WIDTH,
+            rear_contact_plus=None,
+            rear_contact_minus=None,
+            front_midpoint=(d042.D042_FRONT_X, 0.0),
+            dock_orientation=d042.D042_DOCK_ORIENTATION,
+            dock_contact_plus=dock_plus,
+            dock_contact_minus=dock_minus,
+            contact_tolerance=d042.D042_CONTACT_TOLERANCE,
+            contact_label="front contacts",
+            front_contact_plus=(
+                d042.D042_FRONT_X,
+                d042.D042_CONTACT_LATERAL_OFFSET,
+            ),
+            front_contact_minus=(
+                d042.D042_FRONT_X,
+                -d042.D042_CONTACT_LATERAL_OFFSET,
+            ),
+        ),
+        figure_title=f"D-043 accepted repeated-cycle replay — seed {seed}",
+        figure_annotation=(
+            "Evaluator-only replay of accepted D-043/D-042 semantics; "
+            "display sampling preserves event windows."
+        ),
+    )
+
+
+def build_d043_development_visualization(
+    *,
+    seed: int = 19045,
+    horizon: int = 140_000,
+) -> DevelopmentVisualizationData:
+    """Run one exact-horizon D-043 lifetime, then adapt its display trace."""
+    from . import d043
+
+    _validate_d043_visualization_seed(seed)
+    if horizon != d043.D043_HORIZON:
+        raise ValueError(
+            "D-043 visualization requires the frozen 140,000-transition horizon"
+        )
+    trace = d043.run_d043_lifetime_trace(seed, horizon=horizon)
+    return adapt_d043_trace(trace, seed=seed)
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
@@ -3215,6 +3587,7 @@ DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     "d024": build_d024_development_visualization,
     "d025": build_d025_development_visualization,
     "d026": build_d026_development_visualization,
+    "d043": build_d043_development_visualization,
 }
 
 
@@ -3367,6 +3740,32 @@ def d030_main(argv: Sequence[str] | None = None) -> int:
         horizon=D030_HORIZON,
     )
     show_d030_development_visualizations(data, interval_ms=args.interval_ms)
+    return 0
+
+
+def d043_main(argv: Sequence[str] | None = None) -> int:
+    """Open one accepted D-043 repeated-cycle lifetime visualization."""
+    from . import d043
+
+    parser = argparse.ArgumentParser(
+        description=(
+            "Replay an accepted D-043 repeated-cycle lifetime with "
+            "event-preserving display sampling."
+        )
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=d043.D043_CANONICAL_VISUALIZATION_SEED,
+        choices=d043.D043_DEFAULT_DEVELOPMENT_SEEDS,
+    )
+    parser.add_argument("--interval-ms", type=_positive_int, default=90)
+    args = parser.parse_args(argv)
+    data = build_d043_development_visualization(
+        seed=args.seed,
+        horizon=d043.D043_HORIZON,
+    )
+    show_development_visualization(data, interval_ms=args.interval_ms)
     return 0
 
 
