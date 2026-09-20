@@ -24,6 +24,24 @@ uv run aweform-visualize-d043 --seed 19045 --interval-ms 90
 uv run aweform-visualize-d043 --seed 19048 --interval-ms 90
 ```
 
+For a phone-friendly offline replay containing both representative examples,
+export one deterministic self-contained HTML file. It uses only the neutral
+data produced by the canonical adapter; no Python runtime or network is needed
+after export:
+
+```text
+uv run aweform-export-d043-html --output d043-replay.html
+```
+
+The export includes play/pause, touch-friendly timeline scrubbing, playback
+speed controls, and the existing evaluator-side state overlays. A single seed
+can be exported with repeated `--seed` options when a smaller file is useful:
+
+```text
+uv run aweform-export-d043-html --seed 19045 --output d043-19045.html
+uv run aweform-export-d043-html --seed 19048 --output d043-19048.html
+```
+
 The replay retains deterministic stride samples plus windows around mode,
 front-contact/reacquisition, full-recharge, departure, and terminal events.
 Coordinates, heading, contact geometry, event labels, and display sampling are
@@ -105,6 +123,7 @@ aweform-visualize-d021
 aweform-visualize-d024
 aweform-visualize-d030
 aweform-visualize-d043
+aweform-export-d043-html
 ```
 
 D-030 is the important current example. `development_visualizer.py` contains matched D-030 shared-renderer adapters for `REFERENCE_NO_INFLUENCE`, `LEARNED_FORWARD`, and `PERMUTED_FORWARD`, exposed through:

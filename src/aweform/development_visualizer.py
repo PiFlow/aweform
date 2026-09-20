@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import argparse
 import itertools
+import json
 import math
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable, Final, Mapping, Sequence
 
 import matplotlib.pyplot as plt
@@ -3766,6 +3768,359 @@ def d043_main(argv: Sequence[str] | None = None) -> int:
         horizon=d043.D043_HORIZON,
     )
     show_development_visualization(data, interval_ms=args.interval_ms)
+    return 0
+
+
+_D043_HTML_TEMPLATE = r"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aweform D-043 offline replay</title>
+<style>
+:root { color-scheme: dark; font-family: system-ui, sans-serif; }
+body { margin: 0; background: #10151b; color: #e8eef5; }
+main { max-width: 980px; margin: auto; padding: 12px; }
+h1 { font-size: 1.15rem; margin: 0 0 10px; }
+.controls, .readout {
+  display: flex; flex-wrap: wrap; gap: 8px 12px;
+  align-items: center; margin: 8px 0;
+}
+button, select, input { font: inherit; accent-color: #58a6ff; }
+button, select {
+  min-height: 38px; border: 1px solid #526170; border-radius: 6px;
+  background: #1b2632; color: inherit; padding: 6px 10px;
+}
+input[type=range] { width: min(100%, 720px); min-width: 180px; flex: 1 1 280px; }
+canvas {
+  display: block; width: 100%; height: min(58vh, 540px); min-height: 280px;
+  background: #f7f9fb; border-radius: 6px; touch-action: none;
+}
+.readout { font-size: .9rem; line-height: 1.35; }
+.readout span { white-space: nowrap; }
+.event { color: #ffd166; font-weight: 650; }
+.note { color: #aebdca; font-size: .82rem; }
+</style>
+</head>
+<body>
+<main>
+<h1>Aweform D-043 — evaluator-only offline replay</h1>
+<div class="controls">
+  <label>Seed <select id="seed"></select></label>
+  <button id="play" type="button">Play</button>
+  <label>Speed <select id="speed">
+    <option value="0.25">0.25×</option><option value="0.5">0.5×</option>
+    <option value="1" selected>1×</option><option value="2">2×</option>
+    <option value="4">4×</option>
+  </select></label>
+</div>
+<div class="controls"><input id="timeline" type="range" min="0" max="0"
+  value="0" step="1" aria-label="Replay timeline"></div>
+<div class="readout">
+  <span id="progress"></span><span id="mode"></span><span id="action"></span>
+  <span id="energy"></span><span id="thermal"></span><span id="contact"></span>
+  <span id="beacon"></span><span id="status"></span>
+  <span id="event" class="event"></span>
+</div>
+<canvas id="world" aria-label="D-043 replay world view"></canvas>
+<p class="note">This file is a deterministic post-hoc display of accepted
+  D-043/D-042 evaluator data. Coordinates, heading, geometry, event labels,
+  and display sampling are evaluator-only; no network or Aweform runtime is
+  used.</p>
+</main>
+<script>
+window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
+(function () {
+  "use strict";
+  const replays = window.__AWEFORM_D043_REPLAYS__.replays;
+  const seedSelect = document.getElementById("seed");
+  const playButton = document.getElementById("play");
+  const speedSelect = document.getElementById("speed");
+  const timeline = document.getElementById("timeline");
+  const canvas = document.getElementById("world");
+  const ctx = canvas.getContext("2d");
+  const fieldNames = ["progress", "mode", "action", "energy", "thermal",
+    "contact", "beacon", "status", "event"];
+  const fields = Object.fromEntries(fieldNames.map(function (id) {
+    return [id, document.getElementById(id)];
+  }));
+  const state = { replay: replays[0], frame: 0, playing: false, lastTime: 0, carry: 0 };
+
+  function currentFrame() { return state.replay.frames[state.frame]; }
+  function setReplay(index) {
+    state.replay = replays[index];
+    state.frame = 0;
+    state.carry = 0;
+    timeline.max = String(Math.max(0, state.replay.frames.length - 1));
+    timeline.value = "0";
+    draw();
+  }
+  function resizeCanvas() {
+    const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(rect.width * scale));
+    canvas.height = Math.max(1, Math.round(rect.height * scale));
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    draw();
+  }
+  function project(point, replay, width, height) {
+    const margin = 20;
+    const min = replay.world.min, max = replay.world.max;
+    const sx = (width - 2 * margin) / (max[0] - min[0]);
+    const sy = (height - 2 * margin) / (max[1] - min[1]);
+    const scale = Math.min(sx, sy);
+    return [margin + (point[0] - min[0]) * scale,
+      height - margin - (point[1] - min[1]) * scale];
+  }
+  function rotated(point, centre, angle) {
+    const dx = point[0], dy = point[1];
+    return [centre[0] + dx * Math.cos(angle) - dy * Math.sin(angle),
+      centre[1] + dx * Math.sin(angle) + dy * Math.cos(angle)];
+  }
+  function draw() {
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width, height = rect.height;
+    ctx.clearRect(0, 0, width, height);
+    const replay = state.replay, frame = currentFrame(), geometry = replay.geometry;
+    const station = project(replay.station, replay, width, height);
+    ctx.strokeStyle = "#d7dee6"; ctx.lineWidth = 1;
+    ctx.strokeRect(20, 20, width - 40, height - 40);
+    ctx.fillStyle = "#ef8354"; ctx.beginPath();
+    ctx.arc(station[0], station[1], 7, 0, 2 * Math.PI); ctx.fill();
+    const dockPlus = project([
+      geometry.dock_plus[0], geometry.dock_plus[1]], replay, width, height);
+    const dockMinus = project([
+      geometry.dock_minus[0], geometry.dock_minus[1]], replay, width, height);
+    ctx.fillStyle = "#7a5195";
+    [dockPlus, dockMinus].forEach(function (p) {
+      ctx.fillRect(p[0] - 3, p[1] - 3, 6, 6);
+    });
+    const path = replay.frames.filter(function (item) {
+      return item.transition <= frame.transition;
+    });
+    if (path.length > 1) {
+      ctx.strokeStyle = "#aab7c4"; ctx.lineWidth = 1.5; ctx.beginPath();
+      path.forEach(function (item, index) {
+        const p = project([item.x, item.y], replay, width, height);
+        if (index === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]);
+      });
+      ctx.stroke();
+    }
+    const centre = project([frame.x, frame.y], replay, width, height);
+    const body = [
+      rotated([-geometry.body_length / 2, -geometry.body_width / 2],
+        [frame.x, frame.y], frame.heading),
+      rotated([geometry.body_length / 2, -geometry.body_width / 2],
+        [frame.x, frame.y], frame.heading),
+      rotated([geometry.body_length / 2, geometry.body_width / 2],
+        [frame.x, frame.y], frame.heading),
+      rotated([-geometry.body_length / 2, geometry.body_width / 2],
+        [frame.x, frame.y], frame.heading)];
+    ctx.fillStyle = frame.charging ? "#43aa8b" : "#277da1";
+    ctx.beginPath();
+    body.forEach(function (p, index) {
+      const projected = project(p, replay, width, height);
+      if (index === 0) ctx.moveTo(projected[0], projected[1]);
+      else ctx.lineTo(projected[0], projected[1]);
+    });
+    ctx.closePath(); ctx.fill();
+    const frontPlus = project(rotated(geometry.front_plus,
+      [frame.x, frame.y], frame.heading), replay, width, height);
+    const frontMinus = project(rotated(geometry.front_minus,
+      [frame.x, frame.y], frame.heading), replay, width, height);
+    const frontPoints = [frontPlus, frontMinus];
+    ctx.fillStyle = "#43aa8b";
+    frontPoints.forEach(function (point, index) {
+      if (frame.contact_alignment && !frame.contact_alignment[index]) {
+        ctx.fillStyle = "#d1495b";
+      }
+      ctx.beginPath(); ctx.arc(point[0], point[1], 3, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = "#43aa8b";
+    });
+    const nose = project([
+      frame.x + 0.08 * Math.cos(frame.heading),
+      frame.y + 0.08 * Math.sin(frame.heading)], replay, width, height);
+    ctx.strokeStyle = "#17202a"; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.moveTo(centre[0], centre[1]); ctx.lineTo(nose[0], nose[1]); ctx.stroke();
+    fields.progress.textContent = "seed " + replay.seed + " · transition " +
+      frame.transition.toLocaleString() + " / " +
+      replay.frames[replay.frames.length - 1].transition + " · " +
+      (frame.seconds == null ? "" : frame.seconds.toFixed(1) + " s");
+    fields.mode.textContent = "mode: " + frame.mode;
+    fields.action.textContent = "action: " + frame.action;
+    fields.energy.textContent = "energy: " + frame.energy.toFixed(3);
+    fields.thermal.textContent = "thermal: " + frame.thermal.toFixed(3) +
+      (frame.thermal_c == null ? "" : " / " + frame.thermal_c.toFixed(1) + "°C");
+    fields.contact.textContent = "contact: " + (frame.charging ? "YES" : "NO");
+    fields.beacon.textContent = frame.beacon ? "L/F/R: " +
+      frame.beacon.map(function (value) { return value.toFixed(2); }).join("/") :
+      "L/F/R: unavailable";
+    fields.status.textContent = "status: " + (frame.terminated ? "TERMINATED" :
+      (frame.truncated ? "HORIZON TRUNCATED" : "RUNNING"));
+    fields.event.textContent = frame.event || "";
+  }
+  function tick(now) {
+    if (!state.playing) return;
+    if (!state.lastTime) state.lastTime = now;
+    state.carry += (now - state.lastTime) * Number(speedSelect.value) / 110;
+    state.lastTime = now;
+    if (state.carry >= 1) {
+      state.frame = Math.min(state.replay.frames.length - 1,
+        state.frame + Math.floor(state.carry));
+      state.carry %= 1; timeline.value = String(state.frame); draw();
+    }
+    if (state.frame >= state.replay.frames.length - 1) {
+      state.playing = false; playButton.textContent = "Play";
+    }
+    else window.requestAnimationFrame(tick);
+  }
+  replays.forEach(function (replay, index) {
+    const option = document.createElement("option");
+    option.value = String(index); option.textContent = String(replay.seed);
+    seedSelect.appendChild(option);
+  });
+  seedSelect.addEventListener("change", function () {
+    setReplay(Number(seedSelect.value));
+  });
+  playButton.addEventListener("click", function () {
+    state.playing = !state.playing;
+    playButton.textContent = state.playing ? "Pause" : "Play";
+    state.lastTime = 0;
+    if (state.playing) window.requestAnimationFrame(tick);
+  });
+  speedSelect.addEventListener("change", function () { state.carry = 0; });
+  timeline.addEventListener("input", function () {
+    state.frame = Number(timeline.value); state.carry = 0; draw();
+  });
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
+}());
+</script>
+</body>
+</html>
+"""
+
+
+def _d043_html_frame_payload(frame: DevelopmentVisualizationFrame) -> dict[str, object]:
+    """Serialize one neutral D-043 frame for the offline presentation surface."""
+    alignment = frame.front_contact_alignment or frame.rear_contact_alignment
+    beacon = None
+    if frame.beacon_left is not None:
+        beacon = [frame.beacon_left, frame.beacon_forward, frame.beacon_right]
+    return {
+        "transition": frame.transition_index,
+        "x": frame.x,
+        "y": frame.y,
+        "heading": frame.heading,
+        "action": frame.action,
+        "mode": frame.decision_mode,
+        "energy": frame.energy,
+        "thermal": frame.thermal,
+        "charging": frame.charging_contact,
+        "terminated": frame.terminated,
+        "truncated": frame.truncated,
+        "contact_alignment": list(alignment) if alignment is not None else None,
+        "beacon": beacon,
+        "thermal_c": frame.thermal_absolute_c,
+        "charger_phase": frame.charger_phase,
+        "seconds": frame.simulated_seconds,
+        "contact_before": frame.charging_contact_before,
+        "event": frame.event_label,
+    }
+
+
+def _d043_html_replay_payload(
+    data: DevelopmentVisualizationData,
+) -> dict[str, object]:
+    """Serialize canonical neutral D-043 data without rerunning the organism."""
+    geometry = data.causal_geometry
+    if geometry is None:
+        raise ValueError("D-043 HTML export requires causal front-contact geometry")
+    if data.seed is None:
+        raise ValueError("D-043 HTML export requires a seed")
+    return {
+        "seed": data.seed,
+        "title": data.figure_title or data.source_label,
+        "world": {"min": list(data.world_min), "max": list(data.world_max)},
+        "station": list(data.station_center) if data.station_center else None,
+        "geometry": {
+            "body_length": geometry.body_length,
+            "body_width": geometry.body_width,
+            "front_plus": list(geometry.body_contact_plus),
+            "front_minus": list(geometry.body_contact_minus),
+            "dock_plus": list(geometry.dock_contact_plus),
+            "dock_minus": list(geometry.dock_contact_minus),
+            "tolerance": geometry.contact_tolerance,
+        },
+        "frames": [_d043_html_frame_payload(frame) for frame in data.frames],
+    }
+
+
+def build_d043_html_replay(
+    data: Sequence[DevelopmentVisualizationData],
+) -> str:
+    """Return a deterministic, self-contained Android-viewable D-043 replay."""
+    if not data:
+        raise ValueError("D-043 HTML export requires at least one replay")
+    seeds = [item.seed for item in data]
+    if any(seed is None for seed in seeds) or len(set(seeds)) != len(seeds):
+        raise ValueError("D-043 HTML replays require unique integer seeds")
+    payload = {
+        "schema": "aweform.d043.offline-replay.v1",
+        "replays": [_d043_html_replay_payload(item) for item in data],
+    }
+    serialized = json.dumps(
+        payload,
+        allow_nan=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).replace("</", "<\\/")
+    return _D043_HTML_TEMPLATE.replace("__AWEFORM_D043_PAYLOAD__", serialized)
+
+
+def write_d043_html_replay(
+    output: Path,
+    *,
+    seeds: Sequence[int] = (19045, 19048),
+    horizon: int = 140_000,
+) -> Path:
+    """Build accepted D-043 neutral data and write one deterministic HTML file."""
+    if not seeds:
+        raise ValueError("D-043 HTML export requires at least one seed")
+    data = tuple(
+        build_d043_development_visualization(seed=seed, horizon=horizon)
+        for seed in seeds
+    )
+    output.write_text(build_d043_html_replay(data), encoding="utf-8", newline="\n")
+    return output
+
+
+def d043_html_main(argv: Sequence[str] | None = None) -> int:
+    """Export successful and failure D-043 examples as one offline HTML replay."""
+    from . import d043
+
+    parser = argparse.ArgumentParser(
+        description=(
+            "Export accepted D-043 visualization data as a self-contained "
+            "offline HTML replay."
+        )
+    )
+    parser.add_argument(
+        "--output", type=Path, default=Path("d043-replay.html"),
+        help="Output HTML path (default: d043-replay.html).",
+    )
+    parser.add_argument(
+        "--seed", type=int, action="append", dest="seeds",
+        choices=d043.D043_DEFAULT_DEVELOPMENT_SEEDS,
+        help="Accepted D-043 seed; repeat to include multiple replays. "
+        "Defaults to 19045 and 19048.",
+    )
+    args = parser.parse_args(argv)
+    seeds = tuple(args.seeds) if args.seeds else (
+        d043.D043_CANONICAL_VISUALIZATION_SEED,
+        d043.D043_FAILURE_VISUALIZATION_SEED,
+    )
+    write_d043_html_replay(args.output, seeds=seeds, horizon=d043.D043_HORIZON)
     return 0
 
 

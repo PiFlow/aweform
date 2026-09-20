@@ -10,6 +10,7 @@ from aweform import d026, d027, d042, d043
 from aweform.development_visualizer import (
     adapt_d043_trace,
     build_d043_development_visualization,
+    build_d043_html_replay,
     d043_replay_event_steps,
     select_d043_replay_indices,
 )
@@ -121,3 +122,21 @@ def test_d043_visualization_examples_match_merged_artifact() -> None:
     assert failure_data.frames[-1].terminated is True
     assert failure_data.frames[-1].event_label == "ENERGY DEPLETION"
     assert d043_replay_event_steps(failure_trace)["final"] == len(failure_trace)
+
+
+def test_d043_html_export_is_deterministic_and_local() -> None:
+    trace_records: list[d043.D043TransitionTrace] = []
+    d043._run_d043_seed(19045, horizon=300, trace=trace_records)
+    trace = tuple(trace_records)
+    data = adapt_d043_trace(trace, seed=19045)
+    html = build_d043_html_replay((data,))
+
+    assert html == build_d043_html_replay((data,))
+    assert 'window.__AWEFORM_D043_REPLAYS__ = ' in html
+    assert 'window.__AWEFORM_D043_REPLAYS__.replays' in html
+    assert 'fetch(' not in html
+    assert 'src="http' not in html
+    assert 'href="http' not in html
+    assert '"schema":"aweform.d043.offline-replay.v1"' in html
+    assert '"seed":19045' in html
+    assert '"event":"INITIAL FRONT DUAL CONTACT"' in html
