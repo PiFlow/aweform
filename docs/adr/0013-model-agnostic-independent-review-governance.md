@@ -49,12 +49,15 @@ For each formal candidate, Flow designates:
 1. a **first independent reviewer**; and
 2. a **second independent reviewer**.
 
-The current default first reviewer may be GPT-5.6 Sol, but this is an operating
-choice rather than a durable vendor dependency. The second reviewer should,
-whenever practical, be from a different model family/provider from the first to
-increase error diversity. Models such as Kimi K3, Grok 4.6, GLM-5.3, future
-Claude models, or later frontier models may serve when Flow judges them suitable
-for the task.
+The current operating default is GPT-5.6 Sol as first reviewer and
+**GLM-5.3-Flash (Z.ai model family), accessed via opencode-go, as second
+reviewer**. This is an operating choice rather than a durable vendor dependency.
+
+Flow may designate a different high-capability independent reviewer when
+appropriate. The second reviewer should, whenever practical, remain from a
+different model family/provider from the first to increase error diversity.
+Models such as Kimi K3, Grok 4.6, future Claude models, or later frontier models
+may serve as alternatives when Flow judges them suitable for the task.
 
 Flow may request additional advisory reviews for unusually consequential
 changes, but two qualifying PASSes remain the minimum formal gate unless a
@@ -125,6 +128,9 @@ of ADR 0012.
 - Formal review remains dual, independent, adversarial, and exact-SHA-specific.
 - Aweform is no longer blocked by permanent dependence on Claude Opus 5 or any
   other named commercial model.
+- As of 2026-09-18, the normal operating pair is GPT-5.6 Sol first and
+  GLM-5.3-Flash (Z.ai) via opencode-go second; this remains a replaceable default
+  under the model-agnostic rule.
 - Reviewer diversity is preserved as a scientific objective rather than a
   vendor lock-in rule.
 - External terminal reviews may count when their identity, verdict, exact HEAD,

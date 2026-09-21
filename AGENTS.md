@@ -120,8 +120,9 @@ For those reviews:
 
 - Luna/Codex may implement, but its own summary is not independent evidence.
 - Flow designates at least two independent high-capability reviewers for the exact candidate; no particular vendor or model is permanently required.
-- The second reviewer should, whenever practical, be from a different model family/provider from the first to increase error diversity.
-- Each independent review of record must identify the reviewer/model, `PASS` or `REQUEST CHANGES`, and the exact reviewed HEAD SHA, with enough substantive reasoning to show what was checked.
+- The current operating default is GPT-5.6 Sol as first reviewer and **GLM-5.3-Flash (Z.ai model family), accessed via opencode-go, as second reviewer**.
+- This pairing is an operating default rather than a durable vendor dependency. Flow may designate a different high-capability independent reviewer when appropriate; the second reviewer should, whenever practical, remain from a different model family/provider from the first to increase error diversity.
+- Each independent review of record must identify the reviewer/model, `PASS` or `REQUEST CHANGES`, and the exact reviewed HEAD SHA, with enough substantive reasoning to show what was checked. For the current default external second-review path, provenance should identify **GLM-5.3-Flash (Z.ai) via opencode-go** rather than only the access tool.
 - The review of record must be archived on the relevant GitHub PR. If an external terminal reviewer cannot post directly, Flow or a maintainer may archive a faithful transcript or concise provenance-preserving summary, clearly labelled so no reviewer is impersonated.
 - Only `PASS` against the exact current HEAD qualifies. Any later commit invalidates that `PASS` and requires review of the new HEAD.
 - Repository evidence outranks agent summaries, and no actor treats its own implementation as independent approval.
