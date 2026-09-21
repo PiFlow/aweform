@@ -15,7 +15,7 @@ import statistics
 from pathlib import Path
 from typing import Final, Sequence, cast
 
-from . import d026, d027, d030, d042
+from . import d021, d026, d027, d030, d042
 from .env import Action
 from .exp003 import EXP003_B50_ENTER_SEEK_THRESHOLD
 from .exp003_seed_policy import validate_exp003_development_seeds
@@ -26,6 +26,9 @@ D043_AUTHORITATIVE_BASE_SHA: Final[str] = (
 D043_DEFAULT_DEVELOPMENT_SEEDS: Final[tuple[int, ...]] = tuple(range(19045, 19065))
 D043_HORIZON: Final[int] = 140_000
 D043_DT_SECONDS: Final[float] = d042.D042_DT_SECONDS
+D043_CANONICAL_VISUALIZATION_SEED: Final[int] = 19045
+D043_FAILURE_VISUALIZATION_SEED: Final[int] = 19048
+D043TransitionTrace = d021.D021TransitionTrace
 
 
 def _validate_seeds(seeds: Sequence[int]) -> tuple[int, ...]:
@@ -58,7 +61,12 @@ def _new_seek_episode(
     }
 
 
-def _run_d043_seed(seed: int, *, horizon: int = D043_HORIZON) -> dict[str, object]:
+def _run_d043_seed(
+    seed: int,
+    *,
+    horizon: int = D043_HORIZON,
+    trace: list[D043TransitionTrace] | None = None,
+) -> dict[str, object]:
     """Run one uninterrupted canonical D-042 lifetime with evaluator telemetry."""
     if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon <= 0:
         raise ValueError("horizon must be a positive integer")
@@ -164,6 +172,32 @@ def _run_d043_seed(seed: int, *, horizon: int = D043_HORIZON) -> dict[str, objec
         if update.action is not action:
             raise RuntimeError("D-027 learner update did not use executed action")
         transitions = transition
+
+        if trace is not None:
+            if observation_array.shape != (6,):
+                raise RuntimeError(
+                    "D-043 observation must contain exactly six channels"
+                )
+            trace.append(
+                d021.D021TransitionTrace(
+                    transition_index=transition,
+                    mode_before=mode_before,
+                    mode_after=mode_after,
+                    action=action,
+                    observation_before=(
+                        current.energy,
+                        current.beacon.left,
+                        current.beacon.forward,
+                        current.beacon.right,
+                        float(current.charging_contact),
+                        current.thermal,
+                    ),
+                    observation=tuple(float(value) for value in observation_array),
+                    telemetry=telemetry,
+                    reward=reward,
+                    info=info,
+                )
+            )
 
         if not telemetry.charging_contact_before and telemetry.charging_contact_after:
             contact_entries.append(
@@ -358,6 +392,27 @@ def _run_d043_seed(seed: int, *, horizon: int = D043_HORIZON) -> dict[str, objec
         },
         "max_body_temperature_c": maximum_temperature_c,
     }
+
+
+def run_d043_lifetime_trace(
+    seed: int = D043_CANONICAL_VISUALIZATION_SEED,
+    *,
+    horizon: int = D043_HORIZON,
+) -> tuple[D043TransitionTrace, ...]:
+    """Run one accepted D-043 lifetime and retain evaluator-only trace data."""
+    if seed not in D043_DEFAULT_DEVELOPMENT_SEEDS:
+        raise ValueError(f"seed {seed} is not a declared D-043 seed")
+    if horizon != D043_HORIZON:
+        raise ValueError(
+            "D-043 visualization requires the frozen 140,000-transition horizon"
+        )
+    trace: list[D043TransitionTrace] = []
+    result = _run_d043_seed(seed, horizon=horizon, trace=trace)
+    if len(trace) != result["transitions"]:
+        raise RuntimeError("D-043 lifetime trace length disagrees with result")
+    if not trace:
+        raise RuntimeError("D-043 lifetime trace contains no completed transitions")
+    return tuple(trace)
 
 
 def _nearest_rank(values: Sequence[float], percentile: float) -> float | None:
