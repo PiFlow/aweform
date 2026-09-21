@@ -12,7 +12,7 @@ This file is the canonical **committed D-record ledger**. Add one row when a mea
 
 Do not use roadmap prose or README text as a replacement for this ledger. Work that is authorized in GitHub but does not yet have a committed D-record belongs in the current authorization issue/PR, not as a premature row here.
 
-At this update, committed records extend through **D-040**. **D-041 — Front-beacon sensory sufficiency audit** is authorized by [issue #140](https://github.com/PiFlow/aweform/issues/140) but has not yet become a committed D-record on `main`, so it is intentionally not added to the table below.
+At this update, **D-041 — Front-beacon sensory sufficiency audit** remains an authorized record from [issue #140](https://github.com/PiFlow/aweform/issues/140) but is intentionally not added to the table below. D-042 is now recorded below as a committed Development characterization.
 
 ## Disposition vocabulary
 
@@ -70,5 +70,7 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-038 | Combined fine-turn, L/F/R interpolation, and reverse sufficiency audit | CONTINUING | [`D-038-combined-fine-interp-reverse-sufficiency-audit.md`](D-038-combined-fine-interp-reverse-sufficiency-audit.md) |
 | D-039 | One-scalar shadow recurrent predictor readiness audit | CONTINUING | [`D-039-one-scalar-shadow-recurrent-predictor-readiness-audit.md`](D-039-one-scalar-shadow-recurrent-predictor-readiness-audit.md) |
 | D-040 | Causal problem-identification and test-validity audit | CONTINUING | [`D-040-causal-problem-identification-test-validity-audit.md`](D-040-causal-problem-identification-test-validity-audit.md) |
+| D-042 | Founder-selected fine-turn and front-contact baseline | CONTINUING | [`D-042-founder-embodiment-baseline.md`](D-042-founder-embodiment-baseline.md) |
+| D-043 | Fresh-seed repeated-cycle robustness of accepted D-042 embodiment | CONTINUING | [`D-043-d042-embodiment-robustness.md`](D-043-d042-embodiment-robustness.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeded to the next ecology question rather than that D-001 remains unexecuted. The same distinction applies to later records whose own work is complete but whose scientific thread continues.
