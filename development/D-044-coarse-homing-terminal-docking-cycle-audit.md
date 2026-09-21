@@ -95,7 +95,7 @@ one-step branches, or an Evidence-lane claim.
 - Ruff: passed; strict mypy: passed for all 74 source files; compile/import and
   `git diff --check`: passed.
 - Independent regeneration from the same executable SHA and command was
-  byte-identical (`cmp` pass), with the same hash and `1,758,965` bytes.
+  byte-identical (`cmp` pass), with the same hash and `1,770,916` bytes.
 - Regeneration command:
   `uv run python -m aweform.d044 --output development/D-044-coarse-homing-terminal-docking-cycle-audit.json --executed-commit-sha a1538d9455621fac456b30a974e2e5fe497707b4`
 
