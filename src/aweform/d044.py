@@ -14,7 +14,9 @@ import json
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Final, Sequence, cast
+from typing import Any, Final, Sequence, cast
+
+import numpy as np
 
 from . import d016, d025, d026, d027, d029, d030, d042, d043
 from .env import Action
@@ -360,6 +362,42 @@ def _state_digest(value: object) -> str:
     ).hexdigest()
 
 
+def _update_trajectory_digest(digest: Any, record: object) -> None:
+    """Match D-043's compact digest without retaining a raw transition log."""
+    encoded = json.dumps(
+        d027._jsonable(record), sort_keys=True, separators=(",", ":")
+    )
+    digest.update(encoded.encode("utf-8"))
+    digest.update(b"\n")
+
+
+def _reconstruct_d043_learner_provenance(
+    trace: Sequence[d043.D043TransitionTrace],
+) -> dict[str, object]:
+    """Reconstruct D-027 provenance from the accepted D-043 trace only."""
+    learner = d027.D027ActionConsequencePredictor()
+    update_digest = hashlib.sha256()
+    for record in trace:
+        current = d042._controller_observation(
+            np.asarray(record.observation_before, dtype=np.float64)
+        )
+        next_observation = d042._controller_observation(
+            np.asarray(record.observation, dtype=np.float64)
+        )
+        update = learner.observe_transition(current, record.action, next_observation)
+        d030._update_digest(
+            update_digest, record.transition_index, record.action, update
+        )
+    return {
+        "trajectory_digest": d027._trace_digest(trace),
+        "update_digest": update_digest.hexdigest(),
+        "final_learner_weights_digest": _state_digest(
+            learner.weight_snapshot()
+        ),
+        "transition_count": len(trace),
+    }
+
+
 def _canonical_projection(result: dict[str, object]) -> dict[str, object]:
     episode_fields = (
         "seek_entry_transition",
@@ -527,6 +565,7 @@ def _run_d044_seed(seed: int, *, horizon: int = D044_HORIZON) -> dict[str, objec
     minimum_temperature = maximum_temperature = current.thermal
     maximum_temperature_c = d042.D042_INITIAL_TEMPERATURE_C
     lfr_audit = _InformationAudit()
+    trajectory_digest = hashlib.sha256()
     forward_branches: dict[str, _BranchSummary] = {
         str(distance): _BranchSummary() for distance in D044_FORWARD_CANDIDATES
     }
@@ -774,6 +813,27 @@ def _run_d044_seed(seed: int, *, horizon: int = D044_HORIZON) -> dict[str, objec
         transition_telemetry = environment.last_transition
         if transition_telemetry is None:
             raise RuntimeError("D-044 transition telemetry is unavailable")
+        _update_trajectory_digest(
+            trajectory_digest,
+            d043.D043TransitionTrace(
+                transition_index=transition,
+                mode_before=mode_before,
+                mode_after=mode_after,
+                action=action,
+                observation_before=(
+                    current.energy,
+                    current.beacon.left,
+                    current.beacon.forward,
+                    current.beacon.right,
+                    float(current.charging_contact),
+                    current.thermal,
+                ),
+                observation=tuple(float(value) for value in observation_array),
+                telemetry=transition_telemetry,
+                reward=reward,
+                info=info,
+            ),
+        )
         if action is Action.MOVE_FORWARD:
             realized_distance = _distance(
                 transition_telemetry.position_before,
@@ -1041,6 +1101,7 @@ def _run_d044_seed(seed: int, *, horizon: int = D044_HORIZON) -> dict[str, objec
             ),
             "real_move_distance_max": real_move_distance_max,
             "real_move_distance_violations": real_move_distance_violations,
+            "trajectory_digest": trajectory_digest.hexdigest(),
             "update_digest": update_digest.hexdigest(),
             "final_learner_weights_digest": _state_digest(learner.weight_snapshot()),
         },
@@ -1055,17 +1116,55 @@ def _run_d044_seed(seed: int, *, horizon: int = D044_HORIZON) -> dict[str, objec
         },
         "delegated_branch_attribution": _summaries_as_dict(delegated_branches),
     }
-    canonical = d043._run_d043_seed(seed, horizon=horizon)
-    identity_match = _canonical_projection(result) == _canonical_projection(canonical)
+    canonical_trace: list[d043.D043TransitionTrace] = []
+    canonical = d043._run_d043_seed(
+        seed, horizon=horizon, trace=canonical_trace
+    )
+    d043_provenance = _reconstruct_d043_learner_provenance(canonical_trace)
+    diagnostics = cast(dict[str, object], result["d044_diagnostics"])
+    trajectory_match = (
+        cast(str, diagnostics["trajectory_digest"])
+        == d043_provenance["trajectory_digest"]
+    )
+    update_match = (
+        cast(str, diagnostics["update_digest"]) == d043_provenance["update_digest"]
+    )
+    final_weights_match = (
+        cast(str, diagnostics["final_learner_weights_digest"])
+        == d043_provenance["final_learner_weights_digest"]
+    )
+    transition_count_match = (
+        result["transitions"] == d043_provenance["transition_count"]
+    )
+    canonical_fields_match = _canonical_projection(result) == _canonical_projection(
+        canonical
+    )
+    identity_match = all(
+        (
+            canonical_fields_match,
+            trajectory_match,
+            update_match,
+            final_weights_match,
+            transition_count_match,
+        )
+    )
     if not identity_match:
         raise RuntimeError(f"D-044 blocked: D-043 replay mismatch for seed {seed}")
-    cast(dict[str, object], result["d044_diagnostics"])["d043_replay_identity"] = {
-        "match": True,
+    diagnostics["d043_replay_identity"] = {
+        "match": identity_match,
+        "canonical_fields_match": canonical_fields_match,
+        "trajectory_digest_match": trajectory_match,
+        "update_digest_match": update_match,
+        "final_learner_weights_digest_match": final_weights_match,
+        "transition_count_match": transition_count_match,
         "compared_fields": list(_canonical_projection(canonical)),
-        "baseline_final_learner_provenance": (
-            "D-043 result does not export learner state; D-044 reconstructs "
-            "update and final-weight digests"
-        ),
+        "trajectory_digest": d043_provenance["trajectory_digest"],
+        "update_digest": d043_provenance["update_digest"],
+        "final_learner_weights_digest": d043_provenance[
+            "final_learner_weights_digest"
+        ],
+        "transition_count": d043_provenance["transition_count"],
+        "provenance_source": "D-043 trace sink replayed through unchanged D-027",
     }
     return result
 

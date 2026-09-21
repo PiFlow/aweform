@@ -16,21 +16,40 @@ def test_d044_freezes_d043_support_and_horizon() -> None:
         d044.run_d044_probe(horizon=d044.D044_HORIZON - 1)
 
 
-def test_d044_short_replay_matches_d043_and_keeps_boundary() -> None:
-    result = d044._run_d044_seed(19045, horizon=300)
-    assert result["transitions"] == 300
+def test_d044_seek_replay_and_branch_isolation_are_non_vacuous() -> None:
+    result = d044._run_d044_seed(19045, horizon=30_000)
+    assert result["transitions"] == 30_000
     assert result["truncated"] is True
     assert result["action_counts"] == d043._run_d043_seed(
-        19045, horizon=300
+        19045, horizon=30_000
     )["action_counts"]
     diagnostics = result["d044_diagnostics"]
     assert diagnostics["d043_replay_identity"]["match"] is True
+    assert diagnostics["d043_replay_identity"]["trajectory_digest_match"] is True
+    assert diagnostics["d043_replay_identity"]["update_digest_match"] is True
+    assert (
+        diagnostics["d043_replay_identity"]["final_learner_weights_digest_match"]
+        is True
+    )
+    assert result["seek_episodes"]
+    assert (
+        sum(
+            episode["action_counts_by_source"]["d026_delegated_stochastic"]
+            for episode in result["seek_episodes"]
+        )
+        > 0
+    )
     assert diagnostics["source_environment_checks"] is True
     assert diagnostics["source_controller_checks"] is True
     assert diagnostics["source_learner_checks"] is True
     assert diagnostics["source_rng_checks"] is True
     assert diagnostics["prediction_queries_read_only"] is True
+    assert diagnostics["branch_order_checks"] > 0
     assert diagnostics["branch_order_mismatches"] == 0
+    assert diagnostics["real_move_forward_distance_world_units"] == pytest.approx(
+        0.05
+    )
+    assert diagnostics["real_move_distance_violations"] == 0
     assert set(result["action_counts"]) == {action.name for action in Action}
 
 
