@@ -4,7 +4,7 @@
 - **issue:** [#153](https://github.com/PiFlow/aweform/issues/153)
 - **lane:** Development / evaluator-only diagnostic
 - **authorized_base_sha:** `26ef630b23af01028971cadbddbd38e79d562610`
-- **implementation_probe_sha:** `743af5649767885f9dc60f63ad3843771349eddb`
+- **implementation_probe_sha:** `a1538d9455621fac456b30a974e2e5fe497707b4`
 - **development_seeds:** `19045..19064` (the exact accepted D-043 support)
 - **horizon:** `140,000` transitions per uninterrupted lifetime unless canonical termination
 - **disposition:** `CONTINUING`
@@ -27,9 +27,11 @@ The D-044 implementation compared every per-seed replay with the independent
 D-043 runner on canonical identity fields: termination/truncation, reason,
 action/mode counts, contacts, SEEK episode outcomes, recharge/departure/cycle
 events, energy/thermal summaries, and the reconstructible SEEK episode fields.
-All 20/20 identities matched. D-044 also retained an online D-027 update digest
-and final-weight digest because the compact D-043 result does not export those
-fields.
+All 20/20 identities matched. The accepted D-043 trace sink was also used as an
+evaluator-only comparator: D-044's streaming completed-transition digest,
+executed-action update digest, and final D-027 weight digest all matched a
+fresh D-043 trace replay on all 20 seeds (20/20 for each provenance field).
+The trace was not retained in the artifact.
 
 ## Descriptive results
 
@@ -73,6 +75,9 @@ one-step branches, or an Evidence-lane claim.
 
 - D-016 reconstruction was computed from current L/F/R only and never entered
   action selection, learning, reward, or `info`.
+- D-043 replay identity passed for canonical fields, completed-transition
+  trajectory digest, executed-action update digest, final learner-weight digest,
+  and transition count on all 20/20 seeds.
 - Kinematic forward branches did not step the real environment and changed no
   energy, thermal, learner, controller, or RNG state.
 - Delegated alternatives used read-only D-030 predictor queries and cloned
@@ -81,18 +86,30 @@ one-step branches, or an Evidence-lane claim.
   predictor read-only checks all passed.
 - The real trajectory recorded zero violations of the canonical 0.05
   `MOVE_FORWARD` distance. No formal reserved seeds were executed.
-- Executable/protocol SHA: `743af5649767885f9dc60f63ad3843771349eddb`.
-- Artifact size: `1,758,965` bytes.
+- Corrected executable/protocol SHA: `a1538d9455621fac456b30a974e2e5fe497707b4`.
+- Artifact size: `1,770,916` bytes.
 - Artifact SHA-256:
-  `c398ee4963910be0f7d8c8d66b1884b4d6c67f820904c8746ca384c2ba5df07e`.
+  `cc8d7dba5284626688d75632a92f28624557c79274f3c75d3e6ec54bb44aabe6`.
 - Focused D-043/D-044 tests: `13 passed`.
-- Full repository pytest: `1023 passed, 8 warnings`.
+- Full repository pytest: `1023 passed, 7 warnings`.
 - Ruff: passed; strict mypy: passed for all 74 source files; compile/import and
   `git diff --check`: passed.
 - Independent regeneration from the same executable SHA and command was
   byte-identical (`cmp` pass), with the same hash and `1,758,965` bytes.
 - Regeneration command:
-  `uv run python -m aweform.d044 --output development/D-044-coarse-homing-terminal-docking-cycle-audit.json --executed-commit-sha 743af5649767885f9dc60f63ad3843771349eddb`
+  `uv run python -m aweform.d044 --output development/D-044-coarse-homing-terminal-docking-cycle-audit.json --executed-commit-sha a1538d9455621fac456b30a974e2e5fe497707b4`
+
+## Superseded validation provenance
+
+The prior validation was invalidated by the Sol correction. Its executable
+SHA was `743af5649767885f9dc60f63ad3843771349eddb`; its record-only PR HEAD
+was `43f745700049fdb0b1f55400f97f122af7eb4012`; and its artifact was
+`1,758,965` bytes with SHA-256
+`c398ee4963910be0f7d8c8d66b1884b4d6c67f820904c8746ca384c2ba5df07e`.
+That output did not compare the reconstructible D-043 transition/update/final
+learner provenance, and its focused isolation test stopped before SEEK. It is
+preserved here only as superseded provenance and is not pooled with the
+corrected result.
 
 No result authorizes D-045 or any organism-facing change. The recorded founder
 preference for a future variable-distance action remains non-authorizing.

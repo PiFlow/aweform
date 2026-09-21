@@ -1956,7 +1956,7 @@
   },
   "experiment": "D-044",
   "horizon": 140000,
-  "implementation_probe_sha": "743af5649767885f9dc60f63ad3843771349eddb",
+  "implementation_probe_sha": "a1538d9455621fac456b30a974e2e5fe497707b4",
   "interpretation": "Descriptive Development diagnostic only; no organism change or confirmatory claim.",
   "lifetime": "one uninterrupted causal lifetime per seed",
   "results": [
@@ -2023,7 +2023,7 @@
         "branch_order_checks": 17628,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -2058,7 +2058,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "88c04bd0e5f8764775ffd05cf4d580a406842d07dd0aec35f4aab217a63b37ea",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "55c46cfc8661125c30fafce1cf59596b8a3a35440280e57fbfd3372491857e4e",
+          "trajectory_digest_match": true,
+          "transition_count": 140000,
+          "transition_count_match": true,
+          "update_digest": "d3021841d25f657ba687f88818a8465ff533b1bd5b5b54a46eca1122b79e5680",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -3722,6 +3731,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "55c46cfc8661125c30fafce1cf59596b8a3a35440280e57fbfd3372491857e4e",
         "update_digest": "d3021841d25f657ba687f88818a8465ff533b1bd5b5b54a46eca1122b79e5680"
       },
       "full_recharge_events": 2,
@@ -4279,7 +4289,7 @@
         "branch_order_checks": 43164,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -4314,7 +4324,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "fb696a5764dce21bc50e22b15d3119ca345f25abb8529c5dd9c6d8b2e5657abd",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "37a5720f5f2db2d1292dcb97e2324a2b3611f3aed41ba9bdd3459f3dd2251e3f",
+          "trajectory_digest_match": true,
+          "transition_count": 128140,
+          "transition_count_match": true,
+          "update_digest": "3f0adfbe18e6392fcf04be31dc5fc0dc228bf53db3b9fd18376a056aee05ea0b",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -5978,6 +5997,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "37a5720f5f2db2d1292dcb97e2324a2b3611f3aed41ba9bdd3459f3dd2251e3f",
         "update_digest": "3f0adfbe18e6392fcf04be31dc5fc0dc228bf53db3b9fd18376a056aee05ea0b"
       },
       "full_recharge_events": 1,
@@ -6494,7 +6514,7 @@
         "branch_order_checks": 36585,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -6529,7 +6549,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "16eeef5b293fdcea4a210a9a633d25a58dc2d88f8c764ef4c30290bd213939b6",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "2a0d97432846ae9ebc83024a17557745285cc855d957a6ebac1bdfffb4719f6e",
+          "trajectory_digest_match": true,
+          "transition_count": 117709,
+          "transition_count_match": true,
+          "update_digest": "21f788e5d67975ada7255808f59885d9533ffecb6c8ff229da95002ea7d5a079",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -8193,6 +8222,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "2a0d97432846ae9ebc83024a17557745285cc855d957a6ebac1bdfffb4719f6e",
         "update_digest": "21f788e5d67975ada7255808f59885d9533ffecb6c8ff229da95002ea7d5a079"
       },
       "full_recharge_events": 1,
@@ -8694,7 +8724,7 @@
         "branch_order_checks": 29163,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -8729,7 +8759,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "74c1f1985ffb0bee15d57988a47fd045668737d1f360fa5b1173d816316f88b6",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "59b1e3e9abf52f7d1cb44117d2fa6dbfb23a5cd87cae1757faf357f7b6d64994",
+          "trajectory_digest_match": true,
+          "transition_count": 53395,
+          "transition_count_match": true,
+          "update_digest": "0d10f086543d0e86d84cd564439ad38bffcbc93f2e5fcb635300b9df430c1e78",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -10393,6 +10432,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "59b1e3e9abf52f7d1cb44117d2fa6dbfb23a5cd87cae1757faf357f7b6d64994",
         "update_digest": "0d10f086543d0e86d84cd564439ad38bffcbc93f2e5fcb635300b9df430c1e78"
       },
       "full_recharge_events": 0,
@@ -10670,7 +10710,7 @@
         "branch_order_checks": 29202,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -10705,7 +10745,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "6d9870304acaa35ed1556bdc10882274ba0132a2abe0d9c9230d551df179776d",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "bc469af82fa95fdca8ff384814d7b4e557b0a507b15fc51f7b11a3f64367a824",
+          "trajectory_digest_match": true,
+          "transition_count": 53440,
+          "transition_count_match": true,
+          "update_digest": "ce85e4f681a098ab765bb425420a58af1e06313880881716f863dd35c5b8e621",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -12369,6 +12418,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "bc469af82fa95fdca8ff384814d7b4e557b0a507b15fc51f7b11a3f64367a824",
         "update_digest": "ce85e4f681a098ab765bb425420a58af1e06313880881716f863dd35c5b8e621"
       },
       "full_recharge_events": 0,
@@ -12661,7 +12711,7 @@
         "branch_order_checks": 42780,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -12696,7 +12746,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "04eb13624024f3aea0111b53b37de1c525a92138ad3bd1818c5f42b0fc8c1393",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "07a3e98d137714328a0be7910fac236105d4b48d40c73ae35bce3eb8bc4df3f9",
+          "trajectory_digest_match": true,
+          "transition_count": 126490,
+          "transition_count_match": true,
+          "update_digest": "27948f6f84d6af94cc2e84ad8e250808c1db2dcd49035b74dd16b4c193a57446",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -14360,6 +14419,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "07a3e98d137714328a0be7910fac236105d4b48d40c73ae35bce3eb8bc4df3f9",
         "update_digest": "27948f6f84d6af94cc2e84ad8e250808c1db2dcd49035b74dd16b4c193a57446"
       },
       "full_recharge_events": 1,
@@ -14861,7 +14921,7 @@
         "branch_order_checks": 29070,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -14896,7 +14956,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "da4f02b6b70e320d589076ea0708fa05dadb77f400e96d28f16a58a763bcea23",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "e8158e33eddaacccabe760e55720dc89121ef562947312c9066e4f1b2b48fea8",
+          "trajectory_digest_match": true,
+          "transition_count": 53317,
+          "transition_count_match": true,
+          "update_digest": "6f815105e781c6c7bb891b392a9de36ce50b705d6b6c757010c9170c4e6bf877",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -16560,6 +16629,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "e8158e33eddaacccabe760e55720dc89121ef562947312c9066e4f1b2b48fea8",
         "update_digest": "6f815105e781c6c7bb891b392a9de36ce50b705d6b6c757010c9170c4e6bf877"
       },
       "full_recharge_events": 0,
@@ -16837,7 +16907,7 @@
         "branch_order_checks": 29067,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -16872,7 +16942,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "0c6dba759ec2973c78889b571aec48336e41e01ca077a9ec1b304322c911bdb5",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "82a9bfd95b8323e26ddae3194e44e3863353b1020036b81b3050e5c40dc23d0a",
+          "trajectory_digest_match": true,
+          "transition_count": 53361,
+          "transition_count_match": true,
+          "update_digest": "e21afe5a91b7fbd6a35cfaed18310befeaf1d883d929b20c90f31f5e6c6461d7",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -18536,6 +18615,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "82a9bfd95b8323e26ddae3194e44e3863353b1020036b81b3050e5c40dc23d0a",
         "update_digest": "e21afe5a91b7fbd6a35cfaed18310befeaf1d883d929b20c90f31f5e6c6461d7"
       },
       "full_recharge_events": 0,
@@ -18828,7 +18908,7 @@
         "branch_order_checks": 34485,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -18863,7 +18943,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "20e998cff209d9965ccf18d1ccb0369794bcff89880759620c2ccaddc13c0a12",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "604f324cd440aa7046271595da35a3dc3d3c4a99cb4c6f65f4589c4e4e577018",
+          "trajectory_digest_match": true,
+          "transition_count": 113994,
+          "transition_count_match": true,
+          "update_digest": "4062ed2e6dc547949b8daf82ef8be8fdb7df6c56fc6571943e4a32c5d6907484",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -20527,6 +20616,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "604f324cd440aa7046271595da35a3dc3d3c4a99cb4c6f65f4589c4e4e577018",
         "update_digest": "4062ed2e6dc547949b8daf82ef8be8fdb7df6c56fc6571943e4a32c5d6907484"
       },
       "full_recharge_events": 1,
@@ -21028,7 +21118,7 @@
         "branch_order_checks": 29172,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -21063,7 +21153,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "4f10405241baa27952ffb18d887fe87b3a88147468e55b6b96d6917125dc7068",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "448b4f1ec58f9815407156a1ad9c8484aba8fe63e066d8bbf17b19e414e56bf5",
+          "trajectory_digest_match": true,
+          "transition_count": 53433,
+          "transition_count_match": true,
+          "update_digest": "75ef0ea8fb5792733b5910ff47cf876d63e270a7edef58489ccdee25051fe826",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -22727,6 +22826,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "448b4f1ec58f9815407156a1ad9c8484aba8fe63e066d8bbf17b19e414e56bf5",
         "update_digest": "75ef0ea8fb5792733b5910ff47cf876d63e270a7edef58489ccdee25051fe826"
       },
       "full_recharge_events": 0,
@@ -23019,7 +23119,7 @@
         "branch_order_checks": 46788,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -23054,7 +23154,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "d22ef7d3fc78ad3bab00d913ab1e3bdaaf36451b59a1d978613a142ba61e95ac",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "1c96b7140b781df7085bc78dd94e33df339c05a6d1f0d8bf4644ba874d4aea0c",
+          "trajectory_digest_match": true,
+          "transition_count": 132910,
+          "transition_count_match": true,
+          "update_digest": "d8aecc142136d743f698fe378121bf313b5699578d90a4e4be2405acaab5c5c1",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -24718,6 +24827,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "1c96b7140b781df7085bc78dd94e33df339c05a6d1f0d8bf4644ba874d4aea0c",
         "update_digest": "d8aecc142136d743f698fe378121bf313b5699578d90a4e4be2405acaab5c5c1"
       },
       "full_recharge_events": 1,
@@ -25241,7 +25351,7 @@
         "branch_order_checks": 31557,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -25276,7 +25386,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "00fdd98c776a88c01850c083dcad445b4c27a59c9aa87fe2c914b9c8d8af1ffa",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "0659e5155634870a1f73926fd5e9f10c29b1ce4d3c5cdcdaa5fde83330fc6703",
+          "trajectory_digest_match": true,
+          "transition_count": 140000,
+          "transition_count_match": true,
+          "update_digest": "0fc17b43325c5d8467f74d533fafb00cc23571a55c926fa7e36fc6e8626ce8ec",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -26940,6 +27059,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "0659e5155634870a1f73926fd5e9f10c29b1ce4d3c5cdcdaa5fde83330fc6703",
         "update_digest": "0fc17b43325c5d8467f74d533fafb00cc23571a55c926fa7e36fc6e8626ce8ec"
       },
       "full_recharge_events": 1,
@@ -27468,7 +27588,7 @@
         "branch_order_checks": 28713,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -27503,7 +27623,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "c6d4622794df6485c6dd9e284b884b166b43565d8f0026c5971cc6e273336163",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "ae68b7ad19e335209d04abfa1a7b4f7f76dd784d1d37f3389d7579b5461cf7f1",
+          "trajectory_digest_match": true,
+          "transition_count": 53166,
+          "transition_count_match": true,
+          "update_digest": "678f0d39c4c02c86f2196847d5626f7eb956a27dd7696db17f640a36d2b73133",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -29167,6 +29296,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "ae68b7ad19e335209d04abfa1a7b4f7f76dd784d1d37f3389d7579b5461cf7f1",
         "update_digest": "678f0d39c4c02c86f2196847d5626f7eb956a27dd7696db17f640a36d2b73133"
       },
       "full_recharge_events": 0,
@@ -29459,7 +29589,7 @@
         "branch_order_checks": 35394,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -29494,7 +29624,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "596106075e14b1510810f245286d1572522e67d10892a44459f43b619eee6387",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "125f58ad0ca4bc54a7544382e5a9cd398965e238b81e368f3dd3194ac0609ee5",
+          "trajectory_digest_match": true,
+          "transition_count": 115376,
+          "transition_count_match": true,
+          "update_digest": "f4366abf18ecaf52b62e50113f489a92e65300b8dce7911c96dd3d2ac13e82fa",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -31158,6 +31297,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "125f58ad0ca4bc54a7544382e5a9cd398965e238b81e368f3dd3194ac0609ee5",
         "update_digest": "f4366abf18ecaf52b62e50113f489a92e65300b8dce7911c96dd3d2ac13e82fa"
       },
       "full_recharge_events": 1,
@@ -31659,7 +31799,7 @@
         "branch_order_checks": 28851,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -31694,7 +31834,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "a388039cb26a02a40e8e3e58a3ee0b4c18e82f6dcb68c6eb58a073133a8e0dc9",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "9adc6bd1ae1591d205482ad599d36d7930e21091a02862ebfb9c366e9addd8e1",
+          "trajectory_digest_match": true,
+          "transition_count": 53354,
+          "transition_count_match": true,
+          "update_digest": "73b45da60fca1705f32fee1be0cf70fe69a70be9524f2988f46bea8b58de77ff",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -33358,6 +33507,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "9adc6bd1ae1591d205482ad599d36d7930e21091a02862ebfb9c366e9addd8e1",
         "update_digest": "73b45da60fca1705f32fee1be0cf70fe69a70be9524f2988f46bea8b58de77ff"
       },
       "full_recharge_events": 0,
@@ -33650,7 +33800,7 @@
         "branch_order_checks": 33840,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -33685,7 +33835,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "059022e3f8052a5b8fd516352190134bb919f4de354bd5c59f429407c1b11e10",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "9e25d17efc7dc2bdf756e9fdecab14b3b2010e2307ccdc81aeb8322132228584",
+          "trajectory_digest_match": true,
+          "transition_count": 113004,
+          "transition_count_match": true,
+          "update_digest": "c9bbcb03777ce5c41c32e166e0a4b7f93103a74dae86631063afe2a92ff38a17",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -35349,6 +35508,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "9e25d17efc7dc2bdf756e9fdecab14b3b2010e2307ccdc81aeb8322132228584",
         "update_digest": "c9bbcb03777ce5c41c32e166e0a4b7f93103a74dae86631063afe2a92ff38a17"
       },
       "full_recharge_events": 1,
@@ -35850,7 +36010,7 @@
         "branch_order_checks": 29214,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -35885,7 +36045,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "eee65d9a5766f25a8daf44193a2864207591bb032ff918c2ddaa641b9d1707b4",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "02ae3a4a0e8e9bed7afe9018b1ac606bada70f7bc6d8593a30b10e8b0eea56c8",
+          "trajectory_digest_match": true,
+          "transition_count": 53433,
+          "transition_count_match": true,
+          "update_digest": "eb801ebbcd4db1eacac54d58593292ea8c50e87b4069f831bf8c5bf3b396127c",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -37549,6 +37718,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "02ae3a4a0e8e9bed7afe9018b1ac606bada70f7bc6d8593a30b10e8b0eea56c8",
         "update_digest": "eb801ebbcd4db1eacac54d58593292ea8c50e87b4069f831bf8c5bf3b396127c"
       },
       "full_recharge_events": 0,
@@ -37841,7 +38011,7 @@
         "branch_order_checks": 50610,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -37876,7 +38046,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "3a69657257fd243e609b66b4da84d750faa1e61fa272b3d0d286ce9c49203780",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "d4097247b085ba87e418fa65c25ff1893ab3806759873323bd3ee5e8d3d0245a",
+          "trajectory_digest_match": true,
+          "transition_count": 139170,
+          "transition_count_match": true,
+          "update_digest": "c0d91eb16f7fbe5fc0bb6e66239b8bb3377d7e78f58b226cea8f0c4e410ff59d",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -39540,6 +39719,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "d4097247b085ba87e418fa65c25ff1893ab3806759873323bd3ee5e8d3d0245a",
         "update_digest": "c0d91eb16f7fbe5fc0bb6e66239b8bb3377d7e78f58b226cea8f0c4e410ff59d"
       },
       "full_recharge_events": 1,
@@ -40056,7 +40236,7 @@
         "branch_order_checks": 40404,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -40091,7 +40271,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "50fff29a6ec90cb8fd6568eb316d626ebdb1b5b0630aca33812dd632296c21c4",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "bf1ae1aad6a31f464008a601f997844c5a26a8625f406966146ba51776ef7133",
+          "trajectory_digest_match": true,
+          "transition_count": 123358,
+          "transition_count_match": true,
+          "update_digest": "4c1a9d453887abfae279ed4c4ac59700e1558486ee02889c4d582eb181f4a228",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -41755,6 +41944,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "bf1ae1aad6a31f464008a601f997844c5a26a8625f406966146ba51776ef7133",
         "update_digest": "4c1a9d453887abfae279ed4c4ac59700e1558486ee02889c4d582eb181f4a228"
       },
       "full_recharge_events": 1,
@@ -42256,7 +42446,7 @@
         "branch_order_checks": 29118,
         "branch_order_mismatches": 0,
         "d043_replay_identity": {
-          "baseline_final_learner_provenance": "D-043 result does not export learner state; D-044 reconstructs update and final-weight digests",
+          "canonical_fields_match": true,
           "compared_fields": [
             "outcome",
             "transitions",
@@ -42291,7 +42481,16 @@
             "max_body_temperature_c",
             "seek_episodes"
           ],
-          "match": true
+          "final_learner_weights_digest": "2f24d5c362fd71e08728005ecd3534d475abfec2d4e2b8faa9a28c8b9e4e4831",
+          "final_learner_weights_digest_match": true,
+          "match": true,
+          "provenance_source": "D-043 trace sink replayed through unchanged D-027",
+          "trajectory_digest": "75d30bd8850cf5fb48b1b658b6b93a4bdb96bc7211f23efb605cd66da46a382e",
+          "trajectory_digest_match": true,
+          "transition_count": 53422,
+          "transition_count_match": true,
+          "update_digest": "9c6638060c9d155f08e3a56fb73d5ec4ae5517f9b2cf8e9d6fe8228a108f5df6",
+          "update_digest_match": true
         },
         "delegated_branch_attribution": {
           "actual_delegated": {
@@ -43955,6 +44154,7 @@
         "source_environment_checks": true,
         "source_learner_checks": true,
         "source_rng_checks": true,
+        "trajectory_digest": "75d30bd8850cf5fb48b1b658b6b93a4bdb96bc7211f23efb605cd66da46a382e",
         "update_digest": "9c6638060c9d155f08e3a56fb73d5ec4ae5517f9b2cf8e9d6fe8228a108f5df6"
       },
       "full_recharge_events": 0,
