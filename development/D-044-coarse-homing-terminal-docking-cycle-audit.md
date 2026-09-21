@@ -85,6 +85,12 @@ one-step branches, or an Evidence-lane claim.
 - Artifact size: `1,758,965` bytes.
 - Artifact SHA-256:
   `c398ee4963910be0f7d8c8d66b1884b4d6c67f820904c8746ca384c2ba5df07e`.
+- Focused D-043/D-044 tests: `13 passed`.
+- Full repository pytest: `1023 passed, 8 warnings`.
+- Ruff: passed; strict mypy: passed for all 74 source files; compile/import and
+  `git diff --check`: passed.
+- Independent regeneration from the same executable SHA and command was
+  byte-identical (`cmp` pass), with the same hash and `1,758,965` bytes.
 - Regeneration command:
   `uv run python -m aweform.d044 --output development/D-044-coarse-homing-terminal-docking-cycle-audit.json --executed-commit-sha 743af5649767885f9dc60f63ad3843771349eddb`
 
