@@ -137,6 +137,8 @@ The non-authorizing [`World-Model Research Direction`](world-model-developmental
 
 The non-authorizing [`Embodied Dynamics Before Explicit Memory`](embodied-dynamics-future-question.md) note preserves the question of whether useful temporal information can already exist in ongoing body/environment dynamics before explicit memory machinery is added.
 
+The non-authorizing [`Wheel-Legged Physical Embodiment Direction`](wheel-legged-physical-embodiment-future-direction.md) preserves the long-range articulated wheel-leg morphology and physical-engineering context that remains outside ADR 0017's deliberately minimal V0.5 first slice. ADR 0017 remains authoritative for prospective V0.5 wheel-command, differential-drive, centred-dock, wheel-delta proprioceptive, and actuator-bookkeeping semantics.
+
 Darwinian evolution, heredity, and cross-stage inherited learned state remain separate later research questions rather than shortcuts for finding the first learner.
 
 ## J. Decision-log convention
