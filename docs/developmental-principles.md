@@ -104,9 +104,9 @@ Possible play-like behaviour may include:
 
 The important property is not randomness.
 
-A play-like process should eventually be distinguishable from random exploration by evidence that the organism is generating interventions that improve some measurable competence, prediction, discrimination, or control.
+At evaluator level, evidence distinguishing play-like exploration from random exploration may include improvement in measurable prediction, discrimination, competence, or control. Those evaluation measures must not automatically become organism-visible objectives, rewards, or selection signals.
 
-Play must also remain subordinate to actual viability constraints. Spending energy on experimentation when energetic conditions make that behaviour immediately destructive would require separate explanation rather than being labelled curiosity.
+Play-like exploration must be evaluated against its viability consequences. Whether and how internal viability state gates exploration is itself a mechanism that must be separately justified and attributed rather than assumed here.
 
 No arbitrary "play reward" is authorized by this principle.
 
@@ -122,9 +122,9 @@ Novelty, prediction error, uncertainty, controllability, learning progress, mode
 
 In particular, simple novelty or raw prediction error should not automatically be treated as curiosity. An unpredictable but unlearnable signal can remain permanently novel or surprising without producing useful understanding.
 
-A stronger future hypothesis is that useful curiosity may favour experiences for which Aweform's predictive or controllable competence is capable of improving.
+One future hypothesis is that curiosity-like experience selection may favour experiences for which predictive or controllable competence is improving. Learning progress, novelty, uncertainty, prediction error, controllability, model disagreement, and combinations of these remain competing hypotheses; this document does not privilege one mechanism.
 
-Conceptually:
+One illustrative, non-authorizing candidate family would be:
 
 current experience
 → prediction or expectation
@@ -134,7 +134,7 @@ current experience
 → estimate of what became better understood
 → selection of another potentially learnable experience
 
-This remains only a research direction.
+This is only one possible mechanism family and remains a research direction rather than a selected architecture.
 
 Future experiments should compare candidate mechanisms against simple controls such as random exploration and should measure whether they produce transferable understanding rather than merely more movement or more sensory variation.
 
