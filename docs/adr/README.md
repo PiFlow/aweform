@@ -23,6 +23,8 @@ An accepted ADR is a durable decision record, not a progress log. Current implem
 | [0013](0013-model-agnostic-independent-review-governance.md) | Model-agnostic independent-review governance |
 | [0014](0014-v0.4-thermal-operating-and-failure-thresholds.md) | V0.4 thermal operating and failure thresholds |
 | [0015](0015-v0.4-finite-body-dual-contact-docking-boundary.md) | V0.4 finite-body dual-contact docking boundary |
+| [0016](0016-v0.4-d042-founder-selected-embodiment-boundary.md) | D-042 founder-selected 5° turn / front-contact V0.4 boundary |
+| [0017](0017-v0.5-direct-differential-drive-centered-dock-boundary.md) | Prospective V0.5 direct differential drive / centred under-body dock boundary |
 
 The ADR file itself is authoritative for its exact status, scope, supersession/amendment semantics, and review provenance.
 
