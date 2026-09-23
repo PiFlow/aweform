@@ -12,7 +12,7 @@ This file is the canonical **committed D-record ledger**. Add one row when a mea
 
 Do not use roadmap prose or README text as a replacement for this ledger. Work that is authorized in GitHub but does not yet have a committed D-record belongs in the current authorization issue/PR, not as a premature row here.
 
-At this update, **D-041 — Front-beacon sensory sufficiency audit** remains an authorized record from [issue #140](https://github.com/PiFlow/aweform/issues/140) but is intentionally not added to the table below. D-042, D-043, and D-044 are recorded below as committed Development characterizations.
+Committed Development records currently extend through D-044. D-041 through D-044 are all historical committed records in this ledger. Any Development work that is newly authorized but not yet committed belongs in its exact current GitHub authorization issue/PR and must not be added here prematurely.
 
 ## Disposition vocabulary
 
@@ -70,6 +70,7 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-038 | Combined fine-turn, L/F/R interpolation, and reverse sufficiency audit | CONTINUING | [`D-038-combined-fine-interp-reverse-sufficiency-audit.md`](D-038-combined-fine-interp-reverse-sufficiency-audit.md) |
 | D-039 | One-scalar shadow recurrent predictor readiness audit | CONTINUING | [`D-039-one-scalar-shadow-recurrent-predictor-readiness-audit.md`](D-039-one-scalar-shadow-recurrent-predictor-readiness-audit.md) |
 | D-040 | Causal problem-identification and test-validity audit | CONTINUING | [`D-040-causal-problem-identification-test-validity-audit.md`](D-040-causal-problem-identification-test-validity-audit.md) |
+| D-041 | Front-beacon sensory sufficiency audit | CONTINUING | [`D-041-front-beacon-sensory-sufficiency-audit.md`](D-041-front-beacon-sensory-sufficiency-audit.md) |
 | D-042 | Founder-selected fine-turn and front-contact baseline | CONTINUING | [`D-042-founder-embodiment-baseline.md`](D-042-founder-embodiment-baseline.md) |
 | D-043 | Fresh-seed repeated-cycle robustness of accepted D-042 embodiment | CONTINUING | [`D-043-d042-embodiment-robustness.md`](D-043-d042-embodiment-robustness.md) |
 | D-044 | Coarse homing versus terminal docking and cycle-order attribution audit | CONTINUING | [`D-044-coarse-homing-terminal-docking-cycle-audit.md`](D-044-coarse-homing-terminal-docking-cycle-audit.md) |
