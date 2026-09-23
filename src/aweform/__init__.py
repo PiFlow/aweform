@@ -27,6 +27,19 @@ from .d020 import (
     run_d020_probe_suite,
     write_d020_probe_json,
 )
+from .d045 import (
+    D045ChargePhase,
+    D045Env,
+    D045Observation,
+    D045PhysicalConfig,
+    D045TerminationReason,
+    D045TransitionTelemetry,
+    integrate_differential_drive,
+    quantize_wheel_delta,
+    run_d045_probe_suite,
+    wheel_effort,
+    write_d045_probe_json,
+)
 from .development_visualizer import (
     DEVELOPMENT_VISUALIZATION_ADAPTERS,
     DevelopmentVisualizationData,
@@ -244,6 +257,12 @@ __all__ = [
     "D020ProbeResult",
     "D020TerminationReason",
     "D020TransitionTelemetry",
+    "D045ChargePhase",
+    "D045Env",
+    "D045Observation",
+    "D045PhysicalConfig",
+    "D045TerminationReason",
+    "D045TransitionTelemetry",
     "DEVELOPMENT_VISUALIZATION_ADAPTERS",
     "DevelopmentVisualizationData",
     "DevelopmentVisualizationFrame",
@@ -416,4 +435,9 @@ __all__ = [
     "show_exp001_development_visualization",
     "run_d020_probe_suite",
     "write_d020_probe_json",
+    "integrate_differential_drive",
+    "quantize_wheel_delta",
+    "run_d045_probe_suite",
+    "wheel_effort",
+    "write_d045_probe_json",
 ]
