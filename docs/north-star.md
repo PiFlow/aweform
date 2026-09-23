@@ -32,7 +32,7 @@ A provisional progression is:
 2. Integrated organism — multiple interacting subsystems, coordination, resource allocation, integrity.
 3. Sensorimotor survival organism — rapid reflexes, avoidance, seeking, conservation, behavioural arbitration.
 4. Learning organism — memory, consequences, environmental change, prediction, individuality through experience.
-5. Playing/exploratory organism — surplus viability enables experimentation, curiosity, and causal discovery.
+5. Playing/exploratory organism — surplus viability enables self-generated experimentation, curiosity, discovery of sensorimotor contingencies, causal learning, and progressive understanding of newly available capabilities.
 6. Social organism — individual recognition, interaction history, signalling, cooperation, vulnerability, and care.
 7. Communication and culture — machine-native signalling and shared learned conventions; human language becomes another learned interface.
 8. Richer cognition — planning, abstraction, attachment, awe-like functional states, and increasingly sophisticated value formation.
@@ -44,6 +44,30 @@ This is not a literal evolutionary ladder and is not based on a simplistic repti
 ## Central developmental rule
 
 > Do not give Aweform a capability merely because mature animals possess it. Introduce a capability when Aweform's developmental environment creates a problem for which that capability could be useful.
+
+## Developmental discovery of capabilities
+
+When Aweform gains a new sensor, actuator, or internal signal, the project should not automatically provide the human semantic interpretation of that capability.
+
+Where scientifically and physically reasonable, Aweform should encounter the capability as a machine-native signal or action channel and learn through interaction what changes with its actions, what is predictable, what is controllable, and what consequences the capability can help anticipate.
+
+This does not require device drivers, electrical protocols, physically necessary calibration, or safety constraints to emerge through learning. Those may remain engineered parts of the substrate.
+
+The developmental question is instead:
+
+> **How much of the behavioural meaning of a new capability can Aweform construct from its own sensorimotor experience rather than receive as a human-defined task rule?**
+
+For example, a future ranging sensor may require engineered electronics and timing, while the organism-facing developmental problem remains to discover how its signal changes with movement and what those changes predict. Likewise, a microphone and speaker may be engineered interfaces while the relationships between self-generated sound, movement, environment, and subsequent perception remain available for discovery.
+
+Two long-range functional questions follow:
+
+> **What is part of me?**  
+> Which sensory and internal changes are systematically contingent on my own actions, body state, and controllable outputs?
+
+> **What is in my world?**  
+> Which regularities persist, vary, resist control, or constrain future action beyond those self-generated contingencies?
+
+These are operational developmental questions. They do not imply self-awareness, consciousness, subjective identity, or a human-like concept of self.
 
 ## Life-oriented direction
 
