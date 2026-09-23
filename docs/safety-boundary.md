@@ -1,16 +1,18 @@
 # Safety and Experimental Boundary
 
-This boundary was written for V0.1 and applies unchanged through V0.2, V0.3, and V0.4.
+This boundary was written for V0.1 and applies unchanged through V0.2, V0.3, V0.4, and the current V0.5 simulator substrate.
 
 - ADR 0009 opened V0.2 by permitting bounded one-step observation-history state inside a controller.
 - ADR 0010 opened V0.3 by permitting bounded lifetime plastic/learned state whose causal writes obey the sensory/plasticity provenance boundary.
 - ADR 0012 opened V0.4 by permitting a bounded physically grounded simulator energy/thermal model.
 - ADR 0014 defines the accepted V0.4 thermal operating/failure thresholds.
 - ADR 0015 defines the accepted V0.4 finite-body dual-contact docking boundary.
+- ADR 0016 defines the historical D-042 fine-turn/front-contact V0.4 embodiment boundary.
+- ADR 0017 defines the accepted V0.5 differential-drive, centred-dock, proprioceptive-information, and actuator-bookkeeping boundary; D-045 is its first committed deterministic substrate implementation.
 
 None of those ADRs changes anything this document allows or forbids.
 
-In particular, V0.3 plasticity means bounded parameter/state adaptation inside the approved simulation, and V0.4 physicalization remains simulator physics only. Neither authorizes code self-modification, code generation/execution by the simulated organism, persistence outside explicitly approved experiment artifacts, networking, external APIs, replication, or physical-device control. ADR 0010 also does not authorize checkpointing or learned-state serialization merely by opening V0.3.
+In particular, V0.3 plasticity means bounded parameter/state adaptation inside the approved simulation, while V0.4 physicalization and V0.5 differential-drive embodiment remain simulator physics only. None authorizes code self-modification, code generation/execution by the simulated organism, persistence outside explicitly approved experiment artifacts, networking, external APIs, replication, or physical-device control. ADR 0010 also does not authorize checkpointing or learned-state serialization merely by opening V0.3.
 
 The project is a bounded simulation experiment. The boundary exists for both safety and scientific clarity.
 
