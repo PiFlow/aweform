@@ -40,6 +40,14 @@ from .d045 import (
     wheel_effort,
     write_d045_probe_json,
 )
+from .d046 import (
+    D046ConsequencePredictor,
+    build_d046_curriculum,
+    run_d046_official,
+    validate_d046_development_seed,
+    validate_d046_development_seeds,
+    write_d046_artifact,
+)
 from .development_visualizer import (
     DEVELOPMENT_VISUALIZATION_ADAPTERS,
     DevelopmentVisualizationData,
@@ -440,4 +448,10 @@ __all__ = [
     "run_d045_probe_suite",
     "wheel_effort",
     "write_d045_probe_json",
+    "D046ConsequencePredictor",
+    "build_d046_curriculum",
+    "run_d046_official",
+    "validate_d046_development_seed",
+    "validate_d046_development_seeds",
+    "write_d046_artifact",
 ]
