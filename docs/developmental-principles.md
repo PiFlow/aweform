@@ -30,6 +30,38 @@ Capabilities should be added only when an experiment creates a genuine need for 
 
 Designed mechanisms, learned mechanisms, and behaviours that emerge from their interaction must be reported separately. A trajectory can be unexpected even when the underlying drives or safety gates were designed.
 
+## Discovering capabilities through sensorimotor contingencies
+
+Aweform should distinguish between receiving a physical capability and receiving the behavioural meaning of that capability.
+
+A new sensor, actuator, or internally observable variable may require engineered hardware, firmware, normalization, timing, bounds, or safety handling before it is usable. Those implementation requirements do not imply that the organism must also be told what the signal represents or how it should behave because of it.
+
+Where the scientific question permits, prefer the smallest organism-visible interface that leaves meaningful interpretation available to experience.
+
+For example, an evaluator may know that a particular channel originates from an ultrasonic echo sensor while Aweform receives only the bounded observable signal made available by that sensor. Aweform could then encounter contingencies such as:
+
+action → sensor change
+
+repeated action → repeatable sensor consequence
+
+change of orientation → change of sensory relationship
+
+movement → changing predictability or controllability
+
+sensory pattern → later contact, energetic consequence, or action constraint
+
+The developmental target is not necessarily for Aweform to recover human concepts such as "wall", "centimetres", "echo", or "obstacle".
+
+A useful learned relation may instead be entirely machine-native, such as discovering that a particular sensory trajectory predicts that continued forward action will soon produce contact or become ineffective.
+
+The same principle can apply to new outputs. If a future Aweform gains a speaker and microphone, the hardware interface may be engineered while the relationships between generated signals and subsequent auditory observations remain available for sensorimotor discovery.
+
+This creates a general developmental question:
+
+> **Can Aweform learn what a new capability affords before the project supplies task-specific semantic interpretation of that capability?**
+
+Any future experiment must remain explicit about what was engineered into the interface, what information was organism-visible, what behavioural interpretation was supplied, and what relationship was actually learned.
+
 ## Scaffold transfer rather than scaffold accumulation
 
 Engineered behavioural scaffolds are legitimate developmental instruments and controls, but they should not silently become Aweform's permanent cognition architecture.
@@ -59,17 +91,105 @@ No later mechanism is authorized merely because it appears in this distinction.
 
 Play is a later developmental hypothesis, not part of the initial homeostasis stages.
 
-A useful functional interpretation is that when immediate energetic and safety needs are adequately satisfied, the organism can spend surplus capacity on interactions that have no immediate survival payoff.
+A useful functional interpretation is that when immediate energetic and safety pressures are sufficiently low, Aweform may spend some available capacity on self-generated interventions whose immediate purpose is not resource acquisition or avoidance, but learning about itself and its environment.
 
-Possible play-like behaviour may include trying unfamiliar actions, repeating interesting interactions, manipulating objects, investigating novelty, and testing controllable causal relationships.
+Possible play-like behaviour may include:
 
-The goal is not to award arbitrary "play points" but to study whether exploratory behaviour can become useful for learning when survival pressure temporarily relaxes.
+- repeating an action to test whether an effect is reliable;
+- varying an action and observing how the consequence changes;
+- trying unfamiliar combinations of actions and sensory conditions;
+- producing an output and observing its sensory consequences;
+- revisiting something whose behaviour is not yet well predicted;
+- manipulating or approaching environmental structure without an immediate viability payoff.
+
+The important property is not randomness.
+
+At evaluator level, evidence distinguishing play-like exploration from random exploration may include improvement in measurable prediction, discrimination, competence, or control. Those evaluation measures must not automatically become organism-visible objectives, rewards, or selection signals.
+
+Play-like exploration must be evaluated against its viability consequences. Whether and how internal viability state gates exploration is itself a mechanism that must be separately justified and attributed rather than assumed here.
+
+No arbitrary "play reward" is authorized by this principle.
 
 ## Curiosity
 
-Curiosity is a later hypothesis associated with uncertainty, novelty, prediction error, or opportunities to improve a model of the world.
+Curiosity is a later hypothesis about the selection of experiences.
 
-It should not automatically be implemented as a scalar external reward. Different mechanisms should be compared experimentally when the project reaches that stage.
+Once Aweform has more possible interactions than it can explore indiscriminately, a developmental problem appears:
+
+> **Which action or situation is worth investigating next?**
+
+Novelty, prediction error, uncertainty, controllability, learning progress, model disagreement, and other signals are possible future mechanisms. None is assumed to be the correct implementation in advance.
+
+In particular, simple novelty or raw prediction error should not automatically be treated as curiosity. An unpredictable but unlearnable signal can remain permanently novel or surprising without producing useful understanding.
+
+One future hypothesis is that curiosity-like experience selection may favour experiences for which predictive or controllable competence is improving. Learning progress, novelty, uncertainty, prediction error, controllability, model disagreement, and combinations of these remain competing hypotheses; this document does not privilege one mechanism.
+
+One illustrative, non-authorizing candidate family would be:
+
+current experience
+→ prediction or expectation
+→ action
+→ observed consequence
+→ model or competence update
+→ estimate of what became better understood
+→ selection of another potentially learnable experience
+
+This is only one possible mechanism family and remains a research direction rather than a selected architecture.
+
+Future experiments should compare candidate mechanisms against simple controls such as random exploration and should measure whether they produce transferable understanding rather than merely more movement or more sensory variation.
+
+Any intrinsic selection mechanism is still a designed developmental bias and must be reported as such. Curiosity should not be described as fully emergent merely because the particular object or behaviour Aweform investigates was not predetermined.
+
+## Functional self/world discovery
+
+Aweform should not be given a philosophical concept of "self" or "world" as a prerequisite for development.
+
+A narrower operational distinction may be learnable through sensorimotor experience.
+
+One future question is whether Aweform can discover which observable changes are systematically contingent on its own actions and internal state:
+
+action
+→ predictable bodily or sensory consequence
+
+Those contingencies could provide a primitive functional basis for distinguishing aspects of its own body and capabilities from environmental events that are only partially controllable or independent of its actions.
+
+A complementary question is whether Aweform can discover relatively persistent external structure through repeated interaction:
+
+different action histories
+→ recurring sensory relationships
+→ reusable predictions about future interaction
+
+This need not produce an explicit map, object ontology, body schema, or symbolic representation.
+
+The first scientific target is simpler:
+
+> **Can the organism construct useful distinctions between self-generated regularities and independently structured environmental regularities from its own causal experience?**
+
+Any later language such as "self-model", "body model", "object", or "world model" should be earned by operational evidence rather than inferred from behaviour that merely looks suggestive.
+
+## Future new-capability experiment pattern
+
+When a future developmental stage introduces a genuinely new sensor, actuator, or other organism-visible capability, prefer experiments that separate:
+
+engineered interface
+→ exposure to the new signal/action
+→ unguided or baseline interaction
+→ experience-dependent discovery
+→ generic exploration mechanism if justified
+→ behavioural use
+→ transfer or generalization
+
+A strong experiment should ask what Aweform can discover before supplying the mature behavioural interpretation.
+
+For example, obstacle avoidance should not automatically begin with:
+
+distance < threshold → turn
+
+if the scientific question can instead begin by asking whether Aweform can learn that some sensory changes predict future contact or loss of forward progress.
+
+Likewise, introducing sound should not automatically begin with object labels, speech, or communication. A more developmental first question may be whether Aweform can discover reliable relationships between its own acoustic actions and subsequent auditory observations.
+
+The smallest mechanism that answers the question should remain preferred.
 
 ## Awe-like functional state
 
