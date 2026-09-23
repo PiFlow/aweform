@@ -8,26 +8,26 @@ Here, **electronic cell** is a developmental analogy for that minimal inside/out
 
 ## Current research state
 
-Aweform currently combines two accepted boundaries:
+Aweform currently combines accepted V0.3/V0.4 boundaries with an accepted prospective V0.5 boundary:
 
 - **V0.3 lifetime plasticity / sensory-plasticity closure**, opened by [`ADR 0010`](docs/adr/0010-v0.3-lifetime-plasticity.md), permits bounded persistent learned state within one continuous lifetime when every causal write obeys the declared sensory/plasticity provenance boundary.
-- **V0.4 minimal physical energy / thermal embodiment**, opened by [`ADR 0012`](docs/adr/0012-v0.4-minimal-physical-energy-thermal-boundary.md), adds a physically grounded simulated battery, power/thermal bookkeeping, and later finite-body docking constraints. [`ADR 0014`](docs/adr/0014-v0.4-thermal-operating-and-failure-thresholds.md) and [`ADR 0015`](docs/adr/0015-v0.4-finite-body-dual-contact-docking-boundary.md) define accepted thermal and docking boundaries.
+- **V0.4 physical energy / thermal embodiment and historical finite-body docking**, opened by [`ADR 0012`](docs/adr/0012-v0.4-minimal-physical-energy-thermal-boundary.md) and refined by [`ADR 0014`](docs/adr/0014-v0.4-thermal-operating-and-failure-thresholds.md), [`ADR 0015`](docs/adr/0015-v0.4-finite-body-dual-contact-docking-boundary.md), and [`ADR 0016`](docs/adr/0016-v0.4-d042-founder-selected-embodiment-boundary.md), defines the historical D-019→D-044 physical-development lineage.
+- **Prospective V0.5 direct differential drive**, defined by accepted [`ADR 0017`](docs/adr/0017-v0.5-direct-differential-drive-centered-dock-boundary.md), replaces only the explicitly listed future-facing V0.4 surfaces with one continuous signed bilateral wheel-delta action, minimal differential-drive kinematics, a centred under-body dock, exactly two quantized wheel-delta proprioceptive channels, and continuous wheel-dependent actuator bookkeeping. ADR 0017 does **not** itself authorize D-045 implementation.
 
-These layers supplement rather than replace earlier V0.1/V0.2 work. Historical experiments and ADRs remain part of the record.
+These layers supplement rather than erase earlier work. Historical experiments, ADRs, records, source semantics, and artifacts remain part of the record.
 
-The development lane has progressed from D-001 through committed **D-040**. The canonical ledger is [`development/INDEX.md`](development/INDEX.md); detailed records live under [`development/`](development/).
+The committed development lane now extends through **D-044**. The canonical ledger is [`development/INDEX.md`](development/INDEX.md); detailed records live under [`development/`](development/).
 
-Important current milestones include:
+Important recent milestones include:
 
-- D-024–D-026 established the finite-body dual-contact docking substrate and a bounded stochastic de-trapping scaffold.
-- D-027 introduced a small, experience-learned action-conditioned sensorimotor consequence predictor in shadow.
-- D-030 demonstrated the first narrow causal use of learned one-step prediction in SEEK steering under matched controls.
-- D-031R1 showed that this learned steering was not yet sufficient to displace the engineered de-trapping scaffold.
-- D-032–D-040 audited why that displacement failed, including action alternatives, history, predictor state, recurrence, intervention timing, causal validity, and partial-observability hypotheses. D-040 independently revalidated the recent causal machinery; its accepted interpretation keeps partial observability plausible and reports privileged geometry as strongly informative, without authorizing privileged organism inputs or a successor mechanism.
+- D-024–D-026 established the V0.4 finite-body dual-contact docking substrate and bounded stochastic de-trapping scaffold.
+- D-027 and D-030 established a small learned sensorimotor consequence model and its first narrow causal use in SEEK steering; D-031R1 showed that learned steering was not sufficient to replace the engineered de-trapping scaffold.
+- D-032–D-040 audited that failure and the causal machinery behind it.
+- D-041 completed the evaluator-only front-beacon sensory-sufficiency audit and returned a **NULL/INSUFFICIENT** result on both reused support and fresh holdout; its candidate receptors never became organism-visible sensors.
+- D-042 introduced the accepted founder-selected V0.4 5° turn/front-contact embodiment, D-043 characterized fresh-seed repeated-cycle robustness, and D-044 separated strong coarse station homing from fragile terminal dual-contact docking while auditing shorter-step and de-trap alternatives without changing the organism.
+- ADR 0017 then established the prospective V0.5 reset: direct continuous bilateral wheel-delta control, deterministic differential-drive kinematics, centred under-body docking, two quantized wheel-delta channels, and retirement of the V0.4 D-026/D-027/D-030 scaffold stack from the prospective V0.5 organism.
 
-The current authorized-but-not-yet-committed development question is **D-041 — Front-beacon sensory sufficiency audit** ([issue #140](https://github.com/PiFlow/aweform/issues/140)). It is evaluator-only: it asks whether a minimal pair of physically realizable front-facing charging-beacon receptors contains sufficient information to resolve relevant reacquisition/front-docking ambiguity. It does **not** expose those signals to Aweform or change the sensory boundary.
-
-Current authorized work should be read from the repository's accepted records and GitHub authorization issue/PR, not inferred from a predicted future D-sequence in prose documentation.
+Any uncommitted next work, including D-045, must be read from the exact current GitHub authorization issue/PR. Do not infer implementation permission from ADR 0017's prospective sequence or from roadmap prose.
 
 ## Evidence lane
 
