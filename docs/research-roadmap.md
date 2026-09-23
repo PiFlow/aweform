@@ -89,15 +89,27 @@ The important pattern was repeated: several proposed explanations were informati
 
 D-040 therefore stopped proposing mechanisms and audited the causal/test machinery itself. It independently reconstructed the recent Arm-B path and D-034 effect, added exact identity/clone/order controls, preserved invalidated provenance, and mapped scaffold benefit under reused and fresh development support. The accepted review concluded that the causal machinery was valid enough for the audit, that **partial observability remains plausible**, and that **privileged geometry is strongly informative** in the tested regime. Those findings are diagnostic only: D-040 does not authorize privileged organism inputs, a new memory mechanism, a stuck detector, recurrence, or any successor architecture.
 
-## F. Current frontier — D-041 sensory sufficiency audit
+## F. D-041→D-044 closeout and accepted V0.5 reset
 
-The current authorized development question is **D-041 — Front-beacon sensory sufficiency audit**, authorized by [GitHub issue #140](https://github.com/PiFlow/aweform/issues/140).
+D-041 completed the evaluator-only front-beacon sensory-sufficiency audit. Its minimal two-receptor pair returned **NULL/INSUFFICIENT** on both reused support and fresh holdout: the candidate signals were diagnostically evaluated but never exposed to Aweform and never became part of the organism's sensory boundary.
 
-D-041 is deliberately evaluator-only. It asks whether a minimal, physically realizable pair of front-facing charging-beacon receptors contains sufficient information to resolve relevant D-040 charger-reacquisition/front-docking ambiguity, and whether a transparent readout using only those signals can improve matched causal branches.
+D-042 then opened and implemented the founder-selected V0.4 fine-turn/front-contact boundary: 5° turns, the existing 0.1 s action interval and power semantics, front dual charging contacts, and otherwise preserved V0.4 organism/controller/learner boundaries. D-043 characterized that accepted embodiment on fresh Development seeds. It showed that front docking and recharge were physically possible but not robust across repeated cycles.
 
-A positive result would mean only that the candidate information deserves consideration in a later sensory-boundary proposal. A null result would be equally informative. D-041 does **not** authorize exposing the receptor values to Aweform, camera vision, a new sensor boundary, a new controller mechanism, or D-042.
+D-044 kept the organism unchanged and separated **coarse station homing** from **terminal dual-contact docking**. It found descriptively that station-centred L/F/R signals already contain accurate station-relative information on visited support, that the body can approach the station closely while terminal pose remains fragile, and that shorter forward-step and de-trap alternatives produce mixed/local evidence rather than a robust solution.
 
-A separate future note, [`low-level-autonomy-and-sensor-layering-future-question.md`](low-level-autonomy-and-sensor-layering-future-question.md), records why simple docking competence may remain useful even if richer perception is introduced much later; it is non-authorizing.
+That sequence motivated a developmental reset rather than another patch to the V0.4 controller scaffold. Accepted [`ADR 0017`](adr/0017-v0.5-direct-differential-drive-centered-dock-boundary.md) now defines the prospective V0.5 first slice:
+
+- one continuous compound `wheel_motors_lr(desired_delta_left, desired_delta_right)` action using signed per-interval wheel-rotation increments;
+- deterministic minimal differential-drive kinematics;
+- founder-selected first-slice wheel/body geometry;
+- a centred under-body dual-contact dock;
+- exactly two quantized signed wheel-delta proprioceptive channels;
+- continuous wheel-command/response-dependent energy and heat bookkeeping;
+- retirement of the V0.4 D-026/D-027/D-030 behavioural/learning scaffold stack from the prospective V0.5 organism.
+
+ADR 0017 is a durable boundary, **not D-045 implementation authorization**. D-045 is the prospective evaluator-scripted deterministic embodiment/bookkeeping probe described by the ADR, but whether it is currently authorized must be read from the exact current GitHub authorization issue/PR.
+
+A separate future note, [`low-level-autonomy-and-sensor-layering-future-question.md`](low-level-autonomy-and-sensor-layering-future-question.md), preserves the broader question of economical low-level bodily competence beneath richer future perception; it remains non-authorizing.
 
 ## G. Candidate EXP-004 evidence milestone
 
