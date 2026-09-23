@@ -8,15 +8,15 @@ Here, **electronic cell** is a developmental analogy for that minimal inside/out
 
 ## Current research state
 
-Aweform currently combines accepted V0.3/V0.4 boundaries with an accepted prospective V0.5 boundary:
+Aweform currently combines accepted V0.3/V0.4 boundaries with an accepted V0.5 boundary whose first deterministic substrate slice is now committed:
 
 - **V0.3 lifetime plasticity / sensory-plasticity closure**, opened by [`ADR 0010`](docs/adr/0010-v0.3-lifetime-plasticity.md), permits bounded persistent learned state within one continuous lifetime when every causal write obeys the declared sensory/plasticity provenance boundary.
 - **V0.4 physical energy / thermal embodiment and historical finite-body docking**, opened by [`ADR 0012`](docs/adr/0012-v0.4-minimal-physical-energy-thermal-boundary.md) and refined by [`ADR 0014`](docs/adr/0014-v0.4-thermal-operating-and-failure-thresholds.md), [`ADR 0015`](docs/adr/0015-v0.4-finite-body-dual-contact-docking-boundary.md), and [`ADR 0016`](docs/adr/0016-v0.4-d042-founder-selected-embodiment-boundary.md), defines the historical D-019→D-044 physical-development lineage.
-- **Prospective V0.5 direct differential drive**, defined by accepted [`ADR 0017`](docs/adr/0017-v0.5-direct-differential-drive-centered-dock-boundary.md), replaces only the explicitly listed future-facing V0.4 surfaces with one continuous signed bilateral wheel-delta action, minimal differential-drive kinematics, a centred under-body dock, exactly two quantized wheel-delta proprioceptive channels, and continuous wheel-dependent actuator bookkeeping. ADR 0017 does **not** itself authorize D-045 implementation.
+- **V0.5 direct differential drive**, defined by accepted [`ADR 0017`](docs/adr/0017-v0.5-direct-differential-drive-centered-dock-boundary.md), replaces only the explicitly listed future-facing V0.4 surfaces with one continuous signed bilateral wheel-delta action, minimal differential-drive kinematics, a centred under-body dock, exactly two quantized wheel-delta proprioceptive channels, and continuous wheel-dependent actuator bookkeeping. [`D-045`](development/D-045-v05-deterministic-embodiment-bookkeeping-probe.md) is the first committed implementation of that substrate boundary.
 
 These layers supplement rather than erase earlier work. Historical experiments, ADRs, records, source semantics, and artifacts remain part of the record.
 
-The committed development lane now extends through **D-044**. The canonical ledger is [`development/INDEX.md`](development/INDEX.md); detailed records live under [`development/`](development/).
+The committed development lane now extends through **D-045**. The canonical ledger is [`development/INDEX.md`](development/INDEX.md); detailed records live under [`development/`](development/).
 
 Important recent milestones include:
 
@@ -25,9 +25,10 @@ Important recent milestones include:
 - D-032–D-040 audited that failure and the causal machinery behind it.
 - D-041 completed the evaluator-only front-beacon sensory-sufficiency audit and returned a **NULL/INSUFFICIENT** result on both reused support and fresh holdout; its candidate receptors never became organism-visible sensors.
 - D-042 introduced the accepted founder-selected V0.4 5° turn/front-contact embodiment, D-043 characterized fresh-seed repeated-cycle robustness, and D-044 separated strong coarse station homing from fragile terminal dual-contact docking while auditing shorter-step and de-trap alternatives without changing the organism.
-- ADR 0017 then established the prospective V0.5 reset: direct continuous bilateral wheel-delta control, deterministic differential-drive kinematics, centred under-body docking, two quantized wheel-delta channels, and retirement of the V0.4 D-026/D-027/D-030 scaffold stack from the prospective V0.5 organism.
+- ADR 0017 then established the V0.5 reset: direct continuous bilateral wheel-delta control, deterministic differential-drive kinematics, centred under-body docking, two quantized wheel-delta channels, and retirement of the V0.4 D-026/D-027/D-030 scaffold stack from the V0.5 organism.
+- D-045 committed the deterministic V0.5 embodiment/bookkeeping substrate. Its evaluator-scripted probes found the frozen substrate internally consistent and structurally feasible, but D-045 contains no learner, behavioural controller, calibration curriculum, autonomous docking capability, or evidence claim.
 
-Any uncommitted next work, including D-045, must be read from the exact current GitHub authorization issue/PR. Do not infer implementation permission from ADR 0017's prospective sequence or from roadmap prose.
+The current authorized-but-not-yet-committed frontier is **D-046**, defined by [issue #165](https://github.com/PiFlow/aweform/issues/165). It authorizes a fresh 528-weight shadow consequence learner and one at-most-once 564-transition non-semantic raw-wheel calibration curriculum on the unchanged D-045 substrate. Prediction remains causally isolated from action selection. There is no committed D-046 record yet, and D-047 is not authorized by D-046.
 
 ## Evidence lane
 
@@ -46,7 +47,7 @@ Aweform uses biology and evolution as inspiration for **problems and principles*
 
 The long-term direction includes homeostasis, coordinated subsystems, sensorimotor survival, learning, play and curiosity, social interaction, machine-native communication, richer cognition, and eventually physical embodiment.
 
-The project already contains bounded lifetime learning, but it does **not** thereby contain PPO, deep RL, JEPA-scale cognition, an LLM controller, camera vision, a mature learned world model, social behaviour, play, awe, networking, or physical robot control. Those remain separately governed future questions.
+The historical V0.3/V0.4 lineage already contains bounded lifetime learning, but the current committed D-045 V0.5 substrate deliberately contains **no learner or behavioural controller**. The project does **not** thereby contain PPO, deep RL, JEPA-scale cognition, an LLM controller, camera vision, a mature learned world model, social behaviour, play, awe, networking, or physical robot control. Those remain separately governed future questions.
 
 Read:
 
