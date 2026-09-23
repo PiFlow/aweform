@@ -1,0 +1,848 @@
+{
+  "actuator_rng": {
+    "new_actuator_rng": false,
+    "reset_seed_consumed_by_actuator": false
+  },
+  "artifact_schema_version": "D045-1",
+  "claims_boundary": "descriptive deterministic substrate validation; no confirmatory claim",
+  "config": {
+    "ambient_temperature_c": 23.0,
+    "battery_capacity_j": 5328.0,
+    "beacon_probe_distance_m": 0.1,
+    "beacon_scale_m": 0.25,
+    "beacon_sensor_angle_rad": 0.7853981633974483,
+    "bulk_charge_power_w": 1.85,
+    "bulk_soc_upper": 0.9,
+    "charge_efficiency": 0.9,
+    "contact_offset_m": 0.05,
+    "contact_tolerance_m": 0.01,
+    "dt_seconds": 0.1,
+    "electronics_body_heat_w": 0.15,
+    "electronics_power_w": 0.15,
+    "episode_horizon": 30000,
+    "hard_temperature_c": 65.0,
+    "initial_battery_j": 2664.0,
+    "max_wheel_delta_rad": 0.6457718232379019,
+    "preferred_temperature_c": 45.0,
+    "protective_temperature_c": 60.0,
+    "resume_soc": 0.98,
+    "taper_1_charge_power_w": 0.925,
+    "taper_1_soc_upper": 0.95,
+    "taper_2_charge_power_w": 0.37,
+    "thermal_capacitance_j_per_k": 180.0,
+    "thermal_conductance_w_per_k": 0.25,
+    "visible_temperature_bounds_c": [
+      0.0,
+      80.0
+    ],
+    "wheel_body_heat_scale_w": 0.0,
+    "wheel_power_scale_w": 1.0,
+    "wheel_radius_m": 0.045,
+    "wheel_track_width_m": 0.185,
+    "world_max": [
+      1.0,
+      1.0
+    ],
+    "world_min": [
+      0.0,
+      0.0
+    ]
+  },
+  "identifier": "D-045",
+  "lane": "Development",
+  "probes": {
+    "charging_retained_semantics": {
+      "battery_end_j": 5299.214999999372,
+      "battery_start_j": 2664.0,
+      "body_temperature_end_c": 23.775429720091857,
+      "body_temperature_max_c": 24.172935197773615,
+      "first_full_latch_step": 28081,
+      "phase_counts": {
+        "BULK": 12537,
+        "OFF": 0,
+        "STANDBY": 1919,
+        "TAPER_1": 3437,
+        "TAPER_2": 12107
+      },
+      "termination_latched": true,
+      "transitions": 30000
+    },
+    "continuous_bookkeeping": {
+      "actuator_body_heat_w": {
+        "full": 0.0,
+        "half": 0.0,
+        "reverse": 0.0,
+        "swap": 0.0,
+        "swap_reversed": 0.0,
+        "zero": 0.0
+      },
+      "actuator_power_w": {
+        "full": 1.0,
+        "half": 0.5,
+        "reverse": 1.0,
+        "swap": 0.5,
+        "swap_reversed": 0.5,
+        "zero": 0.0
+      },
+      "boundary_reduced_power_w": 0.34411879587437244,
+      "invariants": {
+        "actuator_body_heat_zero": true,
+        "full_is_one_watt": true,
+        "one_saturated_wheel_is_half_watt": true,
+        "sign_symmetric": true,
+        "wheel_swap_symmetric": true,
+        "zero_is_zero": true
+      }
+    },
+    "deterministic_replay": {
+      "byte_identical_trace": true,
+      "trace_sha256": "a31a5aacb8029c64517a5358ac1e5a57750ee4c8ca0fb6132439c58ac5cd638f",
+      "transition_count": 4
+    },
+    "dock_contact": {
+      "EXACT_ALIGNED": {
+        "actual": [
+          0.0,
+          0.0
+        ],
+        "actuator_electrical_power_w": 0.0,
+        "boundary_scale": 1.0,
+        "charging_contact_after": true,
+        "dock_pair_errors_m": [
+          0.0,
+          0.0
+        ],
+        "heading_after": 0.0,
+        "info": {},
+        "position_after": [
+          0.5,
+          0.5
+        ],
+        "requested": [
+          0.0,
+          0.0
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.5000318884849548,
+          0.2875024676322937,
+          0.8620689511299133,
+          0.8620689511299133,
+          0.8620689511299133,
+          1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "JUST_INSIDE": {
+        "actual": [
+          0.0,
+          0.0
+        ],
+        "actuator_electrical_power_w": 0.0,
+        "boundary_scale": 1.0,
+        "charging_contact_after": true,
+        "dock_pair_errors_m": [
+          0.00990000000000002,
+          0.00990000000000002
+        ],
+        "heading_after": 0.0,
+        "info": {},
+        "position_after": [
+          0.5099,
+          0.5
+        ],
+        "requested": [
+          0.0,
+          0.0
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.5000318884849548,
+          0.2875024676322937,
+          0.8446164727210999,
+          0.8380486369132996,
+          0.8446164727210999,
+          1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "JUST_OUTSIDE": {
+        "actual": [
+          0.0,
+          0.0
+        ],
+        "actuator_electrical_power_w": 0.0,
+        "boundary_scale": 1.0,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.010099999999999998,
+          0.010099999999999998
+        ],
+        "heading_after": 0.0,
+        "info": {},
+        "position_after": [
+          0.5101,
+          0.5
+        ],
+        "requested": [
+          0.0,
+          0.0
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.49999719858169556,
+          0.2875010371208191,
+          0.8442481756210327,
+          0.8375545144081116,
+          0.8442481756210327,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "POLARITY_MISALIGNED": {
+        "actual": [
+          0.0,
+          0.0
+        ],
+        "actuator_electrical_power_w": 0.0,
+        "boundary_scale": 1.0,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.10000000000000003,
+          0.10000000000000003
+        ],
+        "heading_after": 3.141592653589793,
+        "info": {},
+        "position_after": [
+          0.5,
+          0.5
+        ],
+        "requested": [
+          0.0,
+          0.0
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.49999719858169556,
+          0.2875010371208191,
+          0.8620689511299133,
+          0.8620689511299133,
+          0.8620689511299133,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "kinematics_action_semantics": {
+      "ARC_LEFT": {
+        "actual": [
+          0.6457718232379019,
+          0.0
+        ],
+        "actuator_electrical_power_w": 0.5,
+        "boundary_scale": 1.0,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.6927932645923601,
+          0.7027938934211772
+        ],
+        "heading_after": -0.15707963267948966,
+        "info": {},
+        "position_after": [
+          0.4144701880162214,
+          0.3988611715050503
+        ],
+        "requested": [
+          0.6457718232379019,
+          0.0
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.49998781085014343,
+          0.2875010371208191,
+          0.14813707768917084,
+          0.1304398775100708,
+          0.10713284462690353,
+          0.0,
+          0.6457718014717102,
+          0.0
+        ]
+      },
+      "ARC_RIGHT": {
+        "actual": [
+          0.0,
+          0.6457718232379019
+        ],
+        "actuator_electrical_power_w": 0.5,
+        "boundary_scale": 1.0,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.7020489766253375,
+          0.6902562455596865
+        ],
+        "heading_after": 0.15707963267948966,
+        "info": {},
+        "position_after": [
+          0.4144701880162214,
+          0.40113882849494975
+        ],
+        "requested": [
+          0.0,
+          0.6457718232379019
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.49998781085014343,
+          0.2875010371208191,
+          0.14905554056167603,
+          0.1402655392885208,
+          0.1163470521569252,
+          0.0,
+          0.0,
+          0.6457718014717102
+        ]
+      },
+      "FORWARD_MAX": {
+        "actual": [
+          0.6457718232379019,
+          0.6457718232379019
+        ],
+        "actuator_electrical_power_w": 1.0,
+        "boundary_scale": 1.0,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.6868658791793799,
+          0.6868658791793799
+        ],
+        "heading_after": 0.0,
+        "info": {},
+        "position_after": [
+          0.42905973204570563,
+          0.4
+        ],
+        "requested": [
+          0.6457718232379019,
+          0.6457718232379019
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.4999784231185913,
+          0.2875010371208191,
+          0.15357282757759094,
+          0.13885904848575592,
+          0.11396907269954681,
+          0.0,
+          0.6457718014717102,
+          0.6457718014717102
+        ]
+      },
+      "IN_PLACE_LEFT": {
+        "actual": [
+          -0.6457718232379019,
+          0.6457718232379019
+        ],
+        "actuator_electrical_power_w": 1.0,
+        "boundary_scale": 1.0,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.7198213259709064,
+          0.6945118382824979
+        ],
+        "heading_after": 0.3141592653589793,
+        "info": {},
+        "position_after": [
+          0.4,
+          0.4
+        ],
+        "requested": [
+          -0.6457718232379019,
+          0.6457718232379019
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.4999784231185913,
+          0.2875010371208191,
+          0.14269396662712097,
+          0.13997991383075714,
+          0.11819249391555786,
+          0.0,
+          -0.6457718014717102,
+          0.6457718014717102
+        ]
+      },
+      "IN_PLACE_RIGHT": {
+        "actual": [
+          0.6457718232379019,
+          -0.6457718232379019
+        ],
+        "actuator_electrical_power_w": 1.0,
+        "boundary_scale": 1.0,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.6980265337972613,
+          0.7164135627917922
+        ],
+        "heading_after": -0.3141592653589793,
+        "info": {},
+        "position_after": [
+          0.4,
+          0.4
+        ],
+        "requested": [
+          0.6457718232379019,
+          -0.6457718232379019
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.4999784231185913,
+          0.2875010371208191,
+          0.14269396662712097,
+          0.12295983731746674,
+          0.1014278456568718,
+          0.0,
+          0.6457718014717102,
+          -0.6457718014717102
+        ]
+      },
+      "OVER_RANGE_CLAMP": {
+        "actual": [
+          0.6457718232379019,
+          -0.6457718232379019
+        ],
+        "actuator_electrical_power_w": 1.0,
+        "boundary_scale": 1.0,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.6980265337972613,
+          0.7164135627917922
+        ],
+        "heading_after": -0.3141592653589793,
+        "info": {},
+        "position_after": [
+          0.4,
+          0.4
+        ],
+        "requested": [
+          1.2915436464758039,
+          -1.2915436464758039
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.4999784231185913,
+          0.2875010371208191,
+          0.14269396662712097,
+          0.12295983731746674,
+          0.1014278456568718,
+          0.0,
+          0.6457718014717102,
+          -0.6457718014717102
+        ]
+      },
+      "QUANTUM_SCALE": {
+        "actual": [
+          0.017453292519943295,
+          -0.017453292519943295
+        ],
+        "actuator_electrical_power_w": 0.027027027027027025,
+        "boundary_scale": 1.0,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.7068079287285088,
+          0.707405762170485
+        ],
+        "heading_after": -0.008490790955648088,
+        "info": {},
+        "position_after": [
+          0.4,
+          0.4
+        ],
+        "requested": [
+          0.017453292519943295,
+          -0.017453292519943295
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.49999669194221497,
+          0.2875010371208191,
+          0.1449834257364273,
+          0.13203686475753784,
+          0.10894180834293365,
+          0.0,
+          0.01745329238474369,
+          -0.01745329238474369
+        ]
+      },
+      "REVERSE_MAX": {
+        "actual": [
+          -0.6457718232379019,
+          -0.6457718232379019
+        ],
+        "actuator_electrical_power_w": 1.0,
+        "boundary_scale": 1.0,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.7279451902940728,
+          0.7279451902940727
+        ],
+        "heading_after": 0.0,
+        "info": {},
+        "position_after": [
+          0.3709402679542944,
+          0.4
+        ],
+        "requested": [
+          -0.6457718232379019,
+          -0.6457718232379019
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.4999784231185913,
+          0.2875010371208191,
+          0.13679945468902588,
+          0.12585778534412384,
+          0.1044635996222496,
+          0.0,
+          -0.6457718014717102,
+          -0.6457718014717102
+        ]
+      },
+      "ZERO": {
+        "actual": [
+          0.0,
+          0.0
+        ],
+        "actuator_electrical_power_w": 0.0,
+        "boundary_scale": 1.0,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.7071067811865476,
+          0.7071067811865475
+        ],
+        "heading_after": 0.0,
+        "info": {},
+        "position_after": [
+          0.4,
+          0.4
+        ],
+        "requested": [
+          0.0,
+          0.0
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.49999719858169556,
+          0.2875010371208191,
+          0.1449851393699646,
+          0.13227513432502747,
+          0.10917030274868011,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "observation_information_boundary": {
+      "channel_order": [
+        "energy_normalized",
+        "temperature_normalized",
+        "beacon_left",
+        "beacon_forward",
+        "beacon_right",
+        "charging_contact",
+        "wheel_delta_left",
+        "wheel_delta_right"
+      ],
+      "info": {},
+      "initial_info": {},
+      "initial_observation": [
+        0.5,
+        0.2874999940395355,
+        0.1449851393699646,
+        0.13227513432502747,
+        0.10917030274868011,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "initial_shape": [
+        8
+      ],
+      "observation_space_contains": true,
+      "post_action_observation": [
+        0.49999669194221497,
+        0.2875010371208191,
+        0.1449834257364273,
+        0.13203686475753784,
+        0.10894180834293365,
+        0.0,
+        0.01745329238474369,
+        -0.01745329238474369
+      ],
+      "post_action_shape": [
+        8
+      ],
+      "reward": 0.0,
+      "terminated": false,
+      "truncated": false
+    },
+    "structural_feasibility": {
+      "battery_end_j": 2663.391762408252,
+      "battery_start_j": 2664.0,
+      "command": [
+        0.634920634920635,
+        0.634920634920635
+      ],
+      "command_sequence_length": 7,
+      "feasible": true,
+      "final_contact": true,
+      "final_position": [
+        0.5,
+        0.5
+      ],
+      "method": "fixed evaluator-scripted raw wheel-command sequence",
+      "start_position": [
+        0.3,
+        0.5
+      ],
+      "station_center": [
+        0.5,
+        0.5
+      ],
+      "temperature_end_c": 23.000697287864895,
+      "temperature_start_c": 23.0,
+      "termination": null
+    },
+    "translation_through_station_centre": {
+      "command": [
+        0.634920634920635,
+        0.634920634920635
+      ],
+      "contact_steps": [
+        7
+      ],
+      "final_position": [
+        0.7000000000000001,
+        0.5
+      ],
+      "no_swept_contact": true
+    },
+    "world_boundary_common_scaling": {
+      "BOTTOM_EDGE": {
+        "actual": [
+          0.22222222222222224,
+          0.22222222222222224
+        ],
+        "actuator_electrical_power_w": 0.34411879587436833,
+        "boundary_scale": 0.34411879587436833,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.552268050859363,
+          0.45276925690687087
+        ],
+        "heading_after": 4.71238898038469,
+        "info": {},
+        "position_after": [
+          0.5,
+          0.0
+        ],
+        "requested": [
+          0.6457718232379019,
+          0.6457718232379019
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.4999907314777374,
+          0.2875010371208191,
+          0.1589478701353073,
+          0.14792899787425995,
+          0.1589478701353073,
+          0.0,
+          0.22689279913902283,
+          0.22689279913902283
+        ]
+      },
+      "LEFT_EDGE": {
+        "actual": [
+          0.22222222222222224,
+          0.22222222222222224
+        ],
+        "actuator_electrical_power_w": 0.34411879587436833,
+        "boundary_scale": 0.34411879587436833,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.5099019513592785,
+          0.5099019513592785
+        ],
+        "heading_after": 3.141592653589793,
+        "info": {},
+        "position_after": [
+          0.0,
+          0.5
+        ],
+        "requested": [
+          0.6457718232379019,
+          0.6457718232379019
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.4999907314777374,
+          0.2875010371208191,
+          0.1589478701353073,
+          0.14792899787425995,
+          0.1589478701353073,
+          0.0,
+          0.22689279913902283,
+          0.22689279913902283
+        ]
+      },
+      "RIGHT_EDGE": {
+        "actual": [
+          0.2222222222222249,
+          0.2222222222222249
+        ],
+        "actuator_electrical_power_w": 0.34411879587437244,
+        "boundary_scale": 0.34411879587437244,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.5,
+          0.5
+        ],
+        "heading_after": 0.0,
+        "info": {},
+        "position_after": [
+          1.0,
+          0.5
+        ],
+        "requested": [
+          0.6457718232379019,
+          0.6457718232379019
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.4999907314777374,
+          0.2875010371208191,
+          0.1589478701353073,
+          0.14792899787425995,
+          0.1589478701353073,
+          0.0,
+          0.22689279913902283,
+          0.22689279913902283
+        ]
+      },
+      "TOP_EDGE": {
+        "actual": [
+          0.2222222222222249,
+          0.2222222222222249
+        ],
+        "actuator_electrical_power_w": 0.34411879587437244,
+        "boundary_scale": 0.34411879587437244,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.4527692569068708,
+          0.552268050859363
+        ],
+        "heading_after": 1.5707963267948966,
+        "info": {},
+        "position_after": [
+          0.5,
+          1.0
+        ],
+        "requested": [
+          0.6457718232379019,
+          0.6457718232379019
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.4999907314777374,
+          0.2875010371208191,
+          0.1589478701353073,
+          0.14792899787425995,
+          0.1589478701353073,
+          0.0,
+          0.22689279913902283,
+          0.22689279913902283
+        ]
+      },
+      "TOP_RIGHT_CORNER": {
+        "actual": [
+          0.3142696805273582,
+          0.3142696805273582
+        ],
+        "actuator_electrical_power_w": 0.4866574681930361,
+        "boundary_scale": 0.4866574681930361,
+        "charging_contact_after": false,
+        "dock_pair_errors_m": [
+          0.6719110551956019,
+          0.7426065351813618
+        ],
+        "heading_after": 0.7853981633974483,
+        "info": {},
+        "position_after": [
+          1.0,
+          1.0
+        ],
+        "requested": [
+          0.6457718232379019,
+          0.6457718232379019
+        ],
+        "reward": 0.0,
+        "terminated": false,
+        "truncated": false,
+        "visible_observation": [
+          0.49998804926872253,
+          0.2875010371208191,
+          0.09293680638074875,
+          0.08754465728998184,
+          0.09293680638074875,
+          0.0,
+          0.3141592741012573,
+          0.3141592741012573
+        ]
+      }
+    }
+  },
+  "quantization": {
+    "provenance": "ENGINEERING ESTIMATE",
+    "quantum_rad": 0.017453292519943295,
+    "tie_rule": "nearest count; exact half-count ties away from zero"
+  },
+  "seed_status": "seedless fixed-state evaluator probes"
+}
