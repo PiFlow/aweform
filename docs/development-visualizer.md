@@ -45,8 +45,8 @@ uv run aweform-export-d043-html --seed 19048 --output d043-19048.html
 The replay retains deterministic stride samples plus windows around mode,
 front-contact/reacquisition, full-recharge, departure, and terminal events.
 Coordinates, heading, contact geometry, event labels, and display sampling are
-evaluator-only; the canonical six-channel organism observation, actions,
-learner, reward, and `info == {}` remain unchanged.
+evaluator-only; the historical D-043/V0.4 six-channel organism observation,
+actions, learner, reward, and `info == {}` remain unchanged.
 
 Representative commands:
 

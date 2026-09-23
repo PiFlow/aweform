@@ -5,9 +5,11 @@
 **Repository context:** recorded while D-041 was authorized from `main` at `8b51d6e143a906a83f1fd8d760aace5ed46abb9e`  
 **Purpose:** preserve a long-range architectural question about whether simple energy-reacquisition and docking competence should remain useful as a low-level sensorimotor layer even if future Aweform embodiments acquire much richer perception.
 
+**Current-state addendum (2026-09-23):** the repository-context line above is retained as historical provenance. D-041 subsequently completed with a **NULL/INSUFFICIENT** evaluator-only result and its candidate receptors never became organism-visible. ADR 0017 and D-045 now define the current eight-channel V0.5 differential-drive substrate. D-046 is authorized by issue #165 as a fresh shadow-prediction stage and adds no new sensor or camera permission.
+
 ## Motivation
 
-D-041 investigates whether a minimal pair of physically realizable front-facing charging-beacon receptors contains enough information to improve charger reacquisition and front docking.
+At the time this note was recorded, D-041 was investigating whether a minimal pair of physically realizable front-facing charging-beacon receptors contained enough information to improve charger reacquisition and front docking. D-041 has since completed with a **NULL/INSUFFICIENT** result; those candidate receptors remained evaluator-only.
 
 A future physical Aweform may eventually possess much richer perception, potentially including wide-field or approximately panoramic vision. This raises an important developmental question:
 
@@ -98,7 +100,7 @@ If that competence later becomes a stable low-level primitive, richer systems ma
 - It does not authorize new organism-visible beacon receptors.
 - It does not authorize a microcontroller architecture or physical robot implementation.
 - It does not define infrared as the future docking technology.
-- It does not change D-041 or any current sensory/information boundary.
+- It does not reinterpret D-041 or change the current ADR 0017 / D-045 sensory-information boundary.
 - It does not authorize a hierarchical cognitive architecture.
 - It does not imply that low-level behaviour must remain permanently engineered rather than eventually learned.
 - Any future organism-facing sensor, physical-control boundary, or durable architecture change remains subject to repository governance and the relevant ADR/review process.
@@ -115,4 +117,4 @@ The key developmental principle is therefore:
 
 > **Build higher cognition on top of earned sensorimotor competence where appropriate, rather than assuming richer cognition should replace every simpler layer beneath it.**
 
-This note authorizes no current implementation and should not alter the D-041 protocol or current development sequence.
+This note authorizes no current implementation and does not alter D-045, D-046 issue #165, or the current development sequence.

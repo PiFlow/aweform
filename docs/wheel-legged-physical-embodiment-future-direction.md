@@ -73,7 +73,7 @@ Wheel drive and leg articulation should remain conceptually separate:
 
 ## Relationship to the accepted V0.5 wheel interface
 
-ADR 0017 has now accepted, prospectively for separately authorized V0.5 implementation, exactly one continuous compound organism-facing wheel action:
+ADR 0017 accepted exactly one continuous compound organism-facing wheel action, and D-045 has now committed the first deterministic V0.5 implementation of that interface:
 
 ~~~text
 wheel_motors_lr(desired_delta_left, desired_delta_right)
@@ -144,11 +144,11 @@ Camera vision remains explicitly unauthorized under the current repository bound
 
 Do **not** import the full wheel-legged body into the simulator merely because it is a plausible final morphology.
 
-ADR 0017 has already made the prospective V0.5 first-slice decisions for bilateral wheel-delta commands, minimal differential-drive kinematics, and exactly two quantized signed wheel-delta proprioceptive channels. Those boundaries still require separate D-045 implementation authorization; this note does not implement or extend them.
+ADR 0017 made the V0.5 first-slice decisions for bilateral wheel-delta commands, minimal differential-drive kinematics, and exactly two quantized signed wheel-delta proprioceptive channels. D-045 has now implemented and descriptively validated that deterministic substrate. This note does not extend it.
 
 A disciplined later sequence could be:
 
-1. validate the accepted ADR 0017 first-slice body/action/proprioceptive boundary under the separately authorized D-045 probe;
+1. preserve D-045 as the minimal validated wheel/body/proprioceptive substrate while the separately authorized D-046 prediction question is tested;
 2. introduce articulated leg posture only when terrain/body configuration creates a real developmental problem;
 3. introduce obstacles, stairs, compliance, contact physics, self-righting, or jumping only when those questions become scientifically necessary;
 4. introduce richer visual perception only when the developmental problem earns it;
@@ -156,13 +156,13 @@ A disciplined later sequence could be:
 
 Each step should retain simple baselines and avoid adding capabilities merely because a mature final robot might eventually need them.
 
-## Relationship to historical V0.4 / D-044 and prospective V0.5
+## Relationship to historical V0.4 / D-044 and current V0.5
 
 This note does not reinterpret the historical V0.4 finite-body simulator as a literal wheel-legged robot.
 
 D-042, D-043, and D-044 remain historical V0.4 Development results with their original four-action, six-channel, front-contact, learner/controller, beacon, energy/thermal, and charging semantics.
 
-For future V0.5 work, ADR 0017 is authoritative. It prospectively supersedes only the surfaces it explicitly lists, including the semantic V0.4 action vocabulary, point-centre movement/turn kinematics, wheel-proprioception exclusion, six-channel observation boundary, action-class actuator bookkeeping, and front-contact dock geometry. It also keeps the V0.4 D-026/D-027/D-030 mechanisms historical rather than silently porting them into V0.5.
+For current and future V0.5 work, ADR 0017 is authoritative, with D-045 as its first committed substrate implementation. ADR 0017 supersedes only the surfaces it explicitly lists, including the semantic V0.4 action vocabulary, point-centre movement/turn kinematics, wheel-proprioception exclusion, six-channel observation boundary, action-class actuator bookkeeping, and front-contact dock geometry. It also keeps the V0.4 D-026/D-027/D-030 mechanisms historical rather than silently porting them into V0.5.
 
 The wheel-legged morphology recorded here remains a longer-range compatibility target beyond that deliberately minimal V0.5 first slice.
 
@@ -172,7 +172,7 @@ This note does **not** authorize:
 
 - physical robot control;
 - purchase or selection of any specific motor, servo, battery, camera, computer, or robot platform;
-- odometry, motor-current sensing, leg proprioception, or organism-visible proprioception beyond the two quantized signed wheel-delta channels prospectively authorized by ADR 0017;
+- odometry, motor-current sensing, leg proprioception, or organism-visible proprioception beyond the two quantized signed wheel-delta channels accepted by ADR 0017 and implemented in D-045;
 - articulated-leg simulation or control;
 - obstacles, stairs, rigid-body/contact physics, jumping, self-righting, or balance learning;
 - camera vision or panoramic sensing;

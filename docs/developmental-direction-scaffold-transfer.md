@@ -6,7 +6,7 @@ This document records a long-range scientific direction for Aweform. It does **n
 
 ## 1. Core direction: engineer learning conditions, not mature behavioural solutions
 
-Aweform currently relies on an engineered behavioural scaffold for regulation and navigation. That scaffold has been scientifically useful because it establishes viable control conditions and exposes new developmental problems. It should not silently become the permanent cognition architecture.
+The historical V0.4 lineage relied on an engineered behavioural scaffold for regulation and navigation. That scaffold was scientifically useful because it established viable control conditions and exposed developmental problems. ADR 0017 deliberately retired the D-026/D-027/D-030 V0.4 scaffold stack from the V0.5 organism, and the current committed D-045 V0.5 substrate contains no behavioural controller or learner. Historical scaffold lessons remain relevant, but they must not be described as the active V0.5 cognition architecture.
 
 The long-range direction is to move engineering progressively downward:
 
@@ -22,7 +22,7 @@ A useful recurring question for future milestones is:
 
 ## 2. Examples of scaffold that may later become learnable
 
-The current system contains explicit behavioural knowledge that may eventually become targets for scaffold transfer. Examples include:
+The historical V0.4 system contained explicit behavioural knowledge that may remain useful as scaffold-transfer examples. Those mechanisms are not part of the current D-045 V0.5 organism. Examples include:
 
 - the fixed energy condition that triggers `SEEK`;
 - the rule that full charge permits departure;
@@ -144,26 +144,27 @@ A milestone becomes especially strong when learned competence removes the need f
 
 This does not imply that lower engineered-scaffold count is always better. A simple fixed controller that genuinely solves the intended problem remains valid evidence. The purpose of the ledger is attribution, not aesthetic minimalism.
 
-## 10. What D-029→D-040 changed about the near-term direction
+## 10. What D-029→D-045 changed about the near-term direction
 
-The earlier version of this document proposed, immediately after D-028, a provisional sequence from causal-history sufficiency toward a smallest retained state, first causal learned influence, scaffold displacement, non-stationarity, and eventually short-horizon prediction. Repository evidence has now executed and stress-tested much of the beginning of that sequence.
+The earlier version of this document proposed, immediately after D-028, a provisional sequence from causal-history sufficiency toward a smallest retained state, first causal learned influence, scaffold displacement, non-stationarity, and eventually short-horizon prediction. Repository evidence has now executed, stress-tested, and then deliberately reset that line.
 
 The durable lessons are more specific:
 
-1. **First causal learned influence has been achieved, narrowly.** D-030 showed that the D-027 learned consequence predictor could causally influence one bounded SEEK steering decision under matched controls: the correctly associated learned arm retained full-cycle competence while the fixed-permutation control failed. This is genuine experience-dependent behavioural influence, but not general planning or a mature world model.
-2. **Scaffold displacement has not been achieved.** D-031R1 showed that learned SEEK steering could not replace the engineered stochastic de-trapping scaffold on the tested fresh seeds.
+1. **First causal learned influence was achieved narrowly in historical V0.4.** D-030 showed that the D-027 learned consequence predictor could causally influence one bounded SEEK steering decision under matched controls. This was genuine experience-dependent behavioural influence, but not general planning or a mature world model.
+2. **Scaffold displacement was not achieved.** D-031R1 showed that learned SEEK steering could not replace the engineered stochastic de-trapping scaffold on the tested fresh seeds.
 3. **Do not interpret that failure as permission to add capacity.** D-032→D-039 separately tested de-trap function, short action sequences, closure-valid history, turn granularity, interpolation, reverse motion, short-history learnability, predictor-state signals, combined physical/action alternatives, and one-scalar recurrence. Several were locally informative; none established a stable organism-available replacement for the scaffold.
 4. **Useful scaffold intervention can be strongly causal without implying a simple learnable trigger.** D-034 identified history-defined states where enabling the existing scaffold had strong matched causal benefit, but this was evaluator-side sufficiency, not a learned stuck detector.
-5. **The causal/test machinery itself required auditing.** D-040 independently rebuilt critical replay/branch semantics, reproduced the accepted causal path and positive control, added identity/clone/order controls, and preserved invalidated provenance. The accepted interpretation keeps partial observability plausible and reports privileged geometry as strongly informative in the tested regime.
-6. **Missing information is now a live hypothesis.** Because short permitted history, endogenous predictor-state summaries, and one-scalar recurrence did not solve the recruitment problem while privileged geometry remains informative, a physically obtainable sensory affordance deserves testing before deeper memory or a larger predictor is added.
-
-The currently authorized D-041 question therefore tests a minimal pair of front-facing charging-beacon receptors **outside the organism first**. It is a sensory-sufficiency audit, not permission to add those receptors. If the evaluator-only pair is insufficient, that negative result should be preserved rather than tuning increasingly rich sensors until docking succeeds.
+5. **The causal/test machinery itself required auditing.** D-040 independently rebuilt critical replay/branch semantics, reproduced the accepted causal path and positive control, added identity/clone/order controls, and preserved invalidated provenance.
+6. **The simplest proposed extra sensor did not solve the problem.** D-041's evaluator-only pair of front-facing candidate beacon receptors returned **NULL/INSUFFICIENT** on both reused support and fresh holdout and never became organism-visible.
+7. **The V0.4 docking line was closed rather than endlessly patched.** D-042→D-044 characterized the founder-selected front-contact embodiment and separated strong coarse homing from fragile terminal docking.
+8. **V0.5 is a fresh sensorimotor lineage, not a port of the old scaffold.** ADR 0017 retired the V0.4 D-026/D-027/D-030 stack from the V0.5 organism, and D-045 committed the deterministic wheel-command/body/sensor substrate with no behavioural controller or learner.
+9. **Current D-046 is prediction competence before scaffold transfer.** Issue #165 authorizes one honest at-most-once calibration curriculum and a fresh shadow-only V0.5 consequence learner. Predictions are not yet allowed to influence action, so D-046 cannot establish scaffold displacement or autonomous regulation.
 
 The resulting near-term principle is:
 
-> **Before transferring a behavioural scaffold into learning, first establish that the organism has access to enough physically legitimate information for the replacement problem to be learnable at all.**
+> **Before transferring behavioural responsibility into learning, establish that the current organism has a legitimate sensorimotor substrate, enough experience to learn its consequences, and demonstrable predictive competence before granting predictions any causal control role.**
 
-This does not supersede the longer-term scaffold-transfer direction. It strengthens its attribution discipline: learned competence can only displace engineered competence when the information, action affordances, experience distribution, and causal learning mechanism required for that role have each been earned.
+This does not supersede the longer-term scaffold-transfer direction. It strengthens attribution discipline: learned competence can displace engineered competence only when the information, action affordances, experience distribution, predictive competence, and causal learning mechanism required for that role have each been earned.
 
 ## 11. Anti-shortcuts
 
