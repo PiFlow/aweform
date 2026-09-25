@@ -6,7 +6,9 @@ This document records a long-range scientific direction for Aweform. It does **n
 
 ## 1. Core direction: engineer learning conditions, not mature behavioural solutions
 
-The historical V0.4 lineage relied on an engineered behavioural scaffold for regulation and navigation. That scaffold was scientifically useful because it established viable control conditions and exposed developmental problems. ADR 0017 deliberately retired the D-026/D-027/D-030 V0.4 scaffold stack from the V0.5 organism, and the current committed D-045 V0.5 substrate contains no behavioural controller or learner. Historical scaffold lessons remain relevant, but they must not be described as the active V0.5 cognition architecture.
+The historical V0.4 lineage relied on an engineered behavioural scaffold for regulation and navigation. That scaffold was scientifically useful because it established viable control conditions and exposed developmental problems. ADR 0017 deliberately retired the D-026/D-027/D-030 V0.4 scaffold stack from the V0.5 organism. ADR 0018 prospectively re-scopes only the **function** of basic energetic return: a newly implemented constitutive Level-1 return/reacquisition/docking mechanism may belong to the V0.5+ innate viability floor, while the historical V0.4 controller stack, modes, tuned constants, learned weights, and stochastic de-trap mechanisms remain retired and are not ported.
+
+This distinction is a declared project architecture/provenance classification, not proof of an intrinsic computational difference between an old scaffold and an innate mechanism. Scaffold transfer applies above the declared innate viability floor.
 
 The long-range direction is to move engineering progressively downward:
 
@@ -20,23 +22,25 @@ A useful recurring question for future milestones is:
 
 > **What information can this organism construct from experience, and when can that learned information legitimately take over something currently engineered?**
 
-## 2. Examples of scaffold that may later become learnable
+## 2. Historical scaffold examples and ADR 0018 re-scoping
 
-The historical V0.4 system contained explicit behavioural knowledge that may remain useful as scaffold-transfer examples. Those mechanisms are not part of the current D-045 V0.5 organism. Examples include:
+The historical V0.4 system contained explicit behavioural knowledge that remains useful as scaffold-transfer evidence. Historical examples include:
 
-- the fixed energy condition that triggers `SEEK`;
-- the rule that full charge permits departure;
+- the fixed energy condition that triggered `SEEK`;
+- the rule that full charge permitted departure;
 - hand-written beacon steering during reacquisition;
 - stochastic false-contact `SEEK` delegation used for de-trapping;
 - discrete controller phase structure itself.
 
-These are not errors. They are declared developmental scaffolds and valid controls. Future work should not remove them merely because learned behaviour would look more interesting. A scaffold component should be displaced only after a smaller experience-dependent mechanism has earned that role experimentally.
+Those historical mechanisms remain scaffolds under their original records; ADR 0018 does not relabel or port them. Prospectively, however, a **new** V0.5+ basic return trigger, beacon-guided reacquisition, organism-visible terminal docking/charging, and fixed baseline return-budget sizing may be classified as **constitutive Level-1 mechanisms** rather than temporary scaffolds awaiting displacement.
+
+Elective departure, adaptive reserve strategy above the fixed floor, efficiency/robustness improvements, changed-environment handling, and competence-dependent behaviour remain above-floor developmental targets. A developmental scaffold in those domains should be displaced only after an experience-dependent mechanism has earned the role experimentally.
 
 Replacing a fixed constant with a fitted constant is not automatically a meaningful developmental advance. For example, replacing `energy <= 0.50 -> SEEK` with a learned scalar threshold can still preserve almost the entire engineered decomposition. A stronger result would be experience causing the organism to learn the consequences of continuing versus reacquiring under different internal states, so that an effective transition toward seeking changes with competence and history.
 
-## 3. Physiology versus behavioural knowledge
+## 3. Physiology, constitutive viability, and behavioural knowledge
 
-Aweform does not need to learn every fact about its own existence.
+Aweform does not need to learn every fact about its own existence, and ADR 0018 adds a second engineered category above substrate physiology: **constitutive Level-1 viability mechanisms**.
 
 Examples of engineered physiology may legitimately include:
 
@@ -49,7 +53,9 @@ Examples of engineered physiology may legitimately include:
 
 These are substrate conditions, not mature behavioural knowledge.
 
-Behavioural knowledge concerns what the organism learns to do because of those conditions: when to conserve, when to seek, how to reacquire energy, when to leave a resource, how much reserve is prudent, and how behaviour should change when its competence or environment changes.
+Under ADR 0018, not all energy-regulation behaviour remains above the learning floor. Basic return initiation, basic beacon-guided reacquisition, organism-visible terminal docking/charging, and fixed baseline return-budget sizing may be constitutive Level-1 mechanisms. Behavioural knowledge above that floor includes elective departure, adaptive reserve strategy, improved efficiency/robustness, adaptation to changed environments, and how behaviour should change when competence or history changes.
+
+Constitutive Level-1 competence is engineered baseline capability, not learned evidence. Learned Level-2/3 improvements must be measured and attributed above that baseline.
 
 ## 4. Future hypothesis: reversible energetic dormancy rather than automatic organismic death
 
