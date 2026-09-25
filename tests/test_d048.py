@@ -16,12 +16,17 @@ from aweform.d046 import (
     validate_d046_development_seeds,
 )
 from aweform.d048 import (
+    D048_CHANNELS,
     D048_CHECKPOINTS,
     D048_HOLDOUT_CANDIDATE_COUNT,
     D048_HOLDOUT_PAIR_COUNT,
     D048_PASS_COUNT,
     D048_TOTAL_TRANSITIONS,
+    _candidate,
+    _ContrastAggregate,
+    _evaluate_checkpoint,
     _execute_seed,
+    _FrozenPredictor,
     _seed_payload,
 )
 
@@ -115,3 +120,32 @@ def test_checkpoint_evaluation_is_read_only_and_shadow_identity_holds() -> None:
         ]
         assert comparators["state_only"]["contrast"] == "structural zero"
         assert comparators["zero_change"]["contrast"] == "structural zero"
+
+
+def test_action_indifferent_comparators_are_channel_specific_zero_metrics() -> None:
+    zero = _FrozenPredictor((0.0,) * 528, state_only=False)
+    evaluation = _evaluate_checkpoint(21046, zero, zero)
+    payload = evaluation.payload()
+    discrimination = payload["action_pair_discrimination"]
+    comparators = discrimination["action_indifferent_comparators"]
+    expected = {channel: _ContrastAggregate() for channel in D048_CHANNELS}
+
+    for pose in D046_HOLDOUT_POSES:
+        candidates = [
+            _candidate(zero, zero, pose, action)[1]
+            for action in D046_HOLDOUT_ACTIONS
+        ]
+        for index, first in enumerate(candidates):
+            for second in candidates[index + 1 :]:
+                for channel_index, channel in enumerate(D048_CHANNELS):
+                    expected[channel].add(
+                        0.0,
+                        first.actual[channel_index] - second.actual[channel_index],
+                    )
+
+    state_metrics = comparators["state_only"]["pooled_by_channel"]
+    zero_metrics = comparators["zero_change"]["pooled_by_channel"]
+    for channel in D048_CHANNELS:
+        assert state_metrics[channel] == expected[channel].payload()
+        assert zero_metrics[channel] == expected[channel].payload()
+    assert len({tuple(sorted(metric.items())) for metric in state_metrics.values()}) > 1

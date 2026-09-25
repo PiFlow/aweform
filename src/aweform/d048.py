@@ -354,6 +354,10 @@ def _new_contrast_groups() -> dict[str, dict[str, dict[str, _ContrastAggregate]]
     }
 
 
+def _new_channel_contrast_aggregates() -> dict[str, _ContrastAggregate]:
+    return {channel: _ContrastAggregate() for channel in D048_CHANNELS}
+
+
 def _add_contrast(
     groups: dict[str, dict[str, dict[str, _ContrastAggregate]]],
     *,
@@ -429,8 +433,12 @@ class _CheckpointEvaluation:
     full_contrast: dict[str, dict[str, dict[str, _ContrastAggregate]]] = field(
         default_factory=_new_contrast_groups
     )
-    state_contrast: _ContrastAggregate = field(default_factory=_ContrastAggregate)
-    zero_contrast: _ContrastAggregate = field(default_factory=_ContrastAggregate)
+    state_contrast: dict[str, _ContrastAggregate] = field(
+        default_factory=_new_channel_contrast_aggregates
+    )
+    zero_contrast: dict[str, _ContrastAggregate] = field(
+        default_factory=_new_channel_contrast_aggregates
+    )
     branch_order_invariant: bool = True
     identical_starts: bool = True
     reward_exactly_zero: bool = True
@@ -465,8 +473,9 @@ class _CheckpointEvaluation:
         for group, accumulator in other.absolute.items():
             self.absolute.setdefault(group, _ComparisonAccumulator()).merge(accumulator)
         _merge_contrast_groups(self.full_contrast, other.full_contrast)
-        self.state_contrast.merge(other.state_contrast)
-        self.zero_contrast.merge(other.zero_contrast)
+        for channel in D048_CHANNELS:
+            self.state_contrast[channel].merge(other.state_contrast[channel])
+            self.zero_contrast[channel].merge(other.zero_contrast[channel])
         self.branch_order_invariant &= other.branch_order_invariant
         self.identical_starts &= other.identical_starts
         self.reward_exactly_zero &= other.reward_exactly_zero
@@ -491,14 +500,14 @@ class _CheckpointEvaluation:
                     "state_only": {
                         "contrast": "structural zero",
                         "pooled_by_channel": {
-                            channel: self.state_contrast.payload()
+                            channel: self.state_contrast[channel].payload()
                             for channel in D048_CHANNELS
                         },
                     },
                     "zero_change": {
                         "contrast": "structural zero",
                         "pooled_by_channel": {
-                            channel: self.zero_contrast.payload()
+                            channel: self.zero_contrast[channel].payload()
                             for channel in D048_CHANNELS
                         },
                     },
@@ -668,8 +677,9 @@ def _evaluate_checkpoint(
                     actual=actual,
                 )
                 for channel in range(len(D048_CHANNELS)):
-                    evaluation.state_contrast.add(0.0, actual[channel])
-                    evaluation.zero_contrast.add(0.0, actual[channel])
+                    channel_name = D048_CHANNELS[channel]
+                    evaluation.state_contrast[channel_name].add(0.0, actual[channel])
+                    evaluation.zero_contrast[channel_name].add(0.0, actual[channel])
     if evaluation.candidate_count != D048_HOLDOUT_CANDIDATE_COUNT:
         raise RuntimeError("D-048 held-out candidate support changed")
     if evaluation.pair_count != D048_HOLDOUT_PAIR_COUNT:
