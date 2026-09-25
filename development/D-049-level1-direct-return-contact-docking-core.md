@@ -1,7 +1,7 @@
 # D-049 — Level-1 direct return and contact-seeking docking core
 
 - **id:** D-049
-- **status:** executable/protocol freeze; official result pending
+- **status:** completed from frozen executable SHA
 - **lane:** Development / Level-1 Innate Autonomous Viability diagnostic
 - **authorized_base_sha:** `a375de54722c3bfc09634a3685c4558a7a9f917f`
 - **disposition:** CONTINUING
@@ -45,15 +45,46 @@ the existing envelope, recomputes after every transition, then uses the fixed
 terminal spin until organism-visible contact. The next contact-observing
 transition commands zero and must show battery increase under D-045 charging.
 
-## Result provenance
+## Official result
 
-The official artifact and completed record are intentionally absent from this
-result-free freeze. They must be generated only from the pushed executable
-commit, with failures retained per case and byte-identical regeneration from
-that same executable SHA.
+The official run was generated only after the result-free executable/protocol
+freeze was pushed and verified retrievable from GitHub:
 
-## Validation at freeze
+- **clean_executable_sha:** `73b0d3ccd709485c309c888927a98a7773529b6a`
+- **artifact:** [`D-049-level1-direct-return-contact-docking-core.json`](D-049-level1-direct-return-contact-docking-core.json)
+- **artifact_bytes:** `445239`
+- **artifact_sha256:** `3d87e61e236a1e0c65d50aae65fa16ea201029e8ee20a5bb7dabd6fd88f139ec`
+- **independent regeneration:** byte-identical, same size and SHA-256
 
-Focused tests and the full repository checks must be run before the executable
-freeze is accepted: D-049 tests, `uv run pytest -q`, `uv run ruff check .`,
-`uv run mypy src --strict`, compile/import checks, and `git diff --check`.
+All `104/104` frozen cases were classified `DOCKED_AND_CHARGING`; no case was
+invalid, horizon-censored, terminated before contact, spin-exhausted, or
+contact-without-charge. The inverse revalidation covered `104` valid current
+float32 observation paths with maxima of `2.3311302124739974e-7` m coordinate,
+`2.2699739807285901e-7` m distance, and `3.297103055022177e-7` rad bearing,
+all inside the frozen `1e-6` limits.
+
+The direct-return block had `96/96` successes, maximum coarse-return count
+`24`, and maximum terminal-spin count `17`. The terminal-only block had
+`8/8` successes and maximum terminal-spin count `19`, within the predeclared
+`20`-turn bound. The largest evaluator-only contact pair error at first
+contact was `0.0096350297699432` m, under the retained inclusive `0.010` m
+tolerance. Two terminal cases began already in contact and followed the
+contact-first zero rule.
+
+Across `2314` active transitions, Level-1 authority was logged on every
+transition (`100%`). The first stationary zero-wheel charging transition
+showed battery increase in all cases. Reward remained exactly `0.0` and every
+organism-facing `info` value remained `{}`. No learned/plastic state or
+evaluator geometry entered causal behavior.
+
+This is a descriptive Development result only. It does not establish hardware
+performance, metabolism, learning, intelligence, consciousness, or a
+confirmatory evidence claim.
+
+## Validation
+
+The executable freeze passed focused D-049 tests (`14 passed`), the full suite
+(`1074 passed, 8 warnings`), `uv run ruff check .`, `uv run mypy src --strict`,
+compile/import checks, and `git diff --check`. The official artifact was then
+regenerated independently from the same executable SHA and compared byte for
+byte before this result layer was written.
