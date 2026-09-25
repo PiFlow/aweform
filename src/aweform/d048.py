@@ -879,17 +879,45 @@ def _seed_payload(
     execution: _SeedExecution,
     control: _SeedExecution,
 ) -> dict[str, object]:
-    checkpoint_controls = {
-        str(row["exposure_passes"]): row["causal_isolation"]
-        for row in execution.checkpoint_payloads
-    }
+    compact_checkpoints: list[dict[str, object]] = []
+    checkpoint_controls: dict[str, object] = {}
+    for row in execution.checkpoint_payloads:
+        evaluation = row["evaluation"]
+        if not isinstance(evaluation, dict):
+            raise RuntimeError("checkpoint evaluation payload is not a mapping")
+        absolute = evaluation["absolute_one_step"]
+        discrimination = evaluation["action_pair_discrimination"]
+        causal_isolation = row["causal_isolation"]
+        if not isinstance(absolute, dict) or not isinstance(discrimination, dict):
+            raise RuntimeError("checkpoint metric payload is not a mapping")
+        compact_evaluation = {
+            "support": evaluation["support"],
+            "absolute_one_step": {"overall": absolute["overall"]},
+            "action_pair_discrimination": {
+                "full_learner": {
+                    "pooled": discrimination["full_learner"]["pooled"]
+                },
+                "action_indifferent_comparators": discrimination[
+                    "action_indifferent_comparators"
+                ],
+            },
+            "causal_isolation": causal_isolation,
+        }
+        compact_row = {
+            "exposure_passes": row["exposure_passes"],
+            "exposure_transitions": row["exposure_transitions"],
+            "weights": row["weights"],
+            "evaluation": compact_evaluation,
+        }
+        compact_checkpoints.append(compact_row)
+        checkpoint_controls[str(row["exposure_passes"])] = causal_isolation
     return {
         "seed": execution.seed,
         "curriculum_sequence_sha256": execution.curriculum_sha256,
         "transition_count": execution.transitions,
         "completed_passes": execution.completed_passes,
         "pass_diagnostics": execution.pass_payloads,
-        "checkpoints": execution.checkpoint_payloads,
+        "checkpoints": compact_checkpoints,
         "termination": {
             "terminated": execution.terminated,
             "truncated": execution.truncated,
@@ -950,7 +978,7 @@ def run_d048_official(
     evaluations_by_checkpoint: dict[int, list[_CheckpointEvaluation]] = {
         checkpoint: [] for checkpoint in D048_CHECKPOINTS
     }
-    seed_evaluations_by_checkpoint: dict[int, list[dict[str, object]]] = {
+    seed_checkpoint_support: dict[int, list[dict[str, object]]] = {
         checkpoint: [] for checkpoint in D048_CHECKPOINTS
     }
     for seed in validated_seeds:
@@ -959,7 +987,9 @@ def run_d048_official(
         seed_results.append(_seed_payload(execution, control))
         for checkpoint, evaluation in execution.checkpoint_evaluations.items():
             evaluations_by_checkpoint[checkpoint].append(evaluation)
-            seed_evaluations_by_checkpoint[checkpoint].append(evaluation.payload())
+            seed_checkpoint_support[checkpoint].append(
+                {"seed": seed, "support": evaluation.payload()["support"]}
+            )
     if any(
         len(evaluations_by_checkpoint[checkpoint]) != len(validated_seeds)
         for checkpoint in D048_CHECKPOINTS
@@ -1012,7 +1042,7 @@ def run_d048_official(
         },
         "checkpoints": {
             str(checkpoint): {
-                "per_seed": seed_evaluations_by_checkpoint[checkpoint],
+                "per_seed_support": seed_checkpoint_support[checkpoint],
                 "pooled": _aggregate_checkpoint(
                     checkpoint, evaluations_by_checkpoint[checkpoint]
                 ),
