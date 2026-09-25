@@ -77,6 +77,6 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-045 | V0.5 deterministic differential-drive embodiment and bookkeeping probe | CONTINUING | [`D-045-v05-deterministic-embodiment-bookkeeping-probe.md`](D-045-v05-deterministic-embodiment-bookkeeping-probe.md) |
 | D-046 | One-time raw-wheel calibration and fresh V0.5 shadow consequence learning | CONTINUING | [`D-046-v05-calibration-shadow-consequence-learning.md`](D-046-v05-calibration-shadow-consequence-learning.md) |
 | D-047 | V0.5 shadow action-consequence discrimination audit | CONTINUING | [`D-047-v05-shadow-action-consequence-discrimination.md`](D-047-v05-shadow-action-consequence-discrimination.md) |
-| D-048 | V0.5 extended-exposure shadow consequence-learning curve | CONTINUING | [`D-048-v05-extended-exposure-shadow-learning-curve.md`](D-048-v05-extended-exposure-shadow-learning-curve.md) |
+| D-048 | V0.5 extended-exposure shadow consequence-learning curve (corrected rerun) | CONTINUING | [`D-048-v05-extended-exposure-shadow-learning-curve.md`](D-048-v05-extended-exposure-shadow-learning-curve.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeded to the next ecology question rather than that D-001 remains unexecuted. The same distinction applies to later records whose own work is complete but whose scientific thread continues.

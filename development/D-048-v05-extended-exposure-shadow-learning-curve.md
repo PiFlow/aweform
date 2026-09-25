@@ -4,15 +4,16 @@
 - **issue:** [#170](https://github.com/PiFlow/aweform/issues/170)
 - **lane:** Development / shadow-learning diagnostic
 - **authorized_base_sha:** `c401aaa0c6a60bf3cc13840c40951957854ef2ef`
-- **frozen_executable_protocol_sha:** `274bfb278f3406ac235708faaacb708a9a604cd6`
+- **frozen_executable_protocol_sha:** `502c006f7406b5676afc49a950794963c4f0c7b0`
 - **artifact:** [`D-048-v05-extended-exposure-shadow-learning-curve.json`](D-048-v05-extended-exposure-shadow-learning-curve.json)
-- **artifact_sha256:** `ae000325425e9afdc2ed6df922c0cc51bf15f193344db5df99f7930e2fb42e9f`
-- **artifact_size_bytes:** `3072918`
+- **artifact_sha256:** `899c1443cc5eaa1c1b9772e8ce1dc04c39e190f29b6c6998d52a4333c65cd6e9`
+- **artifact_size_bytes:** `3066538`
 - **development_seeds:** `21046..21065`; validated by the existing formal-reservation guard
 - **disposition:** `CONTINUING`
 
 This is a descriptive Development result, not confirmatory evidence. The
-official artifact was generated from the pushed executable freeze above.
+corrected official artifact was generated from the pushed executable freeze
+above.
 
 ## Question and frozen boundary
 
@@ -65,6 +66,10 @@ best checkpoint, universal threshold, or successor choice is defined.
   channel-expanded comparisons. The artifact retains the required pooled
   strata by seed, pose, unordered action pair, boundary involvement, and
   contact-transition involvement.
+- The state-only and zero-change action-indifferent contrast comparators retain
+  separate aggregates for each visible channel. Their emitted metrics equal
+  the corresponding channel-specific zero-prediction calculations and are not
+  a channel-mixed aggregate copied across channels.
 - Across-seed mean prequential full-learner MAE improved from pass 1 to pass 8
   for every channel: energy `1.024e-5 → 8.937e-6`, temperature
   `4.083e-7 → 3.672e-7`, beacon left `2.987e-3 → 1.924e-3`, beacon forward
@@ -130,17 +135,28 @@ or interpreted. The compact serializer was frozen and pushed as
 `274bfb278f3406ac235708faaacb708a9a604cd6`, after which the complete
 20-seed protocol was rerun from scratch.
 
+That compact result layer was subsequently invalidated. Executable SHA
+`274bfb278f3406ac235708faaacb708a9a604cd6` generated artifact SHA-256
+`ae000325425e9afdc2ed6df922c0cc51bf15f193344db5df99f7930e2fb42e9f` with
+size `3,072,918` bytes. Independent review found that the action-indifferent
+state-only and zero-change contrast comparators used one channel-mixed
+aggregate and copied it into every channel entry. The old freeze and artifact
+remain preserved in the rejected PR history and are not pooled or interpreted.
+The bounded comparator correction was frozen and pushed as
+`502c006f7406b5676afc49a950794963c4f0c7b0`, after which all 20 seeds were
+rerun from scratch without protocol or scientific tuning.
+
 ## Reproducibility and validation
 
 The successful command was:
 
 ```text
-UV_CACHE_DIR=/private/tmp/aweform-d048-uv-cache MPLCONFIGDIR=/private/tmp/aweform-d048-mpl-cache uv run python -m aweform.d048 --executed-commit-sha 274bfb278f3406ac235708faaacb708a9a604cd6
+UV_CACHE_DIR=/private/tmp/aweform-d048-uv-cache MPLCONFIGDIR=/private/tmp/aweform-d048-mpl-cache uv run python -m aweform.d048 --executed-commit-sha 502c006f7406b5676afc49a950794963c4f0c7b0
 ```
 
 Independent regeneration from the same executable SHA used the same command
 with `--output /private/tmp/d048-regenerated.json`; `cmp` was byte-identical
-at 3,072,918 bytes and the artifact SHA-256 above. Runtime provenance was
+at 3,066,538 bytes and the artifact SHA-256 above. Runtime provenance was
 Python `3.14.7`, NumPy `2.5.2`, and
 `macOS-26.6.2-arm64-arm-64bit-Mach-O`.
 
@@ -151,7 +167,7 @@ environment fingerprints for all 20 seeds. Reward was exactly `0.0`,
 organism-facing `info` was exactly `{}`, predictions remained shadow-only,
 and no formal reserved seed was used.
 
-Focused D-048 tests: `6 passed`. The full suite passed with `1,059 passed`
+Focused D-048 tests: `7 passed`. The full suite passed with `1,060 passed`
 and 8 pre-existing Matplotlib warnings. Ruff, strict mypy, compile/import
 checks, `git diff --check`, authorized-base ancestry, exact pushed-freeze
 retrievability, exact support counts, seed validation, checkpoint read-only
