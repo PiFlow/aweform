@@ -12,7 +12,7 @@ This file is the canonical **committed D-record ledger**. Add one row when a mea
 
 Do not use roadmap prose or README text as a replacement for this ledger. Work that is authorized in GitHub but does not yet have a committed D-record belongs in the current authorization issue/PR, not as a premature row here.
 
-Committed Development records currently extend through **D-045**. D-041 through D-044 are historical V0.4 records, and D-045 is the first committed V0.5 substrate record. D-046 is authorized by issue #165 but is not yet a committed D-record, so it must not receive a row here until its record is actually committed. Any Development work that is newly authorized but not yet committed belongs in its exact current GitHub authorization issue/PR and must not be added here prematurely.
+Committed Development records currently extend through **D-048**. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; and D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage. No successor D-stage is authorized by this ledger. Any Development work newly authorized but not yet committed belongs in its exact current GitHub authorization issue/PR and must not be added here prematurely.
 
 ## Disposition vocabulary
 

@@ -70,9 +70,17 @@ As evidence permits, development should preferentially ask whether task-specific
 
 > **What information can this organism construct from experience, and when can that learned information legitimately take over something currently engineered?**
 
-This does not mean that every engineered mechanism should be learned. Aweform may legitimately have engineered physiology, embodiment, sensors, actions, viability limits, and bounded plasticity machinery. The stronger developmental target is behavioural knowledge: when to conserve or seek, how to reacquire resources, when to leave, how much reserve is prudent, and how behaviour should change with competence and history.
+This does not mean that every engineered mechanism should be learned. Aweform may legitimately have engineered physiology, embodiment, sensors, actions, viability limits, bounded plasticity machinery, and declared constitutive Level-1 viability mechanisms.
 
-A fixed controller that genuinely solves the intended problem remains valid evidence and should not be designed away merely to make learning necessary. Scaffold transfer is justified only when a learned mechanism earns the role under fair controls.
+Before ADR 0018, this section stated the stronger developmental target as:
+
+> “when to conserve or seek, how to reacquire resources, when to leave, how much reserve is prudent, and how behaviour should change with competence and history.”
+
+ADR 0018 prospectively re-scopes that target rather than silently deleting it. **Below the declared innate viability floor**, basic return initiation, basic beacon-guided reacquisition, organism-visible terminal docking/charging, and fixed baseline return-budget sizing may be constitutive engineered mechanisms. **Above the floor**, elective departure, adaptive reserve strategy, improvements in efficiency/robustness, changed-environment handling, and behaviour that changes with competence and history remain developmental learning questions.
+
+The corresponding functional direction is: **Level 3 discovers → Level 2 consolidates/automates → Level 1 underwrites baseline viability under declared assumptions.** Level-2/3 learned contribution must remain attributable above the constitutive Level-1 baseline, and higher-level learning does not gain arbitrary write access to Level 1.
+
+A fixed controller that genuinely solves the intended problem remains valid evidence and should not be designed away merely to make learning necessary. Scaffold transfer is justified only when a learned mechanism earns the role under fair controls, and scaffold-transfer pressure applies above the declared innate viability floor rather than requiring constitutive viability mechanisms to disappear.
 
 The detailed non-authorizing direction, including scaffold accounting, future dormancy, evolutionary timescales, and internal simulation, is recorded in [`developmental-direction-scaffold-transfer.md`](developmental-direction-scaffold-transfer.md).
 

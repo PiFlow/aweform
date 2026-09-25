@@ -37,6 +37,20 @@ A provisional progression is:
 7. Communication and culture — machine-native signalling and shared learned conventions; human language becomes another learned interface.
 8. Richer cognition — planning, abstraction, attachment, awe-like functional states, and increasingly sophisticated value formation.
 
+## Functional developmental layers and innate viability floor
+
+Aweform's development is organized functionally rather than as a literal biological or neurological layering claim:
+
+1. **Level 1 — Innate Viability & Embodiment:** declared constitutive mechanisms needed for bodily operation and assumption-bounded baseline viability. Under ADR 0018 this includes the permitted basic energetic return floor: a fixed return condition, beacon-guided reacquisition, organism-visible terminal docking/charging, and recovery to a declared baseline margin.
+2. **Level 2 — Sensorimotor Skills & Integration:** reusable routines, arbitration, habits, procedural competence, and separately authorized consolidated skills that compose Level-1 capabilities.
+3. **Level 3 — Adaptive Learning & Open-Ended Development:** increasingly open-ended learning, predictive/world models, affordance and skill discovery, curiosity, play, social interaction, communication, and later richer cognition when separately authorized.
+
+The intended developmental direction is:
+
+> **Level 3 discovers → Level 2 consolidates/automates → Level 1 underwrites baseline viability under declared assumptions.**
+
+Level 1 is not evidence of biological instinct and its engineered competence must never be reported as learned. Level 2/3 learning may improve on the innate floor, but learned contribution must be attributed above that baseline. Higher levels do not obtain arbitrary write access to Level-1 viability mechanisms.
+
 This is not a literal evolutionary ladder and is not based on a simplistic reptile-to-mammal-to-human brain model. Biological evolution is used as inspiration for problems and principles, not copied as a blueprint.
 
 "Evolution-inspired" also does not mean Darwinian evolution is already occurring in the system. Reproduction, heredity, mutation, population selection, or evolutionary optimisation must be explicit experiments rather than implied by the developmental metaphor.
