@@ -1,6 +1,6 @@
 # Aweform — Future Research Question: Low-Level Autonomy and Sensor Layering
 
-**Status:** non-authorizing future research note  
+**Status:** historical non-authorizing future research note; architectural question promoted by ADR 0018 upon its acceptance  
 **Recorded:** 2026-09-17  
 **Repository context:** recorded while D-041 was authorized from `main` at `8b51d6e143a906a83f1fd8d760aace5ed46abb9e`  
 **Purpose:** preserve a long-range architectural question about whether simple energy-reacquisition and docking competence should remain useful as a low-level sensorimotor layer even if future Aweform embodiments acquire much richer perception.
