@@ -2,15 +2,25 @@
 
 from __future__ import annotations
 
+import json
 import math
+from pathlib import Path
 
 import numpy as np
 
-from aweform.d049 import D049Controller, reconstruct_source
+from aweform.d045 import (
+    D045_WHEEL_RADIUS_METRES,
+    D045_WHEEL_TRACK_WIDTH_METRES,
+    D045Env,
+    D045PhysicalConfig,
+    _body_contact_point,
+)
+from aweform.d049 import D049_STATION_CENTER, D049Controller, reconstruct_source
 from aweform.d050 import (
     D050_INITIAL_BEARING_ERRORS_RAD,
     D050_POSITION_BEARINGS_DEG,
     D050_RETURN_RADII_M,
+    D050SmoothController,
 )
 from aweform.d051 import (
     D051_FRESH_INITIAL_BEARING_ERRORS_RAD,
@@ -127,15 +137,173 @@ def test_counterfactual_treatment_uses_uncertainty_in_arm_a_too() -> None:
     ) is False
 
 
+def _arm_c_first_contact_diagnostic(
+    actual_artifact: dict[str, object],
+) -> str:
+    reference_path = (
+        Path(__file__).resolve().parents[1]
+        / "development/D-050-level1-homing-controller-comparison.json"
+    )
+    reference = json.loads(reference_path.read_text(encoding="utf-8"))
+    expected_pair = reference["pairs"][0]
+    expected_arm = expected_pair["smooth"]
+    expected_trace = {entry["step"]: entry for entry in expected_arm["trace"]}
+    actual_pair = actual_artifact["pairs"][0]
+    actual_arm = actual_pair["arms"][D051Arm.D050_SMOOTH_REFERENCE.value]
+    actual_trace = {entry["step"]: entry for entry in actual_arm["trace"]}
+    first_trace_difference = None
+    for step, expected in expected_trace.items():
+        actual = actual_trace[step]
+        differing = {
+            key: {"expected": expected[key], "actual": actual[key]}
+            for key in ("x", "y", "heading", "charging_contact")
+            if expected[key] != actual[key]
+        }
+        if differing:
+            first_trace_difference = {"step": step, "fields": differing}
+            break
+
+    case = frozen_cases()[0]
+    environment = D045Env(D045PhysicalConfig(episode_horizon=256))
+    observation, _ = environment.reset(
+        options={
+            "body_position": case.body_position,
+            "station_center": D049_STATION_CENTER,
+            "heading": case.heading_rad,
+        }
+    )
+    controller = D050SmoothController()
+    contact_capture: dict[str, object] | None = None
+    for _ in range(256):
+        decision = controller.command(observation)
+        observation, _, _, _, _ = environment.step(
+            (decision.wheel_delta_left, decision.wheel_delta_right)
+        )
+        telemetry = environment.last_transition
+        assert telemetry is not None
+        if telemetry.charging_contact_after and not telemetry.charging_contact_before:
+            plus_point = _body_contact_point(
+                telemetry.position_after, telemetry.heading_after, (0.0, 0.05)
+            )
+            minus_point = _body_contact_point(
+                telemetry.position_after, telemetry.heading_after, (0.0, -0.05)
+            )
+            plus_station = (D049_STATION_CENTER[0], D049_STATION_CENTER[1] + 0.05)
+            minus_station = (D049_STATION_CENTER[0], D049_STATION_CENTER[1] - 0.05)
+            wheel_left_distance = (
+                D045_WHEEL_RADIUS_METRES * telemetry.actual_delta_left
+            )
+            wheel_right_distance = (
+                D045_WHEEL_RADIUS_METRES * telemetry.actual_delta_right
+            )
+            d_s = (wheel_left_distance + wheel_right_distance) / 2.0
+            d_theta = (
+                wheel_right_distance - wheel_left_distance
+            ) / D045_WHEEL_TRACK_WIDTH_METRES
+            contact_capture = {
+                "step": telemetry.step_index,
+                "expected_contact_pair_error_m": expected_arm[
+                    "contact_pair_error_at_first_contact_m"
+                ],
+                "expected_contact_pair_error_hex": [
+                    float(value).hex()
+                    for value in expected_arm[
+                        "contact_pair_error_at_first_contact_m"
+                    ]
+                ],
+                "actual_plus_contact_error_raw_m": telemetry.dock_plus_error_m,
+                "actual_minus_contact_error_raw_m": telemetry.dock_minus_error_m,
+                "actual_contact_pair_error_raw_m": [
+                    telemetry.dock_plus_error_m,
+                    telemetry.dock_minus_error_m,
+                ],
+                "actual_contact_pair_error_hex": [
+                    telemetry.dock_plus_error_m.hex(),
+                    telemetry.dock_minus_error_m.hex(),
+                ],
+                "pose_before": {
+                    "position": telemetry.position_before,
+                    "position_hex": [v.hex() for v in telemetry.position_before],
+                    "heading": telemetry.heading_before,
+                    "heading_hex": telemetry.heading_before.hex(),
+                },
+                "pose_after": {
+                    "position": telemetry.position_after,
+                    "position_hex": [v.hex() for v in telemetry.position_after],
+                    "heading": telemetry.heading_after,
+                    "heading_hex": telemetry.heading_after.hex(),
+                },
+                "requested_wheels": [
+                    decision.wheel_delta_left,
+                    decision.wheel_delta_right,
+                ],
+                "actual_wheels": [
+                    telemetry.actual_delta_left,
+                    telemetry.actual_delta_right,
+                ],
+                "actual_wheels_hex": [
+                    telemetry.actual_delta_left.hex(),
+                    telemetry.actual_delta_right.hex(),
+                ],
+                "boundary_scale": telemetry.boundary_scale,
+                "arc_intermediates": {
+                    "wheel_left_distance": wheel_left_distance,
+                    "wheel_right_distance": wheel_right_distance,
+                    "d_s": d_s,
+                    "d_theta": d_theta,
+                    "next_heading": telemetry.heading_before + d_theta,
+                    "sin_heading_before": math.sin(telemetry.heading_before),
+                    "cos_heading_before": math.cos(telemetry.heading_before),
+                    "sin_heading_after": math.sin(telemetry.heading_after),
+                    "cos_heading_after": math.cos(telemetry.heading_after),
+                },
+                "arc_intermediates_hex": {
+                    key: value.hex()
+                    for key, value in {
+                        "wheel_left_distance": wheel_left_distance,
+                        "wheel_right_distance": wheel_right_distance,
+                        "d_s": d_s,
+                        "d_theta": d_theta,
+                        "next_heading": telemetry.heading_before + d_theta,
+                        "sin_heading_before": math.sin(telemetry.heading_before),
+                        "cos_heading_before": math.cos(telemetry.heading_before),
+                        "sin_heading_after": math.sin(telemetry.heading_after),
+                        "cos_heading_after": math.cos(telemetry.heading_after),
+                    }.items()
+                },
+                "contact_points_raw": {
+                    "plus": plus_point,
+                    "minus": minus_point,
+                    "station_plus": plus_station,
+                    "station_minus": minus_station,
+                },
+            }
+            break
+
+    if contact_capture is None:
+        return "Arm-C diagnostic failed to reach first contact"
+    return json.dumps(
+        {
+            "first_trace_difference": first_trace_difference,
+            "first_contact_transition": contact_capture,
+            "first_replay_mismatch": actual_artifact["historical_replay"][
+                "mismatches"
+            ][0],
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
 def test_protocol_replays_d050_and_preserves_boundary() -> None:
     artifact = run_d051_protocol("a" * 40)
     validation = artifact["validation"]
     assert validation["exact_historical_case_count"] is True
     assert validation["exact_fresh_case_count"] is True
     assert validation["historical_baseline_behavioral_identity"] is True
-    assert validation["historical_smooth_behavioral_identity"] is True, artifact[
-        "historical_replay"
-    ]
+    assert validation["historical_smooth_behavioral_identity"] is True, (
+        _arm_c_first_contact_diagnostic(artifact)
+    )
     assert validation["diagnostic_instrumentation_causal_identity"] is True
     assert validation["diagnostic_instrumentation_check_count"] == 6
     assert validation["branch_order_causal_identity"] is True
