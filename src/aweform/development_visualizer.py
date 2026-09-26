@@ -9,12 +9,13 @@ objects are created.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import itertools
 import json
 import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Final, Mapping, Sequence
+from typing import Callable, Final, Mapping, Sequence, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -499,6 +500,42 @@ class DevelopmentVisualizationData:
                 raise ValueError("thermal_threshold_label is required with threshold")
         elif self.thermal_threshold_label is not None:
             raise ValueError("thermal_threshold_label requires thermal_threshold")
+
+
+@dataclass(frozen=True, slots=True)
+class DevelopmentVisualizationPair:
+    """Two synchronized neutral traces for a paired evaluator comparison."""
+
+    pair_id: str
+    baseline: DevelopmentVisualizationData
+    smooth: DevelopmentVisualizationData
+    baseline_outcome: str
+    smooth_outcome: str
+    baseline_label: str = "BASELINE — D-049 STOP-TURN-STRAIGHT"
+    smooth_label: str = "SMOOTH — D-050 CURVED PURSUIT"
+
+    def __post_init__(self) -> None:
+        if not self.pair_id:
+            raise ValueError("pair_id must be non-empty")
+        if not self.baseline_outcome or not self.smooth_outcome:
+            raise ValueError("paired arm outcomes must be non-empty")
+        if not self.baseline_label or not self.smooth_label:
+            raise ValueError("paired arm labels must be non-empty")
+        if self.baseline_label == self.smooth_label:
+            raise ValueError("paired arm labels must be distinct")
+        if self.baseline.world_min != self.smooth.world_min:
+            raise ValueError("paired traces must share world_min")
+        if self.baseline.world_max != self.smooth.world_max:
+            raise ValueError("paired traces must share world_max")
+        if self.baseline.station_center != self.smooth.station_center:
+            raise ValueError("paired traces must share station_center")
+        if self.baseline.charging_radius != self.smooth.charging_radius:
+            raise ValueError("paired traces must share charging_radius")
+
+    @property
+    def frame_count(self) -> int:
+        """Return the synchronized display length, padding only in the viewer."""
+        return max(len(self.baseline.frames), len(self.smooth.frames))
 
 
 class DevelopmentVisualizationPlayer:
@@ -1473,6 +1510,244 @@ def build_development_visualization_figure(
          charger_phase_text),
     )
     return figure, animation
+
+
+def _paired_frame_at(
+    data: DevelopmentVisualizationData, frame_index: int
+) -> tuple[DevelopmentVisualizationFrame, bool]:
+    """Return a retained frame and whether the viewer is display-freezing it."""
+    if frame_index < len(data.frames):
+        return data.frames[frame_index], False
+    return data.frames[-1], True
+
+
+def build_development_visualization_pair_figure(
+    pair: DevelopmentVisualizationPair,
+    *,
+    interval_ms: int = 90,
+) -> tuple[Figure, FuncAnimation]:
+    """Build a synchronized side-by-side replay from completed neutral traces."""
+    if isinstance(interval_ms, bool) or not isinstance(interval_ms, int):
+        raise ValueError("interval_ms must be an integer")
+    if interval_ms <= 0:
+        raise ValueError("interval_ms must be positive")
+
+    figure = plt.figure(figsize=(15, 8))
+    figure.subplots_adjust(
+        left=0.04,
+        right=0.98,
+        bottom=0.08,
+        top=0.87,
+        wspace=0.12,
+        hspace=0.25,
+    )
+    grid = figure.add_gridspec(2, 2, height_ratios=(4.0, 1.35))
+    world_axes = [figure.add_subplot(grid[0, index]) for index in range(2)]
+    diagnostic_axes = [figure.add_subplot(grid[1, index]) for index in range(2)]
+    arm_data = (pair.baseline, pair.smooth)
+    arm_labels = (pair.baseline_label, pair.smooth_label)
+    arm_colors = ("tab:blue", "tab:orange")
+
+    trajectory_lines: list[Line2D] = []
+    body_markers: list[Line2D] = []
+    heading_arrows = []
+    diagnostic_texts: list[Text] = []
+    for axis, diagnostic_axis, data, label, color in zip(
+        world_axes,
+        diagnostic_axes,
+        arm_data,
+        arm_labels,
+        arm_colors,
+        strict=True,
+    ):
+        axis.set_xlim(pair.baseline.world_min[0], pair.baseline.world_max[0])
+        axis.set_ylim(pair.baseline.world_min[1], pair.baseline.world_max[1])
+        axis.set_aspect("equal", adjustable="box")
+        axis.set_xlabel("x (evaluator view)")
+        axis.set_ylabel("y (evaluator view)")
+        axis.set_title(label, color=color, fontsize=11)
+        axis.add_patch(
+            Rectangle(
+                pair.baseline.world_min,
+                pair.baseline.world_max[0] - pair.baseline.world_min[0],
+                pair.baseline.world_max[1] - pair.baseline.world_min[1],
+                fill=False,
+                edgecolor="black",
+                linewidth=1.0,
+            )
+        )
+        if data.station_center is not None:
+            axis.plot(
+                [data.station_center[0]],
+                [data.station_center[1]],
+                marker="*",
+                markersize=14,
+                color="tab:green",
+                linestyle="None",
+                label="station / charger",
+            )
+        line, *_ = axis.plot(
+            [], [], color=color, alpha=0.65, linewidth=2.0, label="trajectory"
+        )
+        marker, *_ = axis.plot(
+            [],
+            [],
+            marker="o",
+            color=color,
+            markersize=8,
+            linestyle="None",
+            label="body",
+        )
+        arrow = axis.quiver(
+            [], [], [], [], angles="xy", scale_units="xy", scale=5, color="tab:red"
+        )
+        axis.legend(loc="lower left", fontsize=7)
+        trajectory_lines.append(line)
+        body_markers.append(marker)
+        heading_arrows.append(arrow)
+
+        diagnostic_axis.set_xlim(0.0, 1.0)
+        diagnostic_axis.set_ylim(0.0, 1.0)
+        diagnostic_axis.axis("off")
+        diagnostic_axis.set_title(
+            "EVALUATOR-ONLY DISPLAY — organism inputs unchanged", loc="left", fontsize=9
+        )
+        diagnostic_texts.append(
+            diagnostic_axis.text(
+                0.02,
+                0.94,
+                "",
+                va="top",
+                family="monospace",
+                fontsize=10,
+                color=color,
+            )
+        )
+
+    player = DevelopmentVisualizationPlayer(pair.frame_count)
+
+    def render(frame_index: int) -> tuple[Artist, ...]:
+        rendered: list[Artist] = []
+        for arm_index, (data, line, marker, arrow, text_artist) in enumerate(
+            zip(
+                arm_data,
+                trajectory_lines,
+                body_markers,
+                heading_arrows,
+                diagnostic_texts,
+                strict=True,
+            )
+        ):
+            frame, frozen = _paired_frame_at(data, frame_index)
+            visible_frames = data.frames[: min(frame_index + 1, len(data.frames))]
+            line.set_data(
+                [item.x for item in visible_frames],
+                [item.y for item in visible_frames],
+            )
+            marker.set_data([frame.x], [frame.y])
+            arrow.set_offsets(np.asarray([[frame.x, frame.y]]))
+            arrow.set_UVC(
+                np.asarray([math.cos(frame.heading)]),
+                np.asarray([math.sin(frame.heading)]),
+            )
+            if frozen:
+                display_status = (
+                    "FROZEN AFTER ARM TRACE COMPLETION (DISPLAY ONLY)"
+                )
+            elif frame_index == len(data.frames) - 1:
+                display_status = "FINAL RETAINED ARM STATE"
+            else:
+                display_status = "LIVE RETAINED ARM TRACE"
+            outcome = (pair.baseline_outcome, pair.smooth_outcome)[arm_index]
+            text_artist.set_text(
+                f"paired time index: {frame_index} / {pair.frame_count - 1}\n"
+                f"arm trace step: {frame.transition_index}\n"
+                f"mode: {frame.decision_mode}\n"
+                f"charging contact: {frame.charging_contact}\n"
+                f"battery energy: {frame.energy:.6f} J\n"
+                f"final classification: {outcome}\n"
+                f"{display_status}"
+            )
+            rendered.extend((line, marker, arrow, text_artist))
+        return tuple(rendered)
+
+    render(0)
+
+    def animate(_tick: int) -> tuple[Artist, ...]:
+        if player.playing:
+            player.step_forward()
+            if player.frame_index == player.frame_count - 1:
+                player.pause()
+                _set_animation_running(animation, False)
+        return render(player.frame_index)
+
+    animation = FuncAnimation(
+        figure,
+        animate,
+        frames=itertools.count(),
+        interval=interval_ms,
+        repeat=False,
+        cache_frame_data=False,
+    )
+    figure.canvas.draw()
+    _set_animation_running(animation, False)
+
+    def on_key(event: object) -> None:
+        key = getattr(event, "key", None)
+        if not isinstance(key, str):
+            return
+        normalized_key = key.lower()
+        if normalized_key == " ":
+            if player.toggle_play_pause():
+                _set_animation_running(animation, True)
+            else:
+                _set_animation_running(animation, False)
+        elif normalized_key in {"right", "arrowright"} and not player.playing:
+            player.step_forward()
+            render(player.frame_index)
+            figure.canvas.draw_idle()
+        elif normalized_key in {"left", "arrowleft"} and not player.playing:
+            player.step_backward()
+            render(player.frame_index)
+            figure.canvas.draw_idle()
+        elif normalized_key == "r":
+            player.restart()
+            render(player.frame_index)
+            figure.canvas.draw_idle()
+
+    figure.canvas.mpl_connect("key_press_event", on_key)
+    figure.suptitle(
+        "AWEFORM D-050 PAIRED HOMING REPLAY\n"
+        f"{pair.pair_id} — synchronized evaluator-only display; no D-050 rerun",
+        fontsize=12,
+    )
+    figure.text(
+        0.5,
+        0.015,
+        "SPACE play/pause   LEFT/RIGHT step while paused   R restart   "
+        "Both arms use the same display time index; completed arms freeze "
+        "for display only.",
+        ha="center",
+        fontsize=9,
+        color="0.35",
+    )
+    setattr(figure, "_aweform_pair_player", player)
+    setattr(figure, "_aweform_pair_animation", animation)
+    setattr(figure, "_aweform_pair_diagnostic_texts", tuple(diagnostic_texts))
+    return figure, animation
+
+
+def show_development_visualization_pair(
+    pair: DevelopmentVisualizationPair,
+    *,
+    interval_ms: int = 90,
+) -> Figure:
+    """Build and show one paired post-hoc replay."""
+    figure, _animation = build_development_visualization_pair_figure(
+        pair, interval_ms=interval_ms
+    )
+    plt.show()
+    return figure
 
 
 def _translate_and_rotate(
@@ -3568,6 +3843,287 @@ def build_d043_development_visualization(
     return adapt_d043_trace(trace, seed=seed)
 
 
+D050_ARTIFACT_PATH: Final[Path] = (
+    Path(__file__).resolve().parents[2]
+    / "development/D-050-level1-homing-controller-comparison.json"
+)
+D050_ARTIFACT_SHA256: Final[str] = (
+    "28e352ad57096c5c85de8beae546b48e6041b6b0ad8bed712bcf185efb024fa5"
+)
+D050_ARTIFACT_BYTES: Final[int] = 3_386_482
+D050_CASE_COUNT: Final[int] = 96
+D050_HORIZON: Final[int] = 256
+D050_BASELINE_OUTCOME: Final[str] = "RETURN_HORIZON_CENSORED"
+D050_SMOOTH_OUTCOME: Final[str] = "DOCKED_AND_CHARGING"
+
+
+def _d050_mapping(value: object, label: str) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise ValueError(f"D-050 {label} must be an object")
+    return cast(dict[str, object], value)
+
+
+def _d050_string(mapping: Mapping[str, object], name: str) -> str:
+    value = mapping.get(name)
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"D-050 field {name!r} must be a non-empty string")
+    return value
+
+
+def _d050_integer(mapping: Mapping[str, object], name: str) -> int:
+    value = mapping.get(name)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"D-050 field {name!r} must be an integer")
+    return value
+
+
+def _d050_number(mapping: Mapping[str, object], name: str) -> float:
+    value = mapping.get(name)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"D-050 field {name!r} must be numeric")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"D-050 field {name!r} must be finite")
+    return number
+
+
+def _d050_boolean(mapping: Mapping[str, object], name: str) -> bool:
+    value = mapping.get(name)
+    if not isinstance(value, bool):
+        raise ValueError(f"D-050 field {name!r} must be a bool")
+    return value
+
+
+def _d050_trace_frames(
+    arm: Mapping[str, object],
+    *,
+    expected_initial_state: Mapping[str, object],
+) -> tuple[DevelopmentVisualizationFrame, ...]:
+    raw_trace = arm.get("trace")
+    if not isinstance(raw_trace, list) or not raw_trace:
+        raise ValueError("D-050 arm trace must be a non-empty array")
+    terminated = _d050_boolean(arm, "terminated")
+    truncated = _d050_boolean(arm, "truncated")
+    frames: list[DevelopmentVisualizationFrame] = []
+    for index, raw_frame in enumerate(raw_trace):
+        frame = _d050_mapping(raw_frame, f"trace[{index}]")
+        step = _d050_integer(frame, "step")
+        if step != index:
+            raise ValueError(
+                f"D-050 trace step {step} does not match array index {index}"
+            )
+        mode = _d050_string(frame, "mode")
+        frames.append(
+            DevelopmentVisualizationFrame(
+                transition_index=step,
+                x=_d050_number(frame, "x"),
+                y=_d050_number(frame, "y"),
+                heading=_d050_number(frame, "heading"),
+                action=mode,
+                decision_mode=mode,
+                energy=_d050_number(frame, "battery_j"),
+                thermal=0.0,
+                charging_contact=_d050_boolean(frame, "charging_contact"),
+                terminated=terminated if index == len(raw_trace) - 1 else False,
+                truncated=truncated if index == len(raw_trace) - 1 else False,
+            )
+        )
+    initial_position = _coordinate_from_sequence(
+        expected_initial_state.get("initial_body_position"),
+        "D-050 initial_body_position",
+    )
+    initial_heading = _d050_number(expected_initial_state, "initial_heading_rad")
+    first_frame = frames[0]
+    if (first_frame.x, first_frame.y) != initial_position:
+        raise ValueError("D-050 trace does not start at its declared position")
+    if first_frame.heading != initial_heading:
+        raise ValueError("D-050 trace does not start at its declared heading")
+    return tuple(frames)
+
+
+def _d050_arm_data(
+    arm: Mapping[str, object],
+    *,
+    initial_state: Mapping[str, object],
+    arm_label: str,
+) -> DevelopmentVisualizationData:
+    frames = _d050_trace_frames(
+        arm,
+        expected_initial_state=initial_state,
+    )
+    return DevelopmentVisualizationData(
+        source_label=arm_label,
+        seed=None,
+        world_min=(0.0, 0.0),
+        world_max=(1.0, 1.0),
+        station_center=(0.5, 0.5),
+        charging_radius=0.0,
+        energy_range=DevelopmentVisualizationRange(0.0, 2664.0),
+        thermal_range=DevelopmentVisualizationRange(0.0, 1.0),
+        frames=frames,
+        visibility=DevelopmentVisualizationVisibility(
+            position_heading="EVALUATOR-ONLY",
+            station_location="EVALUATOR-ONLY",
+            energy="RETAINED D-050 EVALUATOR TRACE",
+            thermal="NOT RETAINED / NOT DISPLAYED",
+            charging_contact="RETAINED D-050 EVALUATOR TRACE",
+            action_decision_mode="RETAINED D-050 MODE LABEL",
+        ),
+        energy_label="BATTERY ENERGY (J)",
+        mode_display_label="D-050 mode",
+        figure_annotation=(
+            "D-050 artifact replay only; no controller or environment is run"
+        ),
+    )
+
+
+def load_d050_visualization_pairs(
+    artifact_path: Path | None = None,
+) -> tuple[DevelopmentVisualizationPair, ...]:
+    """Load and validate the accepted D-050 artifact without rerunning D-050."""
+    path = artifact_path or D050_ARTIFACT_PATH
+    raw_bytes = path.read_bytes()
+    actual_sha256 = hashlib.sha256(raw_bytes).hexdigest()
+    if len(raw_bytes) != D050_ARTIFACT_BYTES or actual_sha256 != D050_ARTIFACT_SHA256:
+        raise ValueError(
+            "D-050 artifact integrity mismatch: expected "
+            f"{D050_ARTIFACT_BYTES} bytes / {D050_ARTIFACT_SHA256}, got "
+            f"{len(raw_bytes)} bytes / {actual_sha256}"
+        )
+    payload = _d050_mapping(
+        json.loads(raw_bytes.decode("utf-8")),
+        "artifact",
+    )
+    if _d050_string(payload, "development_id") != "D-050":
+        raise ValueError("artifact is not the committed D-050 result")
+    if _d050_string(payload, "schema_version") != "d050-artifact-v1":
+        raise ValueError("unsupported D-050 artifact schema")
+    frozen_protocol = _d050_mapping(payload.get("frozen_protocol"), "frozen_protocol")
+    if _d050_integer(frozen_protocol, "case_count") != D050_CASE_COUNT:
+        raise ValueError("D-050 artifact does not declare exactly 96 cases")
+    if _d050_integer(frozen_protocol, "case_horizon") != D050_HORIZON:
+        raise ValueError("D-050 artifact horizon is not the accepted 256 transitions")
+    raw_pairs = payload.get("pairs")
+    if not isinstance(raw_pairs, list) or len(raw_pairs) != D050_CASE_COUNT:
+        raise ValueError("D-050 artifact must contain exactly 96 paired cases")
+
+    pairs: list[DevelopmentVisualizationPair] = []
+    for index, raw_pair in enumerate(raw_pairs):
+        pair_data = _d050_mapping(raw_pair, f"pairs[{index}]")
+        pair_id = _d050_string(pair_data, "case_id")
+        initial_state = _d050_mapping(pair_data.get("initial_state"), "initial_state")
+        baseline = _d050_mapping(pair_data.get("baseline"), f"{pair_id}.baseline")
+        smooth = _d050_mapping(pair_data.get("smooth"), f"{pair_id}.smooth")
+        if _d050_string(baseline, "arm") != "baseline":
+            raise ValueError(f"{pair_id} baseline arm label is not baseline")
+        if _d050_string(smooth, "arm") != "smooth":
+            raise ValueError(f"{pair_id} smooth arm label is not smooth")
+        if baseline.get("initial_state") != initial_state:
+            raise ValueError(f"{pair_id} baseline initial state mismatch")
+        if smooth.get("initial_state") != initial_state:
+            raise ValueError(f"{pair_id} smooth initial state mismatch")
+        baseline_outcome = _d050_string(baseline, "failure_classification")
+        smooth_outcome = _d050_string(smooth, "failure_classification")
+        pairs.append(
+            DevelopmentVisualizationPair(
+                pair_id=pair_id,
+                baseline=_d050_arm_data(
+                    baseline,
+                    initial_state=initial_state,
+                    arm_label="D-050 BASELINE — D-049 STOP-TURN-STRAIGHT",
+                ),
+                smooth=_d050_arm_data(
+                    smooth,
+                    initial_state=initial_state,
+                    arm_label="D-050 SMOOTH — CURVED PURSUIT",
+                ),
+                baseline_outcome=baseline_outcome,
+                smooth_outcome=smooth_outcome,
+            )
+        )
+    return tuple(pairs)
+
+
+def select_d050_disagreements(
+    pairs: Sequence[DevelopmentVisualizationPair],
+) -> tuple[DevelopmentVisualizationPair, ...]:
+    """Derive the accepted baseline-censored/smooth-docked subset from the data."""
+    return tuple(
+        pair
+        for pair in pairs
+        if pair.baseline_outcome == D050_BASELINE_OUTCOME
+        and pair.smooth_outcome == D050_SMOOTH_OUTCOME
+    )
+
+
+def build_d050_overview_figure(
+    pairs: Sequence[DevelopmentVisualizationPair],
+    *,
+    title: str,
+) -> Figure:
+    """Build a static paired trajectory overview from already adapted data."""
+    if not pairs:
+        raise ValueError("D-050 overview requires at least one paired case")
+    columns = 8
+    rows = math.ceil(len(pairs) / columns)
+    figure, axes = plt.subplots(
+        rows,
+        columns,
+        figsize=(18.0, max(3.0, rows * 2.1)),
+        squeeze=False,
+    )
+    axes_flat = list(axes.flat)
+    for axis, pair in zip(axes_flat, pairs, strict=False):
+        baseline_frames = pair.baseline.frames
+        smooth_frames = pair.smooth.frames
+        axis.plot(
+            [frame.x for frame in baseline_frames],
+            [frame.y for frame in baseline_frames],
+            color="tab:blue",
+            linewidth=1.0,
+            label="baseline",
+        )
+        axis.plot(
+            [frame.x for frame in smooth_frames],
+            [frame.y for frame in smooth_frames],
+            color="tab:orange",
+            linewidth=1.0,
+            label="smooth",
+        )
+        initial = baseline_frames[0]
+        axis.plot(initial.x, initial.y, marker="o", color="black", markersize=2.5)
+        axis.plot(0.5, 0.5, marker="*", color="tab:green", markersize=6)
+        axis.set_xlim(0.0, 1.0)
+        axis.set_ylim(0.0, 1.0)
+        axis.set_aspect("equal", adjustable="box")
+        axis.tick_params(labelsize=5)
+        axis.set_title(
+            f"{pair.pair_id}\nB: {pair.baseline_outcome}\nS: {pair.smooth_outcome}",
+            fontsize=5.5,
+        )
+    for axis in axes_flat[len(pairs) :]:
+        axis.set_visible(False)
+    handles = [
+        Line2D([], [], color="tab:blue", label="baseline — stop-turn-straight"),
+        Line2D([], [], color="tab:orange", label="smooth — curved pursuit"),
+        Line2D(
+            [], [], marker="o", color="black", linestyle="None", label="shared start"
+        ),
+        Line2D(
+            [], [], marker="*", color="tab:green", linestyle="None", label="station"
+        ),
+    ]
+    figure.legend(handles=handles, loc="lower center", ncols=4, fontsize=8)
+    figure.suptitle(
+        f"AWEFORM D-050 {title}\n"
+        "EVALUATOR-ONLY STATIC OVERVIEW — exact committed paired traces; no rerun",
+        fontsize=12,
+        y=0.995,
+    )
+    figure.subplots_adjust(top=0.80, bottom=0.12, wspace=0.35, hspace=0.9)
+    return figure
+
+
 DevelopmentVisualizationAdapter = Callable[..., DevelopmentVisualizationData]
 DEVELOPMENT_VISUALIZATION_ADAPTERS: Final[
     dict[str, DevelopmentVisualizationAdapter]
@@ -3768,6 +4324,68 @@ def d043_main(argv: Sequence[str] | None = None) -> int:
         horizon=d043.D043_HORIZON,
     )
     show_development_visualization(data, interval_ms=args.interval_ms)
+    return 0
+
+
+def d050_main(argv: Sequence[str] | None = None) -> int:
+    """Replay or export paired D-050 traces from the accepted artifact."""
+    parser = argparse.ArgumentParser(
+        description=(
+            "Replay or export the read-only D-050 paired homing visualization "
+            "from its committed artifact."
+        )
+    )
+    modes = parser.add_mutually_exclusive_group(required=True)
+    modes.add_argument("--case-id", help="Replay one committed D-050 case.")
+    modes.add_argument(
+        "--overview",
+        action="store_true",
+        help="Export a static overview of all 96 committed paired cases.",
+    )
+    modes.add_argument(
+        "--disagreements",
+        action="store_true",
+        help=(
+            "Export the artifact-derived baseline-censored / smooth-docked "
+            "subset."
+        ),
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Output image path; required for --overview or --disagreements.",
+    )
+    parser.add_argument("--interval-ms", type=_positive_int, default=90)
+    args = parser.parse_args(argv)
+    pairs = load_d050_visualization_pairs()
+
+    if args.case_id is not None:
+        if args.output is not None:
+            parser.error("--output is only valid with --overview or --disagreements")
+        try:
+            pair = next(item for item in pairs if item.pair_id == args.case_id)
+        except StopIteration as error:
+            raise SystemExit(
+                f"unknown committed D-050 case id: {args.case_id}"
+            ) from error
+        show_development_visualization_pair(pair, interval_ms=args.interval_ms)
+        return 0
+
+    if args.output is None:
+        parser.error("--output is required with --overview or --disagreements")
+    selected_pairs = pairs
+    title = "ALL 96 PAIRED HOMING CASES"
+    if args.disagreements:
+        selected_pairs = select_d050_disagreements(pairs)
+        title = "16 BASELINE-CENSORED / SMOOTH-DOCKED DISAGREEMENTS"
+        if len(selected_pairs) != 16:
+            raise SystemExit(
+                "accepted D-050 artifact must derive exactly 16 disagreement cases; "
+                f"got {len(selected_pairs)}"
+            )
+    figure = build_d050_overview_figure(selected_pairs, title=title)
+    figure.savefig(args.output, dpi=160, bbox_inches="tight")
+    plt.close(figure)
     return 0
 
 

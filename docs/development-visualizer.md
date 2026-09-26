@@ -124,6 +124,7 @@ aweform-visualize-d024
 aweform-visualize-d030
 aweform-visualize-d043
 aweform-export-d043-html
+aweform-visualize-d050
 ```
 
 D-030 is the important current example. `development_visualizer.py` contains matched D-030 shared-renderer adapters for `REFERENCE_NO_INFLUENCE`, `LEARNED_FORWARD`, and `PERMUTED_FORWARD`, exposed through:
@@ -157,6 +158,55 @@ D-021 and D-023 replay completed continuous V0.4 lifetimes through the shared ev
 D-024, D-025, and D-026 reuse the same causal finite-body renderer and exact two-contact geometry. Their rear-contact markers are evaluator-only: each marker is colored according to the corresponding inclusive `<= 0.01` pair tolerance, while the organism-visible charging channel remains the unchanged binary dual-contact predicate. D-026 runs the real merged D-026 lifetime trace; its primary smoke/demo seed is `18379`, with `18382` available as a slower reacquisition example.
 
 D-030 also reuses the causal finite-body renderer. Its three-arm specialized visualization exists to compare the matched reference, correctly associated learned steering, and fixed-permutation control without inventing a new renderer. It remains evaluator-side Development visualization and does not turn later D-031R1→D-040 audit diagnostics into organism observations.
+
+## D-050 paired homing replay
+
+D-050 has a read-only artifact adapter and paired extension of the shared
+Matplotlib renderer. It reads
+`development/D-050-level1-homing-controller-comparison.json`, whose accepted
+source is exactly `3,386,482` bytes with SHA-256
+`28e352ad57096c5c85de8beae546b48e6041b6b0ad8bed712bcf185efb024fa5`.
+The adapter verifies that byte identity before adapting the retained
+evaluator-side `x/y/heading/mode/contact/battery` traces. It does not import or
+run the D-050 simulation runner, alter the artifact, or create a new result.
+
+Replay one committed pair with synchronized time indices and the established
+shared controls:
+
+```text
+uv run aweform-visualize-d050 --case-id direct-r0.15-p022.5-e01
+```
+
+The two panels use the same world scale, station location, and playback index.
+SPACE toggles play/pause, LEFT/RIGHT steps while paused, and R restarts. If an
+arm's retained trace ends before its paired arm, the viewer freezes that final
+state for display only and labels it `FROZEN AFTER ARM TRACE COMPLETION`; it
+does not synthesize transitions or feed display state back into a controller.
+
+Export all 96 paired cases as a deterministic static overview:
+
+```text
+uv run aweform-visualize-d050 \
+  --overview \
+  --output d050-overview.png
+```
+
+Export the subset derived from the artifact classifications
+`RETURN_HORIZON_CENSORED -> DOCKED_AND_CHARGING` (16 cases on the accepted
+artifact):
+
+```text
+uv run aweform-visualize-d050 \
+  --disagreements \
+  --output d050-disagreements.png
+```
+
+Position, heading, station location, trajectory, contact, mode, battery, and
+arm outcome are evaluator-only post-hoc display fields. They do not become
+organism observations or causal inputs. D-050 remains descriptive Development
+evidence on the deterministic idealized V0.5 support; this visualizer changes
+neither controller, protocol, matrix, horizon, physics, accepted artifact, nor
+scientific interpretation.
 
 ## Adding future visualization support
 
