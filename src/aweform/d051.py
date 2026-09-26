@@ -57,7 +57,7 @@ from .d050 import (
 from .exp003 import sample_directional_beacon
 
 D051_ID: Final[str] = "D-051"
-D051_PROTOCOL_VERSION: Final[str] = "d051-d050-baseline-numerical-switching-audit-v1"
+D051_PROTOCOL_VERSION: Final[str] = "d051-d050-baseline-numerical-switching-audit-v2"
 D051_AUTHORIZED_BASE_SHA: Final[str] = "0a273f6e10c9dff155d4ade15e04684d674b60fd"
 D051_CASE_HORIZON: Final[int] = D050_CASE_HORIZON
 D051_FRESH_RADII_M: Final[tuple[float, ...]] = (0.010, 0.025, 0.080, 0.300)
@@ -73,6 +73,30 @@ D051_HISTORICAL_ARTIFACT_SHA256: Final[str] = (
 )
 D051_HISTORICAL_ARTIFACT_RELATIVE_PATH: Final[str] = (
     "development/D-050-level1-homing-controller-comparison.json"
+)
+D051_INVALIDATED_PRIOR_RUNS: Final[tuple[dict[str, object], ...]] = (
+    {
+        "executed_commit_sha": "0a6277a62087141d228d65902c0ef55c6b61040b",
+        "protocol_freeze_sha": "98b9ca83c86b5b5ab55049cc8ad818801222d1ab",
+        "artifact_sha256": (
+            "3abbf9c8c3cbaf495269df2228086a2365cd29228fecd52cb4538feb90f79904"
+        ),
+        "artifact_size_bytes": 55956563,
+        "invalidation_reason": (
+            "Protocol defect: the per-transition counterfactual diagnostic "
+            "original_threshold_turn_uncertainty_treatment_straight read the "
+            "acting arm's own effective angular tolerance, so on Arm A it "
+            "compared abs(beta) against the original 1e-6 rad rule on both "
+            "sides and could never fire (recorded zero counts despite 5582 "
+            "historical and 5869 fresh abs(beta)<=epsilon transitions). The "
+            "issue-defined counterfactual must be arm-independent."
+        ),
+        "rerun_relationship": (
+            "The complete historical 96-case replay and fresh 80-case matrix "
+            "are rerun from the corrected protocol freeze below; no invalidated "
+            "result is pooled into the corrected interpretation."
+        ),
+    },
 )
 
 
@@ -132,6 +156,32 @@ def _validate_sha(value: str) -> None:
 
 def _wrap_angle(angle: float) -> float:
     return math.atan2(math.sin(angle), math.cos(angle))
+
+
+def original_turn_treatment_straight(
+    reconstruction: D049Reconstruction | None,
+    epsilon_float32: float | None,
+) -> bool:
+    """Arm-independent counterfactual: original rule TURNs while the frozen
+    uncertainty treatment would go STRAIGHT, outside the centre tolerance.
+
+    The treatment tolerance is always recomputed as
+    ``max(D049_ANGULAR_TOLERANCE_RAD, epsilon_float32)`` and is never taken
+    from the acting arm's own decision, so the diagnostic means the same
+    thing under Arm A and Arm B.
+    """
+    if reconstruction is None:
+        return False
+    tolerance = (
+        max(D049_ANGULAR_TOLERANCE_RAD, epsilon_float32)
+        if epsilon_float32 is not None
+        else D049_ANGULAR_TOLERANCE_RAD
+    )
+    return (
+        reconstruction.distance_m > D049_CENTRE_TOLERANCE_M
+        and abs(reconstruction.bearing_rad) > D049_ANGULAR_TOLERANCE_RAD
+        and abs(reconstruction.bearing_rad) <= tolerance
+    )
 
 
 def _legal_float32_candidates(value: float) -> tuple[float, ...]:
@@ -459,11 +509,8 @@ def _diagnostic(
         if nominal is not None and epsilon is not None
         else None
     )
-    original_turn_uncertainty_straight = (
-        nominal is not None
-        and nominal.distance_m > D049_CENTRE_TOLERANCE_M
-        and abs(nominal.bearing_rad) > D049_ANGULAR_TOLERANCE_RAD
-        and abs(nominal.bearing_rad) <= effective_tolerance
+    original_turn_uncertainty_straight = original_turn_treatment_straight(
+        nominal, epsilon
     )
     return (
         {
@@ -486,6 +533,11 @@ def _diagnostic(
             "wrapped_reconstructed_minus_true_bearing_rad": nominal_true_error,
             "epsilon_float32_rad": epsilon,
             "effective_angular_tolerance_rad": effective_tolerance,
+            "treatment_counterfactual_tolerance_rad": (
+                max(D049_ANGULAR_TOLERANCE_RAD, epsilon)
+                if epsilon is not None
+                else D049_ANGULAR_TOLERANCE_RAD
+            ),
             "original_angular_tolerance_rad": D049_ANGULAR_TOLERANCE_RAD,
             "uncertainty_candidate_count": (
                 envelope.candidate_count if envelope else 0
@@ -916,6 +968,70 @@ def _load_historical_artifact(path: Path) -> dict[str, object]:
     return cast(dict[str, object], json.loads(path.read_text(encoding="utf-8")))
 
 
+def _first_mismatch_characterization(
+    actual: dict[str, object], expected: dict[str, object]
+) -> dict[str, object] | None:
+    """Locate the first differing field of two behavioral projections."""
+
+    def walk(
+        actual_value: object, expected_value: object, path: str
+    ) -> dict[str, object] | None:
+        if isinstance(actual_value, dict) and isinstance(expected_value, dict):
+            for key in actual_value:
+                if key not in expected_value:
+                    return {
+                        "path": f"{path}.{key}",
+                        "artifact_value": None,
+                        "recomputed_value": repr(actual_value[key]),
+                    }
+                found = walk(
+                    actual_value[key], expected_value[key], f"{path}.{key}"
+                )
+                if found is not None:
+                    return found
+            for key in expected_value:
+                if key not in actual_value:
+                    return {
+                        "path": f"{path}.{key}",
+                        "artifact_value": repr(expected_value[key]),
+                        "recomputed_value": None,
+                    }
+            return None
+        if isinstance(actual_value, list) and isinstance(expected_value, list):
+            if len(actual_value) != len(expected_value):
+                return {
+                    "path": path,
+                    "artifact_length": len(expected_value),
+                    "recomputed_length": len(actual_value),
+                }
+            for index, (a_item, e_item) in enumerate(
+                zip(actual_value, expected_value, strict=True)
+            ):
+                found = walk(a_item, e_item, f"{path}[{index}]")
+                if found is not None:
+                    return found
+            return None
+        if actual_value != expected_value:
+            record: dict[str, object] = {
+                "path": path,
+                "artifact_value": repr(expected_value),
+                "recomputed_value": repr(actual_value),
+            }
+            if (
+                isinstance(actual_value, float)
+                and isinstance(expected_value, float)
+                and math.isfinite(actual_value)
+                and math.isfinite(expected_value)
+            ):
+                record["recomputed_minus_artifact"] = repr(
+                    actual_value - expected_value
+                )
+            return record
+        return None
+
+    return walk(actual, expected, "")
+
+
 def _historical_replay_check(
     pairs: list[dict[str, object]], historical: dict[str, object]
 ) -> dict[str, object]:
@@ -925,18 +1041,36 @@ def _historical_replay_check(
         mismatches.append(
             f"historical artifact pair count {len(historical_pairs)} != 96"
         )
+    first_baseline_mismatch: dict[str, object] | None = None
+    first_smooth_mismatch: dict[str, object] | None = None
     for pair, expected in zip(pairs[:96], historical_pairs, strict=True):
         actual_arms = cast(dict[str, object], pair["arms"])
         expected_baseline = cast(dict[str, object], expected["baseline"])
         expected_smooth = cast(dict[str, object], expected["smooth"])
-        if _behavioral_projection(
+        actual_baseline = _behavioral_projection(
             cast(dict[str, object], actual_arms[D051Arm.ORIGINAL_BASELINE.value])
-        ) != _behavioral_projection(expected_baseline):
+        )
+        expected_baseline_projection = _behavioral_projection(expected_baseline)
+        if actual_baseline != expected_baseline_projection:
             mismatches.append(f"baseline:{pair['case_id']}")
-        if _behavioral_projection(
+            if first_baseline_mismatch is None:
+                first_baseline_mismatch = _first_mismatch_characterization(
+                    actual_baseline, expected_baseline_projection
+                )
+                if first_baseline_mismatch is not None:
+                    first_baseline_mismatch["case_id"] = pair["case_id"]
+        actual_smooth = _behavioral_projection(
             cast(dict[str, object], actual_arms[D051Arm.D050_SMOOTH_REFERENCE.value])
-        ) != _behavioral_projection(expected_smooth):
+        )
+        expected_smooth_projection = _behavioral_projection(expected_smooth)
+        if actual_smooth != expected_smooth_projection:
             mismatches.append(f"smooth:{pair['case_id']}")
+            if first_smooth_mismatch is None:
+                first_smooth_mismatch = _first_mismatch_characterization(
+                    actual_smooth, expected_smooth_projection
+                )
+                if first_smooth_mismatch is not None:
+                    first_smooth_mismatch["case_id"] = pair["case_id"]
     return {
         "reference_artifact_sha256": D051_HISTORICAL_ARTIFACT_SHA256,
         "reference_executed_commit_sha": historical["executed_commit_sha"],
@@ -948,6 +1082,8 @@ def _historical_replay_check(
             item.startswith("smooth:") for item in mismatches
         ),
         "mismatches": mismatches,
+        "first_baseline_mismatch": first_baseline_mismatch,
+        "first_smooth_mismatch": first_smooth_mismatch,
     }
 
 
@@ -1082,13 +1218,60 @@ def _sum_nested_counts(results: list[dict[str, object]], field: str) -> dict[str
     return total
 
 
-def _instrumentation_identity_check(case: D051Case) -> bool:
-    for arm in (D051Arm.ORIGINAL_BASELINE, D051Arm.FLOAT32_UNCERTAINTY_TREATMENT):
-        enabled = _run_arm(case, arm, collect_diagnostics=True)
-        disabled = _run_arm(case, arm, collect_diagnostics=False)
-        if _behavioral_projection(enabled) != _behavioral_projection(disabled):
-            return False
-    return True
+def _instrumentation_identity_check(cases: tuple[D051Case, ...]) -> dict[str, object]:
+    """Diagnostic-on/off causal identity over a deterministic case subset."""
+
+    indices = sorted(
+        {0, len(cases) // 2, len(cases) - 1}
+    )
+    mismatches: list[str] = []
+    for index in indices:
+        case = cases[index]
+        for arm in D051Arm:
+            enabled = _run_arm(case, arm, collect_diagnostics=True)
+            disabled = _run_arm(case, arm, collect_diagnostics=False)
+            if _behavioral_projection(enabled) != _behavioral_projection(disabled):
+                mismatches.append(f"{case.case_id}:{arm.value}")
+    return {
+        "case_indices": indices,
+        "case_ids": [cases[index].case_id for index in indices],
+        "arms": [arm.value for arm in D051Arm],
+        "diagnostic_instrumentation_causal_identity": not mismatches,
+        "mismatches": mismatches,
+    }
+
+
+def _branch_order_independence_check(
+    cases: tuple[D051Case, ...]
+) -> dict[str, object]:
+    """Fresh-environment arm-order independence over a deterministic subset."""
+
+    orders = tuple(itertools.permutations(tuple(D051Arm)))
+    indices = sorted({0, len(cases) // 2, len(cases) - 1})
+    mismatches: list[str] = []
+    for index in indices:
+        case = cases[index]
+        reference: dict[str, dict[str, object]] | None = None
+        for order in orders:
+            projections = {
+                arm.value: _behavioral_projection(
+                    _run_arm(case, arm, collect_diagnostics=False)
+                )
+                for arm in order
+            }
+            if reference is None:
+                reference = projections
+            elif projections != reference:
+                mismatches.append(
+                    f"{case.case_id}:{'/'.join(arm.value for arm in order)}"
+                )
+    return {
+        "case_indices": indices,
+        "case_ids": [cases[index].case_id for index in indices],
+        "execution_order_permutations": len(orders),
+        "fresh_environment_arm_order_invariant": not mismatches,
+        "mismatches": mismatches,
+    }
 
 
 def _protocol_record() -> dict[str, object]:
@@ -1151,10 +1334,61 @@ def _protocol_record() -> dict[str, object]:
     }
 
 
+def _declared_boundaries_record() -> dict[str, object]:
+    """Design invariants asserted by construction, with their executable checks.
+
+    These are NOT computed by the protocol run.  They are recorded here so the
+    artifact never presents a self-asserted boolean as a computed result.
+    Each entry names the executable regression test(s) in tests/test_d051.py
+    that check the invariant mechanically.
+    """
+    return {
+        "status": (
+            "declared design invariants; not computed by this protocol run; "
+            "executable coverage lives in tests/test_d051.py"
+        ),
+        "arm_b_uses_only_observation_and_fixed_constants": {
+            "declaration": (
+                "Arm B reads only the organism-visible float32 beacon and "
+                "contact channels plus fixed accepted constants; the envelope "
+                "uses np.nextafter on the same channels; no evaluator geometry."
+            ),
+            "executable_checks": [
+                "tests/test_d051.py::test_controllers_ignore_non_causal_channels",
+                "tests/test_d051.py::test_float32_candidate_sets_use_actual_previous_current_next_values",
+            ],
+        },
+        "evaluator_geometry_causally_isolated": {
+            "declaration": (
+                "True body-relative station geometry, the float64 ideal-beacon "
+                "diagnostic, and every attribution metric are computed only "
+                "inside the diagnostic layer and never reach any controller."
+            ),
+            "executable_checks": [
+                "tests/test_d051.py::test_controllers_ignore_non_causal_channels",
+                "tests/test_d051.py::test_diagnostic_instrumentation_identity_covers_all_arms",
+                "tests/test_d051.py::test_smooth_arm_diagnostics_are_empty",
+            ],
+        },
+        "fresh_support_is_seedless": {
+            "declaration": (
+                "The fresh 80-case matrix is a seedless fixed-state product of "
+                "declared constants; no RNG exists in D-045 reset/step for "
+                "these runs and no case carries a seed."
+            ),
+            "executable_checks": [
+                "tests/test_d051.py::test_frozen_supports_are_exactly_96_historical_and_80_fresh_cases",
+                "tests/test_d051.py::test_d045_reset_consumes_no_seed_for_d051_cases",
+            ],
+        },
+    }
+
+
 def _validation_record(
     pairs: list[dict[str, object]],
     replay: dict[str, object],
-    instrumentation_identity: bool,
+    instrumentation: dict[str, object],
+    order_independence: dict[str, object],
 ) -> dict[str, object]:
     return {
         "exact_historical_case_count": sum(
@@ -1170,9 +1404,12 @@ def _validation_record(
             "baseline_behavioral_identity"
         ],
         "historical_smooth_behavioral_identity": replay["smooth_behavioral_identity"],
-        "diagnostic_instrumentation_causal_identity": instrumentation_identity,
-        "arm_b_uses_only_observation_and_fixed_constants": True,
-        "evaluator_geometry_causally_isolated": True,
+        "diagnostic_instrumentation_causal_identity": instrumentation[
+            "diagnostic_instrumentation_causal_identity"
+        ],
+        "fresh_environment_arm_order_invariant": order_independence[
+            "fresh_environment_arm_order_invariant"
+        ],
         "reward_exactly_zero": all(
             all(
                 reward == 0.0
@@ -1206,7 +1443,6 @@ def _validation_record(
             for pair in pairs
             for arm in D051Arm
         ),
-        "fresh_support_is_seedless": True,
     }
 
 
@@ -1232,7 +1468,8 @@ def run_d051_protocol(
             }
         )
     replay = _historical_replay_check(pairs, historical)
-    instrumentation_identity = _instrumentation_identity_check(cases[0])
+    instrumentation = _instrumentation_identity_check(cases)
+    order_independence = _branch_order_independence_check(cases)
     by_support: dict[str, dict[str, object]] = {}
     for support in ("historical_d050", "fresh_holdout"):
         support_pairs = [pair for pair in pairs if pair["support"] == support]
@@ -1252,8 +1489,12 @@ def run_d051_protocol(
         ),
         "execution_status": "COMPLETED",
         "frozen_protocol": _protocol_record(),
+        "invalidated_prior_runs": D051_INVALIDATED_PRIOR_RUNS,
         "historical_replay": replay,
-        "validation": _validation_record(pairs, replay, instrumentation_identity),
+        "validation": _validation_record(
+            pairs, replay, instrumentation, order_independence
+        ),
+        "declared_boundaries": _declared_boundaries_record(),
         "summaries_by_support": by_support,
         "pairs": pairs,
     }

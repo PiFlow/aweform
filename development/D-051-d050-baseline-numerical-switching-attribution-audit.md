@@ -1,15 +1,46 @@
 # D-051 — D-050 baseline numerical switching attribution audit
 
 - **id:** D-051
-- **status:** completed from frozen executable SHA
+- **status:** protocol v2 correction pass; prior execution invalidated; cross-platform replay blocker open
 - **lane:** Development / evaluator-led Level-1 numerical attribution audit
 - **issue:** [#180](https://github.com/PiFlow/aweform/issues/180)
 - **authorized_base_sha:** `0a273f6e10c9dff155d4ade15e04684d674b60fd`
-- **clean_executable_sha:** `98b9ca83c86b5b5ab55049cc8ad818801222d1ab`
-- **artifact:** [`D-051-d050-baseline-numerical-switching-attribution-audit.json`](D-051-d050-baseline-numerical-switching-attribution-audit.json)
-- **artifact_bytes:** `55956563`
-- **artifact_sha256:** `3abbf9c8c3cbaf495269df2228086a2365cd29228fecd52cb4538feb90f79904`
-- **disposition:** CONTINUING
+- **invalidated_protocol_freeze_sha:** `98b9ca83c86b5b5ab55049cc8ad818801222d1ab`
+- **invalidated_artifact:** [`D-051-d050-baseline-numerical-switching-attribution-audit.json`](D-051-d050-baseline-numerical-switching-attribution-audit.json)
+- **invalidated_artifact_bytes:** `55956563`
+- **invalidated_artifact_sha256:** `3abbf9c8c3cbaf495269df2228086a2365cd29228fecd52cb4538feb90f79904`
+- **invalidated_executed_commit_sha:** `0a6277a62087141d228d65902c0ef55c6b61040b`
+- **disposition:** BLOCKED (correction pass; see *Cross-platform exact-replay blocker*)
+
+## Invalidated prior execution (provenance preserved)
+
+The v1 D-051 execution recorded in the artifact above is **INVALIDATED** by a
+protocol defect and is not accepted as D-051 evidence:
+
+- The per-transition counterfactual diagnostic
+  `original_threshold_turn_uncertainty_treatment_straight` read the acting
+  arm's own effective angular tolerance. On Arm A this compared
+  `abs(beta)` against the original `1e-6 rad` rule on both sides of the
+  conjunction and could never fire, so Arm A recorded zero counterfactual
+  transitions despite `5582` historical and `5869` fresh
+  `abs(beta) <= epsilon_float32` transitions in the same artifact. The
+  issue-defined counterfactual is arm-independent, so the invalidated
+  artifact's Arm-A diagnostic layer is defective and both supports' recorded
+  counterfactual counts are meaningless as executed.
+- The protocol validation block additionally presented three design
+  declarations (Arm-B causal-input compliance, evaluator geometry isolation,
+  seedless fresh support) as computed booleans, and the diagnostic-on/off
+  instrumentation identity check covered only one case and only Arms A/B.
+- GitHub CI on Linux re-deriving the committed D-050 smooth reference failed
+  exact behavioral identity (`historical_smooth_behavioral_identity == False`)
+  while the macOS generation environment passed. The root cause is diagnosed
+  below; it is a property of the historical D-050 artifact, not of the D-051
+  correction, and it blocks the required cross-platform replay validation.
+
+No invalidated result is pooled into any corrected interpretation. The matrix,
+horizon, arms, tolerances, wheel laws, and summaries are unchanged; the
+protocol version is raised to `d051-d050-baseline-numerical-switching-audit-v2`
+for the corrected counterfactual and validation restructure only.
 
 ## Question and boundary
 
