@@ -93,6 +93,22 @@ D050_INVALIDATED_PRIOR_RUNS: Final[tuple[dict[str, object], ...]] = (
             "corrected executable."
         ),
     },
+    {
+        "executed_commit_sha": "a7cfbc4b6cbe42e6cc8f8c286e6a48c1c071f8d1",
+        "artifact_sha256": (
+            "c65020cd13bd4117e166881575e5060d0a808ceafc6a6c45f9aef376ce21dc38"
+        ),
+        "artifact_size_bytes": 3385929,
+        "invalidation_reason": (
+            "The execution command supplied a non-existent SHA-shaped value "
+            "instead of the exact pushed executable commit, so its output is "
+            "not attributable to a GitHub-verified executable SHA."
+        ),
+        "rerun_relationship": (
+            "The complete 96-pair protocol is rerun from the exact verified "
+            "replacement freeze SHA below."
+        ),
+    },
 )
 
 
