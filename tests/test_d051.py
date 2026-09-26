@@ -151,7 +151,7 @@ def test_protocol_replays_d050_and_preserves_boundary() -> None:
     assert validation["historical_baseline_behavioral_identity"] is True
     assert validation["historical_smooth_behavioral_identity"] is True, artifact[
         "historical_replay"
-    ]
+    ]["first_mismatch"]
     assert validation["diagnostic_instrumentation_causal_identity"] is True
     assert validation["diagnostic_instrumentation_case_count"] == 2
     assert validation["diagnostic_instrumentation_arm_count"] == 3
