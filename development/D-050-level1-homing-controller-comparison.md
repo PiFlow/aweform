@@ -84,15 +84,42 @@ issue #176 remain `uv run pytest -q`, `uv run ruff check .`, `uv run mypy src
 --strict`, compile/import checks, `git diff --check`, and exact-current-HEAD
 GitHub checks.
 
+## Invalidated post-freeze provenance
+
+The original official output from clean executable SHA
+`218244d8e2fac7cd31ead1f84d5dc5ac38b628d4` is invalidated by the exact-HEAD
+review finding recorded in the authorized correction. Its artifact SHA-256 was
+`e59dd06d65903ff721eed1bed16caac05fbd4940679a9f736a6f80cfefa16778` and its
+size was `3,383,487` bytes. Successful smooth-arm cases that contacted during
+`CURVED_PURSUIT` before `TERMINAL_SPIN` entry incorrectly recorded both energy
+components as null.
+
+The first correction freeze `917818335e3024de2cf2ce8b4ed4f0a9172bcda4`
+produced an unaccepted artifact with SHA-256
+`5c126d2af0ad9b5c417568d3e6d6d2469f5bdf1a5c725c40695c71ccf51606b6` and
+size `3,385,354` bytes. It is invalidated because its provenance metadata
+carried the old artifact size incorrectly; no measured result from it is
+accepted.
+
+The replacement freeze `a7cfbc42f62f649425aefd44ba378148760c5d99` also has an
+invalidated command output: the runner was given the non-existent SHA-shaped
+value `a7cfbc4b6cbe42e6cc8f8c286e6a48c1c071f8d1`. That output has SHA-256
+`c65020cd13bd4117e166881575e5060d0a808ceafc6a6c45f9aef376ce21dc38` and
+size `3,385,929` bytes. It is not attributable to a verified executable SHA
+and is not accepted.
+
+All 96 pairs were rerun from the final verified freeze below. None of these
+invalidated outputs is pooled into the corrected interpretation.
+
 ## Official result
 
 The official run was generated from the clean, pushed executable/protocol
 freeze:
 
-- **clean_executable_sha:** `218244d8e2fac7cd31ead1f84d5dc5ac38b628d4`
+- **clean_executable_sha:** `ab66eadc21c1542f508a7c078e7ebc4229b92962`
 - **artifact:** [`D-050-level1-homing-controller-comparison.json`](D-050-level1-homing-controller-comparison.json)
-- **artifact_bytes:** `3383487`
-- **artifact_sha256:** `e59dd06d65903ff721eed1bed16caac05fbd4940679a9f736a6f80cfefa16778`
+- **artifact_bytes:** `3386482`
+- **artifact_sha256:** `28e352ad57096c5c85de8beae546b48e6041b6b0ad8bed712bcf185efb024fa5`
 - **independent regeneration:** byte-identical, same size and SHA-256
 
 All `96` paired cases and both arms completed without termination or boundary
@@ -101,6 +128,13 @@ scaling. Arm A had `80/96` `DOCKED_AND_CHARGING` cases and `16/96`
 cases. The success/failure cross-tab and all raw per-arm values remain in the
 artifact; paired differences are null where a required cost was unavailable
 for one arm rather than being censored into a scalar score.
+
+For all `30` successful smooth-arm cases that acquired contact during
+`CURVED_PURSUIT` before terminal-spin entry, homing energy is now total energy
+from reset to first contact and terminal energy is exactly `0.0`. The paired
+homing-energy and terminal-energy summaries therefore each retain `80` eligible
+baseline/smooth differences rather than `50`; no controller, matrix, horizon,
+or primary success interpretation changed.
 
 The artifact validation records exact 96-case cardinality, identical paired
 initial physical states, shared D-049 reconstruction and terminal constants,

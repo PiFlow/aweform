@@ -38,24 +38,24 @@
     "paired_case_count": 96,
     "paired_difference_summaries": {
       "battery_energy_consumed_during_homing_j": {
-        "eligible_count": 50,
-        "maximum": 1.5232214119523633,
-        "mean": -0.08695620930830046,
-        "median": -0.17563334177611978,
-        "minimum": -0.19259212610950271,
-        "negative_count": 48,
-        "positive_count": 2,
+        "eligible_count": 80,
+        "maximum": 1.8224976157848687,
+        "mean": 0.2246226019775861,
+        "median": -0.10179123145189806,
+        "minimum": -0.24160655840387335,
+        "negative_count": 52,
+        "positive_count": 28,
         "zero_count": 0
       },
       "battery_energy_consumed_during_terminal_j": {
-        "eligible_count": 50,
+        "eligible_count": 80,
         "maximum": 0.0,
-        "mean": -0.08509999999983847,
+        "mean": -0.41974999999920326,
         "median": 0.0,
-        "minimum": -1.7249999999967258,
-        "negative_count": 10,
+        "minimum": -2.069999999996071,
+        "negative_count": 36,
         "positive_count": 0,
-        "zero_count": 40
+        "zero_count": 44
       },
       "battery_energy_consumed_to_first_contact_j": {
         "eligible_count": 80,
@@ -126,7 +126,7 @@
   "authorized_base_sha": "75bca69261b9a91095ca0eb6bdb0c7485c626269",
   "claims_boundary": "descriptive only; not confirmatory evidence",
   "development_id": "D-050",
-  "executed_commit_sha": "218244d8e2fac7cd31ead1f84d5dc5ac38b628d4",
+  "executed_commit_sha": "ab66eadc21c1542f508a7c078e7ebc4229b92962",
   "execution_status": "COMPLETED",
   "frozen_protocol": {
     "angular_tolerance_rad": 1e-06,
@@ -182,6 +182,29 @@
     "terminal_spin_direction": 1,
     "terminal_spin_max_steps": 20
   },
+  "invalidated_prior_runs": [
+    {
+      "artifact_sha256": "e59dd06d65903ff721eed1bed16caac05fbd4940679a9f736a6f80cfefa16778",
+      "artifact_size_bytes": 3383487,
+      "executed_commit_sha": "218244d8e2fac7cd31ead1f84d5dc5ac38b628d4",
+      "invalidation_reason": "Independent exact-HEAD review found that successful smooth-arm cases contacting during CURVED_PURSUIT before TERMINAL_SPIN entry recorded both homing and terminal energy as null instead of total-to-contact homing energy and zero terminal energy.",
+      "rerun_relationship": "All 96 paired cases were rerun from the corrected executable; no invalidated result is pooled into the corrected interpretation."
+    },
+    {
+      "artifact_sha256": "5c126d2af0ad9b5c417568d3e6d6d2469f5bdf1a5c725c40695c71ccf51606b6",
+      "artifact_size_bytes": 3385354,
+      "executed_commit_sha": "917818335e3024de2cf2ce8b4ed4f0a9172bcda4",
+      "invalidation_reason": "The first correction rerun preserved the wrong byte size for the prior artifact in its provenance metadata; its output is not accepted despite the unchanged measured 96-pair outcomes.",
+      "rerun_relationship": "The complete 96-pair protocol is rerun again from the next clean corrected executable."
+    },
+    {
+      "artifact_sha256": "c65020cd13bd4117e166881575e5060d0a808ceafc6a6c45f9aef376ce21dc38",
+      "artifact_size_bytes": 3385929,
+      "executed_commit_sha": "a7cfbc4b6cbe42e6cc8f8c286e6a48c1c071f8d1",
+      "invalidation_reason": "The execution command supplied a non-existent SHA-shaped value instead of the exact pushed executable commit, so its output is not attributable to a GitHub-verified executable SHA.",
+      "rerun_relationship": "The complete 96-pair protocol is rerun from the exact verified replacement freeze SHA below."
+    }
+  ],
   "pairs": [
     {
       "baseline": {
@@ -459,8 +482,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.7182362241806004,
+        "battery_energy_consumed_during_terminal_j": -0.9199999999982538,
         "battery_energy_consumed_to_first_contact_j": -0.20176377581765337,
         "cumulative_absolute_heading_change_rad": -0.26084770925276946,
         "cumulative_normalized_wheel_effort": -1.8676710642590368,
@@ -470,8 +493,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.4380904992112846,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.4380904992112846,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -1054,8 +1077,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.6391471965789606,
+        "battery_energy_consumed_during_terminal_j": -0.9199999999982538,
         "battery_energy_consumed_to_first_contact_j": -0.2808528034192932,
         "cumulative_absolute_heading_change_rad": -0.008511378568687888,
         "cumulative_normalized_wheel_effort": -2.5089273929252123,
@@ -1065,8 +1088,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.7459463676009364,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.7459463676009364,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -1685,8 +1708,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.8868481896611229,
+        "battery_energy_consumed_during_terminal_j": -0.9199999999982538,
         "battery_energy_consumed_to_first_contact_j": -0.03315181033713088,
         "cumulative_absolute_heading_change_rad": 0.635834572988248,
         "cumulative_normalized_wheel_effort": -0.48170559557891934,
@@ -1696,8 +1719,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.9404501657713809,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.9404501657713809,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -2388,8 +2411,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.6726577527524569,
+        "battery_energy_consumed_during_terminal_j": -0.9199999999982538,
         "battery_energy_consumed_to_first_contact_j": -0.2473422472457969,
         "cumulative_absolute_heading_change_rad": 0.0022755908623661725,
         "cumulative_normalized_wheel_effort": -2.4737424317820427,
@@ -2399,8 +2422,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 2.296061303120041,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 2.296061303120041,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -2995,8 +3018,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.4882454607964064,
+        "battery_energy_consumed_during_terminal_j": -0.5749999999989086,
         "battery_energy_consumed_to_first_contact_j": -0.0867545392025022,
         "cumulative_absolute_heading_change_rad": 0.0533356353522203,
         "cumulative_normalized_wheel_effort": -0.86759441763847,
@@ -3006,8 +3029,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.2080997358270906,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.2080997358270906,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -3530,8 +3553,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.29432622193417046,
+        "battery_energy_consumed_during_terminal_j": -0.5749999999989086,
         "battery_energy_consumed_to_first_contact_j": -0.28067377806473814,
         "cumulative_absolute_heading_change_rad": -0.008050969239226546,
         "cumulative_normalized_wheel_effort": -2.5074618645126243,
@@ -3541,8 +3564,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.4011253929561462,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.4011253929561462,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -4089,8 +4112,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.2318013047984095,
+        "battery_energy_consumed_during_terminal_j": -0.5749999999989086,
         "battery_energy_consumed_to_first_contact_j": 0.6568013047995009,
         "cumulative_absolute_heading_change_rad": 2.520667867014285,
         "cumulative_normalized_wheel_effort": 5.517905117389548,
@@ -4100,8 +4123,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 2.2854032809086675,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 2.2854032809086675,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -4792,8 +4815,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.32780114085107925,
+        "battery_energy_consumed_during_terminal_j": -0.5749999999989086,
         "battery_energy_consumed_to_first_contact_j": -0.24719885914782935,
         "cumulative_absolute_heading_change_rad": 0.0026448380862893472,
         "cumulative_normalized_wheel_effort": -2.472567081363838,
@@ -4803,8 +4826,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.9512046912186634,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.9512046912186634,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -5339,8 +5362,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.14327022486213536,
+        "battery_energy_consumed_during_terminal_j": -0.34499999999934516,
         "battery_energy_consumed_to_first_contact_j": -0.2017297751372098,
         "cumulative_absolute_heading_change_rad": -0.26076458287143645,
         "cumulative_normalized_wheel_effort": -1.8674064647692283,
@@ -5350,8 +5373,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.8631244998928196,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 0.8631244998928196,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -5814,8 +5837,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.06454788778410148,
+        "battery_energy_consumed_during_terminal_j": -0.34499999999934516,
         "battery_energy_consumed_to_first_contact_j": -0.2804521122152437,
         "cumulative_absolute_heading_change_rad": -0.00753180755414995,
         "cumulative_normalized_wheel_effort": -2.5058093215437456,
@@ -5825,8 +5848,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.1713470588060773,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.1713470588060773,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -6325,8 +6348,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.4617814804191767,
+        "battery_energy_consumed_during_terminal_j": -0.34499999999934516,
         "battery_energy_consumed_to_first_contact_j": 1.1167814804198315,
         "cumulative_absolute_heading_change_rad": 3.77725279502386,
         "cumulative_normalized_wheel_effort": 9.517739171539494,
@@ -6336,8 +6359,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 2.5153834565294346,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 2.5153834565294346,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -7028,8 +7051,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.09797843172827925,
+        "battery_energy_consumed_during_terminal_j": -0.34499999999934516,
         "battery_energy_consumed_to_first_contact_j": -0.24702156827106592,
         "cumulative_absolute_heading_change_rad": 0.0030602892411444316,
         "cumulative_normalized_wheel_effort": -2.4712446592656736,
@@ -7039,8 +7062,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.7213819820958633,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.7213819820958633,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -7515,8 +7538,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": -0.08667254368901922,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": -0.08667254368901922,
         "cumulative_absolute_heading_change_rad": 0.053485021245813336,
         "cumulative_normalized_wheel_effort": -0.8671189075705978,
@@ -7526,8 +7549,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.633181731341665,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 0.633181731341665,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -7930,8 +7953,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": -0.24160655840387335,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": -0.24160655840387335,
         "cumulative_absolute_heading_change_rad": -0.004982220777596247,
         "cumulative_normalized_wheel_effort": -2.4976937347771395,
@@ -7941,8 +7964,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.8651926126181024,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 0.8651926126181024,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -8369,8 +8392,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.8067626437400577,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.8067626437400577,
         "cumulative_absolute_heading_change_rad": 5.662159402749721,
         "cumulative_normalized_wheel_effort": 15.517583249262431,
@@ -8380,8 +8403,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 2.8603646198503156,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 2.8603646198503156,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -9072,8 +9095,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": -0.18176626488229886,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": -0.18176626488229886,
         "cumulative_absolute_heading_change_rad": 0.005115861427092305,
         "cumulative_normalized_wheel_effort": -2.4647015697801535,
@@ -9083,8 +9106,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.4416372854852852,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.4416372854852852,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -10574,8 +10597,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.7889469316151008,
+        "battery_energy_consumed_during_terminal_j": -2.069999999996071,
         "battery_energy_consumed_to_first_contact_j": -0.2810530683809702,
         "cumulative_absolute_heading_change_rad": -0.009035092809160261,
         "cumulative_normalized_wheel_effort": -2.5105944271279874,
@@ -10585,8 +10608,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 2.8957461026370765,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 2.8957461026370765,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -11445,8 +11468,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": -0.17943659376987853,
+        "battery_energy_consumed_during_terminal_j": -2.069999999996071,
         "battery_energy_consumed_to_first_contact_j": -2.2494365937659495,
         "cumulative_absolute_heading_change_rad": -5.6447934612352455,
         "cumulative_normalized_wheel_effort": -20.473565542942975,
@@ -11456,8 +11479,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.8741653823403794,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 0.8741653823403794,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -12148,8 +12171,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.8224976157848687,
+        "battery_energy_consumed_during_terminal_j": -2.069999999996071,
         "battery_energy_consumed_to_first_contact_j": -0.2475023842112023,
         "cumulative_absolute_heading_change_rad": 0.0018566656155982741,
         "cumulative_normalized_wheel_effort": -2.4750759122582267,
@@ -12159,8 +12182,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 3.445901166152453,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 3.445901166152453,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -13770,8 +13793,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.4439748923132356,
+        "battery_energy_consumed_during_terminal_j": -1.7249999999967258,
         "battery_energy_consumed_to_first_contact_j": -0.2810251076834902,
         "cumulative_absolute_heading_change_rad": -0.008962393710413963,
         "cumulative_normalized_wheel_effort": -2.5103630187095085,
@@ -13781,8 +13804,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 2.5507740633352114,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 2.5507740633352114,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -14569,8 +14592,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.08216860593847741,
+        "battery_energy_consumed_during_terminal_j": -1.7249999999967258,
         "battery_energy_consumed_to_first_contact_j": -1.6428313940582484,
         "cumulative_absolute_heading_change_rad": -3.761604225645494,
         "cumulative_normalized_wheel_effort": -14.47918803051184,
@@ -14580,8 +14603,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.1357705820487354,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.1357705820487354,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -15272,8 +15295,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.4775200940002833,
+        "battery_energy_consumed_during_terminal_j": -1.7249999999967258,
         "battery_energy_consumed_to_first_contact_j": -0.24747990599644254,
         "cumulative_absolute_heading_change_rad": 0.0019155722392305563,
         "cumulative_normalized_wheel_effort": -2.4748884066515835,
@@ -15283,8 +15306,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 3.1009236443678674,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 3.1009236443678674,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -16059,8 +16082,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.293223961798958,
+        "battery_energy_consumed_during_terminal_j": -1.4949999999971624,
         "battery_energy_consumed_to_first_contact_j": -0.20177603819820433,
         "cumulative_absolute_heading_change_rad": -0.2608800783893592,
         "cumulative_normalized_wheel_effort": -1.867774098420874,
@@ -16070,8 +16093,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 2.0130782368296423,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 2.0130782368296423,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -16774,8 +16797,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.2140041303737235,
+        "battery_energy_consumed_during_terminal_j": -1.4949999999971624,
         "battery_energy_consumed_to_first_contact_j": -0.2809958696234389,
         "cumulative_absolute_heading_change_rad": -0.008885624242900292,
         "cumulative_normalized_wheel_effort": -2.51011865390484,
@@ -16785,8 +16808,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 2.3208033013956992,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 2.3208033013956992,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -17525,8 +17548,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.31201823585024613,
+        "battery_energy_consumed_during_terminal_j": -1.4949999999971624,
         "battery_energy_consumed_to_first_contact_j": -1.1829817641469162,
         "cumulative_absolute_heading_change_rad": -2.505317957458769,
         "cumulative_normalized_wheel_effort": -10.480304640104086,
@@ -17536,8 +17559,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.365620211960504,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.365620211960504,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -18228,8 +18251,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.2475434419930025,
+        "battery_energy_consumed_during_terminal_j": -1.4949999999971624,
         "battery_energy_consumed_to_first_contact_j": -0.2474565580041599,
         "cumulative_absolute_heading_change_rad": 0.001977256286719964,
         "cumulative_normalized_wheel_effort": -2.4746920602302254,
@@ -18239,8 +18262,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 2.8709469923605866,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 2.8709469923605866,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -18955,8 +18978,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.0632275896132342,
+        "battery_energy_consumed_during_terminal_j": -1.1499999999978172,
         "battery_energy_consumed_to_first_contact_j": -0.08677241038458305,
         "cumulative_absolute_heading_change_rad": 0.053288738852929285,
         "cumulative_normalized_wheel_effort": -0.8677436938319829,
@@ -18966,8 +18989,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.7830818646439184,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.7830818646439184,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -19610,8 +19633,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.8690741013047045,
+        "battery_energy_consumed_during_terminal_j": -1.1499999999978172,
         "battery_energy_consumed_to_first_contact_j": -0.2809258986931127,
         "cumulative_absolute_heading_change_rad": -0.008702483653330262,
         "cumulative_normalized_wheel_effort": -2.509535699302628,
@@ -19621,8 +19644,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.9758732723266803,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.9758732723266803,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -20289,8 +20312,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.6568974493766291,
+        "battery_energy_consumed_during_terminal_j": -1.1499999999978172,
         "battery_energy_consumed_to_first_contact_j": -0.49310255062118813,
         "cumulative_absolute_heading_change_rad": -0.6206733006869021,
         "cumulative_normalized_wheel_effort": -4.481294378164662,
@@ -20300,8 +20323,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 1.710499425486887,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 1.710499425486887,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
@@ -20992,8 +21015,8 @@
         "radius_m": 0.15
       },
       "paired_differences_smooth_minus_baseline": {
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 0.9025993743175604,
+        "battery_energy_consumed_during_terminal_j": -1.1499999999978172,
         "battery_energy_consumed_to_first_contact_j": -0.24740062568025678,
         "cumulative_absolute_heading_change_rad": 0.002123029797933995,
         "cumulative_normalized_wheel_effort": -2.4742280487325985,
@@ -21003,8 +21026,8 @@
       },
       "smooth": {
         "arm": "smooth",
-        "battery_energy_consumed_during_homing_j": null,
-        "battery_energy_consumed_during_terminal_j": null,
+        "battery_energy_consumed_during_homing_j": 2.5260029246851445,
+        "battery_energy_consumed_during_terminal_j": 0.0,
         "battery_energy_consumed_to_first_contact_j": 2.5260029246851445,
         "battery_increased_on_first_stationary_charge": true,
         "boundary_scaled_transition_count": 0,
