@@ -59,23 +59,41 @@ D050_INITIAL_BEARING_ERRORS_RAD: Final[tuple[float, ...]] = (
     math.pi - 0.37,
 )
 D050_CASE_HORIZON: Final[int] = 256
-D050_INVALIDATED_PRIOR_RUN: Final[dict[str, object]] = {
-    "executed_commit_sha": "218244d8e2fac7cd31ead1f84d5dc5ac38b628d4",
-    "artifact_sha256": (
-        "e59dd06d65903ff721eed1bed16caac05fbd4940679a9f736a6f80cfefa16778"
-    ),
-    "artifact_size_bytes": 338348,
-    "invalidation_reason": (
-        "Independent exact-HEAD review found that successful smooth-arm cases "
-        "contacting during CURVED_PURSUIT before TERMINAL_SPIN entry recorded "
-        "both homing and terminal energy as null instead of total-to-contact "
-        "homing energy and zero terminal energy."
-    ),
-    "rerun_relationship": (
-        "All 96 paired cases are rerun from the corrected executable; no "
-        "invalidated result is pooled into the corrected interpretation."
-    ),
-}
+D050_INVALIDATED_PRIOR_RUNS: Final[tuple[dict[str, object], ...]] = (
+    {
+        "executed_commit_sha": "218244d8e2fac7cd31ead1f84d5dc5ac38b628d4",
+        "artifact_sha256": (
+            "e59dd06d65903ff721eed1bed16caac05fbd4940679a9f736a6f80cfefa16778"
+        ),
+        "artifact_size_bytes": 3383487,
+        "invalidation_reason": (
+            "Independent exact-HEAD review found that successful smooth-arm "
+            "cases contacting during CURVED_PURSUIT before TERMINAL_SPIN "
+            "entry recorded both homing and terminal energy as null instead "
+            "of total-to-contact homing energy and zero terminal energy."
+        ),
+        "rerun_relationship": (
+            "All 96 paired cases were rerun from the corrected executable; no "
+            "invalidated result is pooled into the corrected interpretation."
+        ),
+    },
+    {
+        "executed_commit_sha": "917818335e3024de2cf2ce8b4ed4f0a9172bcda4",
+        "artifact_sha256": (
+            "5c126d2af0ad9b5c417568d3e6d6d2469f5bdf1a5c725c40695c71ccf51606b6"
+        ),
+        "artifact_size_bytes": 3385354,
+        "invalidation_reason": (
+            "The first correction rerun preserved the wrong byte size for the "
+            "prior artifact in its provenance metadata; its output is not "
+            "accepted despite the unchanged measured 96-pair outcomes."
+        ),
+        "rerun_relationship": (
+            "The complete 96-pair protocol is rerun again from the next clean "
+            "corrected executable."
+        ),
+    },
+)
 
 
 class D050ControlMode(Enum):
@@ -232,7 +250,7 @@ def run_d050_protocol(executed_commit_sha: str) -> dict[str, object]:
         "protocol_version": D050_PROTOCOL_VERSION,
         "authorized_base_sha": D050_AUTHORIZED_BASE_SHA,
         "executed_commit_sha": executed_commit_sha,
-        "invalidated_prior_run": D050_INVALIDATED_PRIOR_RUN,
+        "invalidated_prior_runs": D050_INVALIDATED_PRIOR_RUNS,
         "result_kind": "development_diagnostic",
         "claims_boundary": "descriptive only; not confirmatory evidence",
         "execution_status": "COMPLETED",
