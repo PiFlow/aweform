@@ -1,16 +1,19 @@
 # D-051 — D-050 baseline numerical switching attribution audit
 
 - **id:** D-051
-- **status:** protocol v2 correction pass; prior execution invalidated; cross-platform replay blocker open
+- **status:** v2 protocol executed from frozen executable SHA; prior execution invalidated; cross-platform replay blocker open
 - **lane:** Development / evaluator-led Level-1 numerical attribution audit
 - **issue:** [#180](https://github.com/PiFlow/aweform/issues/180)
 - **authorized_base_sha:** `0a273f6e10c9dff155d4ade15e04684d674b60fd`
 - **invalidated_protocol_freeze_sha:** `98b9ca83c86b5b5ab55049cc8ad818801222d1ab`
-- **invalidated_artifact:** [`D-051-d050-baseline-numerical-switching-attribution-audit.json`](D-051-d050-baseline-numerical-switching-attribution-audit.json)
 - **invalidated_artifact_bytes:** `55956563`
 - **invalidated_artifact_sha256:** `3abbf9c8c3cbaf495269df2228086a2365cd29228fecd52cb4538feb90f79904`
 - **invalidated_executed_commit_sha:** `0a6277a62087141d228d65902c0ef55c6b61040b`
-- **disposition:** BLOCKED (correction pass; see *Cross-platform exact-replay blocker*)
+- **clean_executable_sha:** `48a8021a869c42e066a2d2a82fed24c65213a8f3`
+- **artifact:** [`D-051-d050-baseline-numerical-switching-attribution-audit.json`](D-051-d050-baseline-numerical-switching-attribution-audit.json)
+- **artifact_bytes:** `57203363`
+- **artifact_sha256:** `131f2137cc83bd695c3b85bb322dcd6c01617e5aa2a0da70dc40d1b0571bc7f8`
+- **disposition:** BLOCKED (correction pass complete except cross-platform replay validation; see *Cross-platform exact-replay blocker*)
 
 ## Invalidated prior execution (provenance preserved)
 
@@ -108,11 +111,12 @@ layer. Independent regeneration from the exact executable SHA must be
 byte-identical. Negative and censored outcomes remain part of the raw record;
 no scalar winner is selected and Arm B is not promoted by D-051.
 
-## Official result
+## Official result (v2 correction rerun)
 
-The official run was generated from the exact clean executable/protocol SHA
-above after GitHub verification. Independent regeneration from that SHA was
-byte-identical with the same `55,956,563` bytes and SHA-256. The committed
+The v2 official run was generated from the exact corrected
+executable/protocol SHA `48a8021a869c42e066a2d2a82fed24c65213a8f3` after
+GitHub verification. Independent regeneration from that SHA was
+byte-identical with the same `57,203,363` bytes and SHA-256. The committed
 D-050 reference artifact used for replay identity was SHA-256
 `28e352ad57096c5c85de8beae546b48e6041b6b0ad8bed712bcf185efb024fa5`, with
 reference executable SHA `ab66eadc21c1542f508a7c078e7ebc4229b92962`.
@@ -133,6 +137,11 @@ On the historical D-050 support:
   transitions. The maximum local envelope was approximately
   `3.64179e-6 rad`; the maximum nominal-minus-true bearing error was
   approximately `1.07260e-6 rad`.
+- With the corrected arm-independent counterfactual, the historical support
+  records `3848` Arm-A and `40` Arm-B
+  `original_threshold_turn_uncertainty_treatment_straight` transitions, of
+  which `3824` fall on the 16 Arm-A censored cases themselves. The v1 zero
+  Arm-A counts were the diagnostic defect recorded above.
 
 On the fresh seedless 80-case support:
 
@@ -140,6 +149,8 @@ On the fresh seedless 80-case support:
   `RETURN_HORIZON_CENSORED`.
 - Arm B had `80/80` `DOCKED_AND_CHARGING`.
 - Arm C had `80/80` `DOCKED_AND_CHARGING`.
+- With the corrected arm-independent counterfactual, the fresh support records
+  `5055` Arm-A and `35` Arm-B counterfactual transitions.
 
 These are descriptive support-specific outcomes, not a scalar controller
 score or a universal winner. The fresh result is held separate from the
@@ -167,8 +178,57 @@ eight-channel boundary, add energy-trigger logic, or authorize D-052.
 ## Validation
 
 The artifact validation is true for exact support cardinalities, historical
-Arm-A/Arm-C behavioral identity, diagnostic-on/off causal identity, legal
-float32 candidate construction, evaluator causal isolation, reward `0.0`,
-`info == {}`, and Level-1 authority. The result-free freeze passed focused
-D-051 tests (`6 passed`), the repository-wide suite (`1096 passed, 8
-warnings`), strict mypy, Ruff, compile/import checks, and `git diff --check`.
+Arm-A/Arm-C behavioral identity, diagnostic-on/off causal identity across all
+three arms over a deterministic three-case subset, fresh-environment arm-order
+independence across all six execution-order permutations over the same subset,
+legal float32 candidate construction, reward `0.0`, `info == {}`, and Level-1
+authority. Design invariants that are not computed by the run (Arm-B
+causal-input compliance, evaluator geometry isolation, seedless fresh support)
+are recorded in the artifact's `declared_boundaries` block with their
+executable test coverage, not as computed booleans. The result-free v2 freeze
+passed focused D-051 tests (`13 passed`), strict mypy, Ruff, compile/import
+checks, and `git diff --check`.
+
+## Cross-platform exact-replay blocker
+
+**Symptom.** GitHub CI (Ubuntu 24.04, CPython 3.14.7) re-derives the committed
+D-050 smooth reference through the unchanged D-050/D-045 code path and fails
+`historical_smooth_behavioral_identity == True` while the macOS generation
+environment passes. An isolated Linux replay (arm64 Docker, Debian trixie,
+same CPython 3.14.7 and numpy 2.5.2 pins) shows `43/96` smooth cases
+diverging with zero Arm-A baseline mismatches; the first diverging case is
+`direct-r0.15-p022.5-e01`, whose first divergences are single-ULP float64
+differences in `contact_pair_error_at_first_contact_m[0]`
+(`0.00910133809394045` vs `0.00910133809394044`, `-1.04e-17`) and in
+`trace[2].y` (`0x1.1955e1644bc99p-1` vs `0x1.1955e1644bc9ap-1`). The fresh
+support is computed anew everywhere and is self-consistent per platform.
+
+**Root cause (empirically isolated).** The divergence is not in D-051's replay
+wiring: feeding bit-identical state, bit-identical wheel deltas, and
+bit-identical float32 beacon observations into the unchanged D-045 physics on
+both platforms produces the one-ULP divergence inside
+`integrate_differential_drive` itself. The step-2 headings
+`3.3975333431794668` and `3.6288780102417246` are points where Apple's macOS
+libm and glibc disagree in the last bit of `cos`/`sin`
+(`cos(h)`: `-0x1.ef5267f030906p-1` vs `-0x1.ef5267f030905p-1`; `sin(nh)`:
+`-0x1.df77681eff6f4p-2` vs `-0x1.df77681eff6f3p-2`); the difference propagates
+through the exact-arc integration into the recorded position. Against a
+correctly-rounded reference, macOS `sin`/`cos` deviate in the last bit for
+roughly 4–5% of probed arguments, so trajectories that re-derive the recorded
+float64 trace bits can only reproduce the artifact exactly on the platform
+whose libm generated it.
+
+**Consequence.** The issue-defined exact historical replay contract
+(Arm A and Arm C behavioral identity with the committed D-050 artifact on all
+96 cases) is a property of the generation platform for the float64 trace
+fields. No D-051-only deterministic correction can make it hold across
+supported environments: any repair either relaxes exact equality (rounded or
+tolerant comparison, discrete-only projection — forbidden without
+authorization) or re-anchors the historical numbers by regenerating the
+committed D-050 artifact and/or altering D-045/D-050 source (forbidden:
+historical immutability). The blocker is therefore reported for an explicit
+Flow/ADR decision (e.g. authorizing a regenerated D-050 artifact under a
+platform-independent numeric contract, or a separately declared
+platform-scoped replay rule). No workaround was applied and no tolerance was
+introduced; on the generation platform the exact checks pass and are recorded
+as true in the v2 artifact.
