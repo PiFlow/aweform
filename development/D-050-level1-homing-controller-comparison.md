@@ -1,7 +1,7 @@
 # D-050 — Paired Level-1 homing control comparison
 
 - **id:** D-050
-- **status:** frozen protocol; result pending
+- **status:** completed from frozen executable SHA
 - **lane:** Development / Level-1 Innate Autonomous Viability controller comparison
 - **authorized_base_sha:** `75bca69261b9a91095ca0eb6bdb0c7485c626269`
 - **disposition:** CONTINUING
@@ -83,3 +83,39 @@ byte-identical artifact regeneration. The repository-wide checks required by
 issue #176 remain `uv run pytest -q`, `uv run ruff check .`, `uv run mypy src
 --strict`, compile/import checks, `git diff --check`, and exact-current-HEAD
 GitHub checks.
+
+## Official result
+
+The official run was generated from the clean, pushed executable/protocol
+freeze:
+
+- **clean_executable_sha:** `218244d8e2fac7cd31ead1f84d5dc5ac38b628d4`
+- **artifact:** [`D-050-level1-homing-controller-comparison.json`](D-050-level1-homing-controller-comparison.json)
+- **artifact_bytes:** `3383487`
+- **artifact_sha256:** `e59dd06d65903ff721eed1bed16caac05fbd4940679a9f736a6f80cfefa16778`
+- **independent regeneration:** byte-identical, same size and SHA-256
+
+All `96` paired cases and both arms completed without termination or boundary
+scaling. Arm A had `80/96` `DOCKED_AND_CHARGING` cases and `16/96`
+`RETURN_HORIZON_CENSORED` cases. Arm B had `96/96` `DOCKED_AND_CHARGING`
+cases. The success/failure cross-tab and all raw per-arm values remain in the
+artifact; paired differences are null where a required cost was unavailable
+for one arm rather than being censored into a scalar score.
+
+The artifact validation records exact 96-case cardinality, identical paired
+initial physical states, shared D-049 reconstruction and terminal constants,
+observation-only controller inputs, fresh-environment order invariance, Level-1
+authority on every transition, reward exactly `0.0`, and organism-facing
+`info == {}`. The result is descriptive on the frozen idealized V0.5 support;
+it does not establish general physical-robot superiority or robustness.
+
+## What changed in understanding
+
+**surprised_by:** On this frozen support, the smooth law reached charging in
+all 96 cases while the unchanged stop-turn-straight arm was horizon-censored
+in 16 cases. This is a descriptive paired observation, not a reason to alter
+the frozen controller or to select a future return-margin rule here.
+
+**disposition:** `CONTINUING`. The measured component-wise costs are preserved
+for later separately authorized interpretation; D-050 does not implement the
+return trigger/reserve stage or the planned visualizer.

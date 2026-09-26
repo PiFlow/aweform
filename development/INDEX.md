@@ -12,7 +12,7 @@ This file is the canonical **committed D-record ledger**. Add one row when a mea
 
 Do not use roadmap prose or README text as a replacement for this ledger. Work that is authorized in GitHub but does not yet have a committed D-record belongs in the current authorization issue/PR, not as a premature row here.
 
-Committed Development records currently extend through **D-048**. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; and D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage. No successor D-stage is authorized by this ledger. Any Development work newly authorized but not yet committed belongs in its exact current GitHub authorization issue/PR and must not be added here prematurely.
+Committed Development records currently extend through **D-050**. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage; and D-049 through D-050 are the committed V0.5 Level-1 viability comparison lineage.
 
 ## Disposition vocabulary
 
@@ -79,5 +79,6 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-047 | V0.5 shadow action-consequence discrimination audit | CONTINUING | [`D-047-v05-shadow-action-consequence-discrimination.md`](D-047-v05-shadow-action-consequence-discrimination.md) |
 | D-048 | V0.5 extended-exposure shadow consequence-learning curve (corrected rerun) | CONTINUING | [`D-048-v05-extended-exposure-shadow-learning-curve.md`](D-048-v05-extended-exposure-shadow-learning-curve.md) |
 | D-049 | Level-1 direct return and contact-seeking docking core | CONTINUING | [`D-049-level1-direct-return-contact-docking-core.md`](D-049-level1-direct-return-contact-docking-core.md) |
+| D-050 | Paired Level-1 homing control comparison | CONTINUING | [`D-050-level1-homing-controller-comparison.md`](D-050-level1-homing-controller-comparison.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeded to the next ecology question rather than that D-001 remains unexecuted. The same distinction applies to later records whose own work is complete but whose scientific thread continues.
