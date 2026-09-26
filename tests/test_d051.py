@@ -18,7 +18,9 @@ from aweform.d051 import (
     D051_FRESH_RADII_M,
     D051Arm,
     D051UncertaintyController,
+    _counterfactual_original_turn_uncertainty_straight,
     _legal_float32_candidates,
+    _run_arm,
     artifact_sha256,
     float32_uncertainty_envelope,
     frozen_cases,
@@ -102,14 +104,60 @@ def test_arm_b_changes_only_the_declared_switching_decision() -> None:
     )
 
 
+def test_counterfactual_diagnostic_is_arm_independent() -> None:
+    case = next(
+        case
+        for case in frozen_cases()
+        if case.case_id == "direct-r0.15-p022.5-e02"
+    )
+    baseline = _run_arm(case, D051Arm.ORIGINAL_BASELINE)
+    treatment = _run_arm(case, D051Arm.FLOAT32_UNCERTAINTY_TREATMENT)
+    baseline_count = baseline["original_threshold_turn_treatment_straight_count"]
+    treatment_count = treatment["original_threshold_turn_treatment_straight_count"]
+    assert baseline_count == treatment_count == 1
+
+
+def test_counterfactual_excludes_centre_and_uses_declared_thresholds() -> None:
+    observation = _observation(
+        0.8697801828384399,
+        0.8731265664100647,
+        0.8697802424430847,
+    )
+    baseline = D049Controller().command(observation)
+    assert baseline.reconstruction is not None
+    envelope = float32_uncertainty_envelope(
+        float(observation[2]), float(observation[3]), float(observation[4])
+    )
+    assert envelope is not None
+    assert _counterfactual_original_turn_uncertainty_straight(
+        baseline.reconstruction, envelope
+    )
+    assert not _counterfactual_original_turn_uncertainty_straight(
+        baseline.reconstruction.__class__(
+            baseline.reconstruction.x_m,
+            baseline.reconstruction.y_m,
+            1.0e-7,
+            baseline.reconstruction.bearing_rad,
+        ),
+        envelope,
+    )
+
+
 def test_protocol_replays_d050_and_preserves_boundary() -> None:
     artifact = run_d051_protocol("a" * 40)
     validation = artifact["validation"]
     assert validation["exact_historical_case_count"] is True
     assert validation["exact_fresh_case_count"] is True
     assert validation["historical_baseline_behavioral_identity"] is True
-    assert validation["historical_smooth_behavioral_identity"] is True
+    assert validation["historical_smooth_behavioral_identity"] is True, artifact[
+        "historical_replay"
+    ]
     assert validation["diagnostic_instrumentation_causal_identity"] is True
+    assert validation["diagnostic_instrumentation_case_count"] == 2
+    assert validation["diagnostic_instrumentation_arm_count"] == 3
+    assert validation["fresh_environment_branch_order_causal_identity"] is True
+    assert validation["fresh_environment_branch_order_case_count"] == 80
+    assert validation["fresh_environment_branch_order_count"] == 2
     assert validation["reward_exactly_zero"] is True
     assert validation["organism_info_exactly_empty"] is True
     assert validation["level1_authority_on_every_transition"] is True
