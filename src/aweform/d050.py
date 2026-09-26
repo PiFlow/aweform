@@ -59,6 +59,23 @@ D050_INITIAL_BEARING_ERRORS_RAD: Final[tuple[float, ...]] = (
     math.pi - 0.37,
 )
 D050_CASE_HORIZON: Final[int] = 256
+D050_INVALIDATED_PRIOR_RUN: Final[dict[str, object]] = {
+    "executed_commit_sha": "218244d8e2fac7cd31ead1f84d5dc5ac38b628d4",
+    "artifact_sha256": (
+        "e59dd06d65903ff721eed1bed16caac05fbd4940679a9f736a6f80cfefa16778"
+    ),
+    "artifact_size_bytes": 338348,
+    "invalidation_reason": (
+        "Independent exact-HEAD review found that successful smooth-arm cases "
+        "contacting during CURVED_PURSUIT before TERMINAL_SPIN entry recorded "
+        "both homing and terminal energy as null instead of total-to-contact "
+        "homing energy and zero terminal energy."
+    ),
+    "rerun_relationship": (
+        "All 96 paired cases are rerun from the corrected executable; no "
+        "invalidated result is pooled into the corrected interpretation."
+    ),
+}
 
 
 class D050ControlMode(Enum):
@@ -215,6 +232,7 @@ def run_d050_protocol(executed_commit_sha: str) -> dict[str, object]:
         "protocol_version": D050_PROTOCOL_VERSION,
         "authorized_base_sha": D050_AUTHORIZED_BASE_SHA,
         "executed_commit_sha": executed_commit_sha,
+        "invalidated_prior_run": D050_INVALIDATED_PRIOR_RUN,
         "result_kind": "development_diagnostic",
         "claims_boundary": "descriptive only; not confirmatory evidence",
         "execution_status": "COMPLETED",
@@ -394,17 +412,27 @@ def _run_arm(case: D050Case, arm: D050Arm) -> dict[str, object]:
     else:
         failure_classification = "RETURN_HORIZON_CENSORED"
 
-    homing_energy = (
-        initial_battery - terminal_spin_entry_battery
-        if terminal_spin_entry_battery is not None
-        else None
-    )
-    terminal_energy = (
-        terminal_spin_entry_battery - first_contact_battery_before
-        if terminal_spin_entry_battery is not None
+    homing_energy: float | None
+    terminal_energy: float | None
+    if (
+        first_stationary_charge_transition is not None
+        and terminal_spin_entry_transition is None
         and first_contact_battery_before is not None
-        else None
-    )
+    ):
+        homing_energy = initial_battery - first_contact_battery_before
+        terminal_energy = 0.0
+    else:
+        homing_energy = (
+            initial_battery - terminal_spin_entry_battery
+            if terminal_spin_entry_battery is not None
+            else None
+        )
+        terminal_energy = (
+            terminal_spin_entry_battery - first_contact_battery_before
+            if terminal_spin_entry_battery is not None
+            and first_contact_battery_before is not None
+            else None
+        )
     return {
         "arm": arm.value,
         "initial_state": _case_record(case),

@@ -159,6 +159,30 @@ def test_protocol_is_deterministic_and_preserves_boundary() -> None:
             assert len(result["trace"]) == result["transition_count"] + 1
 
 
+def test_successful_contact_during_homing_has_complete_energy_decomposition() -> None:
+    artifact = run_d050_protocol("c" * 40)
+    smooth_results = [
+        pair["smooth"]
+        for pair in artifact["pairs"]
+        if pair["smooth"]["terminal_spin_entry_transition"] is None
+    ]
+    assert smooth_results
+    for result in smooth_results:
+        assert result["failure_classification"] == "DOCKED_AND_CHARGING"
+        assert result["first_contact_transition"] is not None
+        contact_trace = next(
+            trace
+            for trace in result["trace"]
+            if trace["step"] == result["first_contact_transition"]
+        )
+        assert contact_trace["mode"] == D050ControlMode.CURVED_PURSUIT.value
+        assert result["battery_energy_consumed_to_first_contact_j"] is not None
+        assert result["battery_energy_consumed_during_homing_j"] == pytest.approx(
+            result["battery_energy_consumed_to_first_contact_j"]
+        )
+        assert result["battery_energy_consumed_during_terminal_j"] == 0.0
+
+
 def test_artifact_bytes_regenerate_identically(tmp_path: object) -> None:
     path_one = tmp_path / "one.json"  # type: ignore[union-attr]
     path_two = tmp_path / "two.json"  # type: ignore[union-attr]
