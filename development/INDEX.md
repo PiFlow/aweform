@@ -80,5 +80,6 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-048 | V0.5 extended-exposure shadow consequence-learning curve (corrected rerun) | CONTINUING | [`D-048-v05-extended-exposure-shadow-learning-curve.md`](D-048-v05-extended-exposure-shadow-learning-curve.md) |
 | D-049 | Level-1 direct return and contact-seeking docking core | CONTINUING | [`D-049-level1-direct-return-contact-docking-core.md`](D-049-level1-direct-return-contact-docking-core.md) |
 | D-050 | Paired Level-1 homing control comparison (corrected rerun) | CONTINUING | [`D-050-level1-homing-controller-comparison.md`](D-050-level1-homing-controller-comparison.md) |
+| D-051 | D-050 baseline numerical switching attribution audit | CONTINUING | [`D-051-d050-baseline-numerical-switching-attribution-audit.md`](D-051-d050-baseline-numerical-switching-attribution-audit.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeded to the next ecology question rather than that D-001 remains unexecuted. The same distinction applies to later records whose own work is complete but whose scientific thread continues.
