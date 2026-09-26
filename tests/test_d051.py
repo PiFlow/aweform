@@ -6,7 +6,7 @@ import math
 
 import numpy as np
 
-from aweform.d049 import D049Controller
+from aweform.d049 import D049Controller, reconstruct_source
 from aweform.d050 import (
     D050_INITIAL_BEARING_ERRORS_RAD,
     D050_POSITION_BEARINGS_DEG,
@@ -19,6 +19,7 @@ from aweform.d051 import (
     D051Arm,
     D051UncertaintyController,
     _legal_float32_candidates,
+    _original_threshold_turn_uncertainty_treatment_straight,
     artifact_sha256,
     float32_uncertainty_envelope,
     frozen_cases,
@@ -100,6 +101,30 @@ def test_arm_b_changes_only_the_declared_switching_decision() -> None:
     assert treatment.effective_angular_tolerance_rad > abs(
         baseline.reconstruction.bearing_rad  # type: ignore[union-attr]
     )
+    epsilon = treatment.epsilon_float32
+    assert epsilon is not None
+    assert _original_threshold_turn_uncertainty_treatment_straight(
+        baseline.reconstruction, epsilon
+    ) is True
+
+
+def test_counterfactual_treatment_uses_uncertainty_in_arm_a_too() -> None:
+    observation = _observation(
+        0.8697801828384399,
+        0.8731265664100647,
+        0.8697802424430847,
+    )
+    baseline = D049Controller().command(observation)
+    reconstruction = reconstruct_source(*map(float, observation[2:5]))
+    assert baseline.mode.value == "TURN"
+    assert reconstruction is not None
+    assert abs(reconstruction.bearing_rad) > 1.0e-6
+    assert _original_threshold_turn_uncertainty_treatment_straight(
+        reconstruction, 7.406479158013211e-6
+    ) is True
+    assert _original_threshold_turn_uncertainty_treatment_straight(
+        reconstruction, 1.0e-6
+    ) is False
 
 
 def test_protocol_replays_d050_and_preserves_boundary() -> None:
@@ -108,8 +133,13 @@ def test_protocol_replays_d050_and_preserves_boundary() -> None:
     assert validation["exact_historical_case_count"] is True
     assert validation["exact_fresh_case_count"] is True
     assert validation["historical_baseline_behavioral_identity"] is True
-    assert validation["historical_smooth_behavioral_identity"] is True
+    assert validation["historical_smooth_behavioral_identity"] is True, artifact[
+        "historical_replay"
+    ]
     assert validation["diagnostic_instrumentation_causal_identity"] is True
+    assert validation["diagnostic_instrumentation_check_count"] == 6
+    assert validation["branch_order_causal_identity"] is True
+    assert validation["branch_order_check_count"] == 6
     assert validation["reward_exactly_zero"] is True
     assert validation["organism_info_exactly_empty"] is True
     assert validation["level1_authority_on_every_transition"] is True

@@ -1,14 +1,14 @@
 # D-051 — D-050 baseline numerical switching attribution audit
 
 - **id:** D-051
-- **status:** completed from frozen executable SHA
+- **status:** correction rerun pending frozen executable SHA
 - **lane:** Development / evaluator-led Level-1 numerical attribution audit
 - **issue:** [#180](https://github.com/PiFlow/aweform/issues/180)
 - **authorized_base_sha:** `0a273f6e10c9dff155d4ade15e04684d674b60fd`
-- **clean_executable_sha:** `98b9ca83c86b5b5ab55049cc8ad818801222d1ab`
-- **artifact:** [`D-051-d050-baseline-numerical-switching-attribution-audit.json`](D-051-d050-baseline-numerical-switching-attribution-audit.json)
-- **artifact_bytes:** `55956563`
-- **artifact_sha256:** `3abbf9c8c3cbaf495269df2228086a2365cd29228fecd52cb4538feb90f79904`
+- **invalidated_clean_executable_sha:** `98b9ca83c86b5b5ab55049cc8ad818801222d1ab`
+- **invalidated_artifact_bytes:** `55956563`
+- **invalidated_artifact_sha256:** `3abbf9c8c3cbaf495269df2228086a2365cd29228fecd52cb4538feb90f79904`
+- **correction_protocol_version:** `d051-d050-baseline-numerical-switching-attribution-audit-v2`
 - **disposition:** CONTINUING
 
 ## Question and boundary
@@ -40,7 +40,9 @@ beacon values, and all attribution metrics remain causally isolated.
 The Arm-B envelope is computed with actual float32 `nextafter` values, legal
 signal clipping `0 < value <= 1`, at most 27 tuples, wrapped angular
 differences, and a diagnostic fallback to the original tolerance when no valid
-candidate reconstruction exists.
+candidate reconstruction exists. The separate counterfactual diagnostic
+applies the issue-defined original-turn versus uncertainty-straight comparison
+independently of the active arm, outside the existing centre tolerance.
 
 ## Frozen support and diagnostics
 
@@ -63,81 +65,37 @@ trace as the descriptive reference.
 
 ## Validation and execution discipline
 
-The result-free implementation includes focused ULP/candidate tests, direct
-delegation tests, boundary tests, exact historical A/C replay checks,
-diagnostic-on/off causal identity, deterministic execution, and byte-stable
-artifact generation. The official result must be generated only from the
-clean pushed executable/protocol SHA recorded above, after that SHA is
-verified retrievable from GitHub. Results must not change the matrix, horizon,
-controller laws, uncertainty rule, summaries, or interpretation.
+The corrected result-free implementation includes the issue-defined
+counterfactual regression; focused ULP/candidate tests; direct delegation
+tests; exact historical replay checks with first-field mismatch reporting;
+diagnostic-on/off identity checks across all arms on one historical and one
+fresh case; and fresh-environment branch/order checks across those same cases
+and all three arms. Replay equality remains exact; no tolerance is introduced.
 
-After official execution, only the deterministic artifact, this completed
-record, and one D-051 row in `development/INDEX.md` may be added in the result
-layer. Independent regeneration from the exact executable SHA must be
-byte-identical. Negative and censored outcomes remain part of the raw record;
-no scalar winner is selected and Arm B is not promoted by D-051.
+The clean executable/protocol SHA must be pushed and verified before rerunning
+either frozen support. No results may be used to alter the matrix, horizon,
+controller laws, uncertainty rule, summaries, or interpretation. The
+regenerated artifact and completed record are added only after execution from
+the verified corrected freeze, and independent regeneration from that exact
+SHA must be byte-identical. D-045/D-049/D-050 historical source, artifacts,
+and records remain untouched.
 
-## Official result
+## Invalidated prior execution and defect provenance
 
-The official run was generated from the exact clean executable/protocol SHA
-above after GitHub verification. Independent regeneration from that SHA was
-byte-identical with the same `55,956,563` bytes and SHA-256. The committed
-D-050 reference artifact used for replay identity was SHA-256
-`28e352ad57096c5c85de8beae546b48e6041b6b0ad8bed712bcf185efb024fa5`, with
-reference executable SHA `ab66eadc21c1542f508a7c078e7ebc4229b92962`.
+The first D-051 result is invalidated in full and must not be pooled or cited
+as accepted output:
 
-On the historical D-050 support:
+- **executable SHA:** `98b9ca83c86b5b5ab55049cc8ad818801222d1ab`
+- **artifact:** `D-051-d050-baseline-numerical-switching-attribution-audit.json`
+- **artifact bytes:** `55,956,563`
+- **artifact SHA-256:**
+  `3abbf9c8c3cbaf495269df2228086a2365cd29228fecd52cb4538feb90f79904`
+- **defect:** the diagnostic
+  `original_threshold_turn_uncertainty_treatment_straight` used active Arm-A
+  tolerance, so its count was zero rather than applying
+  `max(D049 tolerance, epsilon_float32)` independently of active arm. CI also
+  exposed a Linux exact Arm-C replay failure; first-field mismatch reporting
+  is being added for diagnosis without relaxing equality.
 
-- Arm A reproduced the committed D-050 baseline exactly: `80/96`
-  `DOCKED_AND_CHARGING` and `16/96` `RETURN_HORIZON_CENSORED`.
-- Arm C reproduced the committed D-050 smooth reference exactly: `96/96`
-  `DOCKED_AND_CHARGING`.
-- Arm B had `96/96` `DOCKED_AND_CHARGING`.
-- Every one of the 16 Arm-A censored cases started at radius `0.30 m`, ran
-  the full 256-transition horizon, ended approximately `0.00940268 m` from
-  station centre, and showed either `239` or `240` nominal-bearing sign
-  alternations with longest consecutive TURN runs of `241` or `237`.
-- Across those 16 Arm-A censored traces, the evaluator true bearing was inside
-  the local float32 uncertainty envelope on all `4096/4096` diagnostic
-  transitions. The maximum local envelope was approximately
-  `3.64179e-6 rad`; the maximum nominal-minus-true bearing error was
-  approximately `1.07260e-6 rad`.
-
-On the fresh seedless 80-case support:
-
-- Arm A had `60/80` `DOCKED_AND_CHARGING` and `20/80`
-  `RETURN_HORIZON_CENSORED`.
-- Arm B had `80/80` `DOCKED_AND_CHARGING`.
-- Arm C had `80/80` `DOCKED_AND_CHARGING`.
-
-These are descriptive support-specific outcomes, not a scalar controller
-score or a universal winner. The fresh result is held separate from the
-historical replay and was not used to change the frozen protocol.
-
-## Attribution and limits
-
-**Measured:** The historical censoring is a sign-alternating TURN regime with
-negligible final radial progress under the unchanged D-049 baseline. The
-predeclared observation-only uncertainty treatment changes the tested
-outcomes on both the historical and fresh supports. The raw artifact retains
-per-transition nominal, true, float32-envelope, and ideal-float64 values.
-
-**Inference:** The results support the hypothesis that near-threshold
-reconstruction/switching uncertainty materially contributes to the 16 D-050
-censored cases on the tested support. They do not establish that float32
-quantization is the sole causal defect: the float64 ideal-beacon diagnostic
-tracks the true near-zero bearing region and the original fixed `1e-6 rad`
-controller rule still encounters that switching geometry evaluator-side.
-
-**Boundary:** Arm B remains a diagnostic comparator and is not promoted. D-051
-does not rewrite D-050, select a canonical homing law, add a sensor, alter the
-eight-channel boundary, add energy-trigger logic, or authorize D-052.
-
-## Validation
-
-The artifact validation is true for exact support cardinalities, historical
-Arm-A/Arm-C behavioral identity, diagnostic-on/off causal identity, legal
-float32 candidate construction, evaluator causal isolation, reward `0.0`,
-`info == {}`, and Level-1 authority. The result-free freeze passed focused
-D-051 tests (`6 passed`), the repository-wide suite (`1096 passed, 8
-warnings`), strict mypy, Ruff, compile/import checks, and `git diff --check`.
+The complete former artifact remains in Git history. The corrected run must
+use a new clean executable SHA and regenerate both supports from scratch.
