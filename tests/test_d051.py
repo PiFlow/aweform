@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
+from typing import Callable
 
 import numpy as np
+import pytest
 
 from aweform.d045 import (
     D045_WHEEL_RADIUS_METRES,
@@ -20,8 +22,11 @@ from aweform.d050 import (
     D050_INITIAL_BEARING_ERRORS_RAD,
     D050_POSITION_BEARINGS_DEG,
     D050_RETURN_RADII_M,
+    D050Arm,
     D050SmoothController,
 )
+from aweform.d050 import _run_arm as _run_d050_arm
+from aweform.d050 import frozen_cases as d050_frozen_cases
 from aweform.d051 import (
     D051_FRESH_INITIAL_BEARING_ERRORS_RAD,
     D051_FRESH_POSITION_BEARINGS_DEG,
@@ -36,6 +41,7 @@ from aweform.d051 import (
     run_d051_protocol,
     write_d051_artifact,
 )
+from aweform.d051 import _run_arm as _run_d051_arm
 
 
 def _observation(
@@ -295,7 +301,157 @@ def _arm_c_first_contact_diagnostic(
     )
 
 
-def test_protocol_replays_d050_and_preserves_boundary() -> None:
+def _run_with_step_capture(
+    monkeypatch: pytest.MonkeyPatch,
+    runner: Callable[[], dict[str, object]],
+) -> tuple[dict[str, object], list[dict[str, object]]]:
+    captured: list[dict[str, object]] = []
+    original_step = D045Env.step
+
+    def capture_step(
+        environment: D045Env, action: tuple[float, float]
+    ) -> tuple[np.ndarray, float, bool, bool, dict[str, object]]:
+        observation_before = environment._observation().as_array()
+        result = original_step(environment, action)
+        telemetry = environment.last_transition
+        assert telemetry is not None
+        captured.append(
+            {
+                "step": telemetry.step_index,
+                "observation_before": [float(value) for value in observation_before],
+                "observation_before_hex": [
+                    float(value).hex() for value in observation_before
+                ],
+                "requested_wheels": list(action),
+                "requested_wheels_hex": [value.hex() for value in action],
+                "actual_wheels": [
+                    telemetry.actual_delta_left,
+                    telemetry.actual_delta_right,
+                ],
+                "actual_wheels_hex": [
+                    telemetry.actual_delta_left.hex(),
+                    telemetry.actual_delta_right.hex(),
+                ],
+                "position_before": telemetry.position_before,
+                "position_after": telemetry.position_after,
+                "position_after_hex": [
+                    value.hex() for value in telemetry.position_after
+                ],
+                "heading_before": telemetry.heading_before,
+                "heading_after": telemetry.heading_after,
+                "heading_after_hex": telemetry.heading_after.hex(),
+                "charging_contact_after": telemetry.charging_contact_after,
+                "contact_errors_raw": (
+                    telemetry.dock_plus_error_m,
+                    telemetry.dock_minus_error_m,
+                ),
+                "contact_errors_hex": (
+                    telemetry.dock_plus_error_m.hex(),
+                    telemetry.dock_minus_error_m.hex(),
+                ),
+            }
+        )
+        return result
+
+    with monkeypatch.context() as patch:
+        patch.setattr(D045Env, "step", capture_step)
+        result = runner()
+    return result, captured
+
+
+def _first_step_record_difference(
+    first: list[dict[str, object]], second: list[dict[str, object]]
+) -> dict[str, object] | None:
+    for index, (first_step, second_step) in enumerate(zip(first, second)):
+        for field in first_step:
+            if first_step[field] != second_step[field]:
+                return {
+                    "index": index,
+                    "step": first_step["step"],
+                    "field": field,
+                    "d050": first_step[field],
+                    "d051": second_step[field],
+                }
+    if len(first) != len(second):
+        return {"length_d050": len(first), "length_d051": len(second)}
+    return None
+
+
+def _d050_vs_d051_runner_diagnostic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> str:
+    reference_path = (
+        Path(__file__).resolve().parents[1]
+        / "development/D-050-level1-homing-controller-comparison.json"
+    )
+    reference = json.loads(reference_path.read_text(encoding="utf-8"))
+    expected_arm = reference["pairs"][0]["smooth"]
+    d050_case = d050_frozen_cases()[0]
+    d051_case = frozen_cases()[0]
+    d050_result, d050_steps = _run_with_step_capture(
+        monkeypatch, lambda: _run_d050_arm(d050_case, D050Arm.SMOOTH)
+    )
+    d051_result, d051_steps = _run_with_step_capture(
+        monkeypatch,
+        lambda: _run_d051_arm(
+            d051_case, D051Arm.D050_SMOOTH_REFERENCE, collect_diagnostics=False
+        ),
+    )
+
+    def value_record(value: float) -> dict[str, object]:
+        return {"repr": repr(value), "hex": value.hex()}
+
+    expected_step_two_y = float(expected_arm["trace"][2]["y"])
+    d050_step_two_y = float(d050_result["trace"][2]["y"])
+    d051_step_two_y = float(d051_result["trace"][2]["y"])
+    expected_contact = expected_arm["contact_pair_error_at_first_contact_m"]
+    d050_contact = d050_result["contact_pair_error_at_first_contact_m"]
+    d051_contact = d051_result["contact_pair_error_at_first_contact_m"]
+    return json.dumps(
+        {
+            "case_id": expected_arm["initial_state"]["case_id"],
+            "d050_own_runner_vs_committed_artifact": {
+                "trace_step_2_y": {
+                    "expected": value_record(expected_step_two_y),
+                    "actual": value_record(d050_step_two_y),
+                },
+                "contact_pair_errors": {
+                    "expected": [
+                        value_record(float(value)) for value in expected_contact
+                    ],
+                    "actual": [value_record(float(value)) for value in d050_contact],
+                },
+            },
+            "d051_arm_c_vs_d050_own_runner": {
+                "first_step_observation_command_wheel_or_pose_difference": (
+                    _first_step_record_difference(d050_steps, d051_steps)
+                ),
+                "trace_step_2_y": {
+                    "d050": value_record(d050_step_two_y),
+                    "d051": value_record(d051_step_two_y),
+                },
+                "contact_pair_errors": {
+                    "d050": [value_record(float(value)) for value in d050_contact],
+                    "d051": [value_record(float(value)) for value in d051_contact],
+                },
+            },
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def test_d050_and_d051_arm_c_case_runner_paths_match(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    diagnostic = json.loads(_d050_vs_d051_runner_diagnostic(monkeypatch))
+    comparison = diagnostic["d051_arm_c_vs_d050_own_runner"]
+    assert comparison["first_step_observation_command_wheel_or_pose_difference"] is None
+
+
+def test_protocol_replays_d050_and_preserves_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     artifact = run_d051_protocol("a" * 40)
     validation = artifact["validation"]
     assert validation["exact_historical_case_count"] is True
@@ -303,6 +459,8 @@ def test_protocol_replays_d050_and_preserves_boundary() -> None:
     assert validation["historical_baseline_behavioral_identity"] is True
     assert validation["historical_smooth_behavioral_identity"] is True, (
         _arm_c_first_contact_diagnostic(artifact)
+        + " D050-vs-D051="
+        + _d050_vs_d051_runner_diagnostic(monkeypatch)
     )
     assert validation["diagnostic_instrumentation_causal_identity"] is True
     assert validation["diagnostic_instrumentation_check_count"] == 6
