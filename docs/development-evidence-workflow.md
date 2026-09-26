@@ -81,9 +81,9 @@ A deliberate developmental-stage reset is different. Under the current V0.3 conv
 
 The original provisional D-001→D-008 sequence in this document has been superseded by executed development and is intentionally **not** maintained here.
 
-The canonical committed development ledger is [`development/INDEX.md`](../development/INDEX.md). At the time of this update, committed development extends through **D-045**. Current authorized-but-not-yet-committed work is tracked by the relevant GitHub authorization issue/PR rather than predicted in this workflow document; D-046 is currently authorized by issue #165 and is not yet a committed D-record.
+The canonical committed development ledger is [`development/INDEX.md`](../development/INDEX.md). Treat that ledger as authoritative for the current committed D-stage. Authorized-but-not-yet-committed work belongs in the exact GitHub authorization issue/PR.
 
-This document defines **how** development and evidence are conducted. It should not duplicate a growing list of D-records or predict a future sequence that repository evidence may immediately overturn.
+This workflow deliberately does **not** pin a moving “current D-number” or predicted successor. It defines **how** development and evidence are conducted; duplicating the live stage count here previously caused avoidable documentation drift.
 
 ## Durable cautions carried forward
 

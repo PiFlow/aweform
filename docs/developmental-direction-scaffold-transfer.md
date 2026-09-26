@@ -150,7 +150,7 @@ A milestone becomes especially strong when learned competence removes the need f
 
 This does not imply that lower engineered-scaffold count is always better. A simple fixed controller that genuinely solves the intended problem remains valid evidence. The purpose of the ledger is attribution, not aesthetic minimalism.
 
-## 10. What D-029→D-045 changed about the near-term direction
+## 10. What D-029→D-050 changed about the near-term direction
 
 The earlier version of this document proposed, immediately after D-028, a provisional sequence from causal-history sufficiency toward a smallest retained state, first causal learned influence, scaffold displacement, non-stationarity, and eventually short-horizon prediction. Repository evidence has now executed, stress-tested, and then deliberately reset that line.
 
@@ -164,7 +164,9 @@ The durable lessons are more specific:
 6. **The simplest proposed extra sensor did not solve the problem.** D-041's evaluator-only pair of front-facing candidate beacon receptors returned **NULL/INSUFFICIENT** on both reused support and fresh holdout and never became organism-visible.
 7. **The V0.4 docking line was closed rather than endlessly patched.** D-042→D-044 characterized the founder-selected front-contact embodiment and separated strong coarse homing from fragile terminal docking.
 8. **V0.5 is a fresh sensorimotor lineage, not a port of the old scaffold.** ADR 0017 retired the V0.4 D-026/D-027/D-030 stack from the V0.5 organism, and D-045 committed the deterministic wheel-command/body/sensor substrate with no behavioural controller or learner.
-9. **Current D-046 is prediction competence before scaffold transfer.** Issue #165 authorizes one honest at-most-once calibration curriculum and a fresh shadow-only V0.5 consequence learner. Predictions are not yet allowed to influence action, so D-046 cannot establish scaffold displacement or autonomous regulation.
+9. **D-046→D-048 established prediction competence without causal control.** D-046 introduced the fresh shadow-only V0.5 consequence learner after the authorized calibration curriculum; D-047 audited held-out discrimination; D-048 tested extended exposure. Predictions remained causally inert throughout that lineage.
+10. **D-049 established the first V0.5 constitutive Level-1 return/docking baseline.** It revalidated the organism-visible beacon inverse, used it as an explicitly programmed engineered prior, and completed return/contact/charging on its frozen ideal deterministic matrix without claiming learning.
+11. **D-050 compared two programmed homing laws before return-margin design.** With the same reconstruction and terminal docking semantics, the unchanged stop-turn-straight baseline reached charging in 80/96 fresh paired cases within the frozen horizon while smooth curved pursuit reached 96/96. This remains a descriptive Level-1 controller comparison, not learned competence or physical-hardware robustness.
 
 The resulting near-term principle is:
 

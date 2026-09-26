@@ -2,9 +2,9 @@
 
 ## Status
 
-Proposed.
+Accepted. Flow merged PR #173 on 2026-09-25 after the ADR-0013 independent exact-HEAD review gate passed at `47a6adb1cc0b6efa7685f2e1ef2f4d77143938da`; merge commit `a375de54722c3bfc09634a3685c4558a7a9f917f`.
 
-This ADR defines a prospective durable developmental architecture. It does not itself implement a Level-1 controller, add an observation channel, change D-045 physics, change D-046/D-047/D-048 learning mechanisms, execute a new D-stage, or authorize physical hardware.
+This ADR defines a durable developmental architecture. Acceptance does not itself implement a Level-1 controller, add an observation channel, change D-045 physics, change D-046/D-047/D-048 learning mechanisms, execute a new D-stage, or authorize physical hardware.
 
 ## Context
 
@@ -323,6 +323,8 @@ ADR 0018 does not itself authorize:
 - D-016 remains an evaluator-only historical diagnostic unless and until a separately authorized Level-1 mechanism deliberately promotes part of its mathematics as designed prior knowledge.
 - No existing learner result is reinterpreted as Level-1 evidence.
 
-## Review requirement
+## Review provenance
 
-Because ADR 0018 creates a durable architecture/behavioural-boundary distinction, changes the prospective status of basic energetic return competence, and introduces a narrow Level-1 preemption permission, it requires ADR-0013 formal review by at least two independent high-capability reviewers against the exact final documentation PR HEAD before Flow-authorized merge.
+Because ADR 0018 creates a durable architecture/behavioural-boundary distinction, changes the prospective status of basic energetic return competence, and introduces a narrow Level-1 preemption permission, ADR-0013 formal review was required before acceptance.
+
+PR #173 received independent exact-HEAD PASS reviews from GPT-5.6 Sol and GLM-5.3-Flash (Z.ai model family) at `47a6adb1cc0b6efa7685f2e1ef2f4d77143938da`, after which Flow authorized and completed the merge. Any future substantive change to this durable boundary remains subject to the applicable ADR-0013 review requirements.

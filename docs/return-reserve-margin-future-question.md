@@ -2,7 +2,7 @@
 
 **Status:** non-authorizing future research note  
 **Recorded:** 2026-09-25  
-**Repository context:** ADR 0018 documentation candidate on branch `docs/adr-0018-innate-viability-floor`  
+**Repository context:** originally recorded with the ADR 0018 documentation candidate; ADR 0018 is now accepted, D-049 has revalidated/promoted the beacon inverse into a programmed Level-1 prior, and D-050 has measured paired return-controller costs. This note remains non-authorizing.  
 **Purpose:** preserve candidate mathematics for an assumption-bounded Level-1 energetic return decision without freezing a controller equation, trigger, safety factor, or organism-visible variable.
 
 ## Why this note exists
@@ -59,7 +59,7 @@ Using the same or related mathematics in a future Level-1 return mechanism would
 
 That promotion must be declared as engineered prior knowledge, not as learned or discovered competence.
 
-Before any causal V0.5 use, the implementing D-stage must revalidate the mathematics against the exact current V0.5 beacon definitions, precision/quantization, body/probe geometry, and edge behaviour. D-016 is supporting precedent, not automatic organism permission.
+D-049 subsequently performed this required V0.5 revalidation and intentionally promoted the inverse into a declared **PROGRAMMED / ENGINEERED PRIOR** for its Level-1 return controller. That completed category promotion does not authorize a return trigger or reserve rule. D-050 then reused the same reconstruction while measuring two homing laws. D-016 remains supporting historical precedent rather than evidence that the relation was learned or discovered by Aweform.
 
 ## Candidate return-energy family
 
@@ -94,6 +94,8 @@ The terms are placeholders for engineering quantities, not free tuning knobs:
 - `K` — an optional explicitly justified safety factor if the eventual mechanism needs one.
 
 Every implemented term must be provenance-labelled as derived, measured, manufacturer-sourced, engineering estimate, or founder design choice as appropriate. Parameters must not be tuned post hoc merely to manufacture desired autonomous-return behaviour.
+
+D-050 now provides controller-specific measured homing and terminal-contact energy components on the frozen ideal V0.5 support. A later trigger design should bind its cost model to the actually selected Level-1 return controller and should not silently assume the historical stop-turn-straight decomposition if a different controller is selected.
 
 ## Important distinction: this is not the dormancy reserve
 
@@ -151,7 +153,7 @@ This note does not authorize:
 - obstacle navigation;
 - physical hardware control;
 - fainting/dormancy;
-- D-049 or any successor stage.
+- a return-trigger/reserve implementation or any successor stage; D-049 and D-050 are completed historical context and do not themselves authorize that trigger.
 
 ## Bottom line
 
