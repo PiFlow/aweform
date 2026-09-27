@@ -50,15 +50,18 @@ uv run aweform-export-d053-html --output development/D-053-v05-continuous-lifeti
 
 D-053's replay displays evaluator-only body/dock geometry, the energy history,
 20% RETURN and 80% RECOVERY thresholds, mode/source/cycle readouts, and event
-navigation. Its downsampling affects display only. A single seed
-can be exported with repeated `--seed` options when a smaller file is useful:
+navigation. Its downsampling affects display only. The D-053 exporter always
+exports the full five-seed block and accepts only `--output`.
+
+For the D-043 exporter, a single seed can be exported with repeated `--seed`
+options when a smaller file is useful:
 
 ```text
 uv run aweform-export-d043-html --seed 19045 --output d043-19045.html
 uv run aweform-export-d043-html --seed 19048 --output d043-19048.html
 ```
 
-The replay retains deterministic stride samples plus windows around mode,
+The D-043 replay retains deterministic stride samples plus windows around mode,
 front-contact/reacquisition, full-recharge, departure, and terminal events.
 Coordinates, heading, contact geometry, event labels, and display sampling are
 evaluator-only; the historical D-043/V0.4 six-channel organism observation,
