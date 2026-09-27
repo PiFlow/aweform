@@ -1,0 +1,1454 @@
+{
+  "claims_boundary": "descriptive only; not confirmatory evidence; fixture is evaluator-side and not organism cognition",
+  "development_id": "D-053",
+  "executed_commit_sha": "934588d55f38dc1cb3945e14d4225654dd3376f3",
+  "execution_status": "COMPLETED",
+  "frozen_protocol": {
+    "analytic_budget_pre_run": "Unobstructed 1.15 W 80%-to-20% depletion ~27,800 transitions; bulk recharge ~18,800; walls lengthen roaming; full cycle ~46,700 or more; expected roughly two yields, possible third truncated. No pilot or tuning.",
+    "artifact_float_canonicalization": "Decimal(x).quantize(Decimal('1e-12'), ROUND_HALF_EVEN), normalize -0.0 to 0.0, reject non-finite; serialization only",
+    "d052_thresholds": {
+      "recovery": 0.800000011921,
+      "return": 0.20000000298
+    },
+    "event_samples": "RESET plus rows with events or mode/source/D-050-sub-mode/contact changes; rows repeating the preceding decision during an INVALID_BEACON or RETURN_HOLD hold collapsed; at most 256 kept: RESET and final row, then cycle-defining/termination/first-invalid-beacon rows, other event rows, event-free state changes, evenly spaced within an overflowing tier; event_row_count, retained_sample_count and samples_truncated recorded",
+    "horizon": 140000,
+    "initial_state": {
+      "ambient_temperature": true,
+      "battery_j": 4262.400000000001,
+      "body_position": [
+        0.5,
+        0.5
+      ],
+      "charger_latch": false,
+      "heading_rad": 0.0,
+      "initial_contact": true,
+      "initial_energy_observation": 0.800000011921,
+      "previous_wheel_delta": [
+        0.0,
+        0.0
+      ],
+      "station_center": [
+        0.5,
+        0.5
+      ]
+    },
+    "organism_info": {},
+    "physics": "D-045 unchanged except episode_horizon=140000",
+    "reward": 0.0,
+    "roaming_fixture": {
+      "mapping": {
+        "MOVE_FORWARD": [
+          0.645771823238,
+          0.645771823238
+        ],
+        "TURN_LEFT": [
+          -0.645771823238,
+          0.645771823238
+        ],
+        "TURN_RIGHT": [
+          0.645771823238,
+          -0.645771823238
+        ]
+      },
+      "maximum_wheel_delta_rad": 0.645771823238,
+      "mechanism": "EXP-001 StochasticPersistentExplorer unchanged",
+      "observation": "fixed ExternalObservation(0,0,0), discarded by explorer",
+      "proposal_stream_advances_every_decision_including_preempted_decisions": true
+    },
+    "seeds": [
+      22053,
+      22054,
+      22055,
+      22056,
+      22057
+    ]
+  },
+  "protocol_version": "d053-v05-continuous-lifetime-return-charge-recovery-v1",
+  "result_kind": "development_diagnostic",
+  "schema_version": "d053-artifact-v1",
+  "seeds": [
+    {
+      "boundary_scaled_transition_count": 119008,
+      "command_source_counts": {
+        "CHARGE_HOLD": 0,
+        "D050_SMOOTH": 68785,
+        "PASS_THROUGH": 71215,
+        "RETURN_HOLD": 0
+      },
+      "completed_recovery_yield_count": 0,
+      "contact_lost_count": 0,
+      "contact_reacquired_count": 0,
+      "cycles": [
+        {
+          "charge_length": 0,
+          "cycle_index": 1,
+          "end_transition": 140000,
+          "energy_after_first_charging_contact": null,
+          "energy_at_recovery_yield": null,
+          "energy_at_return_activation": 0.199986383319,
+          "maximum_terminal_spin_count": 0,
+          "normal_roam_length": 71215,
+          "outcome": "TRUNCATED_IN_RETURN",
+          "return_length": 68785,
+          "start_transition": 71216
+        }
+      ],
+      "event_row_count": 4,
+      "event_samples": [
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_before": true,
+          "command_source": null,
+          "energy_before": 0.800000011921,
+          "events": [
+            "RESET"
+          ],
+          "transition": 0
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": true,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.79997843504,
+          "energy_before": 0.800000011921,
+          "events": [
+            "PHYSICAL_CONTACT_LOST"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 1,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "RETURN",
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "command_source": "D050_SMOOTH",
+          "d050_mode": "CURVED_PURSUIT",
+          "energy_after": 0.199964791536,
+          "energy_before": 0.199986383319,
+          "events": [
+            "RETURN_ACTIVATED"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 71216,
+          "wheel_command": [
+            -0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "RETURN",
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "command_source": "D050_SMOOTH",
+          "d050_mode": "CURVED_PURSUIT",
+          "energy_after": 0.006316144485,
+          "energy_before": 0.006318959873,
+          "events": [
+            "TRUNCATED"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 140000,
+          "wheel_command": [
+            -0.565040862351,
+            0.645771823238
+          ]
+        }
+      ],
+      "final_cycle_index": 1,
+      "final_mode": "RETURN",
+      "incidental_normal_contact_acquisition_count": 0,
+      "incidental_normal_contact_acquisitions": [],
+      "invalid_beacon_decision_count": 0,
+      "level1_preemption_count": 68785,
+      "level1_preemption_fraction": 0.491321428571,
+      "minimum_battery_j": 33.652417741524,
+      "minimum_observed_energy": 0.006316144485,
+      "mode_transition_counts": {
+        "CHARGE": 0,
+        "NORMAL": 71215,
+        "RETURN": 68785
+      },
+      "normal_transitions_in_contact": 0,
+      "organism_info_exactly_empty": true,
+      "pass_through_count": 71215,
+      "retained_sample_count": 4,
+      "return_activated_count": 1,
+      "return_dock_acquisition_count": 0,
+      "return_start_pose_evaluator_only": [
+        {
+          "station_bearing_rad": 1.151903877056,
+          "station_distance_m": 0.547321411787,
+          "transition": 71216
+        }
+      ],
+      "reward_exactly_zero": true,
+      "samples_truncated": false,
+      "seed": 22053,
+      "terminal_spin_exhaustion_count": 0,
+      "terminal_spin_exhaustion_transitions": [],
+      "terminal_spin_maximum": 0,
+      "terminated": false,
+      "termination_reason": null,
+      "total_transitions": 140000,
+      "truncated": true
+    },
+    {
+      "boundary_scaled_transition_count": 84802,
+      "command_source_counts": {
+        "CHARGE_HOLD": 18829,
+        "D050_SMOOTH": 38,
+        "PASS_THROUGH": 121133,
+        "RETURN_HOLD": 0
+      },
+      "completed_recovery_yield_count": 1,
+      "contact_lost_count": 0,
+      "contact_reacquired_count": 0,
+      "cycles": [
+        {
+          "charge_length": 18829,
+          "cycle_index": 1,
+          "end_transition": 88283,
+          "energy_after_first_charging_contact": 0.199252948165,
+          "energy_at_recovery_yield": 0.800028085709,
+          "energy_at_return_activation": 0.199985563755,
+          "first_charging_contact_transition": 69453,
+          "maximum_terminal_spin_count": 11,
+          "normal_roam_length": 69415,
+          "outcome": "YIELDED",
+          "return_length": 38,
+          "start_transition": 69416
+        }
+      ],
+      "event_row_count": 9,
+      "event_samples": [
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_before": true,
+          "command_source": null,
+          "energy_before": 0.800000011921,
+          "events": [
+            "RESET"
+          ],
+          "transition": 0
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": true,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.79997843504,
+          "energy_before": 0.800000011921,
+          "events": [
+            "PHYSICAL_CONTACT_LOST"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 1,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "RETURN",
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "command_source": "D050_SMOOTH",
+          "d050_mode": "CURVED_PURSUIT",
+          "energy_after": 0.199963971972,
+          "energy_before": 0.199985563755,
+          "events": [
+            "RETURN_ACTIVATED"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 69416,
+          "wheel_command": [
+            0.645771823238,
+            -0.645771823238
+          ]
+        },
+        {
+          "active_mode": "RETURN",
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "command_source": "D050_SMOOTH",
+          "d050_mode": "TERMINAL_SPIN",
+          "energy_after": 0.199434071779,
+          "energy_before": 0.199455648661,
+          "events": [],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 1,
+          "terminal_spin_exhausted": false,
+          "transition": 69443,
+          "wheel_command": [
+            -0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "RETURN",
+          "charging_contact_after": true,
+          "charging_contact_before": false,
+          "command_source": "D050_SMOOTH",
+          "d050_mode": "TERMINAL_SPIN",
+          "energy_after": 0.199252948165,
+          "energy_before": 0.199239805341,
+          "events": [
+            "PHYSICAL_CONTACT_ACQUIRED"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 11,
+          "terminal_spin_exhausted": false,
+          "transition": 69453,
+          "wheel_command": [
+            -0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "CHARGE",
+          "charging_contact_after": true,
+          "charging_contact_before": true,
+          "command_source": "CHARGE_HOLD",
+          "d050_mode": "CONTACT",
+          "energy_after": 0.199284851551,
+          "energy_before": 0.199252948165,
+          "events": [
+            "CHARGING_CONTACT"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 11,
+          "terminal_spin_exhausted": false,
+          "transition": 69454,
+          "wheel_command": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "active_mode": "CHARGE",
+          "charging_contact_after": true,
+          "charging_contact_before": true,
+          "command_source": "CHARGE_HOLD",
+          "d050_mode": null,
+          "energy_after": 0.199316769838,
+          "energy_before": 0.199284851551,
+          "events": [],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            -0.645771823238
+          ],
+          "symbolic_proposal": "TURN_RIGHT",
+          "terminal_spin_count": 11,
+          "terminal_spin_exhausted": false,
+          "transition": 69455,
+          "wheel_command": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": true,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.800006508827,
+          "energy_before": 0.800028085709,
+          "events": [
+            "RECOVERY_YIELD",
+            "PHYSICAL_CONTACT_LOST"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 11,
+          "terminal_spin_exhausted": false,
+          "transition": 88283,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.368482619524,
+          "energy_before": 0.368485420942,
+          "events": [
+            "TRUNCATED"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 11,
+          "terminal_spin_exhausted": false,
+          "transition": 140000,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        }
+      ],
+      "final_cycle_index": 1,
+      "final_mode": "NORMAL",
+      "incidental_normal_contact_acquisition_count": 0,
+      "incidental_normal_contact_acquisitions": [],
+      "invalid_beacon_decision_count": 0,
+      "level1_preemption_count": 18867,
+      "level1_preemption_fraction": 0.134764285714,
+      "minimum_battery_j": 1061.549722025034,
+      "minimum_observed_energy": 0.199239805341,
+      "mode_transition_counts": {
+        "CHARGE": 18829,
+        "NORMAL": 121133,
+        "RETURN": 38
+      },
+      "normal_transitions_in_contact": 0,
+      "organism_info_exactly_empty": true,
+      "pass_through_count": 121133,
+      "retained_sample_count": 9,
+      "return_activated_count": 1,
+      "return_dock_acquisition_count": 1,
+      "return_start_pose_evaluator_only": [
+        {
+          "station_bearing_rad": 2.839297025626,
+          "station_distance_m": 0.523749105706,
+          "transition": 69416
+        }
+      ],
+      "reward_exactly_zero": true,
+      "samples_truncated": false,
+      "seed": 22054,
+      "terminal_spin_exhaustion_count": 0,
+      "terminal_spin_exhaustion_transitions": [],
+      "terminal_spin_maximum": 11,
+      "terminated": false,
+      "termination_reason": null,
+      "total_transitions": 140000,
+      "truncated": true
+    },
+    {
+      "boundary_scaled_transition_count": 86240,
+      "command_source_counts": {
+        "CHARGE_HOLD": 18824,
+        "D050_SMOOTH": 32,
+        "PASS_THROUGH": 121144,
+        "RETURN_HOLD": 0
+      },
+      "completed_recovery_yield_count": 1,
+      "contact_lost_count": 0,
+      "contact_reacquired_count": 0,
+      "cycles": [
+        {
+          "charge_length": 18824,
+          "cycle_index": 1,
+          "end_transition": 91084,
+          "energy_after_first_charging_contact": 0.199384406209,
+          "energy_at_recovery_yield": 0.800000011921,
+          "energy_at_return_activation": 0.199999108911,
+          "first_charging_contact_transition": 72259,
+          "maximum_terminal_spin_count": 7,
+          "normal_roam_length": 72227,
+          "outcome": "YIELDED",
+          "return_length": 32,
+          "start_transition": 72228
+        }
+      ],
+      "event_row_count": 13,
+      "event_samples": [
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_before": true,
+          "command_source": null,
+          "energy_before": 0.800000011921,
+          "events": [
+            "RESET"
+          ],
+          "transition": 0
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": true,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.79997843504,
+          "energy_before": 0.800000011921,
+          "events": [
+            "PHYSICAL_CONTACT_LOST"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 1,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": true,
+          "charging_contact_before": false,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.415565341711,
+          "energy_before": 0.415552198887,
+          "events": [
+            "PHYSICAL_CONTACT_ACQUIRED"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 45937,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": true,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.41554376483,
+          "energy_before": 0.415565341711,
+          "events": [
+            "PHYSICAL_CONTACT_LOST"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 45938,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "RETURN",
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "command_source": "D050_SMOOTH",
+          "d050_mode": "CURVED_PURSUIT",
+          "energy_after": 0.199983000755,
+          "energy_before": 0.199999108911,
+          "events": [
+            "RETURN_ACTIVATED"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            -0.645771823238
+          ],
+          "symbolic_proposal": "TURN_RIGHT",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 72228,
+          "wheel_command": [
+            -0.269077406814,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "RETURN",
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "command_source": "D050_SMOOTH",
+          "d050_mode": "TERMINAL_SPIN",
+          "energy_after": 0.199479177594,
+          "energy_before": 0.199500769377,
+          "events": [],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 1,
+          "terminal_spin_exhausted": false,
+          "transition": 72253,
+          "wheel_command": [
+            -0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "RETURN",
+          "charging_contact_after": true,
+          "charging_contact_before": false,
+          "command_source": "D050_SMOOTH",
+          "d050_mode": "TERMINAL_SPIN",
+          "energy_after": 0.199384406209,
+          "energy_before": 0.199371263385,
+          "events": [
+            "PHYSICAL_CONTACT_ACQUIRED"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 7,
+          "terminal_spin_exhausted": false,
+          "transition": 72259,
+          "wheel_command": [
+            -0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "CHARGE",
+          "charging_contact_after": true,
+          "charging_contact_before": true,
+          "command_source": "CHARGE_HOLD",
+          "d050_mode": "CONTACT",
+          "energy_after": 0.199416309595,
+          "energy_before": 0.199384406209,
+          "events": [
+            "CHARGING_CONTACT"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            -0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "TURN_LEFT",
+          "terminal_spin_count": 7,
+          "terminal_spin_exhausted": false,
+          "transition": 72260,
+          "wheel_command": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "active_mode": "CHARGE",
+          "charging_contact_after": true,
+          "charging_contact_before": true,
+          "command_source": "CHARGE_HOLD",
+          "d050_mode": null,
+          "energy_after": 0.199448212981,
+          "energy_before": 0.199416309595,
+          "events": [],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            -0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "TURN_LEFT",
+          "terminal_spin_count": 7,
+          "terminal_spin_exhausted": false,
+          "transition": 72261,
+          "wheel_command": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": true,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.79997843504,
+          "energy_before": 0.800000011921,
+          "events": [
+            "RECOVERY_YIELD",
+            "PHYSICAL_CONTACT_LOST"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 7,
+          "terminal_spin_exhausted": false,
+          "transition": 91084,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": true,
+          "charging_contact_before": false,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.442755877972,
+          "energy_before": 0.44274276495,
+          "events": [
+            "PHYSICAL_CONTACT_ACQUIRED"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 7,
+          "terminal_spin_exhausted": false,
+          "transition": 134179,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": true,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.44273430109,
+          "energy_before": 0.442755877972,
+          "events": [
+            "PHYSICAL_CONTACT_LOST"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 7,
+          "terminal_spin_exhausted": false,
+          "transition": 134180,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.395444989204,
+          "energy_before": 0.395447790623,
+          "events": [
+            "TRUNCATED"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 7,
+          "terminal_spin_exhausted": false,
+          "transition": 140000,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        }
+      ],
+      "final_cycle_index": 1,
+      "final_mode": "NORMAL",
+      "incidental_normal_contact_acquisition_count": 2,
+      "incidental_normal_contact_acquisitions": [
+        {
+          "energy": 0.415565341711,
+          "transition": 45937
+        },
+        {
+          "energy": 0.442755877972,
+          "transition": 134179
+        }
+      ],
+      "invalid_beacon_decision_count": 0,
+      "level1_preemption_count": 18856,
+      "level1_preemption_fraction": 0.134685714286,
+      "minimum_battery_j": 1062.250077008015,
+      "minimum_observed_energy": 0.199371263385,
+      "mode_transition_counts": {
+        "CHARGE": 18824,
+        "NORMAL": 121144,
+        "RETURN": 32
+      },
+      "normal_transitions_in_contact": 2,
+      "organism_info_exactly_empty": true,
+      "pass_through_count": 121144,
+      "retained_sample_count": 13,
+      "return_activated_count": 1,
+      "return_dock_acquisition_count": 1,
+      "return_start_pose_evaluator_only": [
+        {
+          "station_bearing_rad": -2.217580606722,
+          "station_distance_m": 0.626546167781,
+          "transition": 72228
+        }
+      ],
+      "reward_exactly_zero": true,
+      "samples_truncated": false,
+      "seed": 22055,
+      "terminal_spin_exhaustion_count": 0,
+      "terminal_spin_exhaustion_transitions": [],
+      "terminal_spin_maximum": 7,
+      "terminated": false,
+      "termination_reason": null,
+      "total_transitions": 140000,
+      "truncated": true
+    },
+    {
+      "boundary_scaled_transition_count": 85830,
+      "command_source_counts": {
+        "CHARGE_HOLD": 18823,
+        "D050_SMOOTH": 29,
+        "PASS_THROUGH": 121148,
+        "RETURN_HOLD": 0
+      },
+      "completed_recovery_yield_count": 1,
+      "contact_lost_count": 0,
+      "contact_reacquired_count": 0,
+      "cycles": [
+        {
+          "charge_length": 18823,
+          "cycle_index": 1,
+          "end_transition": 90502,
+          "energy_after_first_charging_contact": 0.199442863464,
+          "energy_at_recovery_yield": 0.800026595592,
+          "energy_at_return_activation": 0.199986577034,
+          "first_charging_contact_transition": 71678,
+          "maximum_terminal_spin_count": 9,
+          "normal_roam_length": 71649,
+          "outcome": "YIELDED",
+          "return_length": 29,
+          "start_transition": 71650
+        }
+      ],
+      "event_row_count": 9,
+      "event_samples": [
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_before": true,
+          "command_source": null,
+          "energy_before": 0.800000011921,
+          "events": [
+            "RESET"
+          ],
+          "transition": 0
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": true,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.79997843504,
+          "energy_before": 0.800000011921,
+          "events": [
+            "PHYSICAL_CONTACT_LOST"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 1,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "RETURN",
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "command_source": "D050_SMOOTH",
+          "d050_mode": "CURVED_PURSUIT",
+          "energy_after": 0.199969232082,
+          "energy_before": 0.199986577034,
+          "events": [
+            "RETURN_ACTIVATED"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 71650,
+          "wheel_command": [
+            -0.353226974028,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "RETURN",
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "command_source": "D050_SMOOTH",
+          "d050_mode": "TERMINAL_SPIN",
+          "energy_after": 0.199580818415,
+          "energy_before": 0.199602395296,
+          "events": [],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 1,
+          "terminal_spin_exhausted": false,
+          "transition": 71670,
+          "wheel_command": [
+            -0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "RETURN",
+          "charging_contact_after": true,
+          "charging_contact_before": false,
+          "command_source": "D050_SMOOTH",
+          "d050_mode": "TERMINAL_SPIN",
+          "energy_after": 0.199442863464,
+          "energy_before": 0.199429735541,
+          "events": [
+            "PHYSICAL_CONTACT_ACQUIRED"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 9,
+          "terminal_spin_exhausted": false,
+          "transition": 71678,
+          "wheel_command": [
+            -0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "CHARGE",
+          "charging_contact_after": true,
+          "charging_contact_before": true,
+          "command_source": "CHARGE_HOLD",
+          "d050_mode": "CONTACT",
+          "energy_after": 0.199474781752,
+          "energy_before": 0.199442863464,
+          "events": [
+            "CHARGING_CONTACT"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            -0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "TURN_LEFT",
+          "terminal_spin_count": 9,
+          "terminal_spin_exhausted": false,
+          "transition": 71679,
+          "wheel_command": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "active_mode": "CHARGE",
+          "charging_contact_after": true,
+          "charging_contact_before": true,
+          "command_source": "CHARGE_HOLD",
+          "d050_mode": null,
+          "energy_after": 0.199506685138,
+          "energy_before": 0.199474781752,
+          "events": [],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 9,
+          "terminal_spin_exhausted": false,
+          "transition": 71680,
+          "wheel_command": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": true,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.800005018711,
+          "energy_before": 0.800026595592,
+          "events": [
+            "RECOVERY_YIELD",
+            "PHYSICAL_CONTACT_LOST"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 9,
+          "terminal_spin_exhausted": false,
+          "transition": 90502,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.387152343988,
+          "energy_before": 0.387155145407,
+          "events": [
+            "TRUNCATED"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 9,
+          "terminal_spin_exhausted": false,
+          "transition": 140000,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        }
+      ],
+      "final_cycle_index": 1,
+      "final_mode": "NORMAL",
+      "incidental_normal_contact_acquisition_count": 0,
+      "incidental_normal_contact_acquisitions": [],
+      "invalid_beacon_decision_count": 0,
+      "level1_preemption_count": 18852,
+      "level1_preemption_fraction": 0.134657142857,
+      "minimum_battery_j": 1062.561599145109,
+      "minimum_observed_energy": 0.199429735541,
+      "mode_transition_counts": {
+        "CHARGE": 18823,
+        "NORMAL": 121148,
+        "RETURN": 29
+      },
+      "normal_transitions_in_contact": 0,
+      "organism_info_exactly_empty": true,
+      "pass_through_count": 121148,
+      "retained_sample_count": 9,
+      "return_activated_count": 1,
+      "return_dock_acquisition_count": 1,
+      "return_start_pose_evaluator_only": [
+        {
+          "station_bearing_rad": -2.973263440946,
+          "station_distance_m": 0.455190996961,
+          "transition": 71650
+        }
+      ],
+      "reward_exactly_zero": true,
+      "samples_truncated": false,
+      "seed": 22056,
+      "terminal_spin_exhaustion_count": 0,
+      "terminal_spin_exhaustion_transitions": [],
+      "terminal_spin_maximum": 9,
+      "terminated": false,
+      "termination_reason": null,
+      "total_transitions": 140000,
+      "truncated": true
+    },
+    {
+      "boundary_scaled_transition_count": 87625,
+      "command_source_counts": {
+        "CHARGE_HOLD": 18821,
+        "D050_SMOOTH": 27,
+        "PASS_THROUGH": 121152,
+        "RETURN_HOLD": 0
+      },
+      "completed_recovery_yield_count": 1,
+      "contact_lost_count": 0,
+      "contact_reacquired_count": 0,
+      "cycles": [
+        {
+          "charge_length": 18821,
+          "cycle_index": 1,
+          "end_transition": 92783,
+          "energy_after_first_charging_contact": 0.199504509568,
+          "energy_at_recovery_yield": 0.800024390221,
+          "energy_at_return_activation": 0.199999555945,
+          "first_charging_contact_transition": 73961,
+          "maximum_terminal_spin_count": 0,
+          "normal_roam_length": 73934,
+          "outcome": "YIELDED",
+          "return_length": 27,
+          "start_transition": 73935
+        }
+      ],
+      "event_row_count": 8,
+      "event_samples": [
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_before": true,
+          "command_source": null,
+          "energy_before": 0.800000011921,
+          "events": [
+            "RESET"
+          ],
+          "transition": 0
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": true,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.79997843504,
+          "energy_before": 0.800000011921,
+          "events": [
+            "PHYSICAL_CONTACT_LOST"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 1,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "RETURN",
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "command_source": "D050_SMOOTH",
+          "d050_mode": "CURVED_PURSUIT",
+          "energy_after": 0.199977979064,
+          "energy_before": 0.199999555945,
+          "events": [
+            "RETURN_ACTIVATED"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 73935,
+          "wheel_command": [
+            0.645771823238,
+            -0.645771823238
+          ]
+        },
+        {
+          "active_mode": "RETURN",
+          "charging_contact_after": true,
+          "charging_contact_before": false,
+          "command_source": "D050_SMOOTH",
+          "d050_mode": "CURVED_PURSUIT",
+          "energy_after": 0.199504509568,
+          "energy_before": 0.199482247233,
+          "events": [
+            "PHYSICAL_CONTACT_ACQUIRED"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 73961,
+          "wheel_command": [
+            0.331720773695,
+            0.331720773695
+          ]
+        },
+        {
+          "active_mode": "CHARGE",
+          "charging_contact_after": true,
+          "charging_contact_before": true,
+          "command_source": "CHARGE_HOLD",
+          "d050_mode": "CONTACT",
+          "energy_after": 0.199536412954,
+          "energy_before": 0.199504509568,
+          "events": [
+            "CHARGING_CONTACT"
+          ],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 73962,
+          "wheel_command": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "active_mode": "CHARGE",
+          "charging_contact_after": true,
+          "charging_contact_before": true,
+          "command_source": "CHARGE_HOLD",
+          "d050_mode": null,
+          "energy_after": 0.19956831634,
+          "energy_before": 0.199536412954,
+          "events": [],
+          "passed_through": false,
+          "preempted": true,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 73963,
+          "wheel_command": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": true,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.800002813339,
+          "energy_before": 0.800024390221,
+          "events": [
+            "RECOVERY_YIELD",
+            "PHYSICAL_CONTACT_LOST"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "MOVE_FORWARD",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 92783,
+          "wheel_command": [
+            0.645771823238,
+            0.645771823238
+          ]
+        },
+        {
+          "active_mode": "NORMAL",
+          "charging_contact_after": false,
+          "charging_contact_before": false,
+          "command_source": "PASS_THROUGH",
+          "d050_mode": null,
+          "energy_after": 0.421800941229,
+          "energy_before": 0.42182251811,
+          "events": [
+            "TRUNCATED"
+          ],
+          "passed_through": true,
+          "preempted": false,
+          "proposed_wheel_command": [
+            -0.645771823238,
+            0.645771823238
+          ],
+          "symbolic_proposal": "TURN_LEFT",
+          "terminal_spin_count": 0,
+          "terminal_spin_exhausted": false,
+          "transition": 140000,
+          "wheel_command": [
+            -0.645771823238,
+            0.645771823238
+          ]
+        }
+      ],
+      "final_cycle_index": 1,
+      "final_mode": "NORMAL",
+      "incidental_normal_contact_acquisition_count": 0,
+      "incidental_normal_contact_acquisitions": [],
+      "invalid_beacon_decision_count": 0,
+      "level1_preemption_count": 18848,
+      "level1_preemption_fraction": 0.134628571429,
+      "minimum_battery_j": 1062.841390397019,
+      "minimum_observed_energy": 0.199482247233,
+      "mode_transition_counts": {
+        "CHARGE": 18821,
+        "NORMAL": 121152,
+        "RETURN": 27
+      },
+      "normal_transitions_in_contact": 0,
+      "organism_info_exactly_empty": true,
+      "pass_through_count": 121152,
+      "retained_sample_count": 8,
+      "return_activated_count": 1,
+      "return_dock_acquisition_count": 1,
+      "return_start_pose_evaluator_only": [
+        {
+          "station_bearing_rad": 0.126170649781,
+          "station_distance_m": 0.504006327676,
+          "transition": 73935
+        }
+      ],
+      "reward_exactly_zero": true,
+      "samples_truncated": false,
+      "seed": 22057,
+      "terminal_spin_exhaustion_count": 0,
+      "terminal_spin_exhaustion_transitions": [],
+      "terminal_spin_maximum": 0,
+      "terminated": false,
+      "termination_reason": null,
+      "total_transitions": 140000,
+      "truncated": true
+    }
+  ],
+  "validation": {
+    "discrete_outcome_signature_sha256": "21761c9f1f5e48696138fa0ee435f387369fe1cd92e2863dc0f98a6d213f3b9d",
+    "fixture_is_independent_seeded_proposal_stream": true,
+    "no_evaluator_geometry_in_causal_control": true,
+    "organism_info_exactly_empty": true,
+    "reward_exactly_zero": true
+  }
+}

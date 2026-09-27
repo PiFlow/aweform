@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import html
 import itertools
 import json
 import math
@@ -108,6 +109,8 @@ class DevelopmentVisualizationFrame:
     trajectory_break_before: bool = False
     front_contact_alignment: tuple[bool, bool] | None = None
     event_label: str | None = None
+    command_source: str | None = None
+    cycle_index: int | None = None
 
     def __post_init__(self) -> None:
         if self.transition_index < 0:
@@ -170,6 +173,14 @@ class DevelopmentVisualizationFrame:
                 )
         if self.event_label is not None and not self.event_label:
             raise ValueError("event_label must be non-empty when provided")
+        if self.command_source is not None and not self.command_source:
+            raise ValueError("command_source must be non-empty when provided")
+        if self.cycle_index is not None and (
+            isinstance(self.cycle_index, bool)
+            or not isinstance(self.cycle_index, int)
+            or self.cycle_index < 0
+        ):
+            raise ValueError("cycle_index must be a non-negative integer or None")
 
 
 @dataclass(frozen=True, slots=True)
@@ -237,6 +248,8 @@ class DevelopmentActionAlternative:
         ):
             if not math.isfinite(getattr(self, name)):
                 raise ValueError(f"{name} must be finite")
+
+
 @dataclass(frozen=True, slots=True)
 class DevelopmentShadowGeometry:
     """Optional evaluator-only shadow morphology for a shared replay."""
@@ -293,12 +306,8 @@ class DevelopmentCausalGeometry:
             raise ValueError("dock_orientation must be finite")
         for name in ("front_midpoint", "dock_contact_plus", "dock_contact_minus"):
             _validate_coordinate(name, getattr(self, name))
-        if (self.front_contact_plus is None) != (
-            self.front_contact_minus is None
-        ):
-            raise ValueError(
-                "front contact coordinates must be complete or absent"
-            )
+        if (self.front_contact_plus is None) != (self.front_contact_minus is None):
+            raise ValueError("front contact coordinates must be complete or absent")
         if self.rear_contact_plus is None or self.rear_contact_minus is None:
             if self.front_contact_plus is None or self.front_contact_minus is None:
                 raise ValueError("causal geometry requires a contact pair")
@@ -360,15 +369,16 @@ class DevelopmentVisualizationData:
     consequence_predictions: (
         tuple[DevelopmentConsequencePredictionFrame, ...] | None
     ) = None
-    action_alternatives: (
-        tuple[tuple[DevelopmentActionAlternative, ...], ...] | None
-    ) = None
+    action_alternatives: tuple[tuple[DevelopmentActionAlternative, ...], ...] | None = (
+        None
+    )
     action_alternative_warning: str | None = None
     action_alternative_provenance: str | None = None
     shadow_geometry: DevelopmentShadowGeometry | None = None
     causal_geometry: DevelopmentCausalGeometry | None = None
     figure_title: str | None = None
     figure_annotation: str | None = None
+    energy_thresholds: tuple[tuple[float, str], ...] | None = None
 
     def __post_init__(self) -> None:
         if not self.source_label:
@@ -384,9 +394,7 @@ class DevelopmentVisualizationData:
         if self.figure_title is not None and not self.figure_title:
             raise ValueError("figure_title must be non-empty when provided")
         if self.figure_annotation is not None and not self.figure_annotation:
-            raise ValueError(
-                "figure_annotation must be non-empty when provided"
-            )
+            raise ValueError("figure_annotation must be non-empty when provided")
         _validate_coordinate("world_min", self.world_min)
         _validate_coordinate("world_max", self.world_max)
         if not all(
@@ -430,9 +438,10 @@ class DevelopmentVisualizationData:
                     raise ValueError(
                         "each action alternative group must contain four candidates"
                     )
-                if sum(
-                    alternative.physically_executed for alternative in alternatives
-                ) != 1:
+                if (
+                    sum(alternative.physically_executed for alternative in alternatives)
+                    != 1
+                ):
                     raise ValueError(
                         "each action alternative group needs exactly one executed"
                     )
@@ -462,15 +471,22 @@ class DevelopmentVisualizationData:
                     raise ValueError(
                         f"{name} is required when action alternatives are present"
                     )
+        if self.energy_thresholds is not None:
+            for value, label in self.energy_thresholds:
+                if (
+                    not math.isfinite(value)
+                    or not self.energy_range.lower <= value <= self.energy_range.upper
+                    or not label
+                ):
+                    raise ValueError(
+                        "energy thresholds must be finite, in range, and labelled"
+                    )
         if self.station_center is None:
             if self.charging_radius is not None:
                 raise ValueError("charging_radius requires station_center")
         else:
             _validate_coordinate("station_center", self.station_center)
-            if (
-                self.charging_radius is None
-                and self.causal_geometry is None
-            ) or (
+            if (self.charging_radius is None and self.causal_geometry is None) or (
                 self.charging_radius is not None
                 and not math.isfinite(self.charging_radius)
             ):
@@ -492,8 +508,10 @@ class DevelopmentVisualizationData:
         if self.thermal_threshold is not None:
             if not math.isfinite(self.thermal_threshold):
                 raise ValueError("thermal_threshold must be finite")
-            if not self.thermal_range.lower <= self.thermal_threshold <= (
-                self.thermal_range.upper
+            if (
+                not self.thermal_range.lower
+                <= self.thermal_threshold
+                <= (self.thermal_range.upper)
             ):
                 raise ValueError("thermal_threshold must be inside thermal_range")
             if not self.thermal_threshold_label:
@@ -742,11 +760,19 @@ def build_development_visualization_figure(
         )
         world_axis.add_patch(geometry_body)
         geometry_front_direction = world_axis.plot(
-            [], [], color="tab:orange", linewidth=2.0,
+            [],
+            [],
+            color="tab:orange",
+            linewidth=2.0,
             label=("causal body heading" if causal else "shadow front direction"),
         )[0]
         geometry_rear_contact_plus = world_axis.plot(
-            [], [], marker="s", markersize=6, linestyle="None", color="tab:red",
+            [],
+            [],
+            marker="s",
+            markersize=6,
+            linestyle="None",
+            color="tab:red",
             label=(
                 f"causal {contact_label} (+ / −)"
                 if causal
@@ -754,10 +780,20 @@ def build_development_visualization_figure(
             ),
         )[0]
         geometry_rear_contact_minus = world_axis.plot(
-            [], [], marker="s", markersize=6, linestyle="None", color="tab:red",
+            [],
+            [],
+            marker="s",
+            markersize=6,
+            linestyle="None",
+            color="tab:red",
         )[0]
         geometry_front_midpoint = world_axis.plot(
-            [], [], marker="x", markersize=7, linestyle="None", color="#e377c2",
+            [],
+            [],
+            marker="x",
+            markersize=7,
+            linestyle="None",
+            color="#e377c2",
             label=("causal front midpoint" if causal else "front midpoint comparator"),
         )[0]
         geometry_dock_contacts = world_axis.plot(
@@ -776,13 +812,11 @@ def build_development_visualization_figure(
         geometry_dock_axis = world_axis.plot(
             [
                 data.station_center[0],
-                data.station_center[0]
-                + 0.07 * math.cos(geometry.dock_orientation),
+                data.station_center[0] + 0.07 * math.cos(geometry.dock_orientation),
             ],
             [
                 data.station_center[1],
-                data.station_center[1]
-                + 0.07 * math.sin(geometry.dock_orientation),
+                data.station_center[1] + 0.07 * math.sin(geometry.dock_orientation),
             ],
             color="tab:green",
             linestyle="--",
@@ -876,8 +910,7 @@ def build_development_visualization_figure(
             figure.text(
                 0.03,
                 0.965,
-                "directional probes = idealized beacon display\n"
-                "(not literal RF beams)",
+                "directional probes = idealized beacon display\n(not literal RF beams)",
                 va="top",
                 fontsize=8,
             )
@@ -885,8 +918,7 @@ def build_development_visualization_figure(
             world_axis.text(
                 0.02,
                 0.97,
-                "directional probes = idealized beacon display\n"
-                "(not literal RF beams)",
+                "directional probes = idealized beacon display\n(not literal RF beams)",
                 transform=world_axis.transAxes,
                 va="top",
                 fontsize=8,
@@ -979,9 +1011,9 @@ def build_development_visualization_figure(
         threshold_label = data.thermal_threshold_label
         if threshold_label is None:
             raise RuntimeError("thermal threshold label is missing")
-        threshold_x = 0.30 + _gauge_fraction(
-            data.thermal_threshold, data.thermal_range
-        ) * 0.62
+        threshold_x = (
+            0.30 + _gauge_fraction(data.thermal_threshold, data.thermal_range) * 0.62
+        )
         threshold_marker = diagnostic_axis.plot(
             [threshold_x, threshold_x],
             [thermal_y - 0.055, thermal_y + 0.055],
@@ -1060,9 +1092,7 @@ def build_development_visualization_figure(
                 abs(predicted_value(item) - observed_value(item))
                 for item in predictions
             )
-            baseline_errors = tuple(
-                abs(observed_value(item)) for item in predictions
-            )
+            baseline_errors = tuple(abs(observed_value(item)) for item in predictions)
             learned_mae = _cumulative_mean_series(learned_errors)
             baseline_mae = _cumulative_mean_series(baseline_errors)
             cumulative_mae_series.append((learned_mae, baseline_mae))
@@ -1124,9 +1154,7 @@ def build_development_visualization_figure(
             data.action_alternative_warning is None
             or data.action_alternative_provenance is None
         ):
-            raise RuntimeError(
-                "action alternative display metadata is incomplete"
-            )
+            raise RuntimeError("action alternative display metadata is incomplete")
         alternative_warning = alternative_axis.text(
             0.02,
             0.96,
@@ -1197,8 +1225,7 @@ def build_development_visualization_figure(
                 else f"{aligned_count}/2 within tolerance"
             )
             alignment_text.set_text(
-                f"{alignment_label_name} aligned: "
-                f"{aligned_count}/2 ({alignment_label})"
+                f"{alignment_label_name} aligned: {aligned_count}/2 ({alignment_label})"
             )
         status = (
             "TERMINATED"
@@ -1353,9 +1380,7 @@ def build_development_visualization_figure(
             if predictions is None:
                 raise RuntimeError("learner axes require consequence predictions")
             visible_predictions = predictions[: frame_index + 1]
-            transition_numbers = [
-                item.transition_index for item in visible_predictions
-            ]
+            transition_numbers = [item.transition_index for item in visible_predictions]
             for (learned_line, baseline_line), stats, (
                 learned_mae_series,
                 baseline_mae_series,
@@ -1406,15 +1431,17 @@ def build_development_visualization_figure(
                 text_artist.set_color(
                     "#155724" if alternative.physically_executed else "#444444"
                 )
-                text_artist.set_bbox({
-                    "facecolor": (
-                        "#e8f5e9" if alternative.physically_executed else "#f4f4f4"
-                    ),
-                    "edgecolor": (
-                        "tab:green" if alternative.physically_executed else "0.7"
-                    ),
-                    "linewidth": 1.5 if alternative.physically_executed else 0.8,
-                })
+                text_artist.set_bbox(
+                    {
+                        "facecolor": (
+                            "#e8f5e9" if alternative.physically_executed else "#f4f4f4"
+                        ),
+                        "edgecolor": (
+                            "tab:green" if alternative.physically_executed else "0.7"
+                        ),
+                        "linewidth": 1.5 if alternative.physically_executed else 0.8,
+                    }
+                )
                 rendered.append(text_artist)
             if alternative_warning is not None:
                 rendered.append(alternative_warning)
@@ -1506,8 +1533,14 @@ def build_development_visualization_figure(
     setattr(
         figure,
         "_aweform_diagnostic_texts",
-        (transition_text, action_text, mode_text, contact_text, status_text,
-         charger_phase_text),
+        (
+            transition_text,
+            action_text,
+            mode_text,
+            contact_text,
+            status_text,
+            charger_phase_text,
+        ),
     )
     return figure, animation
 
@@ -1651,9 +1684,7 @@ def build_development_visualization_pair_figure(
                 np.asarray([math.sin(frame.heading)]),
             )
             if frozen:
-                display_status = (
-                    "FROZEN AFTER ARM TRACE COMPLETION (DISPLAY ONLY)"
-                )
+                display_status = "FROZEN AFTER ARM TRACE COMPLETION (DISPLAY ONLY)"
             elif frame_index == len(data.frames) - 1:
                 display_status = "FINAL RETAINED ARM STATE"
             else:
@@ -2244,9 +2275,7 @@ def _build_d011_family_development_visualization(
         raise RuntimeError("D-002 policy RNG is unavailable after reset")
     controller = controller_factory(random_streams.policy)
     controller.reset()
-    predictor = (
-        d013.D013ActionConsequencePredictor() if with_shadow_learner else None
-    )
+    predictor = d013.D013ActionConsequencePredictor() if with_shadow_learner else None
     if environment.body is None or environment.station_center is None:
         raise RuntimeError("D-011 evaluator geometry is unavailable after setup")
     shadow_geometry: DevelopmentShadowGeometry | None = None
@@ -2339,9 +2368,7 @@ def _build_d011_family_development_visualization(
         world_max=config.world_max,
         station_center=environment.station_center,
         charging_radius=config.charging_radius,
-        energy_range=DevelopmentVisualizationRange(
-            0.0, 1.0
-        ),
+        energy_range=DevelopmentVisualizationRange(0.0, 1.0),
         thermal_range=DevelopmentVisualizationRange(
             D002_AMBIENT_THERMAL_STATE,
             D002_UPPER_THERMAL_FAILURE_BOUNDARY,
@@ -2460,9 +2487,7 @@ def build_d015_reference_development_visualization(
     return _build_d011_family_development_visualization(
         seed=seed,
         horizon=horizon,
-        source_label=(
-            "D-015 reference — D-014Controller, no shadow learner"
-        ),
+        source_label=("D-015 reference — D-014Controller, no shadow learner"),
         validate_seed=_validate_d015_visualization_seed,
         controller_factory=d014.D014Controller,
     )
@@ -2507,8 +2532,7 @@ def build_d017_development_visualization(
         seed=seed,
         horizon=horizon,
         source_label=(
-            "D-017 rear-docking pose audit — "
-            "EVALUATOR-ONLY SHADOW MORPHOLOGY"
+            "D-017 rear-docking pose audit — EVALUATOR-ONLY SHADOW MORPHOLOGY"
         ),
         validate_seed=_validate_d017_visualization_seed,
         controller_factory=d014.D014Controller,
@@ -2523,9 +2547,7 @@ def _validate_d018_visualization_seed(seed: int) -> None:
     _validate_d018_development_seeds((seed,))
 
 
-def _d018_mapping_value(
-    mapping: Mapping[str, object], name: str
-) -> object:
+def _d018_mapping_value(mapping: Mapping[str, object], name: str) -> object:
     if name not in mapping:
         raise ValueError(f"D-018 visualization field {name!r} is missing")
     return mapping[name]
@@ -2660,13 +2682,9 @@ def build_d018_development_visualization(
                     prior_exact_support_count=_d018_int(
                         row, "prior_exact_state_action_support_count"
                     ),
-                    predicted_delta_energy=_d018_float(
-                        row, "predicted_delta_energy"
-                    ),
+                    predicted_delta_energy=_d018_float(row, "predicted_delta_energy"),
                     actual_delta_energy=_d018_float(row, "actual_delta_energy"),
-                    predicted_delta_thermal=_d018_float(
-                        row, "predicted_delta_thermal"
-                    ),
+                    predicted_delta_thermal=_d018_float(row, "predicted_delta_thermal"),
                     actual_delta_thermal=_d018_float(row, "actual_delta_thermal"),
                     predicted_delta_charging_contact=_d018_float(
                         row, "predicted_delta_charging_contact"
@@ -2798,9 +2816,7 @@ def build_d020_development_visualization() -> DevelopmentVisualizationData:
         for observation, telemetry in completed_trace
     )
     return DevelopmentVisualizationData(
-        source_label=(
-            "D-020 V0.4 physical bookkeeping — mixed-action causal replay"
-        ),
+        source_label=("D-020 V0.4 physical bookkeeping — mixed-action causal replay"),
         seed=None,
         world_min=config.world_min,
         world_max=config.world_max,
@@ -2813,9 +2829,7 @@ def build_d020_development_visualization() -> DevelopmentVisualizationData:
             position_heading="EVALUATOR ONLY",
             station_location="EVALUATOR ONLY",
             energy="ORGANISM-VISIBLE + EVALUATOR",
-            thermal=(
-                "EVALUATOR °C; ORGANISM SEES NORMALIZED OWN TEMPERATURE"
-            ),
+            thermal=("EVALUATOR °C; ORGANISM SEES NORMALIZED OWN TEMPERATURE"),
             charging_contact="ORGANISM-VISIBLE + EVALUATOR",
             action_decision_mode="EVALUATOR ONLY — NO CONTROLLER",
         ),
@@ -2853,8 +2867,7 @@ def d021_replay_event_steps(
     seek_entries = [
         record.transition_index
         for record in trace
-        if record.mode_before is D021Mode.AWAY
-        and record.mode_after is D021Mode.SEEK
+        if record.mode_before is D021Mode.AWAY and record.mode_after is D021Mode.SEEK
     ]
     reacquisitions = [
         record.transition_index
@@ -2866,8 +2879,7 @@ def d021_replay_event_steps(
     charge_entries = [
         record.transition_index
         for record in trace
-        if record.mode_before is D021Mode.SEEK
-        and record.mode_after is D021Mode.CHARGE
+        if record.mode_before is D021Mode.SEEK and record.mode_after is D021Mode.CHARGE
     ]
     full_recharges = [
         record.transition_index
@@ -2925,10 +2937,7 @@ def select_d021_replay_indices(
     while run_start < len(trace):
         run_end = run_start
         mode = trace[run_start].mode_before
-        while (
-            run_end + 1 < len(trace)
-            and trace[run_end + 1].mode_before is mode
-        ):
+        while run_end + 1 < len(trace) and trace[run_end + 1].mode_before is mode:
             run_end += 1
         selected.add(trace[(run_start + run_end) // 2].transition_index)
         run_start = run_end + 1
@@ -3027,8 +3036,7 @@ def adapt_d021_trace(
             station_location="EVALUATOR ONLY",
             energy="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
             thermal=(
-                "ORGANISM-VISIBLE NORMALIZED OWN TEMPERATURE + "
-                "EVALUATOR ABSOLUTE °C"
+                "ORGANISM-VISIBLE NORMALIZED OWN TEMPERATURE + EVALUATOR ABSOLUTE °C"
             ),
             charging_contact="ORGANISM-VISIBLE + EVALUATOR",
             action_decision_mode=(
@@ -3312,8 +3320,7 @@ def _adapt_finite_body_trace(
             station_location="EVALUATOR ONLY",
             energy="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
             thermal=(
-                "ORGANISM-VISIBLE NORMALIZED OWN TEMPERATURE + "
-                "EVALUATOR ABSOLUTE °C"
+                "ORGANISM-VISIBLE NORMALIZED OWN TEMPERATURE + EVALUATOR ABSOLUTE °C"
             ),
             charging_contact="ORGANISM-VISIBLE BINARY DUAL CONTACT + EVALUATOR",
             action_decision_mode=(
@@ -3646,9 +3653,7 @@ def select_d043_replay_indices(
         raise ValueError("D-043 replay trace must not be empty")
     event_steps = d043_replay_event_steps(trace)
     trace_by_step = {record.transition_index: record for record in trace}
-    selected = {
-        step for step in event_steps.values() if step in trace_by_step
-    }
+    selected = {step for step in event_steps.values() if step in trace_by_step}
     for step in event_steps.values():
         if step not in trace_by_step:
             continue
@@ -3782,8 +3787,7 @@ def adapt_d043_trace(
             station_location="EVALUATOR ONLY",
             energy="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
             thermal=(
-                "ORGANISM-VISIBLE NORMALIZED OWN TEMPERATURE + "
-                "EVALUATOR ABSOLUTE °C"
+                "ORGANISM-VISIBLE NORMALIZED OWN TEMPERATURE + EVALUATOR ABSOLUTE °C"
             ),
             charging_contact="ORGANISM-VISIBLE BINARY FRONT DUAL CONTACT + EVALUATOR",
             action_decision_mode=(
@@ -3794,7 +3798,8 @@ def adapt_d043_trace(
         sensor_angle=config.sensor_angle,
         thermal_threshold=(
             config.preferred_operating_ceiling_c - config.visible_temperature_min_c
-        ) / (config.visible_temperature_max_c - config.visible_temperature_min_c),
+        )
+        / (config.visible_temperature_max_c - config.visible_temperature_min_c),
         thermal_threshold_label="PREFERRED 45°C — EVALUATOR ONLY",
         energy_label="BATTERY (NORMALIZED)",
         mode_display_label="controller mode",
@@ -4345,10 +4350,7 @@ def d050_main(argv: Sequence[str] | None = None) -> int:
     modes.add_argument(
         "--disagreements",
         action="store_true",
-        help=(
-            "Export the artifact-derived baseline-censored / smooth-docked "
-            "subset."
-        ),
+        help=("Export the artifact-derived baseline-censored / smooth-docked subset."),
     )
     parser.add_argument(
         "--output",
@@ -4389,12 +4391,12 @@ def d050_main(argv: Sequence[str] | None = None) -> int:
     return 0
 
 
-_D043_HTML_TEMPLATE = r"""<!doctype html>
+_DEVELOPMENT_HTML_TEMPLATE = r"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Aweform D-043 offline replay</title>
+<title>__AWEFORM_TITLE__</title>
 <style>
 :root { color-scheme: dark; font-family: system-ui, sans-serif; }
 body { margin: 0; background: #10151b; color: #e8eef5; }
@@ -4418,11 +4420,13 @@ canvas {
 .readout span { white-space: nowrap; }
 .event { color: #ffd166; font-weight: 650; }
 .note { color: #aebdca; font-size: .82rem; }
+#energy-strip { height: 150px; min-height: 0; margin-top: 8px; }
+canvas[hidden] { display: none; }
 </style>
 </head>
 <body>
 <main>
-<h1>Aweform D-043 — evaluator-only offline replay</h1>
+<h1>__AWEFORM_TITLE__</h1>
 <div class="controls">
   <label>Seed <select id="seed"></select></label>
   <button id="play" type="button">Play</button>
@@ -4431,18 +4435,23 @@ canvas {
     <option value="1" selected>1×</option><option value="2">2×</option>
     <option value="4">4×</option>
   </select></label>
+  <button id="prev-event" type="button" hidden>Previous event</button>
+  <button id="next-event" type="button" hidden>Next event</button>
 </div>
 <div class="controls"><input id="timeline" type="range" min="0" max="0"
   value="0" step="1" aria-label="Replay timeline"></div>
+<datalist id="event-ticks"></datalist>
 <div class="readout">
   <span id="progress"></span><span id="mode"></span><span id="action"></span>
   <span id="energy"></span><span id="thermal"></span><span id="contact"></span>
   <span id="beacon"></span><span id="status"></span>
+  <span id="source" hidden></span><span id="cycle" hidden></span>
   <span id="event" class="event"></span>
 </div>
-<canvas id="world" aria-label="D-043 replay world view"></canvas>
+<canvas id="world" aria-label="Development replay world view"></canvas>
+<canvas id="energy-strip" hidden aria-label="Energy history"></canvas>
 <p class="note">This file is a deterministic post-hoc display of accepted
-  D-043/D-042 evaluator data. Coordinates, heading, geometry, event labels,
+  development evaluator data. Coordinates, heading, geometry, event labels,
   and display sampling are evaluator-only; no network or Aweform runtime is
   used.</p>
 </main>
@@ -4457,12 +4466,18 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
   const timeline = document.getElementById("timeline");
   const canvas = document.getElementById("world");
   const ctx = canvas.getContext("2d");
+  const energyCanvas = document.getElementById("energy-strip");
+  const energyCtx = energyCanvas.getContext("2d");
+  const prevButton = document.getElementById("prev-event");
+  const nextButton = document.getElementById("next-event");
+  const eventTicks = document.getElementById("event-ticks");
   const fieldNames = ["progress", "mode", "action", "energy", "thermal",
-    "contact", "beacon", "status", "event"];
+    "contact", "beacon", "status", "source", "cycle", "event"];
   const fields = Object.fromEntries(fieldNames.map(function (id) {
     return [id, document.getElementById(id)];
   }));
-  const state = { replay: replays[0], frame: 0, playing: false, lastTime: 0, carry: 0 };
+  const state = { replay: replays[0], frame: 0, playing: false, lastTime: 0,
+    carry: 0, events: [] };
 
   function currentFrame() { return state.replay.frames[state.frame]; }
   function setReplay(index) {
@@ -4471,15 +4486,83 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
     state.carry = 0;
     timeline.max = String(Math.max(0, state.replay.frames.length - 1));
     timeline.value = "0";
-    draw();
+    state.events = [];
+    eventTicks.replaceChildren();
+    if (state.replay.event_navigation) {
+      state.replay.frames.forEach(function (item, frameIndex) {
+        if (!item.event) return;
+        state.events.push(frameIndex);
+        const tick = document.createElement("option");
+        tick.value = String(frameIndex);
+        eventTicks.appendChild(tick);
+      });
+      timeline.setAttribute("list", "event-ticks");
+    } else {
+      timeline.removeAttribute("list");
+    }
+    prevButton.hidden = nextButton.hidden = !state.replay.event_navigation;
+    energyCanvas.hidden = !state.replay.energy_strip;
+    resizeCanvas();
+  }
+  function sizeCanvas(target, context, scale) {
+    const rect = target.getBoundingClientRect();
+    target.width = Math.max(1, Math.round(rect.width * scale));
+    target.height = Math.max(1, Math.round(rect.height * scale));
+    context.setTransform(scale, 0, 0, scale, 0, 0);
   }
   function resizeCanvas() {
     const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.max(1, Math.round(rect.width * scale));
-    canvas.height = Math.max(1, Math.round(rect.height * scale));
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    sizeCanvas(canvas, ctx, scale);
+    if (!energyCanvas.hidden) sizeCanvas(energyCanvas, energyCtx, scale);
     draw();
+  }
+  function jumpToEvent(direction) {
+    const candidates = state.events.filter(function (frameIndex) {
+      return direction < 0 ? frameIndex < state.frame : frameIndex > state.frame;
+    });
+    if (!candidates.length) return;
+    state.frame = direction < 0 ? candidates[candidates.length - 1] : candidates[0];
+    state.carry = 0; timeline.value = String(state.frame); draw();
+  }
+  function drawEnergyStrip(replay, frame) {
+    const strip = replay.energy_strip;
+    const rect = energyCanvas.getBoundingClientRect();
+    const width = rect.width, height = rect.height;
+    const left = 96, right = 10, top = 8, bottom = 16;
+    const plotWidth = Math.max(1, width - left - right);
+    const plotHeight = Math.max(1, height - top - bottom);
+    const first = replay.frames[0].transition;
+    const final = replay.frames[replay.frames.length - 1].transition;
+    const span = Math.max(1, final - first);
+    const lower = strip.range[0], upper = strip.range[1];
+    function xOf(transition) { return left + plotWidth * (transition - first) / span; }
+    function yOf(value) { return top + plotHeight * (upper - value) / (upper - lower); }
+    energyCtx.clearRect(0, 0, width, height);
+    energyCtx.font = "11px system-ui, sans-serif";
+    energyCtx.lineWidth = 1;
+    strip.thresholds.forEach(function (threshold) {
+      const y = yOf(threshold[0]);
+      energyCtx.strokeStyle = "#7d8b99"; energyCtx.setLineDash([5, 4]);
+      energyCtx.beginPath(); energyCtx.moveTo(left, y);
+      energyCtx.lineTo(left + plotWidth, y); energyCtx.stroke();
+      energyCtx.setLineDash([]);
+      energyCtx.fillStyle = "#17202a"; energyCtx.fillText(threshold[1], 4, y + 4);
+    });
+    energyCtx.strokeStyle = "#2584c7"; energyCtx.lineWidth = 1.5; energyCtx.beginPath();
+    replay.frames.forEach(function (item, index) {
+      const x = xOf(item.transition), y = yOf(item.energy);
+      if (index === 0) energyCtx.moveTo(x, y); else energyCtx.lineTo(x, y);
+    });
+    energyCtx.stroke();
+    energyCtx.fillStyle = "#d1495b";
+    replay.frames.forEach(function (item) {
+      if (!item.event) return;
+      energyCtx.fillRect(xOf(item.transition) - 1, top + plotHeight + 3, 2, 6);
+    });
+    const cursor = xOf(frame.transition);
+    energyCtx.strokeStyle = "#e0a100"; energyCtx.lineWidth = 2; energyCtx.beginPath();
+    energyCtx.moveTo(cursor, top); energyCtx.lineTo(cursor, top + plotHeight);
+    energyCtx.stroke();
   }
   function project(point, replay, width, height) {
     const margin = 20;
@@ -4520,7 +4603,8 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
       ctx.strokeStyle = "#aab7c4"; ctx.lineWidth = 1.5; ctx.beginPath();
       path.forEach(function (item, index) {
         const p = project([item.x, item.y], replay, width, height);
-        if (index === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]);
+        if (index === 0 || item.trajectory_break_before) ctx.moveTo(p[0], p[1]);
+        else ctx.lineTo(p[0], p[1]);
       });
       ctx.stroke();
     }
@@ -4575,7 +4659,12 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
       "L/F/R: unavailable";
     fields.status.textContent = "status: " + (frame.terminated ? "TERMINATED" :
       (frame.truncated ? "HORIZON TRUNCATED" : "RUNNING"));
+    fields.source.hidden = !("command_source" in frame);
+    fields.source.textContent = "source: " + frame.command_source;
+    fields.cycle.hidden = !("cycle_index" in frame);
+    fields.cycle.textContent = "cycle: " + frame.cycle_index;
     fields.event.textContent = frame.event || "";
+    if (replay.energy_strip) drawEnergyStrip(replay, frame);
   }
   function tick(now) {
     if (!state.playing) return;
@@ -4607,11 +4696,13 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
     if (state.playing) window.requestAnimationFrame(tick);
   });
   speedSelect.addEventListener("change", function () { state.carry = 0; });
+  prevButton.addEventListener("click", function () { jumpToEvent(-1); });
+  nextButton.addEventListener("click", function () { jumpToEvent(1); });
   timeline.addEventListener("input", function () {
     state.frame = Number(timeline.value); state.carry = 0; draw();
   });
   window.addEventListener("resize", resizeCanvas);
-  resizeCanvas();
+  setReplay(0);
 }());
 </script>
 </body>
@@ -4619,8 +4710,10 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
 """
 
 
-def _d043_html_frame_payload(frame: DevelopmentVisualizationFrame) -> dict[str, object]:
-    """Serialize one neutral D-043 frame for the offline presentation surface."""
+def _development_html_frame_payload(
+    frame: DevelopmentVisualizationFrame,
+) -> dict[str, object]:
+    """Serialize one neutral frame for the offline presentation surface."""
     alignment = frame.front_contact_alignment or frame.rear_contact_alignment
     beacon = None
     if frame.beacon_left is not None:
@@ -4644,18 +4737,25 @@ def _d043_html_frame_payload(frame: DevelopmentVisualizationFrame) -> dict[str, 
         "seconds": frame.simulated_seconds,
         "contact_before": frame.charging_contact_before,
         "event": frame.event_label,
+        **(
+            {"command_source": frame.command_source}
+            if frame.command_source is not None
+            else {}
+        ),
+        **({"cycle_index": frame.cycle_index} if frame.cycle_index is not None else {}),
+        **({"trajectory_break_before": True} if frame.trajectory_break_before else {}),
     }
 
 
-def _d043_html_replay_payload(
+def _development_html_replay_payload(
     data: DevelopmentVisualizationData,
 ) -> dict[str, object]:
-    """Serialize canonical neutral D-043 data without rerunning the organism."""
+    """Serialize canonical neutral data without rerunning the organism."""
     geometry = data.causal_geometry
     if geometry is None:
-        raise ValueError("D-043 HTML export requires causal front-contact geometry")
+        raise ValueError("HTML export requires causal contact geometry")
     if data.seed is None:
-        raise ValueError("D-043 HTML export requires a seed")
+        raise ValueError("HTML export requires a seed")
     return {
         "seed": data.seed,
         "title": data.figure_title or data.source_label,
@@ -4670,7 +4770,17 @@ def _d043_html_replay_payload(
             "dock_minus": list(geometry.dock_contact_minus),
             "tolerance": geometry.contact_tolerance,
         },
-        "frames": [_d043_html_frame_payload(frame) for frame in data.frames],
+        "frames": [_development_html_frame_payload(frame) for frame in data.frames],
+        **(
+            {
+                "energy_strip": {
+                    "range": [data.energy_range.lower, data.energy_range.upper],
+                    "thresholds": [list(item) for item in data.energy_thresholds],
+                }
+            }
+            if data.energy_thresholds is not None
+            else {}
+        ),
     }
 
 
@@ -4678,22 +4788,11 @@ def build_d043_html_replay(
     data: Sequence[DevelopmentVisualizationData],
 ) -> str:
     """Return a deterministic, self-contained Android-viewable D-043 replay."""
-    if not data:
-        raise ValueError("D-043 HTML export requires at least one replay")
-    seeds = [item.seed for item in data]
-    if any(seed is None for seed in seeds) or len(set(seeds)) != len(seeds):
-        raise ValueError("D-043 HTML replays require unique integer seeds")
-    payload = {
-        "schema": "aweform.d043.offline-replay.v1",
-        "replays": [_d043_html_replay_payload(item) for item in data],
-    }
-    serialized = json.dumps(
-        payload,
-        allow_nan=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).replace("</", "<\\/")
-    return _D043_HTML_TEMPLATE.replace("__AWEFORM_D043_PAYLOAD__", serialized)
+    return build_development_html_replay(
+        data,
+        schema="aweform.d043.offline-replay.v1",
+        title="Aweform D-043 — evaluator-only offline replay",
+    )
 
 
 def write_d043_html_replay(
@@ -4724,19 +4823,28 @@ def d043_html_main(argv: Sequence[str] | None = None) -> int:
         )
     )
     parser.add_argument(
-        "--output", type=Path, default=Path("d043-replay.html"),
+        "--output",
+        type=Path,
+        default=Path("d043-replay.html"),
         help="Output HTML path (default: d043-replay.html).",
     )
     parser.add_argument(
-        "--seed", type=int, action="append", dest="seeds",
+        "--seed",
+        type=int,
+        action="append",
+        dest="seeds",
         choices=d043.D043_DEFAULT_DEVELOPMENT_SEEDS,
         help="Accepted D-043 seed; repeat to include multiple replays. "
         "Defaults to 19045 and 19048.",
     )
     args = parser.parse_args(argv)
-    seeds = tuple(args.seeds) if args.seeds else (
-        d043.D043_CANONICAL_VISUALIZATION_SEED,
-        d043.D043_FAILURE_VISUALIZATION_SEED,
+    seeds = (
+        tuple(args.seeds)
+        if args.seeds
+        else (
+            d043.D043_CANONICAL_VISUALIZATION_SEED,
+            d043.D043_FAILURE_VISUALIZATION_SEED,
+        )
     )
     write_d043_html_replay(args.output, seeds=seeds, horizon=d043.D043_HORIZON)
     return 0
@@ -4798,3 +4906,227 @@ def _require_bool_attribute(value: object, name: str) -> bool:
     if not isinstance(field, bool):
         raise ValueError(f"trace field {name!r} must be a bool")
     return field
+
+
+D053_REPLAY_STRIDE: Final[int] = 100
+D053_REPLAY_WINDOW: Final[int] = 50
+D053_REPLAY_RETURN_CAP: Final[int] = 2000
+_D053_WINDOW_EVENTS: Final[frozenset[str]] = frozenset(
+    {
+        "RECOVERY_YIELD",
+        "CHARGING_CONTACT",
+        "CHARGING_CONTACT_LOST",
+        "CHARGING_CONTACT_REACQUIRED",
+        "TERMINAL_SPIN_EXHAUSTED",
+        "TERMINATED",
+        "TRUNCATED",
+    }
+)
+_D053_BODY_LENGTH_M: Final[float] = 0.180
+_D053_BODY_WIDTH_M: Final[float] = 0.215
+
+
+def select_d053_replay_indices(
+    trace: Sequence[Mapping[str, object]],
+) -> tuple[int, ...]:
+    """Frozen display-only stride and event-window selector over trace rows.
+
+    A RETURN window runs from 50 before ``RETURN_ACTIVATED`` through the earliest
+    of 50 after the episode's ``CHARGING_CONTACT``, 50 after its first
+    ``RETURN_HOLD``/``TERMINAL_SPIN_EXHAUSTED``/``INVALID_BEACON``,
+    ``RETURN_ACTIVATED`` + 2000, or the episode end. Remaining transitions use
+    the 100-transition stride plus the per-event windows.
+    """
+    if not trace:
+        raise ValueError("D-053 trace must not be empty")
+    last = len(trace) - 1
+    keep = set(range(0, len(trace), D053_REPLAY_STRIDE)) | {0, last}
+
+    def retain(start: int, end: int) -> None:
+        keep.update(
+            range(
+                max(0, start - D053_REPLAY_WINDOW),
+                min(last, end + D053_REPLAY_WINDOW) + 1,
+            )
+        )
+
+    return_start: int | None = None
+    previous_invalid = False
+    for index, row in enumerate(trace):
+        events = cast(list[str], row["events"])
+        if "RETURN_ACTIVATED" in events:
+            return_start = index
+        if return_start is not None:
+            if (
+                "CHARGING_CONTACT" in events
+                or row["command_source"] == "RETURN_HOLD"
+                or {"TERMINAL_SPIN_EXHAUSTED", "INVALID_BEACON"} & set(events)
+            ):
+                retain(return_start, index)
+                return_start = None
+            elif index == return_start + D053_REPLAY_RETURN_CAP:
+                retain(return_start, index - D053_REPLAY_WINDOW)
+                return_start = None
+            elif {"TERMINATED", "TRUNCATED"} & set(events):
+                retain(return_start, index)
+                return_start = None
+        invalid = "INVALID_BEACON" in events
+        incidental = (
+            row["active_mode"] == "NORMAL"
+            and row["command_source"] == "PASS_THROUGH"
+            and bool(
+                {"PHYSICAL_CONTACT_ACQUIRED", "PHYSICAL_CONTACT_LOST"} & set(events)
+            )
+        )
+        if (
+            _D053_WINDOW_EVENTS.intersection(events)
+            or incidental
+            or (invalid and not previous_invalid)
+        ):
+            retain(index, index)
+        previous_invalid = invalid
+    if return_start is not None:
+        retain(return_start, last)
+    return tuple(sorted(keep))
+
+
+def adapt_d053_trace(
+    trace: Sequence[Mapping[str, object]], *, seed: int
+) -> DevelopmentVisualizationData:
+    """Adapt a full evaluator-side D-053 trace into display-sampled neutral data."""
+    from .d045 import (
+        D045_CONTACT_OFFSET_METRES,
+        D045_CONTACT_TOLERANCE_METRES,
+        D045_WORLD_MAX,
+        D045_WORLD_MIN,
+    )
+    from .d049 import D049_STATION_CENTER
+
+    frames = []
+    for index in select_d053_replay_indices(trace):
+        row = trace[index]
+        reset = index == 0
+        events = cast(list[str], row["events"])
+        proposal = "INITIAL" if reset else f"proposal {row['symbolic_proposal']}"
+        d050_mode = row["d050_mode"]
+        frames.append(
+            DevelopmentVisualizationFrame(
+                transition_index=cast(int, row["transition"]),
+                x=cast(float, row["x"]),
+                y=cast(float, row["y"]),
+                heading=cast(float, row["heading"]),
+                action=proposal + (f" / D-050 {d050_mode}" if d050_mode else ""),
+                decision_mode=str(row["active_mode"]),
+                energy=cast(float, row["energy" if reset else "energy_after"]),
+                thermal=cast(float, row["thermal"]),
+                charging_contact=cast(
+                    bool, row["charging_contact" if reset else "charging_contact_after"]
+                ),
+                terminated=cast(bool, row["terminated"]),
+                truncated=cast(bool, row["truncated"]),
+                simulated_seconds=cast(float, row["simulated_seconds"]),
+                charging_contact_before=cast(
+                    "bool | None", row["charging_contact_before"]
+                ),
+                event_label=", ".join(events) if events else None,
+                command_source=cast("str | None", row["command_source"]),
+                cycle_index=cast(int, row["cycle_index"]),
+            )
+        )
+    station = D049_STATION_CENTER
+    return DevelopmentVisualizationData(
+        source_label="D-053 evaluator-only continuous lifetime",
+        seed=seed,
+        world_min=D045_WORLD_MIN,
+        world_max=D045_WORLD_MAX,
+        station_center=station,
+        charging_radius=None,
+        energy_range=DevelopmentVisualizationRange(0.0, 1.0),
+        thermal_range=DevelopmentVisualizationRange(0.0, 1.0),
+        frames=tuple(frames),
+        visibility=DevelopmentVisualizationVisibility(
+            position_heading="EVALUATOR ONLY",
+            station_location="EVALUATOR ONLY",
+            energy="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
+            thermal="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
+            charging_contact="ORGANISM-VISIBLE BINARY + EVALUATOR",
+            action_decision_mode=(
+                "EVALUATOR TRACE: D-052 MODE/SOURCE, D-050 SUB-MODE, FIXTURE PROPOSAL"
+            ),
+        ),
+        energy_thresholds=((0.20, "RETURN 20%"), (0.80, "RECOVERY 80%")),
+        energy_label="ENERGY",
+        causal_geometry=DevelopmentCausalGeometry(
+            body_length=_D053_BODY_LENGTH_M,
+            body_width=_D053_BODY_WIDTH_M,
+            rear_contact_plus=(0.0, D045_CONTACT_OFFSET_METRES),
+            rear_contact_minus=(0.0, -D045_CONTACT_OFFSET_METRES),
+            front_midpoint=(0.0, 0.0),
+            dock_orientation=0.0,
+            dock_contact_plus=(station[0], station[1] + D045_CONTACT_OFFSET_METRES),
+            dock_contact_minus=(station[0], station[1] - D045_CONTACT_OFFSET_METRES),
+            contact_tolerance=D045_CONTACT_TOLERANCE_METRES,
+            contact_label="under-body contacts",
+        ),
+        figure_title=f"D-053 seed {seed}",
+    )
+
+
+def build_development_html_replay(
+    data: Sequence[DevelopmentVisualizationData],
+    *,
+    schema: str,
+    title: str,
+    event_navigation: bool = False,
+) -> str:
+    """Return one deterministic, self-contained multi-seed offline HTML replay.
+
+    Optional view features are driven by optional payload keys: an energy strip
+    when ``energy_thresholds`` is set and event navigation when requested.
+    """
+    if not data:
+        raise ValueError("HTML export requires at least one replay")
+    seeds = [item.seed for item in data]
+    if any(seed is None for seed in seeds) or len(set(seeds)) != len(seeds):
+        raise ValueError("HTML replays require unique integer seeds")
+    replays = [_development_html_replay_payload(item) for item in data]
+    if event_navigation:
+        for replay in replays:
+            replay["event_navigation"] = True
+    serialized = json.dumps(
+        {"schema": schema, "replays": replays},
+        allow_nan=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).replace("</", "<\\/")
+    return _DEVELOPMENT_HTML_TEMPLATE.replace(
+        "__AWEFORM_TITLE__", html.escape(title)
+    ).replace("__AWEFORM_D043_PAYLOAD__", serialized)
+
+
+def d053_html_main(argv: Sequence[str] | None = None) -> int:
+    """Export all five official D-053 seeds as one offline HTML replay."""
+    from .d053 import D053_DEVELOPMENT_SEEDS, run_d053_lifetime
+
+    parser = argparse.ArgumentParser(
+        description="Export the D-053 five-seed HTML replay"
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("development/D-053-v05-continuous-lifetime-replay.html"),
+    )
+    args = parser.parse_args(argv)
+    data = []
+    for seed in D053_DEVELOPMENT_SEEDS:
+        lifetime = run_d053_lifetime(seed)
+        data.append(adapt_d053_trace(lifetime.trace, seed=seed))
+        del lifetime
+    html_text = build_development_html_replay(
+        data,
+        schema="aweform.d053.offline-replay.v1",
+        title="Aweform D-053 — evaluator-only continuous-lifetime replay",
+        event_navigation=True,
+    )
+    args.output.write_text(html_text, encoding="utf-8", newline="\n")
+    return 0
