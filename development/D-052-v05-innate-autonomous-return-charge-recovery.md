@@ -5,7 +5,7 @@
 - **authorized_base_sha:** `0a273f6e10c9dff155d4ade15e04684d674b60fd`
 - **authorization:** issue [#182](https://github.com/PiFlow/aweform/issues/182), including the adopted amendment and `[FIRST-MATE-REVIEW]` Opus 5.5 PASS
 - **disposition:** CONTINUING
-- **result status:** result-free executable/protocol freeze; official characterization artifact not yet generated
+- **result status:** official frozen Development characterization completed from the pushed executable/protocol freeze
 
 ## Question and boundary
 
@@ -113,10 +113,36 @@ complete scope, STOP boundaries, and focused validation contract.
 
 ## Executable/protocol provenance
 
-The result-free source, focused tests, and protocol record are committed and
-pushed before official characterization. The characterization must run from
-that exact clean pushed freeze commit; the completed result layer records the
-freeze SHA, final record-only SHA, artifact size/hash, independent
-byte-identical regeneration, and all outcomes. The completed result layer is
-limited to this record's results, its compact same-stem JSON artifact, and one
-D-052 row in `development/INDEX.md`.
+The result-free source, focused tests, and protocol record were committed and
+pushed before official characterization. The run and its independent
+byte-identical regeneration used that exact clean pushed freeze commit:
+`9a521f2922febe98a588cb8ee6d29b66352d01a6`. The compact artifact is
+`D-052-v05-innate-autonomous-return-charge-recovery.json` (137,739 bytes;
+SHA-256 `e8efdc14a95c1990b4c14ff1d2d87fe7b616e84f970724efe616d2f5e67a79db`).
+The result-layer commit is the single result-only commit containing this
+completed record, artifact, and `development/INDEX.md` row.
+
+## Frozen characterization results
+
+All 24 prescribed cases ran to the complete-loop stop condition: 24
+`COMPLETE_LOOP`, with no failed or partial cases. Every case preempted the
+non-zero fixture command on its first decision, docked and charged using the
+unchanged D-045 substrate, yielded at recovery, and passed the fixture command
+through after yield. The characterization covered only the frozen 0.15–0.45 m
+initial-radius support and specified headings, not the whole arena.
+
+Across 452,213 total transitions, Level 1 preempted 452,189 (fraction
+0.999946927665); 549 transitions were spent in RETURN and 451,640 in CHARGE.
+Return activation energy was `0.20000000298` in every case. First charging
+contact energy ranged from `0.199282824993` to `0.199871078134`; recovery/yield
+energy ranged from `0.800001621246` to `0.800030767918`. No case lost or
+reacquired contact, depleted energy, underwent thermal termination, or
+exhausted the terminal-spin bound. The maximum terminal-spin count was 19.
+The result confirms the quantized thresholds and complete loop on this frozen
+support only; it does not establish optimal thresholds, learning, general
+robotics robustness, hardware transfer, or a broader viability claim.
+
+The artifact's discrete outcome signature was regenerated independently from
+the same freeze and its bytes matched exactly. Its SHA-256 and size are recorded
+above. Artifact-only floats use the frozen exact-binary Decimal/12-place,
+half-even rule; no causal simulation or controller values were rounded.
