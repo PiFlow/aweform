@@ -12,7 +12,7 @@ This file is the canonical **committed D-record ledger**. Add one row when a mea
 
 Do not use roadmap prose or README text as a replacement for this ledger. Work that is authorized in GitHub but does not yet have a committed D-record belongs in the current authorization issue/PR, not as a premature row here.
 
-Committed Development records currently extend through **D-052**; D-051 was stopped before merge and has no committed D-record. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage; and D-049, D-050, and D-052 are the committed V0.5 Level-1 viability lineage.
+Committed Development records currently extend through **D-052**; D-051 was stopped before merge and has no committed D-record. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage; and D-049, D-050, and D-052 are the committed V0.5 Level-1 viability lineage. D-052 completed all 24 frozen-support return-charge-recovery cases, reaching the autonomous return-to-charge milestone on that support only (initial radii 0.15–0.45 m); two cases used 19 of 20 terminal spins, with no arena-wide, hardware, noisy-sensor, or learned-robustness claim.
 
 ## Disposition vocabulary
 

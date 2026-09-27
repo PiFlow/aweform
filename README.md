@@ -17,7 +17,7 @@ Aweform currently combines accepted V0.3/V0.4 boundaries with an accepted V0.5 b
 
 These layers supplement rather than erase earlier work. Historical experiments, ADRs, records, source semantics, and artifacts remain part of the record.
 
-The committed development lane now extends through **D-050**. The canonical ledger is [`development/INDEX.md`](development/INDEX.md); detailed records live under [`development/`](development/).
+The committed development lane now extends through **D-052**; D-051 was stopped before merge and has no committed D-record. The canonical ledger is [`development/INDEX.md`](development/INDEX.md); detailed records live under [`development/`](development/).
 
 Important recent milestones include:
 
@@ -32,8 +32,9 @@ Important recent milestones include:
 - D-048 tested eight continuous passes of the unchanged D-046 learner under the same experience distribution. Training diagnostics improved broadly, while held-out beacon discrimination approximately plateaued, energy became mixed with later deterioration, wheel consequences remained strong, and contact remained sparse/mixed. D-048 itself authorized no successor.
 - D-049 implemented the first bounded programmed Level-1 direct-return/contact-seeking docking core on the V0.5 substrate. Its frozen deterministic matrix established charging in 104/104 cases using the revalidated organism-visible beacon reconstruction and contact feedback, with no learned-state contribution.
 - D-050 compared the unchanged D-049 stop-turn-straight homing law with a frozen smooth curved-pursuit alternative on 96 fresh paired fixed states. The baseline docked-and-charged in 80/96 cases within the frozen horizon; smooth pursuit did so in 96/96. This is descriptive Development evidence on the ideal deterministic V0.5 support, not a claim of physical-robot superiority or robustness.
+- D-052 completed the V0.5 innate autonomous return-charge-recovery loop in all 24 frozen-support cases. First Mate and Sol assessed the autonomous return-to-charge milestone as reached on that support only, which covers initial radii 0.15–0.45 m. Two cases used 19 of the 20 permitted terminal spins; the result makes no arena-wide, hardware, noisy-sensor, or learned-robustness claim.
 
-ADR 0018 establishes the **Innate Autonomous Viability** architecture milestone and separates the near-term viability floor from later open-ended learning. D-049 and D-050 now exercise part of that Level-1 floor through separately authorized Development work; neither result automatically authorizes a successor stage.
+ADR 0018 establishes the **Innate Autonomous Viability** architecture and separates the viability floor from later open-ended learning. D-052 reaches the autonomous return-to-charge milestone on its frozen support only. D-049/D-050/D-052 return behaviour is programmed/engineered Level-1 competence, not learned competence; no successor D-stage is authorized.
 
 ## Evidence lane
 
@@ -52,7 +53,7 @@ Aweform uses biology and evolution as inspiration for **problems and principles*
 
 The long-term direction includes homeostasis, coordinated subsystems, sensorimotor survival, learning, play and curiosity, social interaction, machine-native communication, richer cognition, and eventually physical embodiment.
 
-The V0.5 lineage contains a bounded shadow consequence learner through D-048 whose predictions still have **no causal behavioral role**, plus separately authorized programmed Level-1 return/docking development through D-050. The D-049/D-050 viability baseline must not be misreported as learned competence. The project does **not** thereby contain PPO, deep RL, JEPA-scale cognition, an LLM controller, camera vision, a mature learned world model, social behaviour, play, awe, networking, or physical robot control. Those remain separately governed future questions.
+The V0.5 lineage contains a bounded shadow consequence learner through D-048 whose predictions still have **no causal behavioral role**, plus programmed Level-1 return-charge-recovery development through D-052. The D-049/D-050/D-052 viability baseline must not be misreported as learned competence, and no successor D-stage is authorized. The project does **not** thereby contain PPO, deep RL, JEPA-scale cognition, an LLM controller, camera vision, a mature learned world model, social behaviour, play, awe, networking, or physical robot control. Those remain separately governed future questions.
 
 Read:
 

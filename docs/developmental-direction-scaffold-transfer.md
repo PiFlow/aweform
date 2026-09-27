@@ -150,7 +150,7 @@ A milestone becomes especially strong when learned competence removes the need f
 
 This does not imply that lower engineered-scaffold count is always better. A simple fixed controller that genuinely solves the intended problem remains valid evidence. The purpose of the ledger is attribution, not aesthetic minimalism.
 
-## 10. What D-029→D-050 changed about the near-term direction
+## 10. What D-029→D-052 changed about the near-term direction
 
 The earlier version of this document proposed, immediately after D-028, a provisional sequence from causal-history sufficiency toward a smallest retained state, first causal learned influence, scaffold displacement, non-stationarity, and eventually short-horizon prediction. Repository evidence has now executed, stress-tested, and then deliberately reset that line.
 
@@ -167,6 +167,7 @@ The durable lessons are more specific:
 9. **D-046→D-048 established prediction competence without causal control.** D-046 introduced the fresh shadow-only V0.5 consequence learner after the authorized calibration curriculum; D-047 audited held-out discrimination; D-048 tested extended exposure. Predictions remained causally inert throughout that lineage.
 10. **D-049 established the first V0.5 constitutive Level-1 return/docking baseline.** It revalidated the organism-visible beacon inverse, used it as an explicitly programmed engineered prior, and completed return/contact/charging on its frozen ideal deterministic matrix without claiming learning.
 11. **D-050 compared two programmed homing laws before return-margin design.** With the same reconstruction and terminal docking semantics, the unchanged stop-turn-straight baseline reached charging in 80/96 fresh paired cases within the frozen horizon while smooth curved pursuit reached 96/96. This remains a descriptive Level-1 controller comparison, not learned competence or physical-hardware robustness.
+12. **D-052 completed the innate return-charge-recovery loop.** All 24 frozen-support cases completed; the autonomous return-to-charge milestone is reached on that support only, with initial radii 0.15–0.45 m. Two cases used 19 of the 20 permitted terminal spins. This does not establish arena-wide, hardware, noisy-sensor, or learned robustness, and no successor D-stage is authorized.
 
 The resulting near-term principle is:
 

@@ -5,7 +5,7 @@
 **Repository context:** recorded while D-041 was authorized from `main` at `8b51d6e143a906a83f1fd8d760aace5ed46abb9e`  
 **Purpose:** preserve a long-range architectural question about whether simple energy-reacquisition and docking competence should remain useful as a low-level sensorimotor layer even if future Aweform embodiments acquire much richer perception.
 
-**Current-state addendum (2026-09-26):** the repository-context line above is retained as historical provenance. D-041 subsequently completed with a **NULL/INSUFFICIENT** evaluator-only result and its candidate receptors never became organism-visible. ADR 0017/D-045 define the eight-channel V0.5 differential-drive substrate; ADR 0018 is accepted; D-046→D-048 remained shadow-learning work; and D-049→D-050 established/compared programmed Level-1 return and docking using the existing channels only. No new sensor or camera permission was introduced.
+**Current-state addendum (2026-09-26):** the repository-context line above is retained as historical provenance. D-041 subsequently completed with a **NULL/INSUFFICIENT** evaluator-only result and its candidate receptors never became organism-visible. ADR 0017/D-045 define the eight-channel V0.5 differential-drive substrate; ADR 0018 is accepted; D-046→D-048 remained shadow-learning work; and D-049→D-052 established/compared programmed Level-1 return, docking, charging, and recovery using the existing channels only. D-052 reached the autonomous return-to-charge milestone on its frozen 0.15–0.45 m initial-radius support only; two cases used 19 of 20 terminal spins. No arena-wide, hardware, noisy-sensor, or learned-robustness claim follows, no new sensor or camera permission was introduced, and no successor D-stage is authorized.
 
 ## Motivation
 
@@ -117,4 +117,4 @@ The key developmental principle is therefore:
 
 > **Build higher cognition on top of earned sensorimotor competence where appropriate, rather than assuming richer cognition should replace every simpler layer beneath it.**
 
-This note authorizes no current implementation and does not alter accepted ADR 0018, the committed D-049/D-050 results, or any current/future development authorization.
+This note authorizes no current implementation and does not alter accepted ADR 0018, the committed D-049/D-050/D-052 results, or any current/future development authorization.

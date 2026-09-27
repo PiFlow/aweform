@@ -2,18 +2,18 @@
 
 **Status:** non-authorizing future research note  
 **Recorded:** 2026-09-25  
-**Repository context:** originally recorded with the ADR 0018 documentation candidate; ADR 0018 is now accepted, D-049 has revalidated/promoted the beacon inverse into a programmed Level-1 prior, and D-050 has measured paired return-controller costs. This note remains non-authorizing.  
-**Purpose:** preserve candidate mathematics for an assumption-bounded Level-1 energetic return decision without freezing a controller equation, trigger, safety factor, or organism-visible variable.
+**Repository context:** originally recorded with the ADR 0018 documentation candidate; ADR 0018 is now accepted, D-049 revalidated/promoted the beacon inverse into a programmed Level-1 prior, D-050 measured paired return-controller costs, and D-052 implemented a fixed-threshold return-charge-recovery loop. D-052 completed 24/24 cases on its frozen 0.15–0.45 m initial-radius support, reaching the autonomous return-to-charge milestone there only; two cases used 19 of 20 terminal spins. This note remains non-authorizing.
+**Purpose:** preserve candidate mathematics for a possible return-margin mechanism beyond the D-052 fixed-threshold baseline, without freezing a further controller equation, trigger, safety factor, or organism-visible variable.
 
 ## Why this note exists
 
-ADR 0018 permits a constitutive Level-1 energetic return mechanism but deliberately does **not** freeze its exact mathematics.
+ADR 0018 permits a constitutive Level-1 energetic return mechanism but deliberately does **not** freeze a dynamic return-margin equation. D-052 implemented a fixed 20% return / 80% recovery threshold loop; that completed Development result is limited to its declared frozen support and does not establish an adaptive or cost-derived margin.
 
-The engineering question is:
+The remaining engineering question is:
 
-> Can Aweform estimate, from its authorized current body/energy state and charging-beacon signals, whether its remaining stored energy still provides a sufficient margin to return, dock, and begin charging under declared assumptions?
+> Beyond the D-052 fixed-threshold baseline, can Aweform estimate, from its authorized current body/energy state and charging-beacon signals, whether its remaining stored energy provides a sufficient margin to return, dock, and begin charging under declared assumptions?
 
-This note records one candidate family for later mechanism design. Nothing here authorizes runtime implementation, a new observation channel, a specific threshold, or a claim of guaranteed return.
+This note records one candidate family for later mechanism design. Nothing here authorizes runtime implementation, a new observation channel, a further threshold, or a claim of guaranteed return.
 
 ## Existing beacon relationship
 
@@ -59,7 +59,7 @@ Using the same or related mathematics in a future Level-1 return mechanism would
 
 That promotion must be declared as engineered prior knowledge, not as learned or discovered competence.
 
-D-049 subsequently performed this required V0.5 revalidation and intentionally promoted the inverse into a declared **PROGRAMMED / ENGINEERED PRIOR** for its Level-1 return controller. That completed category promotion does not authorize a return trigger or reserve rule. D-050 then reused the same reconstruction while measuring two homing laws. D-016 remains supporting historical precedent rather than evidence that the relation was learned or discovered by Aweform.
+D-049 subsequently performed this required V0.5 revalidation and intentionally promoted the inverse into a declared **PROGRAMMED / ENGINEERED PRIOR** for its Level-1 return controller. That category promotion did not itself authorize a return trigger or reserve rule. D-050 then reused the same reconstruction while measuring two homing laws; D-052 later implemented a fixed-threshold return/recovery trigger under separate authorization, not a dynamic reserve rule. D-016 remains supporting historical precedent rather than evidence that the relation was learned or discovered by Aweform.
 
 ## Candidate return-energy family
 
@@ -95,7 +95,7 @@ The terms are placeholders for engineering quantities, not free tuning knobs:
 
 Every implemented term must be provenance-labelled as derived, measured, manufacturer-sourced, engineering estimate, or founder design choice as appropriate. Parameters must not be tuned post hoc merely to manufacture desired autonomous-return behaviour.
 
-D-050 now provides controller-specific measured homing and terminal-contact energy components on the frozen ideal V0.5 support. A later trigger design should bind its cost model to the actually selected Level-1 return controller and should not silently assume the historical stop-turn-straight decomposition if a different controller is selected.
+D-050 provides controller-specific measured homing and terminal-contact energy components on the frozen ideal V0.5 support. D-052 then implemented its fixed-threshold return/recovery trigger and completed the loop in 24/24 cases on the frozen 0.15–0.45 m initial-radius support. Two cases used 19 of 20 terminal spins; this is not an arena-wide, hardware, noisy-sensor, or learned-robustness result. A future return-margin design should bind its cost model to the selected Level-1 return controller and must not imply that D-052's fixed thresholds are an optimized or generally sufficient reserve rule.
 
 ## Important distinction: this is not the dormancy reserve
 
@@ -153,7 +153,7 @@ This note does not authorize:
 - obstacle navigation;
 - physical hardware control;
 - fainting/dormancy;
-- a return-trigger/reserve implementation or any successor stage; D-049 and D-050 are completed historical context and do not themselves authorize that trigger.
+- a dynamic return-margin/reserve implementation or any successor stage; D-052's fixed-threshold loop is completed historical context and does not authorize an extension or replacement.
 
 ## Bottom line
 

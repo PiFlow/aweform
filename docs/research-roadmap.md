@@ -89,7 +89,7 @@ The important pattern was repeated: several proposed explanations were informati
 
 D-040 therefore stopped proposing mechanisms and audited the causal/test machinery itself. It independently reconstructed the recent Arm-B path and D-034 effect, added exact identity/clone/order controls, preserved invalidated provenance, and mapped scaffold benefit under reused and fresh development support. The accepted review concluded that the causal machinery was valid enough for the audit, that **partial observability remains plausible**, and that **privileged geometry is strongly informative** in the tested regime. Those findings are diagnostic only: D-040 does not authorize privileged organism inputs, a new memory mechanism, a stuck detector, recurrence, or any successor architecture.
 
-## F. D-041→D-050 closeout and current Level-1 frontier
+## F. D-041→D-052 closeout and current Level-1 frontier
 
 D-041 completed the evaluator-only front-beacon sensory-sufficiency audit. Its minimal two-receptor pair returned **NULL/INSUFFICIENT** on both reused support and fresh holdout: the candidate signals were diagnostically evaluated but never exposed to Aweform and never became part of the organism's sensory boundary.
 
@@ -117,7 +117,9 @@ D-049 then implemented the first programmed Level-1 direct-return/contact-seekin
 
 D-050 held that reconstruction and terminal docking mechanism fixed while comparing the accepted D-049 stop-turn-straight homing law with one frozen smooth curved-pursuit alternative on 96 fresh paired states. The baseline reached `DOCKED_AND_CHARGING` in 80/96 cases within the frozen horizon and was horizon-censored in 16; smooth pursuit reached `DOCKED_AND_CHARGING` in 96/96. The comparison remains descriptive on the ideal deterministic V0.5 support and does not establish hardware/noise/slip robustness or a universal controller ranking.
 
-The current durable architecture frontier remains ADR 0018's **Innate Autonomous Viability** milestone. The D-049/D-050 lineage now supplies a concrete measured return/docking baseline from which later return-margin design can be grounded. Flow has identified a paired D-050 trajectory visualizer as the next intended interpretive step before return-margin/energy-trigger implementation; that intention is not an authorization, and every successor still requires a fresh exact-base GitHub issue. The separate non-authorizing [Return Reserve Margin future question](return-reserve-margin-future-question.md) preserves candidate mathematics without freezing the eventual trigger equation.
+D-052 completed the V0.5 innate autonomous return-charge-recovery loop in all 24 frozen-support cases. First Mate and Sol assessed the autonomous return-to-charge milestone as reached on that support only, which spans initial radii 0.15–0.45 m. Two cases used 19 of the 20 permitted terminal spins, so terminal-docking margin was thin in those cases. The result makes no arena-wide, hardware, noisy-sensor, or learned-robustness claim.
+
+The durable architecture remains ADR 0018's **Innate Autonomous Viability** boundary; D-052 reaches its return-to-charge milestone on the declared deterministic support. Its fixed return/recovery thresholds do not establish a dynamic return-margin rule. The separate non-authorizing [Return Reserve Margin future question](return-reserve-margin-future-question.md) preserves candidate mathematics without freezing such a rule. No successor D-stage is authorized.
 
 A separate future note, [`low-level-autonomy-and-sensor-layering-future-question.md`](low-level-autonomy-and-sensor-layering-future-question.md), preserves the broader question of economical low-level bodily competence beneath richer future perception; it remains non-authorizing.
 
