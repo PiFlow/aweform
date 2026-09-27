@@ -2,7 +2,7 @@
 
 **Status:** non-authorizing research direction  
 **External research cut-off:** 2026-09-09  
-**Repository status refreshed:** 2026-09-23, after committed D-045; D-046 is authorized by issue #165 but is not yet a committed D-record  
+**Repository status refreshed:** 2026-09-28, after committed D-052; D-046 through D-048 are committed shadow-learning/diagnostic records, D-049/D-050/D-052 are committed programmed Level-1 viability records, D-051 stopped before merge, and no successor D-stage is authorized  
 **Purpose:** preserve useful world-model research and define future developmental gates without authorizing a new architecture, D-stage, ADR, learner, planner, reward, JEPA implementation, or dependency.
 
 ## 1. Claim boundary
@@ -62,7 +62,7 @@ This turns a controller from a fixed stimulus-response mechanism into a system t
 
 LeCun's central JEPA argument is that natural sensory streams contain large amounts of unpredictable or decision-irrelevant detail. A model that must reconstruct every pixel can spend capacity on texture and noise rather than controllable structure. Joint-embedding prediction instead asks a predictor to predict a representation of the future.
 
-Aweform should preserve this principle, but only when raw organism-visible state actually becomes a bottleneck. The current D-045 V0.5 observation has eight compact channels — two interoceptive, four exteroceptive, and two proprioceptive — so a learned encoder would presently add ambiguity rather than remove nuisance information.
+Aweform should preserve this principle, but only when raw organism-visible state actually becomes a bottleneck. The V0.5 observation introduced in D-045 and retained through the committed D-052 lineage has eight compact channels — two interoceptive, four exteroceptive, and two proprioceptive — so the committed shadow-learning work has not yet established a need for a learned encoder.
 
 ### 3.3 Planning should be consequence-based
 
@@ -115,7 +115,7 @@ LeJEPA's SIGReg is a promising anti-collapse method for learned embeddings. It i
 
 ## 5. Current Aweform position relative to a world model
 
-The active committed V0.5 lineage is currently **D-045**, which contains no learner, predictor, controller, or planner. The predictive results below are historical V0.4 evidence and design lessons; they are not silently carried into D-045. D-046 is separately authorized to create a fresh V0.5 shadow consequence learner from the eight-channel D-045 substrate.
+The committed V0.5 lineage now separates two strands. D-045 established the deterministic embodiment/bookkeeping substrate. D-046 through D-048 then tested fresh **shadow-only** action-conditioned consequence learning on that substrate; those predictions remained causally inert. D-049, D-050, and D-052 separately established programmed Level-1 return/docking/recovery competence under ADR 0018. Those viability mechanisms are engineered/programmed priors, not learned world-model competence. D-051 stopped before merge and has no committed D-record.
 
 ### D-027 — historical V0.4 predictive dynamics precursor
 
@@ -187,11 +187,21 @@ D-042→D-044 characterized the founder-selected V0.4 embodiment and separated c
 
 D-045 then committed the first deterministic V0.5 substrate: continuous signed bilateral wheel commands, differential-drive kinematics, centred under-body docking, eight visible channels including wheel-delta proprioception, and continuous actuator bookkeeping. It intentionally contains **no learned predictor**. Historical D-027/D-030 learned state and discrete action semantics are not part of the V0.5 organism.
 
-### D-046 — authorized fresh V0.5 shadow prediction question
+### D-046→D-048 — committed V0.5 shadow prediction lineage
 
-Issue #165 authorizes, but has not yet committed, a fresh 528-weight continuous-action predictor trained after one at-most-once 564-transition non-semantic raw-wheel calibration curriculum. It predicts one-step deltas for all eight visible channels and is evaluated with frozen held-out one-step probes and short rollouts. Predictions remain shadow-only and cannot influence action selection.
+D-046 introduced a fresh zero-initialized 528-weight continuous-action predictor on the D-045 eight-channel substrate after the frozen one-time 564-transition raw-wheel calibration curriculum. It remained shadow-only. On the pooled held-out matrix, the full action-conditioned learner beat the matched state-only comparator on all eight delta targets, but against the deliberately strong zero-change comparator the result was mixed: temperature and wheel-delta prediction improved, while energy, beacon, and charging-contact absolute prediction remained weaker; short rollout beacon error also degraded quickly.
 
-D-046 therefore asks whether the reset V0.5 organism can first acquire useful sensorimotor consequence prediction. It does not yet establish a world model, planning, need-driven control, or a causal use of prediction.
+D-047 froze that learned state and audited alternative-action consequence discrimination without learner updates or causal action use. The result was again channel-specific rather than universal: wheel-delta discrimination was strong, some energy/beacon discrimination was useful, while charging-contact and temperature support remained weaker or sparse. This established bounded counterfactual-style predictive discrimination, not a behavioural controller.
+
+D-048 then repeated the exact D-046 curriculum for up to eight continuous passes in the same lifetime. Prequential error continued to improve in several channels and wheel-delta held-out discrimination remained strong, but energy/beacon held-out curves were mixed or plateaued, temperature support remained sparse, and charging-contact prediction remained sparse/mixed and worse than zero-change on the recorded absolute/Brier measures. No best checkpoint was selected and no prediction-driven behaviour was authorized.
+
+Together D-046→D-048 establish a committed V0.5 **shadow predictive-learning lineage** with useful but channel-specific competence. They do not establish WM0, planning, learned docking, learned return policy, or general learned robustness.
+
+### D-049→D-052 — programmed Level-1 viability lineage, not world-model learning
+
+D-049 introduced the programmed Level-1 direct-return/contact-seeking docking core, and D-050 compared paired programmed homing laws on the frozen support. D-052 then closed the constitutive return-charge-recovery loop with fixed 20% return and 80% recovery thresholds, completing 24/24 frozen-support cases over initial radii 0.15–0.45 m. Two cases used 19 of the 20 allowed terminal spins.
+
+These results establish an engineered Level-1 viability baseline on that frozen support only. They do **not** make the D-046→D-048 predictor causal, and they do not establish arena-wide, hardware, noisy-sensor, or learned robustness. D-051 stopped before merge and has no committed record. No successor D-stage is currently authorized.
 
 ## 6. Aweform world-model qualification ladder
 
@@ -208,7 +218,7 @@ These names are research categories, not reserved D-stage identifiers.
 | **WM3 — learned latent world model** | Learned representation beats raw-state model where abstraction is actually needed | Predictive representation is functionally useful | JEPA superiority |
 | **WM4 — hierarchical world model** | Multiple learned time scales/abstraction levels improve long-horizon prediction/planning | Hierarchical predictive cognition is useful | Human-like reasoning |
 
-On this taxonomy, the **historical V0.4 lineage reached P2 in one narrow D-030 intervention**. D-031R1 through D-041 showed that this competence was not sufficient to displace the stochastic de-trapping scaffold and that the missing factor was not cleanly reduced to model capacity, recurrence, or the tested extra beacon receptors. The active committed D-045 V0.5 lineage currently has **no learned predictor**, so it should not inherit the P2 label merely by repository continuity. D-046 is the authorized fresh prediction-competence test.
+On this taxonomy, the **historical V0.4 lineage reached P2 in one narrow D-030 intervention**. D-031R1 through D-041 showed that this competence was not sufficient to displace the stochastic de-trapping scaffold and that the missing factor was not cleanly reduced to model capacity, recurrence, or the tested extra beacon receptors. The committed V0.5 D-046→D-048 lineage now provides bounded P0/P1-style shadow evidence, but it has **not re-earned P2** because its predictions never influence behaviour. D-049/D-050/D-052 are programmed Level-1 viability competence and therefore do not advance the learned world-model qualification ladder.
 
 ## 7. Developmental gates toward WM0–WM4
 
@@ -218,7 +228,7 @@ On this taxonomy, the **historical V0.4 lineage reached P2 in one narrow D-030 i
 
 **Minimum research:** preserve per-output/per-action/per-context diagnostics; specifically track rare contact transitions, boundary clipping, and thermal consequences. Do not collapse all outputs into one score.
 
-**Falsifier:** a fixed/simple predictor or the relevant smallest already-demonstrated predictor remains sufficient. If so, do not enlarge it. Historical D-027 is a comparator/reference, not the active V0.5 learner.
+**Falsifier:** a fixed/simple predictor or the relevant smallest already-demonstrated predictor remains sufficient. If so, do not enlarge it. Historical D-027 remains a comparator/reference. The committed V0.5 shadow learner is the D-046→D-048 lineage, and it remains causally inert.
 
 ### Gate B — multi-step shadow rollout
 
@@ -324,7 +334,7 @@ This resembles model-predictive control while preserving Aweform's zero-reward r
 
 ## 10. World model versus self model
 
-Aweform's current D-045 V0.5 observation has eight channels: normalized energy and temperature; L/F/R beacon and charging contact; and signed quantized left/right wheel deltas. This compact mix of interoceptive, exteroceptive, and proprioceptive consequences is acceptable at this scale.
+Aweform's V0.5 observation introduced in D-045 and retained through D-052 has eight channels: normalized energy and temperature; L/F/R beacon and charging contact; and signed quantized left/right wheel deltas. This compact mix of interoceptive, exteroceptive, and proprioceptive consequences remains acceptable at this scale.
 
 A separate **self model** becomes justified only if predicting the organism's own body/internal dynamics creates a distinct problem from predicting its environment. Possible later self-model variables include actuator cost, thermal inertia, battery response, sensing/computation cost, damage/failure state, and blackout/recovery dynamics.
 
@@ -433,10 +443,11 @@ A future implementation must begin from an exact-current-HEAD developmental prob
 - `development/D-030-bounded-learned-seek-steering.md`.
 - `development/D-031R1-learned-seek-scaffold-displacement-clean-rerun.md`.
 - `development/D-032-detrap-function-attribution-audit.md` through `development/D-041-front-beacon-sensory-sufficiency-audit.md`.
-- `development/D-042-founder-embodiment-baseline.md` through `development/D-045-v05-deterministic-embodiment-bookkeeping-probe.md`.
+- `development/D-042-founder-embodiment-baseline.md` through `development/D-050-level1-homing-controller-comparison.md`.
+- `development/D-052-v05-innate-autonomous-return-charge-recovery.md` (D-051 stopped before merge and has no committed D-record).
 - D-040 accepted PR #138 review/provenance record.
 - `docs/adr/0017-v0.5-direct-differential-drive-centered-dock-boundary.md`.
-- D-046 authorization issue #165, for current authorized scope only; it is not a committed result source.
+- `docs/adr/0018-three-level-autonomy-architecture.md`.
 
 ### Primary / peer-reviewed external sources
 
@@ -464,4 +475,4 @@ A future implementation must begin from an exact-current-HEAD developmental prob
 
 Aweform should not "adopt JEPA." It should **grow into the problem that makes JEPA-like representation learning useful**.
 
-The D-031R1→D-041 sequence reinforces that rule: when learned control fails, first determine whether the missing ingredient is information, support, experience distribution, temporal state, action affordance, or model capacity. D-042→D-045 then show a second valid response: reset an over-scaffolded sensorimotor substrate rather than indefinitely patching it. D-046 now returns to the smallest question — whether a fresh V0.5 learner can predict its own sensorimotor consequences before prediction receives any causal control role.
+The D-031R1→D-041 sequence reinforces that rule: when learned control fails, first determine whether the missing ingredient is information, support, experience distribution, temporal state, action affordance, or model capacity. D-042→D-045 then show a second valid response: reset an over-scaffolded sensorimotor substrate rather than indefinitely patching it. D-046→D-048 subsequently established useful but mixed, channel-specific shadow prediction on that V0.5 substrate without giving prediction a causal control role. D-049/D-050/D-052 then established a separate programmed Level-1 autonomous return/docking/recovery baseline. The next world-model step, if any, must therefore be earned from a new exact-current developmental problem rather than inferred from the existence of either lineage.
