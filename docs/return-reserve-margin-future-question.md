@@ -2,7 +2,7 @@
 
 **Status:** non-authorizing future research note  
 **Recorded:** 2026-09-25  
-**Repository context:** originally recorded with the ADR 0018 documentation candidate; ADR 0018 is now accepted, D-049 revalidated/promoted the beacon inverse into a programmed Level-1 prior, D-050 measured paired return-controller costs, and D-052 implemented a fixed-threshold return-charge-recovery loop. D-052 completed 24/24 cases on its frozen 0.15–0.45 m initial-radius support, reaching the autonomous return-to-charge milestone there only; two cases used 19 of 20 terminal spins. This note remains non-authorizing.
+**Repository context:** originally recorded with the ADR 0018 documentation candidate; ADR 0018 is now accepted, D-049 revalidated/promoted the beacon inverse into a programmed Level-1 prior, D-050 measured paired return-controller costs, and D-052 implemented a fixed-threshold return-charge-recovery loop. D-052 completed 24/24 cases on its frozen 0.15–0.45 m initial-radius support, reaching the autonomous return-to-charge milestone there only; two cases used 19 of 20 terminal spins. This note remains non-authorizing.  
 **Purpose:** preserve candidate mathematics for a possible return-margin mechanism beyond the D-052 fixed-threshold baseline, without freezing a further controller equation, trigger, safety factor, or organism-visible variable.
 
 ## Why this note exists
