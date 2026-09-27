@@ -34,7 +34,19 @@ uv run aweform-export-d043-html --output d043-replay.html
 ```
 
 The export includes play/pause, touch-friendly timeline scrubbing, playback
-speed controls, and the existing evaluator-side state overlays. A single seed
+speed controls, and the existing evaluator-side state overlays. The shared
+`build_development_html_replay` builder supports neutral deterministic
+multi-seed HTML payloads while `build_d043_html_replay` remains a compatibility
+wrapper with unchanged D-043 semantics. D-053 uses the same neutral model and
+exports all five seeded continuous lifetimes in one offline replay:
+
+```text
+uv run aweform-export-d053-html --output development/D-053-v05-continuous-lifetime-replay.html
+```
+
+D-053's replay displays evaluator-only body/dock geometry, the energy history,
+20% RETURN and 80% RECOVERY thresholds, mode/source/cycle readouts, and event
+navigation. Its downsampling affects display only. A single seed
 can be exported with repeated `--seed` options when a smaller file is useful:
 
 ```text
@@ -124,6 +136,7 @@ aweform-visualize-d024
 aweform-visualize-d030
 aweform-visualize-d043
 aweform-export-d043-html
+aweform-export-d053-html
 aweform-visualize-d050
 ```
 
