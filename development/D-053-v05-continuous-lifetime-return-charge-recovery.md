@@ -1,6 +1,6 @@
 # D-053 — V0.5 continuous-lifetime return, charge, and recovery
 
-**Status:** Protocol frozen; official runs not yet executed. **Disposition:** CONTINUING.
+**Status:** Protocol frozen at `934588d`; official five-seed characterization executed and results recorded. **Disposition:** CONTINUING.
 
 ## Question and classification
 
