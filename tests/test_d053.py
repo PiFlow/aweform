@@ -71,13 +71,13 @@ def test_fixture_replays_and_varies_by_seed() -> None:
             for p in (fixture.propose() for _ in range(300))
         ]
 
-    assert stream(22053) == stream(22053)
-    assert stream(22053) != stream(22054)
+    assert stream(22153) == stream(22153)
+    assert stream(22153) != stream(22154)
 
 
 @pytest.fixture(scope="module")
 def low_energy_life() -> D053Lifetime:
-    return run_d053_lifetime(22053, horizon=20_000, initial_battery_fraction=0.19)
+    return run_d053_lifetime(22153, horizon=20_000, initial_battery_fraction=0.19)
 
 
 def _first_transition(life: D053Lifetime, event: str) -> int:
@@ -301,7 +301,7 @@ def test_d053_html_payload_retains_return_window_and_view_fields(
     payload = _embedded_payload(html)
     assert payload["schema"] == "aweform.d053.offline-replay.v1"
     (replay,) = cast(list[dict[str, object]], payload["replays"])
-    assert replay["seed"] == 22053
+    assert replay["seed"] == 22153
     assert replay["event_navigation"] is True
     assert replay["energy_strip"] == {
         "range": [0.0, 1.0],
