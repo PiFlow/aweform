@@ -14,15 +14,15 @@ from aweform.d045 import (
     D045Env,
 )
 from aweform.d049 import D049_TERMINAL_SPIN_MAX_STEPS
-from aweform.d050 import D050ControlMode, D050Decision, D050SmoothController
+from aweform.d050 import D050ControlMode, D050SmoothController
 from aweform.d052 import (
     D052_CASE_HORIZON,
     D052_INITIAL_SOURCE_RELATIVE_HEADING_ERRORS_RAD,
     D052_PASSTHROUGH_FIXTURE,
     D052_POSITION_BEARINGS_DEG,
-    D052_RECOVERY_THRESHOLD,
     D052_RETURN_RADII_M,
-    D052_RETURN_THRESHOLD,
+    RECOVERY_THRESHOLD,
+    RETURN_THRESHOLD,
     D052CommandSource,
     D052Controller,
     D052Mode,
@@ -47,7 +47,7 @@ def _observation(
 
 def _enter_charge(controller: D052Controller) -> None:
     decision = controller.command(
-        _observation(energy=D052_RETURN_THRESHOLD, contact=1.0),
+        _observation(energy=RETURN_THRESHOLD, contact=1.0),
         D052_PASSTHROUGH_FIXTURE,
     )
     assert decision.active_mode is D052Mode.CHARGE
@@ -66,8 +66,8 @@ def test_normal_passes_through_legal_command_without_change() -> None:
 
 def test_float32_return_threshold_preempts_on_the_first_decision() -> None:
     proposed = (D045_MAX_WHEEL_DELTA_RAD, D045_MAX_WHEEL_DELTA_RAD)
-    observation = _observation(energy=D052_RETURN_THRESHOLD)
-    assert float(observation[0]) == D052_RETURN_THRESHOLD
+    observation = _observation(energy=RETURN_THRESHOLD)
+    assert float(observation[0]) == RETURN_THRESHOLD
     decision = D052Controller().command(observation, proposed)
     assert decision.active_mode is D052Mode.RETURN
     assert decision.command_source is D052CommandSource.D050_SMOOTH
@@ -80,10 +80,10 @@ def test_float32_return_threshold_preempts_on_the_first_decision() -> None:
 def test_return_stays_latched_when_energy_fluctuates_above_threshold() -> None:
     controller = D052Controller()
     first = controller.command(
-        _observation(energy=D052_RETURN_THRESHOLD), D052_PASSTHROUGH_FIXTURE
+        _observation(energy=RETURN_THRESHOLD), D052_PASSTHROUGH_FIXTURE
     )
     second = controller.command(
-        _observation(energy=D052_RETURN_THRESHOLD + 0.01),
+        _observation(energy=RETURN_THRESHOLD + 0.01),
         D052_PASSTHROUGH_FIXTURE,
     )
     assert first.active_mode is D052Mode.RETURN
@@ -92,22 +92,12 @@ def test_return_stays_latched_when_energy_fluctuates_above_threshold() -> None:
     assert second.preempted
 
 
-def test_return_delegates_to_the_injected_d050_smooth_controller() -> None:
-    class SpySmoothController(D050SmoothController):
-        def __init__(self) -> None:
-            self.observations: list[np.ndarray] = []
-
-        def command(self, observation: np.ndarray) -> D050Decision:
-            self.observations.append(observation)
-            return super().command(observation)
-
-    observation = _observation(energy=D052_RETURN_THRESHOLD)
-    delegate = SpySmoothController()
-    decision = D052Controller(delegate).command(
-        observation, D052_PASSTHROUGH_FIXTURE
-    )
+def test_return_delegates_to_an_exact_d050_smooth_controller() -> None:
+    observation = _observation(energy=RETURN_THRESHOLD)
+    controller = D052Controller()
+    decision = controller.command(observation, D052_PASSTHROUGH_FIXTURE)
     expected = D050SmoothController().command(observation)
-    assert delegate.observations == [observation]
+    assert type(controller._smooth_controller) is D050SmoothController
     assert decision.d050_mode is expected.mode
     assert (decision.wheel_delta_left, decision.wheel_delta_right) == (
         expected.wheel_delta_left,
@@ -116,7 +106,7 @@ def test_return_delegates_to_the_injected_d050_smooth_controller() -> None:
 
 
 def test_d052_does_not_change_d050_smooth_command_generation() -> None:
-    observation = _observation(energy=D052_RETURN_THRESHOLD)
+    observation = _observation(energy=RETURN_THRESHOLD)
     before = D050SmoothController().command(observation)
     D052Controller().command(observation, D052_PASSTHROUGH_FIXTURE)
     after = D050SmoothController().command(observation)
@@ -143,7 +133,7 @@ def test_contact_first_enters_charge_with_zero_wheels() -> None:
 def test_invalid_beacon_holds_zero_and_remains_in_return() -> None:
     controller = D052Controller()
     invalid = _observation(
-        energy=D052_RETURN_THRESHOLD, left=0.0, forward=0.5, right=0.5
+        energy=RETURN_THRESHOLD, left=0.0, forward=0.5, right=0.5
     )
     first = controller.command(invalid, D052_PASSTHROUGH_FIXTURE)
     second = controller.command(
@@ -178,7 +168,7 @@ def test_charge_does_not_yield_one_float32_ulp_below_recovery() -> None:
     decision = controller.command(
         _observation(energy=below, contact=1.0), D052_PASSTHROUGH_FIXTURE
     )
-    assert below < D052_RECOVERY_THRESHOLD
+    assert below < RECOVERY_THRESHOLD
     assert decision.active_mode is D052Mode.CHARGE
     assert decision.command_source is D052CommandSource.CHARGE_HOLD
     assert decision.preempted
@@ -190,7 +180,7 @@ def test_recovery_yields_and_passes_command_through_on_same_decision() -> None:
     _enter_charge(controller)
     proposed = (0.345, -0.456)
     decision = controller.command(
-        _observation(energy=D052_RECOVERY_THRESHOLD, contact=1.0), proposed
+        _observation(energy=RECOVERY_THRESHOLD, contact=1.0), proposed
     )
     assert decision.active_mode is D052Mode.NORMAL
     assert decision.command_source is D052CommandSource.PASS_THROUGH
@@ -213,7 +203,7 @@ def test_level_one_does_not_force_departure_while_energy_is_healthy() -> None:
 def test_terminal_spin_twentieth_command_executes_before_exhaustion_latches() -> None:
     controller = D052Controller()
     centered = _observation(
-        energy=D052_RETURN_THRESHOLD,
+        energy=RETURN_THRESHOLD,
         left=0.5,
         forward=0.5,
         right=0.5,
@@ -247,7 +237,7 @@ def test_terminal_spin_twentieth_command_executes_before_exhaustion_latches() ->
 def test_spin_count_resets_when_contact_loss_reenters_return() -> None:
     controller = D052Controller()
     centered = _observation(
-        energy=D052_RETURN_THRESHOLD,
+        energy=RETURN_THRESHOLD,
         left=0.5,
         forward=0.5,
         right=0.5,
@@ -271,7 +261,7 @@ def test_spin_count_resets_when_contact_loss_reenters_return() -> None:
 def test_contact_while_spin_exhaustion_is_latched_enters_charge() -> None:
     controller = D052Controller()
     centered = _observation(
-        energy=D052_RETURN_THRESHOLD,
+        energy=RETURN_THRESHOLD,
         left=0.5,
         forward=0.5,
         right=0.5,
@@ -293,7 +283,7 @@ def test_preemption_transition_counts_and_fractions_are_correct() -> None:
     decisions = [
         controller.command(_observation(energy=0.5), D052_PASSTHROUGH_FIXTURE),
         controller.command(
-            _observation(energy=D052_RETURN_THRESHOLD), D052_PASSTHROUGH_FIXTURE
+            _observation(energy=RETURN_THRESHOLD), D052_PASSTHROUGH_FIXTURE
         ),
         controller.command(
             _observation(energy=0.4, contact=1.0), D052_PASSTHROUGH_FIXTURE
@@ -302,7 +292,7 @@ def test_preemption_transition_counts_and_fractions_are_correct() -> None:
             _observation(energy=0.79, contact=1.0), D052_PASSTHROUGH_FIXTURE
         ),
         controller.command(
-            _observation(energy=D052_RECOVERY_THRESHOLD, contact=1.0),
+            _observation(energy=RECOVERY_THRESHOLD, contact=1.0),
             D052_PASSTHROUGH_FIXTURE,
         ),
     ]
@@ -377,12 +367,14 @@ def test_initial_battery_energy_channel_matches_float32_threshold() -> None:
         options={"battery_j": 0.20 * D045_BATTERY_CAPACITY_J}
     )
     assert info == {}
-    assert float(observation[0]) == D052_RETURN_THRESHOLD
+    assert float(observation[0]) == RETURN_THRESHOLD
 
 
 def test_frozen_characterization_is_deterministic_and_keeps_boundaries() -> None:
     first = run_d052_protocol("a" * 40)
     second = run_d052_protocol("a" * 40)
+    assert first["execution_status"] == "COMPLETED"
+    assert sum(first["aggregate"]["outcome_counts"].values()) == 24
     assert first["validation"]["exact_case_count"] is True
     assert first["validation"]["first_decision_preempted_in_every_case"] is True
     assert first["validation"]["reward_exactly_zero"] is True

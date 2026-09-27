@@ -38,8 +38,6 @@ D052_AUTHORIZED_BASE_SHA: Final[str] = (
 )
 RETURN_THRESHOLD: Final[float] = float(np.float32(0.20))
 RECOVERY_THRESHOLD: Final[float] = float(np.float32(0.80))
-D052_RETURN_THRESHOLD: Final[float] = RETURN_THRESHOLD
-D052_RECOVERY_THRESHOLD: Final[float] = RECOVERY_THRESHOLD
 D052_CASE_HORIZON: Final[int] = 25_000
 D052_RETURN_RADII_M: Final[tuple[float, ...]] = (0.15, 0.30, 0.45)
 D052_POSITION_BEARINGS_DEG: Final[tuple[int, ...]] = (15, 105, 195, 285)
@@ -89,8 +87,8 @@ class D052Decision:
 class D052Controller:
     """Stateful Level-1 locomotor arbiter with no learned-state access."""
 
-    def __init__(self, smooth_controller: D050SmoothController | None = None) -> None:
-        self._smooth_controller = smooth_controller or D050SmoothController()
+    def __init__(self) -> None:
+        self._smooth_controller = D050SmoothController()
         self._mode = D052Mode.NORMAL
         self._terminal_spin_count = 0
         self._terminal_spin_exhausted = False
@@ -337,9 +335,7 @@ def run_d052_protocol(executed_commit_sha: str) -> dict[str, object]:
             "descriptive only on the frozen 0.15-0.45 m radius support; "
             "not confirmatory evidence"
         ),
-        "execution_status": "COMPLETED"
-        if all(outcome == "COMPLETE_LOOP" for outcome in outcomes)
-        else "PARTIAL",
+        "execution_status": "COMPLETED",
         "frozen_protocol": _protocol_record(),
         "validation": {
             "exact_case_count": len(cases) == 24,
@@ -725,6 +721,19 @@ def _protocol_record() -> dict[str, object]:
             "recovery_comparison": "observation[0] >= RECOVERY_THRESHOLD",
             "one_float32_ulp_below_recovery": float(
                 np.nextafter(np.float32(0.80), np.float32(0.0))
+            ),
+        },
+        "energy_sampling_convention": {
+            "energy_at_return_activation": (
+                "observation[0] before the RETURN_ACTIVATED decision's step"
+            ),
+            "energy_at_first_charging_contact": (
+                "observation[0] after the step that first acquired physical "
+                "contact, including charge accepted on that step; paired with "
+                "that decision's transition index"
+            ),
+            "energy_at_recovery_yield": (
+                "observation[0] before the RECOVERY_YIELD decision's step"
             ),
         },
         "terminal_spin_max_steps": D049_TERMINAL_SPIN_MAX_STEPS,

@@ -52,6 +52,15 @@ first charging contact, and recovery/yield; contact loss/reacquisition;
 energy-depletion and thermal termination; terminal-spin exhaustion and the
 per-case maximum spin count.
 
+Energy fields sample the organism-visible `observation[0]`.
+`energy_at_return_activation` and `energy_at_recovery_yield` are the values
+observed before the `RETURN_ACTIVATED` and `RECOVERY_YIELD` decisions' steps,
+that is, the values those decisions compared against the thresholds.
+`energy_at_first_charging_contact` is the value observed after the step that
+first acquired physical contact, so it already includes any charge accepted on
+that step; `first_charging_contact_transition` is the index of the decision
+that produced that step.
+
 ## Frozen characterization protocol
 
 The seedless matrix has station centre `(0.50, 0.50)`, radii `(0.15, 0.30,
@@ -85,7 +94,10 @@ simulation arithmetic.
 The support spans only initial radii 0.15–0.45 m and the two specified
 heading errors. It does not represent the whole arena or establish general
 robustness. Negative or partial outcomes remain valid Development results
-and must not trigger threshold or homing changes.
+and must not trigger threshold or homing changes. The artifact's
+`execution_status` is `COMPLETED` whenever all 24 frozen cases ran to their
+stop condition, whatever their outcomes; the per-outcome split is reported in
+`outcome_counts`.
 
 ## Frozen boundaries and non-goals
 
