@@ -254,6 +254,24 @@ def test_d053_selector_windows_and_stride() -> None:
         set(range(0, 1000, 100)) | set(range(850, 1000))
     )
 
+    wedge_trace = [row([], "RETURN", "D050_SMOOTH") for _ in range(6000)]
+    wedge_trace[0] = row(["RESET"])
+    for index in range(1, 1000):
+        wedge_trace[index] = row([])
+    wedge_trace[1000] = row(["RETURN_ACTIVATED"], "RETURN", "D050_SMOOTH")
+    wedge_trace[4500] = row(["CHARGING_CONTACT"], "CHARGE", "CHARGE_HOLD")
+    for index in range(4501, 5999):
+        wedge_trace[index] = row([], "CHARGE", "CHARGE_HOLD")
+    wedge_trace[5999] = row(["TRUNCATED"], "CHARGE", "CHARGE_HOLD")
+    wedge = set(select_d053_replay_indices(wedge_trace))
+    assert wedge == (
+        set(range(0, 6000, 100))
+        | set(range(950, 3001))
+        | set(range(4450, 4551))
+        | set(range(5949, 6000))
+    )
+    assert not set(range(3001, 3100)) & wedge
+
 
 def _embedded_payload(html: str) -> dict[str, object]:
     prefix = "window.__AWEFORM_D043_REPLAYS__ = "

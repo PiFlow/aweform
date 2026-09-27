@@ -4910,9 +4910,11 @@ def _require_bool_attribute(value: object, name: str) -> bool:
 
 D053_REPLAY_STRIDE: Final[int] = 100
 D053_REPLAY_WINDOW: Final[int] = 50
+D053_REPLAY_RETURN_CAP: Final[int] = 2000
 _D053_WINDOW_EVENTS: Final[frozenset[str]] = frozenset(
     {
         "RECOVERY_YIELD",
+        "CHARGING_CONTACT",
         "CHARGING_CONTACT_LOST",
         "CHARGING_CONTACT_REACQUIRED",
         "TERMINAL_SPIN_EXHAUSTED",
@@ -4929,10 +4931,11 @@ def select_d053_replay_indices(
 ) -> tuple[int, ...]:
     """Frozen display-only stride and event-window selector over trace rows.
 
-    A RETURN window runs from 50 before ``RETURN_ACTIVATED`` through 50 after the
-    episode's ``CHARGING_CONTACT``; without contact it ends 50 after the earliest
-    first ``RETURN_HOLD``/``TERMINAL_SPIN_EXHAUSTED``/``INVALID_BEACON``, otherwise
-    at the episode end. Remaining hold transitions use the 100-transition stride.
+    A RETURN window runs from 50 before ``RETURN_ACTIVATED`` through the earliest
+    of 50 after the episode's ``CHARGING_CONTACT``, 50 after its first
+    ``RETURN_HOLD``/``TERMINAL_SPIN_EXHAUSTED``/``INVALID_BEACON``,
+    ``RETURN_ACTIVATED`` + 2000, or the episode end. Remaining transitions use
+    the 100-transition stride plus the per-event windows.
     """
     if not trace:
         raise ValueError("D-053 trace must not be empty")
@@ -4948,23 +4951,24 @@ def select_d053_replay_indices(
         )
 
     return_start: int | None = None
-    first_hold: int | None = None
     previous_invalid = False
     for index, row in enumerate(trace):
         events = cast(list[str], row["events"])
         if "RETURN_ACTIVATED" in events:
-            return_start, first_hold = index, None
+            return_start = index
         if return_start is not None:
-            if first_hold is None and (
-                row["command_source"] == "RETURN_HOLD"
+            if (
+                "CHARGING_CONTACT" in events
+                or row["command_source"] == "RETURN_HOLD"
                 or {"TERMINAL_SPIN_EXHAUSTED", "INVALID_BEACON"} & set(events)
             ):
-                first_hold = index
-            if "CHARGING_CONTACT" in events:
                 retain(return_start, index)
                 return_start = None
+            elif index == return_start + D053_REPLAY_RETURN_CAP:
+                retain(return_start, index - D053_REPLAY_WINDOW)
+                return_start = None
             elif {"TERMINATED", "TRUNCATED"} & set(events):
-                retain(return_start, index if first_hold is None else first_hold)
+                retain(return_start, index)
                 return_start = None
         invalid = "INVALID_BEACON" in events
         incidental = (
@@ -4982,7 +4986,7 @@ def select_d053_replay_indices(
             retain(index, index)
         previous_invalid = invalid
     if return_start is not None:
-        retain(return_start, last if first_hold is None else first_hold)
+        retain(return_start, last)
     return tuple(sorted(keep))
 
 
