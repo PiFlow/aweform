@@ -26,6 +26,26 @@ Unobstructed full-effort roaming at a 1.15 W load takes approximately 27,800 tra
 
 The compact JSON records per-seed mode/source/preemption counts, return and contact events, incidental NORMAL contact acquisitions separately from D-052 acquisitions, energy minima, terminal-spin/exhaustion data, evaluator-only return-start geometry, cycle tables, bounded event samples, and a discrete outcome signature. The HTML replay uses the canonical neutral visualizer, contains all five seeds, and is fully offline. Actual cycles and any negative/partial outcomes will be preserved without tuning.
 
-`surprised_by`: Pending official characterization; no results inspected.
+`surprised_by`: Seed 22053 activated RETURN from evaluator station distance 0.547 m and remained in D-050 `CURVED_PURSUIT` through the 140,000-transition horizon, with no contact or hold/exhaustion/invalid-beacon event. It truncated in RETURN at 0.006316 observed energy (33.652 J), despite four other seeds docking and yielding. This is an observed wall/corner-wedge failure outside the successful examples, not a reason to tune. The frozen 2,000-transition RETURN display cap kept the replay self-contained, though the actual five-seed HTML was 4,673,826 bytes, above the pre-run 1–3 MB estimate.
 
-`disposition`: CONTINUING — execute only from the pushed frozen executable/protocol commit; preserve the observed result irrespective of cycle count.
+`disposition`: CONTINUING — preserve the partial and negative outcomes; no tuning or successor is authorized.
+
+## Executable and artifact provenance
+
+The result-free executable/protocol freeze is pushed at `934588d55f38dc1cb3945e14d4225654dd3376f3`. Both official generation and the independent byte-identical regeneration used that exact clean freeze SHA; the official five seeds were not run before the freeze. The protocol JSON is 45,396 bytes, SHA-256 `1f195c77829857ef0e2d664d66f746198d588d382ff404c837508dbeacd924f0`. The self-contained offline replay is 4,673,826 bytes, SHA-256 `428cceb14bc78b5914cd01bf0b3ff80e219a33510246cd16de67f019496e4c1a`. Both independent regenerations matched byte-for-byte. The JSON contains no full trajectory; display downsampling affected only the replay.
+
+## Official descriptive results
+
+All five lifetimes ran the full 140,000 transitions and truncated at the horizon. Each had one RETURN activation. Seeds 22054–22057 each acquired D-045 dual contact on RETURN, charged to the D-052 recovery threshold, yielded once, and resumed PASS_THROUGH roaming. Seed 22053 did not acquire contact and ended in RETURN; its result is retained unchanged. There were four completed yields and four D-052 dock acquisitions. No episode exhausted the terminal-spin bound, no `INVALID_BEACON` occurred, and there was no D-045 termination. Two incidental NORMAL/PASS_THROUGH contact acquisitions occurred on seed 22055; the initially docked state was not counted as an acquisition.
+
+| Seed | NORMAL roam before RETURN | RETURN | CHARGE | Outcome | RETURN energy | First-contact energy | Yield energy | Incidental NORMAL contacts | Min observed energy | Max terminal spin / exhaustion |
+|---|---:|---:|---:|---|---:|---:|---:|---:|---:|---|
+| 22053 | 71,215 | 68,785 | 0 | TRUNCATED_IN_RETURN; no contact | 0.199986383319 | — | — | 0 | 0.006316144485 | 0 / no |
+| 22054 | 69,415 | 38 | 18,829 | YIELDED, then horizon truncation in NORMAL | 0.199985563755 | 0.199252948165 | 0.800028085709 | 0 | 0.199239805341 | 11 / no |
+| 22055 | 72,227 | 32 | 18,824 | YIELDED, then horizon truncation in NORMAL | 0.199999108911 | 0.199384406209 | 0.800000011921 | 2 | 0.199371263385 | 7 / no |
+| 22056 | 71,649 | 29 | 18,823 | YIELDED, then horizon truncation in NORMAL | 0.199986577034 | 0.199442863464 | 0.800026595592 | 0 | 0.199429735541 | 9 / no |
+| 22057 | 73,934 | 27 | 18,821 | YIELDED, then horizon truncation in NORMAL | 0.199999555945 | 0.199504509568 | 0.800024390221 | 0 | 0.199482247233 | 0 / no |
+
+Across 700,000 transitions, Level 1 preempted 144,208 decisions (20.6011%). Boundary scaling (`boundary_scale < 1`) occurred on 119,008, 84,802, 86,240, 85,830, and 87,625 transitions for seeds 22053–22057 respectively. Minimum evaluator battery in joules was 33.652417741524, 1,061.549722025034, 1,062.250077008015, 1,062.561599145109, and 1,062.841390397019 respectively. Reward was exactly 0.0 throughout and organism-facing `info` remained `{}`. All runs were deterministic on regeneration.
+
+These five fixed-state Development lifetimes describe only the unchanged constitutive Level-1 floor under an energy-blind evaluator-side proposal stream. Four yields do not establish a minimum-cycle criterion, learned self-preservation, optimal thresholds, general robustness, hardware transfer, or confirmatory evidence. The single no-contact truncated RETURN is a valid negative/partial result and is not rescued or retuned.
