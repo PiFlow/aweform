@@ -37,8 +37,12 @@ The export includes play/pause, touch-friendly timeline scrubbing, playback
 speed controls, and the existing evaluator-side state overlays. The shared
 `build_development_html_replay` builder supports neutral deterministic
 multi-seed HTML payloads while `build_d043_html_replay` remains a compatibility
-wrapper with unchanged D-043 semantics. D-053 uses the same neutral model and
-exports all five seeded continuous lifetimes in one offline replay:
+wrapper with unchanged D-043 semantics. Optional payload keys add an energy
+strip (when `energy_thresholds` is set), command-source/cycle readouts (when
+frames carry them), and previous/next event navigation (when requested); absent
+keys leave the D-043 view unchanged. D-053 uses the same neutral model and
+shared template and exports all five seeded continuous lifetimes in one offline
+replay:
 
 ```text
 uv run aweform-export-d053-html --output development/D-053-v05-continuous-lifetime-replay.html

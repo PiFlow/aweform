@@ -1,14 +1,25 @@
 from __future__ import annotations
 
+import json
+from typing import cast
+
 import pytest
 
 from aweform.d045 import D045_MAX_WHEEL_DELTA_RAD, integrate_differential_drive
 from aweform.d052 import D052CommandSource, D052Mode, _legal_wheel_pair
 from aweform.d053 import (
     D053_DEVELOPMENT_SEEDS,
+    D053_MAX_EVENT_SAMPLES,
+    D053Lifetime,
     D053RoamingFixture,
+    _bounded_samples,
     run_d053_lifetime,
     validate_d053_development_seeds,
+)
+from aweform.development_visualizer import (
+    adapt_d053_trace,
+    build_development_html_replay,
+    select_d053_replay_indices,
 )
 from aweform.env import Action
 from aweform.exp001 import (
@@ -64,8 +75,23 @@ def test_fixture_replays_and_varies_by_seed() -> None:
     assert stream(22053) != stream(22054)
 
 
-def test_short_low_energy_lifetime_runs_through_yield_and_resumes_roaming() -> None:
-    life = run_d053_lifetime(22053, horizon=20_000, initial_battery_fraction=0.19)
+@pytest.fixture(scope="module")
+def low_energy_life() -> D053Lifetime:
+    return run_d053_lifetime(22053, horizon=20_000, initial_battery_fraction=0.19)
+
+
+def _first_transition(life: D053Lifetime, event: str) -> int:
+    return next(
+        cast(int, row["transition"])
+        for row in life.trace
+        if event in cast(list[str], row["events"])
+    )
+
+
+def test_short_low_energy_lifetime_runs_through_yield_and_resumes_roaming(
+    low_energy_life: D053Lifetime,
+) -> None:
+    life = low_energy_life
     summary = life.summary
     assert summary["total_transitions"] == 20_000
     assert summary["return_activated_count"] == 1
@@ -87,20 +113,144 @@ def test_short_low_energy_lifetime_runs_through_yield_and_resumes_roaming() -> N
     )
 
 
-def test_d053_visualizer_retains_required_windows_and_is_deterministic() -> None:
-    from aweform.development_visualizer import (
-        adapt_d053_trace,
-        build_development_html_replay,
+def test_samples_record_executed_wheels_separately_from_fixture_proposal(
+    low_energy_life: D053Lifetime,
+) -> None:
+    summary = low_energy_life.summary
+    samples = cast(list[dict[str, object]], summary["event_samples"])
+    assert samples[0]["events"] == ["RESET"]
+    assert "TRUNCATED" in cast(list[str], samples[-1]["events"])
+    assert summary["event_samples_truncated"] is False
+    charge_hold = next(
+        row for row in samples if "CHARGING_CONTACT" in cast(list[str], row["events"])
     )
+    assert charge_hold["command_source"] == D052CommandSource.CHARGE_HOLD.value
+    assert charge_hold["wheel_command"] == [0.0, 0.0]
+    proposed = cast(list[float], charge_hold["proposed_wheel_command"])
+    assert proposed != [0.0, 0.0]
+    m = D045_MAX_WHEEL_DELTA_RAD
+    assert tuple(proposed) in {(m, m), (-m, m), (m, -m)}
+    for row in samples[1:]:
+        if row["command_source"] == D052CommandSource.PASS_THROUGH.value:
+            assert row["wheel_command"] == row["proposed_wheel_command"]
 
-    short = run_d053_lifetime(22053, horizon=8)
-    data = adapt_d053_trace(short.trace, seed=short.seed)
+
+def test_event_sample_cap_collapses_invalid_runs_and_keeps_priority_rows() -> None:
+    def row(transition: int, events: list[str]) -> dict[str, object]:
+        return {"transition": transition, "events": events}
+
+    rows = [row(0, ["RESET"]), row(1, ["RETURN_ACTIVATED"])]
+    rows += [row(t, ["INVALID_BEACON"]) for t in range(2, 402)]
+    rows += [row(t, ["PHYSICAL_CONTACT_ACQUIRED"]) for t in range(500, 800)]
+    rows += [row(t, []) for t in range(800, 1100)]
+    rows += [row(1200, ["RECOVERY_YIELD"]), row(1300, ["TERMINATED"])]
+    samples, collapsed, truncated = _bounded_samples(rows)
+
+    assert collapsed == 399
+    assert truncated is True
+    assert len(samples) == D053_MAX_EVENT_SAMPLES
+    transitions = [cast(int, item["transition"]) for item in samples]
+    assert transitions == sorted(transitions)
+    assert transitions[0] == 0 and transitions[-1] == 1300
+    assert {1, 2, 1200} <= set(transitions)
+    assert not set(range(3, 402)) & set(transitions)
+    assert not set(range(800, 1100)) & set(transitions)
+    contact = [t for t in transitions if 500 <= t < 800]
+    assert len(contact) == D053_MAX_EVENT_SAMPLES - 5
+    assert contact[0] == 500 and contact[-1] > 780
+
+    short = [row(0, ["RESET"]), row(5, []), row(9, ["TRUNCATED"])]
+    assert _bounded_samples(short) == (short, 0, False)
+
+
+def test_d053_selector_windows_and_stride() -> None:
+    def row(
+        events: list[str], mode: str = "NORMAL", source: str = "PASS_THROUGH"
+    ) -> dict[str, object]:
+        return {"events": events, "active_mode": mode, "command_source": source}
+
+    trace = [row([]) for _ in range(1000)]
+    trace[0] = row(["RESET"])
+    trace[200] = row(["PHYSICAL_CONTACT_ACQUIRED"])
+    trace[420] = row(["PHYSICAL_CONTACT_LOST"], "RETURN", "D050_SMOOTH")
+    for index in range(600, 800):
+        trace[index] = row(["INVALID_BEACON"], "RETURN", "D050_SMOOTH")
+    trace[999] = row(["TRUNCATED"], "RETURN", "D050_SMOOTH")
+
+    expected = (
+        set(range(0, 1000, 100))
+        | set(range(150, 251))
+        | set(range(550, 651))
+        | set(range(949, 1000))
+    )
+    assert set(select_d053_replay_indices(trace)) == expected
+
+    trace[300] = row(["RETURN_ACTIVATED"], "RETURN", "D050_SMOOTH")
+    trace[340] = row(["CHARGING_CONTACT"], "CHARGE", "CHARGE_HOLD")
+    assert set(select_d053_replay_indices(trace)) == expected | set(range(250, 391))
+
+
+def _embedded_payload(html: str) -> dict[str, object]:
+    prefix = "window.__AWEFORM_D043_REPLAYS__ = "
+    start = html.index(prefix) + len(prefix)
+    end = html.index(";\n(function", start)
+    return cast(dict[str, object], json.loads(html[start:end]))
+
+
+def test_d053_html_payload_retains_return_window_and_view_fields(
+    low_energy_life: D053Lifetime,
+) -> None:
+    life = low_energy_life
+    data = adapt_d053_trace(life.trace, seed=life.seed)
     html = build_development_html_replay(
-        (data,), schema="aweform.d053.offline-replay.v1", title="test"
+        (data,),
+        schema="aweform.d053.offline-replay.v1",
+        title="t",
+        event_navigation=True,
     )
     assert html == build_development_html_replay(
-        (data,), schema="aweform.d053.offline-replay.v1", title="test"
+        (data,),
+        schema="aweform.d053.offline-replay.v1",
+        title="t",
+        event_navigation=True,
     )
-    assert "RETURN 20%" in html and "RECOVERY 80%" in html
-    assert "command_source" in html and "cycle" in html
     assert "fetch(" not in html and 'src="http' not in html and 'href="http' not in html
+    payload = _embedded_payload(html)
+    assert payload["schema"] == "aweform.d053.offline-replay.v1"
+    (replay,) = cast(list[dict[str, object]], payload["replays"])
+    assert replay["seed"] == 22053
+    assert replay["event_navigation"] is True
+    assert replay["energy_strip"] == {
+        "range": [0.0, 1.0],
+        "thresholds": [[0.2, "RETURN 20%"], [0.8, "RECOVERY 80%"]],
+    }
+    frames = cast(list[dict[str, object]], replay["frames"])
+    by_transition = {cast(int, frame["transition"]): frame for frame in frames}
+    total = len(life.trace) - 1
+    assert len(frames) < total // 2
+
+    activated = _first_transition(life, "RETURN_ACTIVATED")
+    contact = _first_transition(life, "CHARGING_CONTACT")
+    recovery = _first_transition(life, "RECOVERY_YIELD")
+    retained = set(range(max(0, activated - 50), contact + 51))
+    retained |= set(range(recovery - 50, recovery + 51))
+    retained |= set(range(0, total + 1, 100)) | {total}
+    assert retained <= set(by_transition)
+
+    for transition in range(activated, contact):
+        frame = by_transition[transition]
+        assert frame["mode"] == "RETURN"
+        assert frame["command_source"] == "D050_SMOOTH"
+        assert "/ D-050 " in cast(str, frame["action"])
+    for transition, frame in by_transition.items():
+        if transition == 0:
+            assert "command_source" not in frame
+            continue
+        source = life.trace[transition]
+        assert frame["command_source"] == source["command_source"]
+        assert frame["cycle_index"] == source["cycle_index"]
+        assert cast(str, frame["action"]).startswith(
+            f"proposal {source['symbolic_proposal']}"
+        )
+    assert by_transition[activated]["cycle_index"] == 1
+    assert "RETURN_ACTIVATED" in cast(str, by_transition[activated]["event"])

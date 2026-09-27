@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import html
 import itertools
 import json
 import math
@@ -1432,13 +1433,13 @@ def build_development_visualization_figure(
                 )
                 text_artist.set_bbox(
                     {
-                    "facecolor": (
-                        "#e8f5e9" if alternative.physically_executed else "#f4f4f4"
-                    ),
-                    "edgecolor": (
-                        "tab:green" if alternative.physically_executed else "0.7"
-                    ),
-                    "linewidth": 1.5 if alternative.physically_executed else 0.8,
+                        "facecolor": (
+                            "#e8f5e9" if alternative.physically_executed else "#f4f4f4"
+                        ),
+                        "edgecolor": (
+                            "tab:green" if alternative.physically_executed else "0.7"
+                        ),
+                        "linewidth": 1.5 if alternative.physically_executed else 0.8,
                     }
                 )
                 rendered.append(text_artist)
@@ -4390,12 +4391,12 @@ def d050_main(argv: Sequence[str] | None = None) -> int:
     return 0
 
 
-_D043_HTML_TEMPLATE = r"""<!doctype html>
+_DEVELOPMENT_HTML_TEMPLATE = r"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Aweform D-043 offline replay</title>
+<title>__AWEFORM_TITLE__</title>
 <style>
 :root { color-scheme: dark; font-family: system-ui, sans-serif; }
 body { margin: 0; background: #10151b; color: #e8eef5; }
@@ -4419,11 +4420,13 @@ canvas {
 .readout span { white-space: nowrap; }
 .event { color: #ffd166; font-weight: 650; }
 .note { color: #aebdca; font-size: .82rem; }
+#energy-strip { height: 150px; min-height: 0; margin-top: 8px; }
+canvas[hidden] { display: none; }
 </style>
 </head>
 <body>
 <main>
-<h1>Aweform D-043 — evaluator-only offline replay</h1>
+<h1>__AWEFORM_TITLE__</h1>
 <div class="controls">
   <label>Seed <select id="seed"></select></label>
   <button id="play" type="button">Play</button>
@@ -4432,18 +4435,23 @@ canvas {
     <option value="1" selected>1×</option><option value="2">2×</option>
     <option value="4">4×</option>
   </select></label>
+  <button id="prev-event" type="button" hidden>Previous event</button>
+  <button id="next-event" type="button" hidden>Next event</button>
 </div>
 <div class="controls"><input id="timeline" type="range" min="0" max="0"
   value="0" step="1" aria-label="Replay timeline"></div>
+<datalist id="event-ticks"></datalist>
 <div class="readout">
   <span id="progress"></span><span id="mode"></span><span id="action"></span>
   <span id="energy"></span><span id="thermal"></span><span id="contact"></span>
   <span id="beacon"></span><span id="status"></span>
+  <span id="source" hidden></span><span id="cycle" hidden></span>
   <span id="event" class="event"></span>
 </div>
-<canvas id="world" aria-label="D-043 replay world view"></canvas>
+<canvas id="world" aria-label="Development replay world view"></canvas>
+<canvas id="energy-strip" hidden aria-label="Energy history"></canvas>
 <p class="note">This file is a deterministic post-hoc display of accepted
-  D-043/D-042 evaluator data. Coordinates, heading, geometry, event labels,
+  development evaluator data. Coordinates, heading, geometry, event labels,
   and display sampling are evaluator-only; no network or Aweform runtime is
   used.</p>
 </main>
@@ -4458,12 +4466,18 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
   const timeline = document.getElementById("timeline");
   const canvas = document.getElementById("world");
   const ctx = canvas.getContext("2d");
+  const energyCanvas = document.getElementById("energy-strip");
+  const energyCtx = energyCanvas.getContext("2d");
+  const prevButton = document.getElementById("prev-event");
+  const nextButton = document.getElementById("next-event");
+  const eventTicks = document.getElementById("event-ticks");
   const fieldNames = ["progress", "mode", "action", "energy", "thermal",
-    "contact", "beacon", "status", "event"];
+    "contact", "beacon", "status", "source", "cycle", "event"];
   const fields = Object.fromEntries(fieldNames.map(function (id) {
     return [id, document.getElementById(id)];
   }));
-  const state = { replay: replays[0], frame: 0, playing: false, lastTime: 0, carry: 0 };
+  const state = { replay: replays[0], frame: 0, playing: false, lastTime: 0,
+    carry: 0, events: [] };
 
   function currentFrame() { return state.replay.frames[state.frame]; }
   function setReplay(index) {
@@ -4472,15 +4486,83 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
     state.carry = 0;
     timeline.max = String(Math.max(0, state.replay.frames.length - 1));
     timeline.value = "0";
-    draw();
+    state.events = [];
+    eventTicks.replaceChildren();
+    if (state.replay.event_navigation) {
+      state.replay.frames.forEach(function (item, frameIndex) {
+        if (!item.event) return;
+        state.events.push(frameIndex);
+        const tick = document.createElement("option");
+        tick.value = String(frameIndex);
+        eventTicks.appendChild(tick);
+      });
+      timeline.setAttribute("list", "event-ticks");
+    } else {
+      timeline.removeAttribute("list");
+    }
+    prevButton.hidden = nextButton.hidden = !state.replay.event_navigation;
+    energyCanvas.hidden = !state.replay.energy_strip;
+    resizeCanvas();
+  }
+  function sizeCanvas(target, context, scale) {
+    const rect = target.getBoundingClientRect();
+    target.width = Math.max(1, Math.round(rect.width * scale));
+    target.height = Math.max(1, Math.round(rect.height * scale));
+    context.setTransform(scale, 0, 0, scale, 0, 0);
   }
   function resizeCanvas() {
     const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.max(1, Math.round(rect.width * scale));
-    canvas.height = Math.max(1, Math.round(rect.height * scale));
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    sizeCanvas(canvas, ctx, scale);
+    if (!energyCanvas.hidden) sizeCanvas(energyCanvas, energyCtx, scale);
     draw();
+  }
+  function jumpToEvent(direction) {
+    const candidates = state.events.filter(function (frameIndex) {
+      return direction < 0 ? frameIndex < state.frame : frameIndex > state.frame;
+    });
+    if (!candidates.length) return;
+    state.frame = direction < 0 ? candidates[candidates.length - 1] : candidates[0];
+    state.carry = 0; timeline.value = String(state.frame); draw();
+  }
+  function drawEnergyStrip(replay, frame) {
+    const strip = replay.energy_strip;
+    const rect = energyCanvas.getBoundingClientRect();
+    const width = rect.width, height = rect.height;
+    const left = 96, right = 10, top = 8, bottom = 16;
+    const plotWidth = Math.max(1, width - left - right);
+    const plotHeight = Math.max(1, height - top - bottom);
+    const first = replay.frames[0].transition;
+    const final = replay.frames[replay.frames.length - 1].transition;
+    const span = Math.max(1, final - first);
+    const lower = strip.range[0], upper = strip.range[1];
+    function xOf(transition) { return left + plotWidth * (transition - first) / span; }
+    function yOf(value) { return top + plotHeight * (upper - value) / (upper - lower); }
+    energyCtx.clearRect(0, 0, width, height);
+    energyCtx.font = "11px system-ui, sans-serif";
+    energyCtx.lineWidth = 1;
+    strip.thresholds.forEach(function (threshold) {
+      const y = yOf(threshold[0]);
+      energyCtx.strokeStyle = "#7d8b99"; energyCtx.setLineDash([5, 4]);
+      energyCtx.beginPath(); energyCtx.moveTo(left, y);
+      energyCtx.lineTo(left + plotWidth, y); energyCtx.stroke();
+      energyCtx.setLineDash([]);
+      energyCtx.fillStyle = "#17202a"; energyCtx.fillText(threshold[1], 4, y + 4);
+    });
+    energyCtx.strokeStyle = "#2584c7"; energyCtx.lineWidth = 1.5; energyCtx.beginPath();
+    replay.frames.forEach(function (item, index) {
+      const x = xOf(item.transition), y = yOf(item.energy);
+      if (index === 0) energyCtx.moveTo(x, y); else energyCtx.lineTo(x, y);
+    });
+    energyCtx.stroke();
+    energyCtx.fillStyle = "#d1495b";
+    replay.frames.forEach(function (item) {
+      if (!item.event) return;
+      energyCtx.fillRect(xOf(item.transition) - 1, top + plotHeight + 3, 2, 6);
+    });
+    const cursor = xOf(frame.transition);
+    energyCtx.strokeStyle = "#e0a100"; energyCtx.lineWidth = 2; energyCtx.beginPath();
+    energyCtx.moveTo(cursor, top); energyCtx.lineTo(cursor, top + plotHeight);
+    energyCtx.stroke();
   }
   function project(point, replay, width, height) {
     const margin = 20;
@@ -4521,7 +4603,8 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
       ctx.strokeStyle = "#aab7c4"; ctx.lineWidth = 1.5; ctx.beginPath();
       path.forEach(function (item, index) {
         const p = project([item.x, item.y], replay, width, height);
-        if (index === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]);
+        if (index === 0 || item.trajectory_break_before) ctx.moveTo(p[0], p[1]);
+        else ctx.lineTo(p[0], p[1]);
       });
       ctx.stroke();
     }
@@ -4576,7 +4659,12 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
       "L/F/R: unavailable";
     fields.status.textContent = "status: " + (frame.terminated ? "TERMINATED" :
       (frame.truncated ? "HORIZON TRUNCATED" : "RUNNING"));
+    fields.source.hidden = !("command_source" in frame);
+    fields.source.textContent = "source: " + frame.command_source;
+    fields.cycle.hidden = !("cycle_index" in frame);
+    fields.cycle.textContent = "cycle: " + frame.cycle_index;
     fields.event.textContent = frame.event || "";
+    if (replay.energy_strip) drawEnergyStrip(replay, frame);
   }
   function tick(now) {
     if (!state.playing) return;
@@ -4608,11 +4696,13 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
     if (state.playing) window.requestAnimationFrame(tick);
   });
   speedSelect.addEventListener("change", function () { state.carry = 0; });
+  prevButton.addEventListener("click", function () { jumpToEvent(-1); });
+  nextButton.addEventListener("click", function () { jumpToEvent(1); });
   timeline.addEventListener("input", function () {
     state.frame = Number(timeline.value); state.carry = 0; draw();
   });
   window.addEventListener("resize", resizeCanvas);
-  resizeCanvas();
+  setReplay(0);
 }());
 </script>
 </body>
@@ -4620,8 +4710,10 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
 """
 
 
-def _d043_html_frame_payload(frame: DevelopmentVisualizationFrame) -> dict[str, object]:
-    """Serialize one neutral D-043 frame for the offline presentation surface."""
+def _development_html_frame_payload(
+    frame: DevelopmentVisualizationFrame,
+) -> dict[str, object]:
+    """Serialize one neutral frame for the offline presentation surface."""
     alignment = frame.front_contact_alignment or frame.rear_contact_alignment
     beacon = None
     if frame.beacon_left is not None:
@@ -4655,15 +4747,15 @@ def _d043_html_frame_payload(frame: DevelopmentVisualizationFrame) -> dict[str, 
     }
 
 
-def _d043_html_replay_payload(
+def _development_html_replay_payload(
     data: DevelopmentVisualizationData,
 ) -> dict[str, object]:
-    """Serialize canonical neutral D-043 data without rerunning the organism."""
+    """Serialize canonical neutral data without rerunning the organism."""
     geometry = data.causal_geometry
     if geometry is None:
-        raise ValueError("D-043 HTML export requires causal front-contact geometry")
+        raise ValueError("HTML export requires causal contact geometry")
     if data.seed is None:
-        raise ValueError("D-043 HTML export requires a seed")
+        raise ValueError("HTML export requires a seed")
     return {
         "seed": data.seed,
         "title": data.figure_title or data.source_label,
@@ -4678,7 +4770,17 @@ def _d043_html_replay_payload(
             "dock_minus": list(geometry.dock_contact_minus),
             "tolerance": geometry.contact_tolerance,
         },
-        "frames": [_d043_html_frame_payload(frame) for frame in data.frames],
+        "frames": [_development_html_frame_payload(frame) for frame in data.frames],
+        **(
+            {
+                "energy_strip": {
+                    "range": [data.energy_range.lower, data.energy_range.upper],
+                    "thresholds": [list(item) for item in data.energy_thresholds],
+                }
+            }
+            if data.energy_thresholds is not None
+            else {}
+        ),
     }
 
 
@@ -4686,15 +4788,10 @@ def build_d043_html_replay(
     data: Sequence[DevelopmentVisualizationData],
 ) -> str:
     """Return a deterministic, self-contained Android-viewable D-043 replay."""
-    if not data:
-        raise ValueError("D-043 HTML export requires at least one replay")
-    seeds = [item.seed for item in data]
-    if any(seed is None for seed in seeds) or len(set(seeds)) != len(seeds):
-        raise ValueError("D-043 HTML replays require unique integer seeds")
     return build_development_html_replay(
         data,
         schema="aweform.d043.offline-replay.v1",
-        title="Aweform D-043 offline replay",
+        title="Aweform D-043 — evaluator-only offline replay",
     )
 
 
@@ -4745,9 +4842,9 @@ def d043_html_main(argv: Sequence[str] | None = None) -> int:
         tuple(args.seeds)
         if args.seeds
         else (
-        d043.D043_CANONICAL_VISUALIZATION_SEED,
-        d043.D043_FAILURE_VISUALIZATION_SEED,
-    )
+            d043.D043_CANONICAL_VISUALIZATION_SEED,
+            d043.D043_FAILURE_VISUALIZATION_SEED,
+        )
     )
     write_d043_html_replay(args.output, seeds=seeds, horizon=d043.D043_HORIZON)
     return 0
@@ -4811,132 +4908,146 @@ def _require_bool_attribute(value: object, name: str) -> bool:
     return field
 
 
-_D053_REPLAY_HTML = r"""<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>D-053 replay</title><style>body{background:#10151b;color:#eee;font:16px system-ui;max-width:1100px;margin:auto;padding:12px}canvas{width:100%;display:block;background:#f7f9fb;margin:8px 0}#world{height:55vh;min-height:300px}#energy{height:140px}button,select{padding:8px;background:#263442;color:white}#read{display:flex;flex-wrap:wrap;gap:12px}.event{color:#ffd166}</style><h2>D-053 continuous-life evaluator replay</h2><label>Seed <select id="seed"></select></label> <button id="play">Play</button> <button id="prev">Previous event</button> <button id="next">Next event</button> Speed <select id="speed"><option>.25</option><option>.5</option><option selected>1</option><option>2</option><option>4</option></select><input id="timeline" type="range" min="0" value="0" step="1" style="width:100%"><div id="read"></div><canvas id="world"></canvas><canvas id="energy"></canvas><script>const D=__DATA__,S=document.querySelector('#seed'),T=document.querySelector('#timeline'),W=document.querySelector('#world'),C=W.getContext('2d'),E=document.querySelector('#energy'),G=E.getContext('2d'),R=document.querySelector('#read');let r=D.replays[0],i=0,playing=false,last=0;D.replays.forEach((x,n)=>{let o=document.createElement('option');o.value=n;o.textContent=x.seed;S.append(o)});function frame(){return r.frames[i]}function draw(){let f=frame(),w=W.clientWidth,h=W.clientHeight;C.clearRect(0,0,w,h);let p=(x,y)=>[20+x*(w-40),h-20-y*(h-40)],s=p(.5,.5);C.fillStyle='#e76f51';C.beginPath();C.arc(...s,7,0,7);C.fill();C.fillStyle='#7a5195';for(const dy of [-.05,.05]){let d=p(.5,.5+dy);C.fillRect(d[0]-3,d[1]-3,6,6)}C.strokeStyle='#6082a0';C.beginPath();r.frames.slice(0,i+1).forEach((q,n)=>{let a=p(q.x,q.y);n?C.lineTo(...a):C.moveTo(...a)});C.stroke();let q=p(f.x,f.y),a=f.heading,l=.09,b=.1075,cs=[[-l,-b],[l,-b],[l,b],[-l,b]].map(([x,y])=>p(f.x+x*Math.cos(a)-y*Math.sin(a),f.y+x*Math.sin(a)+y*Math.cos(a)));C.fillStyle=f.contact?'#43aa8b':'#277da1';C.beginPath();cs.forEach((v,n)=>n?C.lineTo(...v):C.moveTo(...v));C.closePath();C.fill();C.fillStyle='#fff';for(const side of [-1,1]){let cp=p(f.x-.05*Math.sin(a)*side,f.y+.05*Math.cos(a)*side);C.beginPath();C.arc(...cp,3,0,7);C.fill()}C.strokeStyle='#111';C.beginPath();C.moveTo(...q);C.lineTo(...p(f.x+.11*Math.cos(a),f.y+.11*Math.sin(a)));C.stroke();R.innerHTML=`seed ${r.seed} · transition ${f.t}/${r.total} · ${(f.t*.1).toFixed(1)} s · mode ${f.mode} · proposal ${f.action||'—'} · source ${f.command_source||'RESET'} · D-050 ${f.d050||'—'} · contact ${f.contact?'YES':'NO'} · cycle ${f.cycle_index} · energy ${f.energy.toFixed(4)} <span class="event">${f.event||''}</span>`;let ew=E.clientWidth,eh=E.clientHeight;G.clearRect(0,0,ew,eh);let x0=90,y0=10,ww=ew-100,hh=eh-25;G.strokeStyle='#899';for(const [v,label] of r.thresholds){let y=y0+hh*(1-v);G.setLineDash([5,4]);G.beginPath();G.moveTo(x0,y);G.lineTo(x0+ww,y);G.stroke();G.setLineDash([]);G.fillStyle='#222';G.fillText(label,3,y)}G.strokeStyle='#2584c7';G.beginPath();r.energy.forEach((v,n)=>{let x=x0+ww*n/(r.energy.length-1),y=y0+hh*(1-v);n?G.lineTo(x,y):G.moveTo(x,y)});G.stroke();let x=x0+ww*f.t/r.total;G.strokeStyle='#ffca3a';G.beginPath();G.moveTo(x,y0);G.lineTo(x,y0+hh);G.stroke();r.events.forEach(t=>{G.fillStyle='#d44';G.fillRect(x0+ww*t/r.total,y0+hh+2,2,5)})}function set(n){r=D.replays[n];i=0;T.max=r.frames.length-1;T.value=0;draw()}function event(d){let t=frame().t,x=r.events.filter(v=>d<0?v<t:v>t);if(x.length){i=r.frames.findIndex(f=>f.t>=(d<0?x[x.length-1]:x[0]));T.value=i;draw()}}function tick(now){if(!playing)return;if(!last)last=now;if(now-last>110/Number(document.querySelector('#speed').value)){i=Math.min(i+1,r.frames.length-1);T.value=i;last=now;draw()}if(i<r.frames.length-1)requestAnimationFrame(tick);else{playing=false;document.querySelector('#play').textContent='Play'}}S.onchange=()=>set(+S.value);document.querySelector('#play').onclick=()=>{playing=!playing;document.querySelector('#play').textContent=playing?'Pause':'Play';last=0;if(playing)requestAnimationFrame(tick)};document.querySelector('#prev').onclick=()=>event(-1);document.querySelector('#next').onclick=()=>event(1);T.oninput=()=>{i=+T.value;draw()};window.onresize=draw;set(0);</script>"""  # noqa: E501
+D053_REPLAY_STRIDE: Final[int] = 100
+D053_REPLAY_WINDOW: Final[int] = 50
+_D053_WINDOW_EVENTS: Final[frozenset[str]] = frozenset(
+    {
+        "RECOVERY_YIELD",
+        "CHARGING_CONTACT_LOST",
+        "CHARGING_CONTACT_REACQUIRED",
+        "TERMINAL_SPIN_EXHAUSTED",
+        "TERMINATED",
+        "TRUNCATED",
+    }
+)
+_D053_BODY_LENGTH_M: Final[float] = 0.180
+_D053_BODY_WIDTH_M: Final[float] = 0.215
 
 
 def select_d053_replay_indices(
     trace: Sequence[Mapping[str, object]],
 ) -> tuple[int, ...]:
-    """Frozen display-only stride and event-window selector."""
+    """Frozen display-only stride and event-window selector over trace rows."""
     if not trace:
         raise ValueError("D-053 trace must not be empty")
-    important = {
-        "RETURN_ACTIVATED",
-        "RECOVERY_YIELD",
-        "PHYSICAL_CONTACT_ACQUIRED",
-        "PHYSICAL_CONTACT_LOST",
-        "CHARGING_CONTACT",
-        "CHARGING_CONTACT_LOST",
-        "CHARGING_CONTACT_REACQUIRED",
-        "TERMINAL_SPIN_EXHAUSTED",
-        "INVALID_BEACON",
-        "TERMINATED",
-        "TRUNCATED",
-    }
-    keep = {0, len(trace) - 1}
-    events: list[tuple[int, str]] = []
-    for i, record in enumerate(trace):
-        for event in cast(list[str], record.get("events", [])):
-            if event in important:
-                events.append((i, event))
-                keep.update(range(max(0, i - 50), min(len(trace), i + 51)))
-    for start, event in events:
-        if event != "RETURN_ACTIVATED":
-            continue
-        end = next(
-            (i for i, e in events if i >= start and e == "CHARGING_CONTACT"), None
-        )
-        if end is None:
-            end = next(
-                (
-                    i
-                    for i, e in events
-                    if i > start and e in {"RECOVERY_YIELD", "TERMINATED", "TRUNCATED"}
-                ),
-                len(trace) - 1,
+    last = len(trace) - 1
+    keep = set(range(0, len(trace), D053_REPLAY_STRIDE)) | {0, last}
+
+    def retain(start: int, end: int) -> None:
+        keep.update(
+            range(
+                max(0, start - D053_REPLAY_WINDOW),
+                min(last, end + D053_REPLAY_WINDOW) + 1,
             )
-        keep.update(range(max(0, start - 50), min(len(trace), end + 51)))
-    keep.update(range(0, len(trace), 100))
+        )
+
+    return_start: int | None = None
+    previous_invalid = False
+    for index, row in enumerate(trace):
+        events = cast(list[str], row["events"])
+        if "RETURN_ACTIVATED" in events:
+            return_start = index
+        if return_start is not None and (
+            "CHARGING_CONTACT" in events or {"TERMINATED", "TRUNCATED"} & set(events)
+        ):
+            retain(return_start, index)
+            return_start = None
+        invalid = "INVALID_BEACON" in events
+        incidental = (
+            row["active_mode"] == "NORMAL"
+            and row["command_source"] == "PASS_THROUGH"
+            and bool(
+                {"PHYSICAL_CONTACT_ACQUIRED", "PHYSICAL_CONTACT_LOST"} & set(events)
+            )
+        )
+        if (
+            _D053_WINDOW_EVENTS.intersection(events)
+            or incidental
+            or (invalid and not previous_invalid)
+        ):
+            retain(index, index)
+        previous_invalid = invalid
+    if return_start is not None:
+        retain(return_start, last)
     return tuple(sorted(keep))
 
 
 def adapt_d053_trace(
     trace: Sequence[Mapping[str, object]], *, seed: int
 ) -> DevelopmentVisualizationData:
-    """Adapt the full evaluator-side D-053 trace into neutral visualization data."""
-    from .d045 import D045_CONTACT_TOLERANCE_METRES, D045_WORLD_MAX, D045_WORLD_MIN
+    """Adapt a full evaluator-side D-053 trace into display-sampled neutral data."""
+    from .d045 import (
+        D045_CONTACT_OFFSET_METRES,
+        D045_CONTACT_TOLERANCE_METRES,
+        D045_WORLD_MAX,
+        D045_WORLD_MIN,
+    )
     from .d049 import D049_STATION_CENTER
 
-    selected = range(len(trace))
     frames = []
-    for i in selected:
-        row = trace[i]
-        events = cast(list[str], row.get("events", []))
+    for index in select_d053_replay_indices(trace):
+        row = trace[index]
+        reset = index == 0
+        events = cast(list[str], row["events"])
+        proposal = "INITIAL" if reset else f"proposal {row['symbolic_proposal']}"
+        d050_mode = row["d050_mode"]
         frames.append(
             DevelopmentVisualizationFrame(
                 transition_index=cast(int, row["transition"]),
                 x=cast(float, row["x"]),
                 y=cast(float, row["y"]),
                 heading=cast(float, row["heading"]),
-                action=(
-                    f"{row.get('symbolic_proposal') or 'INITIAL'}"
-                    + (
-                        f" / D050:{row['d050_mode']}"
-                        if row.get("d050_mode") is not None
-                        else ""
-                    )
-                ),
+                action=proposal + (f" / D-050 {d050_mode}" if d050_mode else ""),
                 decision_mode=str(row["active_mode"]),
-                energy=cast(float, row.get("energy", row.get("energy_after", 0.0))),
-                thermal=cast(float, row.get("thermal", 0.0)),
-                charging_contact=bool(
-                    row.get(
-                        "charging_contact", row.get("charging_contact_after", False)
-                    )
+                energy=cast(float, row["energy" if reset else "energy_after"]),
+                thermal=cast(float, row["thermal"]),
+                charging_contact=cast(
+                    bool, row["charging_contact" if reset else "charging_contact_after"]
                 ),
-                terminated=bool(row.get("terminated", False)),
-                truncated=bool(row.get("truncated", False)),
-                simulated_seconds=cast(float, row.get("simulated_seconds", 0.0)),
-                charging_contact_before=cast(bool, row.get("charging_contact_before"))
-                if isinstance(row.get("charging_contact_before"), bool)
-                else None,
+                terminated=cast(bool, row["terminated"]),
+                truncated=cast(bool, row["truncated"]),
+                simulated_seconds=cast(float, row["simulated_seconds"]),
+                charging_contact_before=cast(
+                    "bool | None", row["charging_contact_before"]
+                ),
                 event_label=", ".join(events) if events else None,
-                command_source=str(row["command_source"])
-                if row.get("command_source")
-                else None,
-                cycle_index=cast(int, row.get("cycle_index", 0)),
+                command_source=cast("str | None", row["command_source"]),
+                cycle_index=cast(int, row["cycle_index"]),
             )
         )
+    station = D049_STATION_CENTER
     return DevelopmentVisualizationData(
         source_label="D-053 evaluator-only continuous lifetime",
         seed=seed,
         world_min=D045_WORLD_MIN,
         world_max=D045_WORLD_MAX,
-        station_center=D049_STATION_CENTER,
-        charging_radius=0,
-        energy_range=DevelopmentVisualizationRange(0, 1),
-        thermal_range=DevelopmentVisualizationRange(0, 1),
+        station_center=station,
+        charging_radius=None,
+        energy_range=DevelopmentVisualizationRange(0.0, 1.0),
+        thermal_range=DevelopmentVisualizationRange(0.0, 1.0),
         frames=tuple(frames),
         visibility=DevelopmentVisualizationVisibility(
-            "EVALUATOR ONLY",
-            "EVALUATOR ONLY",
-            "ORGANISM-VISIBLE NORMALIZED + EVALUATOR BATTERY J",
-            "ORGANISM-VISIBLE NORMALIZED",
-            "ORGANISM-VISIBLE BINARY + EVALUATOR",
-            "D-052 MODE; D-050 SUB-MODE EVALUATOR TRACE",
+            position_heading="EVALUATOR ONLY",
+            station_location="EVALUATOR ONLY",
+            energy="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
+            thermal="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
+            charging_contact="ORGANISM-VISIBLE BINARY + EVALUATOR",
+            action_decision_mode=(
+                "EVALUATOR TRACE: D-052 MODE/SOURCE, D-050 SUB-MODE, FIXTURE PROPOSAL"
+            ),
         ),
         energy_thresholds=((0.20, "RETURN 20%"), (0.80, "RECOVERY 80%")),
         energy_label="ENERGY",
         causal_geometry=DevelopmentCausalGeometry(
-            0.180,
-            0.215,
-            (0, 0.05),
-            (0, -0.05),
-            (0, 0),
-            0,
-            (D049_STATION_CENTER[0], D049_STATION_CENTER[1] + 0.05),
-            (D049_STATION_CENTER[0], D049_STATION_CENTER[1] - 0.05),
-            D045_CONTACT_TOLERANCE_METRES,
+            body_length=_D053_BODY_LENGTH_M,
+            body_width=_D053_BODY_WIDTH_M,
+            rear_contact_plus=(0.0, D045_CONTACT_OFFSET_METRES),
+            rear_contact_minus=(0.0, -D045_CONTACT_OFFSET_METRES),
+            front_midpoint=(0.0, 0.0),
+            dock_orientation=0.0,
+            dock_contact_plus=(station[0], station[1] + D045_CONTACT_OFFSET_METRES),
+            dock_contact_minus=(station[0], station[1] - D045_CONTACT_OFFSET_METRES),
+            contact_tolerance=D045_CONTACT_TOLERANCE_METRES,
             contact_label="under-body contacts",
         ),
         figure_title=f"D-053 seed {seed}",
@@ -4944,91 +5055,35 @@ def adapt_d053_trace(
 
 
 def build_development_html_replay(
-    data: Sequence[DevelopmentVisualizationData], *, schema: str, title: str
+    data: Sequence[DevelopmentVisualizationData],
+    *,
+    schema: str,
+    title: str,
+    event_navigation: bool = False,
 ) -> str:
-    """Neutral multi-seed HTML builder; old D-043 calls preserve their output."""
-    if schema == "aweform.d043.offline-replay.v1":
-        d043_payload = {
-            "schema": schema,
-            "replays": [_d043_html_replay_payload(item) for item in data],
-        }
-        encoded = json.dumps(
-            d043_payload, allow_nan=False, separators=(",", ":"), sort_keys=True
-        ).replace("</", "<\\/")
-        return _D043_HTML_TEMPLATE.replace("__AWEFORM_D043_PAYLOAD__", encoded)
-    if schema != "aweform.d053.offline-replay.v1" or not data:
-        raise ValueError("unsupported or empty development replay")
-    replays = []
-    for item in data:
-        if item.seed is None or item.energy_thresholds is None:
-            raise ValueError("D-053 seed/threshold metadata missing")
-        full_frames = item.frames
-        by_step = {f.transition_index: f for f in full_frames}
-        event_rows = [
-            {
-                "transition": f.transition_index,
-                "events": f.event_label.split(", ") if f.event_label else [],
-            }
-            for f in full_frames
-        ]
-        selected = select_d053_replay_indices(event_rows)
-        energy = [f.energy for f in full_frames[::100]]
-        if (len(full_frames) - 1) % 100:
-            energy.append(full_frames[-1].energy)
-        event_steps = [f.transition_index for f in full_frames if f.event_label]
-        frames = [
-            {
-                "t": by_step[n].transition_index,
-                "x": by_step[n].x,
-                "y": by_step[n].y,
-                "heading": by_step[n].heading,
-                "mode": by_step[n].decision_mode,
-                "command_source": by_step[n].command_source,
-                "d050": (
-                    by_step[n].action.split("D050:", 1)[1]
-                    if "D050:" in by_step[n].action
-                    else None
-                ),
-                "contact": by_step[n].charging_contact,
-                "cycle_index": by_step[n].cycle_index,
-                "energy": by_step[n].energy,
-                "event": by_step[n].event_label,
-                "break": by_step[n].trajectory_break_before,
-            }
-            for n in selected
-        ]
-        replays.append(
-            {
-                "seed": item.seed,
-                "total": full_frames[-1].transition_index,
-                "energy": energy,
-                "events": event_steps,
-                "thresholds": [list(x) for x in item.energy_thresholds],
-                "world": {"min": item.world_min, "max": item.world_max},
-                "frames": frames,
-            }
-        )
-    payload = json.dumps(
-        {"schema": schema, "title": title, "replays": replays},
+    """Return one deterministic, self-contained multi-seed offline HTML replay.
+
+    Optional view features are driven by optional payload keys: an energy strip
+    when ``energy_thresholds`` is set and event navigation when requested.
+    """
+    if not data:
+        raise ValueError("HTML export requires at least one replay")
+    seeds = [item.seed for item in data]
+    if any(seed is None for seed in seeds) or len(set(seeds)) != len(seeds):
+        raise ValueError("HTML replays require unique integer seeds")
+    replays = [_development_html_replay_payload(item) for item in data]
+    if event_navigation:
+        for replay in replays:
+            replay["event_navigation"] = True
+    serialized = json.dumps(
+        {"schema": schema, "replays": replays},
         allow_nan=False,
         separators=(",", ":"),
         sort_keys=True,
     ).replace("</", "<\\/")
-    return _D053_REPLAY_HTML.replace("__DATA__", payload)
-
-
-def build_d053_html_replay(lifetimes: Sequence[object]) -> str:
-    """Build D-053 replay from full traces in completed lifetime records."""
-    data = [
-        adapt_d053_trace(
-            cast(Sequence[Mapping[str, object]], getattr(x, "trace")),
-            seed=int(getattr(x, "seed")),
-        )
-        for x in lifetimes
-    ]
-    return build_development_html_replay(
-        data, schema="aweform.d053.offline-replay.v1", title="D-053 continuous lifetime"
-    )
+    return _DEVELOPMENT_HTML_TEMPLATE.replace(
+        "__AWEFORM_TITLE__", html.escape(title)
+    ).replace("__AWEFORM_D043_PAYLOAD__", serialized)
 
 
 def d053_html_main(argv: Sequence[str] | None = None) -> int:
@@ -5049,10 +5104,11 @@ def d053_html_main(argv: Sequence[str] | None = None) -> int:
         lifetime = run_d053_lifetime(seed)
         data.append(adapt_d053_trace(lifetime.trace, seed=seed))
         del lifetime
-    html = build_development_html_replay(
+    html_text = build_development_html_replay(
         data,
         schema="aweform.d053.offline-replay.v1",
-        title="D-053 continuous lifetime",
+        title="Aweform D-053 — evaluator-only continuous-lifetime replay",
+        event_navigation=True,
     )
-    args.output.write_text(html, encoding="utf-8", newline="\n")
+    args.output.write_text(html_text, encoding="utf-8", newline="\n")
     return 0

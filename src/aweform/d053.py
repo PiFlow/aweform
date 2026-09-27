@@ -51,6 +51,19 @@ D053_HORIZON: Final[int] = 140_000
 D053_DEVELOPMENT_SEEDS: Final[tuple[int, ...]] = (22053, 22054, 22055, 22056, 22057)
 D053_ARTIFACT_FLOAT_QUANTUM: Final[Decimal] = Decimal("1e-12")
 D053_MAX_EVENT_SAMPLES: Final[int] = 256
+_D053_PRIORITY_SAMPLE_EVENTS: Final[frozenset[str]] = frozenset(
+    {
+        "RETURN_ACTIVATED",
+        "CHARGING_CONTACT",
+        "CHARGING_CONTACT_LOST",
+        "CHARGING_CONTACT_REACQUIRED",
+        "RECOVERY_YIELD",
+        "TERMINAL_SPIN_EXHAUSTED",
+        "INVALID_BEACON",
+        "TERMINATED",
+        "TRUNCATED",
+    }
+)
 _PLACEHOLDER_OBSERVATION: Final[ExternalObservation] = ExternalObservation(
     0.0, 0.0, 0.0
 )
@@ -293,7 +306,8 @@ def run_d053_lifetime(
             "command_source": decision.command_source.value,
             "passed_through": decision.passed_through,
             "preempted": decision.preempted,
-            "wheel_command": list(proposal.wheel_command),
+            "wheel_command": [decision.wheel_delta_left, decision.wheel_delta_right],
+            "proposed_wheel_command": list(proposal.wheel_command),
             "symbolic_proposal": proposal.symbolic_action.name,
             "d050_mode": decision.d050_mode.value if decision.d050_mode else None,
             "terminal_spin_count": decision.terminal_spin_count,
@@ -334,6 +348,8 @@ def run_d053_lifetime(
                         "passed_through",
                         "preempted",
                         "wheel_command",
+                        "proposed_wheel_command",
+                        "symbolic_proposal",
                         "d050_mode",
                         "terminal_spin_count",
                         "terminal_spin_exhausted",
@@ -351,9 +367,17 @@ def run_d053_lifetime(
     if current_cycle is not None and current_cycle["outcome"] is None:
         current_cycle["outcome"] = f"TRUNCATED_IN_{controller.mode.value}"
         current_cycle["end_transition"] = len(trace) - 1
-    # Retain bounded event samples deterministically: all important events first,
-    # then evenly spaced state changes if the cap is exceeded.
-    samples = _bounded_samples(all_events)
+    reset_sample: dict[str, object] = {
+        "transition": 0,
+        "events": ["RESET"],
+        "active_mode": D052Mode.NORMAL.value,
+        "command_source": None,
+        "energy_before": trace[0]["energy"],
+        "charging_contact_before": trace[0]["charging_contact"],
+    }
+    samples, collapsed_count, samples_truncated = _bounded_samples(
+        [reset_sample, *all_events]
+    )
     counts = {mode.value: modes[mode.value] for mode in D052Mode}
     source_counts = {
         source.value: sources[source.value] for source in D052CommandSource
@@ -403,6 +427,9 @@ def run_d053_lifetime(
         "boundary_scaled_transition_count": boundary_scaled,
         "return_start_pose_evaluator_only": return_starts,
         "cycles": cycles,
+        "event_sample_candidate_count": len(all_events) + 1,
+        "event_sample_collapsed_invalid_beacon_count": collapsed_count,
+        "event_samples_truncated": samples_truncated,
         "event_samples": samples,
         "reward_exactly_zero": rewards_zero,
         "organism_info_exactly_empty": infos_empty,
@@ -417,18 +444,49 @@ def run_d053_lifetime(
     return D053Lifetime(seed, summary, tuple(trace))
 
 
-def _bounded_samples(events: list[dict[str, object]]) -> list[dict[str, object]]:
-    if len(events) <= D053_MAX_EVENT_SAMPLES:
-        return events
-    important = [item for item in events if item["events"]]
-    if len(important) > D053_MAX_EVENT_SAMPLES:
-        return important[:D053_MAX_EVENT_SAMPLES]
-    others = [item for item in events if not item["events"]]
-    slots = D053_MAX_EVENT_SAMPLES - len(important)
-    if slots:
-        stride = max(1, math.ceil(len(others) / slots))
-        important.extend(others[::stride][:slots])
-    return sorted(important, key=lambda item: cast(int, item["transition"]))
+def _bounded_samples(
+    rows: list[dict[str, object]],
+) -> tuple[list[dict[str, object]], int, bool]:
+    """Return at most 256 samples, collapse count, and truncation flag.
+
+    Repeated ``INVALID_BEACON``-only rows after the first of a consecutive run are
+    collapsed. RESET and the final row are always kept; then, in priority order,
+    cycle-defining/termination/first-invalid-beacon rows, other event rows, and
+    event-free state-change rows fill the cap, evenly spaced within the tier that
+    overflows.
+    """
+    kept: list[dict[str, object]] = []
+    previous_invalid_transition: int | None = None
+    for row in rows:
+        events = cast(list[str], row["events"])
+        transition = cast(int, row["transition"])
+        if "INVALID_BEACON" in events:
+            repeated = previous_invalid_transition == transition - 1
+            previous_invalid_transition = transition
+            if repeated and events == ["INVALID_BEACON"]:
+                continue
+        kept.append(row)
+    collapsed = len(rows) - len(kept)
+    tiers: list[list[dict[str, object]]] = [[], [], [], []]
+    for position, row in enumerate(kept):
+        events = cast(list[str], row["events"])
+        if position in (0, len(kept) - 1):
+            tiers[0].append(row)
+        elif _D053_PRIORITY_SAMPLE_EVENTS.intersection(events):
+            tiers[1].append(row)
+        elif events:
+            tiers[2].append(row)
+        else:
+            tiers[3].append(row)
+    selected: list[dict[str, object]] = []
+    for tier in tiers:
+        slots = D053_MAX_EVENT_SAMPLES - len(selected)
+        if len(tier) <= slots:
+            selected.extend(tier)
+        else:
+            selected.extend(tier[(k * len(tier)) // slots] for k in range(slots))
+    selected.sort(key=lambda item: cast(int, item["transition"]))
+    return selected, collapsed, len(selected) < len(kept)
 
 
 def _trace_reset(env: D045Env, observation: np.ndarray) -> dict[str, object]:
@@ -540,6 +598,15 @@ def run_d053_protocol(executed_commit_sha: str) -> dict[str, object]:
             "physics": "D-045 unchanged except episode_horizon=140000",
             "reward": 0.0,
             "organism_info": {},
+            "event_samples": (
+                "RESET plus rows with events or mode/source/contact changes; "
+                "repeated INVALID_BEACON-only rows after the first of a consecutive "
+                "run collapsed; at most 256 kept: RESET and final row, then "
+                "cycle-defining/termination/first-invalid-beacon rows, other event "
+                "rows, event-free state changes, evenly spaced within an "
+                "overflowing tier; candidate/collapsed counts and truncation flag "
+                "recorded"
+            ),
             "artifact_float_canonicalization": (
                 "Decimal(x).quantize(Decimal('1e-12'), ROUND_HALF_EVEN), "
                 "normalize -0.0 to 0.0, reject non-finite; serialization only"
