@@ -2,7 +2,7 @@
 
 **Status:** non-authorizing future embodiment note  
 **Recorded:** 2026-09-22  
-**Repository context:** originally recorded from main at 02a3b60d30080e010c28cd37cc1f12286a15155d after D-044; refreshed after acceptance of ADR 0017. ADR 0017 is authoritative for the prospective V0.5 wheel-command, differential-drive, centred-dock, wheel-delta proprioceptive, and actuator-bookkeeping boundaries.  
+**Repository context:** originally recorded after D-044; refreshed through committed D-052. ADR 0017 remains authoritative for the V0.5 wheel-command, differential-drive, centred-dock, wheel-delta proprioceptive, and actuator-bookkeeping boundaries; D-046→D-048 are committed shadow-learning/diagnostic records, D-049/D-050/D-052 are committed programmed Level-1 viability records, D-051 stopped before merge, and no successor D-stage is authorized.  
 **Purpose:** preserve the additional long-range wheel-legged physical-body direction and engineering implications worth keeping compatible with future Aweform development, without changing ADR 0017, the developmental sequence, or authorizing physical implementation.
 
 ## Founder-selected direction
@@ -144,11 +144,11 @@ Camera vision remains explicitly unauthorized under the current repository bound
 
 Do **not** import the full wheel-legged body into the simulator merely because it is a plausible final morphology.
 
-ADR 0017 made the V0.5 first-slice decisions for bilateral wheel-delta commands, minimal differential-drive kinematics, and exactly two quantized signed wheel-delta proprioceptive channels. D-045 has now implemented and descriptively validated that deterministic substrate. This note does not extend it.
+ADR 0017 made the V0.5 first-slice decisions for bilateral wheel-delta commands, minimal differential-drive kinematics, and exactly two quantized signed wheel-delta proprioceptive channels. D-045 implemented and descriptively validated that deterministic substrate. D-046→D-048 subsequently used it for shadow-only consequence learning/diagnostics, while D-049/D-050/D-052 used the accepted V0.5 embodiment for programmed Level-1 return, docking, and recovery. None of those committed stages authorize articulated legs, richer perception, or a more detailed physics body. This note does not extend the accepted boundary.
 
 A disciplined later sequence could be:
 
-1. preserve D-045 as the minimal validated wheel/body/proprioceptive substrate while the separately authorized D-046 prediction question is tested;
+1. preserve the accepted V0.5 wheel/body/proprioceptive substrate and the committed D-046→D-052 results as the current minimal baseline;
 2. introduce articulated leg posture only when terrain/body configuration creates a real developmental problem;
 3. introduce obstacles, stairs, compliance, contact physics, self-righting, or jumping only when those questions become scientifically necessary;
 4. introduce richer visual perception only when the developmental problem earns it;
@@ -162,9 +162,11 @@ This note does not reinterpret the historical V0.4 finite-body simulator as a li
 
 D-042, D-043, and D-044 remain historical V0.4 Development results with their original four-action, six-channel, front-contact, learner/controller, beacon, energy/thermal, and charging semantics.
 
-For current and future V0.5 work, ADR 0017 is authoritative, with D-045 as its first committed substrate implementation. ADR 0017 supersedes only the surfaces it explicitly lists, including the semantic V0.4 action vocabulary, point-centre movement/turn kinematics, wheel-proprioception exclusion, six-channel observation boundary, action-class actuator bookkeeping, and front-contact dock geometry. It also keeps the V0.4 D-026/D-027/D-030 mechanisms historical rather than silently porting them into V0.5.
+For current and future V0.5 work, ADR 0017 is authoritative, with D-045 as its first committed substrate implementation. D-046→D-048 form the committed shadow-learning/diagnostic lineage on that substrate; D-049/D-050/D-052 form the committed programmed Level-1 viability lineage, culminating in 24/24 frozen-support return-charge-recovery cases in D-052. D-051 stopped before merge and has no committed record. None of those stages changes or authorizes the wheel-legged morphology recorded here.
 
-The wheel-legged morphology recorded here remains a longer-range compatibility target beyond that deliberately minimal V0.5 first slice.
+ADR 0017 supersedes only the surfaces it explicitly lists, including the semantic V0.4 action vocabulary, point-centre movement/turn kinematics, wheel-proprioception exclusion, six-channel observation boundary, action-class actuator bookkeeping, and front-contact dock geometry. It also keeps the V0.4 D-026/D-027/D-030 mechanisms historical rather than silently porting them into V0.5.
+
+The wheel-legged morphology recorded here remains a longer-range compatibility target beyond the deliberately minimal accepted V0.5 body. No successor D-stage is currently authorized.
 
 ## Guards
 
