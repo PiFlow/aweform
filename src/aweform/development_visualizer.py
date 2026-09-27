@@ -4927,7 +4927,13 @@ _D053_BODY_WIDTH_M: Final[float] = 0.215
 def select_d053_replay_indices(
     trace: Sequence[Mapping[str, object]],
 ) -> tuple[int, ...]:
-    """Frozen display-only stride and event-window selector over trace rows."""
+    """Frozen display-only stride and event-window selector over trace rows.
+
+    A RETURN window runs from 50 before ``RETURN_ACTIVATED`` through 50 after the
+    episode's ``CHARGING_CONTACT``; without contact it ends 50 after the earliest
+    first ``RETURN_HOLD``/``TERMINAL_SPIN_EXHAUSTED``/``INVALID_BEACON``, otherwise
+    at the episode end. Remaining hold transitions use the 100-transition stride.
+    """
     if not trace:
         raise ValueError("D-053 trace must not be empty")
     last = len(trace) - 1
@@ -4942,16 +4948,24 @@ def select_d053_replay_indices(
         )
 
     return_start: int | None = None
+    first_hold: int | None = None
     previous_invalid = False
     for index, row in enumerate(trace):
         events = cast(list[str], row["events"])
         if "RETURN_ACTIVATED" in events:
-            return_start = index
-        if return_start is not None and (
-            "CHARGING_CONTACT" in events or {"TERMINATED", "TRUNCATED"} & set(events)
-        ):
-            retain(return_start, index)
-            return_start = None
+            return_start, first_hold = index, None
+        if return_start is not None:
+            if first_hold is None and (
+                row["command_source"] == "RETURN_HOLD"
+                or {"TERMINAL_SPIN_EXHAUSTED", "INVALID_BEACON"} & set(events)
+            ):
+                first_hold = index
+            if "CHARGING_CONTACT" in events:
+                retain(return_start, index)
+                return_start = None
+            elif {"TERMINATED", "TRUNCATED"} & set(events):
+                retain(return_start, index if first_hold is None else first_hold)
+                return_start = None
         invalid = "INVALID_BEACON" in events
         incidental = (
             row["active_mode"] == "NORMAL"
@@ -4968,7 +4982,7 @@ def select_d053_replay_indices(
             retain(index, index)
         previous_invalid = invalid
     if return_start is not None:
-        retain(return_start, last)
+        retain(return_start, last if first_hold is None else first_hold)
     return tuple(sorted(keep))
 
 

@@ -120,7 +120,17 @@ def test_samples_record_executed_wheels_separately_from_fixture_proposal(
     samples = cast(list[dict[str, object]], summary["event_samples"])
     assert samples[0]["events"] == ["RESET"]
     assert "TRUNCATED" in cast(list[str], samples[-1]["events"])
-    assert summary["event_samples_truncated"] is False
+    assert summary["samples_truncated"] is False
+    assert summary["retained_sample_count"] == len(samples)
+    assert summary["event_row_count"] == len(samples)
+    assert any(
+        not row["events"]
+        and row["active_mode"] == previous["active_mode"]
+        and row["command_source"] == previous["command_source"]
+        and row["charging_contact_before"] == row["charging_contact_after"]
+        and row["d050_mode"] != previous["d050_mode"]
+        for previous, row in zip(samples[1:], samples[2:], strict=False)
+    )
     charge_hold = next(
         row for row in samples if "CHARGING_CONTACT" in cast(list[str], row["events"])
     )
@@ -135,32 +145,59 @@ def test_samples_record_executed_wheels_separately_from_fixture_proposal(
             assert row["wheel_command"] == row["proposed_wheel_command"]
 
 
-def test_event_sample_cap_collapses_invalid_runs_and_keeps_priority_rows() -> None:
-    def row(transition: int, events: list[str]) -> dict[str, object]:
-        return {"transition": transition, "events": events}
+def test_event_sample_cap_collapses_holds_and_keeps_priority_rows() -> None:
+    def row(
+        transition: int,
+        events: list[str],
+        source: str = "D050_SMOOTH",
+        d050_mode: str | None = "INVALID_BEACON",
+    ) -> dict[str, object]:
+        return {
+            "transition": transition,
+            "events": events,
+            "active_mode": "RETURN",
+            "command_source": source,
+            "d050_mode": d050_mode,
+        }
 
-    rows = [row(0, ["RESET"]), row(1, ["RETURN_ACTIVATED"])]
+    rows = [row(0, ["RESET"], "", None), row(1, ["RETURN_ACTIVATED"])]
     rows += [row(t, ["INVALID_BEACON"]) for t in range(2, 402)]
-    rows += [row(t, ["PHYSICAL_CONTACT_ACQUIRED"]) for t in range(500, 800)]
-    rows += [row(t, []) for t in range(800, 1100)]
+    rows += [row(410, ["TERMINAL_SPIN_EXHAUSTED"], "RETURN_HOLD", "TERMINAL_SPIN")]
+    rows += [row(t, [], "RETURN_HOLD", "TERMINAL_SPIN") for t in range(411, 420)]
+    rows += [
+        row(t, ["PHYSICAL_CONTACT_ACQUIRED"], d050_mode="CONTACT")
+        for t in range(500, 800)
+    ]
+    rows += [row(t, [], d050_mode=str(t)) for t in range(800, 1100)]
     rows += [row(1200, ["RECOVERY_YIELD"]), row(1300, ["TERMINATED"])]
-    samples, collapsed, truncated = _bounded_samples(rows)
+    samples = _bounded_samples(rows)
 
-    assert collapsed == 399
-    assert truncated is True
     assert len(samples) == D053_MAX_EVENT_SAMPLES
     transitions = [cast(int, item["transition"]) for item in samples]
     assert transitions == sorted(transitions)
     assert transitions[0] == 0 and transitions[-1] == 1300
-    assert {1, 2, 1200} <= set(transitions)
+    assert {1, 2, 410, 1200} <= set(transitions)
     assert not set(range(3, 402)) & set(transitions)
+    assert not set(range(411, 420)) & set(transitions)
     assert not set(range(800, 1100)) & set(transitions)
     contact = [t for t in transitions if 500 <= t < 800]
-    assert len(contact) == D053_MAX_EVENT_SAMPLES - 5
+    assert len(contact) == D053_MAX_EVENT_SAMPLES - 6
     assert contact[0] == 500 and contact[-1] > 780
 
-    short = [row(0, ["RESET"]), row(5, []), row(9, ["TRUNCATED"])]
-    assert _bounded_samples(short) == (short, 0, False)
+    short = [row(0, ["RESET"]), row(5, [], d050_mode="PURSUIT"), row(9, ["TRUNCATED"])]
+    assert _bounded_samples(short) == short
+    hold = [row(0, ["RESET"], "", None)]
+    hold += [row(10, ["TERMINAL_SPIN_EXHAUSTED"], "RETURN_HOLD", "TERMINAL_SPIN")]
+    hold += [row(t, [], "RETURN_HOLD", "TERMINAL_SPIN") for t in range(11, 20)]
+    hold += [row(t, ["INVALID_BEACON"]) for t in range(30, 40)]
+    hold += [row(99, ["TERMINATED"], "RETURN_HOLD", "TERMINAL_SPIN")]
+    assert [item["transition"] for item in _bounded_samples(hold)] == [
+        0,
+        10,
+        11,
+        30,
+        99,
+    ]
 
 
 def test_d053_selector_windows_and_stride() -> None:
@@ -185,9 +222,37 @@ def test_d053_selector_windows_and_stride() -> None:
     )
     assert set(select_d053_replay_indices(trace)) == expected
 
-    trace[300] = row(["RETURN_ACTIVATED"], "RETURN", "D050_SMOOTH")
-    trace[340] = row(["CHARGING_CONTACT"], "CHARGE", "CHARGE_HOLD")
-    assert set(select_d053_replay_indices(trace)) == expected | set(range(250, 391))
+    contact_trace = list(trace)
+    contact_trace[300] = row(["RETURN_ACTIVATED"], "RETURN", "D050_SMOOTH")
+    contact_trace[340] = row(["CHARGING_CONTACT"], "CHARGE", "CHARGE_HOLD")
+    assert set(select_d053_replay_indices(contact_trace)) == expected | set(
+        range(250, 391)
+    )
+
+    invalid_trace = list(trace)
+    invalid_trace[500] = row(["RETURN_ACTIVATED"], "RETURN", "D050_SMOOTH")
+    assert set(select_d053_replay_indices(invalid_trace)) == expected | set(
+        range(450, 651)
+    )
+
+    hold_trace = [row([]) for _ in range(1000)]
+    hold_trace[0] = row(["RESET"])
+    hold_trace[300] = row(["RETURN_ACTIVATED"], "RETURN", "D050_SMOOTH")
+    hold_trace[420] = row(["TERMINAL_SPIN_EXHAUSTED"], "RETURN", "RETURN_HOLD")
+    for index in range(421, 999):
+        hold_trace[index] = row([], "RETURN", "RETURN_HOLD")
+    hold_trace[999] = row(["TERMINATED"], "RETURN", "RETURN_HOLD")
+    assert set(select_d053_replay_indices(hold_trace)) == (
+        set(range(0, 1000, 100)) | set(range(250, 471)) | set(range(949, 1000))
+    )
+
+    open_trace = [row([]) for _ in range(1000)]
+    open_trace[0] = row(["RESET"])
+    open_trace[900] = row(["RETURN_ACTIVATED"], "RETURN", "D050_SMOOTH")
+    open_trace[999] = row(["TRUNCATED"], "RETURN", "D050_SMOOTH")
+    assert set(select_d053_replay_indices(open_trace)) == (
+        set(range(0, 1000, 100)) | set(range(850, 1000))
+    )
 
 
 def _embedded_payload(html: str) -> dict[str, object]:

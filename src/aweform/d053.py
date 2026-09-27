@@ -27,6 +27,7 @@ from .d045 import (
     D045PhysicalConfig,
 )
 from .d049 import D049_STATION_CENTER
+from .d050 import D050ControlMode
 from .d052 import (
     RECOVERY_THRESHOLD,
     RETURN_THRESHOLD,
@@ -172,6 +173,7 @@ def run_d053_lifetime(
     infos_empty = True
     previous_mode: D052Mode | None = None
     previous_source: D052CommandSource | None = None
+    previous_d050_mode: D050ControlMode | None = None
 
     trace.append(_trace_reset(env, observation))
     for _ in range(horizon):
@@ -335,6 +337,7 @@ def run_d053_lifetime(
             events
             or decision.active_mode is not previous_mode
             or decision.command_source is not previous_source
+            or decision.d050_mode is not previous_d050_mode
             or contact_before != contact_after
         ):
             all_events.append(
@@ -361,6 +364,7 @@ def run_d053_lifetime(
                 }
             )
         previous_mode, previous_source = decision.active_mode, decision.command_source
+        previous_d050_mode = decision.d050_mode
         observation = observation_after
         if terminated or truncated:
             break
@@ -375,9 +379,7 @@ def run_d053_lifetime(
         "energy_before": trace[0]["energy"],
         "charging_contact_before": trace[0]["charging_contact"],
     }
-    samples, collapsed_count, samples_truncated = _bounded_samples(
-        [reset_sample, *all_events]
-    )
+    samples = _bounded_samples([reset_sample, *all_events])
     counts = {mode.value: modes[mode.value] for mode in D052Mode}
     source_counts = {
         source.value: sources[source.value] for source in D052CommandSource
@@ -427,9 +429,9 @@ def run_d053_lifetime(
         "boundary_scaled_transition_count": boundary_scaled,
         "return_start_pose_evaluator_only": return_starts,
         "cycles": cycles,
-        "event_sample_candidate_count": len(all_events) + 1,
-        "event_sample_collapsed_invalid_beacon_count": collapsed_count,
-        "event_samples_truncated": samples_truncated,
+        "event_row_count": len(all_events) + 1,
+        "retained_sample_count": len(samples),
+        "samples_truncated": len(samples) < len(all_events) + 1,
         "event_samples": samples,
         "reward_exactly_zero": rewards_zero,
         "organism_info_exactly_empty": infos_empty,
@@ -444,29 +446,35 @@ def run_d053_lifetime(
     return D053Lifetime(seed, summary, tuple(trace))
 
 
-def _bounded_samples(
-    rows: list[dict[str, object]],
-) -> tuple[list[dict[str, object]], int, bool]:
-    """Return at most 256 samples, collapse count, and truncation flag.
+def _bounded_samples(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Return at most 256 deterministic samples in transition order.
 
-    Repeated ``INVALID_BEACON``-only rows after the first of a consecutive run are
+    A row repeating the immediately preceding decision's events, mode, source,
+    and D-050 sub-mode during an ``INVALID_BEACON`` or ``RETURN_HOLD`` hold is
     collapsed. RESET and the final row are always kept; then, in priority order,
     cycle-defining/termination/first-invalid-beacon rows, other event rows, and
-    event-free state-change rows fill the cap, evenly spaced within the tier that
-    overflows.
+    event-free mode/source/D-050-sub-mode/contact changes fill the cap, evenly
+    spaced within the tier that overflows.
     """
     kept: list[dict[str, object]] = []
-    previous_invalid_transition: int | None = None
+    previous: dict[str, object] | None = None
     for row in rows:
-        events = cast(list[str], row["events"])
-        transition = cast(int, row["transition"])
-        if "INVALID_BEACON" in events:
-            repeated = previous_invalid_transition == transition - 1
-            previous_invalid_transition = transition
-            if repeated and events == ["INVALID_BEACON"]:
-                continue
+        holding = row["events"] == ["INVALID_BEACON"] or (
+            row["command_source"] == D052CommandSource.RETURN_HOLD.value
+            and not row["events"]
+        )
+        repeated = (
+            previous is not None
+            and cast(int, previous["transition"]) == cast(int, row["transition"]) - 1
+            and all(
+                previous.get(key) == row.get(key)
+                for key in ("events", "active_mode", "command_source", "d050_mode")
+            )
+        )
+        previous = row
+        if holding and repeated:
+            continue
         kept.append(row)
-    collapsed = len(rows) - len(kept)
     tiers: list[list[dict[str, object]]] = [[], [], [], []]
     for position, row in enumerate(kept):
         events = cast(list[str], row["events"])
@@ -486,7 +494,7 @@ def _bounded_samples(
         else:
             selected.extend(tier[(k * len(tier)) // slots] for k in range(slots))
     selected.sort(key=lambda item: cast(int, item["transition"]))
-    return selected, collapsed, len(selected) < len(kept)
+    return selected
 
 
 def _trace_reset(env: D045Env, observation: np.ndarray) -> dict[str, object]:
@@ -599,12 +607,13 @@ def run_d053_protocol(executed_commit_sha: str) -> dict[str, object]:
             "reward": 0.0,
             "organism_info": {},
             "event_samples": (
-                "RESET plus rows with events or mode/source/contact changes; "
-                "repeated INVALID_BEACON-only rows after the first of a consecutive "
-                "run collapsed; at most 256 kept: RESET and final row, then "
-                "cycle-defining/termination/first-invalid-beacon rows, other event "
-                "rows, event-free state changes, evenly spaced within an "
-                "overflowing tier; candidate/collapsed counts and truncation flag "
+                "RESET plus rows with events or mode/source/D-050-sub-mode/contact "
+                "changes; rows repeating the preceding decision during an "
+                "INVALID_BEACON or RETURN_HOLD hold collapsed; at most 256 kept: "
+                "RESET and final row, then cycle-defining/termination/"
+                "first-invalid-beacon rows, other event rows, event-free state "
+                "changes, evenly spaced within an overflowing tier; "
+                "event_row_count, retained_sample_count and samples_truncated "
                 "recorded"
             ),
             "artifact_float_canonicalization": (
