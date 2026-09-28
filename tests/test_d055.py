@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import math
+from typing import cast
+
 import numpy as np
 
 from aweform import d054
@@ -61,12 +64,12 @@ def test_stall_turn_projects_current_command_differential() -> None:
 
 
 def test_wall_pinned_activation_pursuit_is_turned_on_second_decision() -> None:
-    (case,) = (
-        item
+    position, heading = (0.2, 0.0), math.radians(-20.0)
+    assert all(
+        (item.position, item.heading) != (position, heading)
         for item in d054.frozen_cases()
-        if item.case_id == "bottom_wall-i0.00-p0.10-0.00-h14"
     )
-    env, observation = _reset_case(case.position, case.heading, 20)
+    env, observation = _reset_case(position, heading, 20)
     candidate = D055StallTurnCandidate()
     first = candidate.command(observation, (0.0, 0.0))
     assert "RETURN_ACTIVATED" in first.events
@@ -204,3 +207,15 @@ def test_test_seed_runner_matches_unchanged_runner_prefix() -> None:
         if key != "STALL_TURN"
     }
     assert _canonicalize(summary) == _canonicalize(baseline.summary)
+
+
+def test_lifetime_reports_stall_detections_per_cycle() -> None:
+    lifetime = run_d055_lifetime(22573, horizon=5000, initial_battery_fraction=0.21)
+    by_cycle = cast(list[dict[str, int]], lifetime.summary["stall_counts_by_cycle"])
+    detected = cast(int, lifetime.summary["stall_detected_count"])
+    assert detected > 0
+    assert sum(row["stall_detected_count"] for row in by_cycle) == detected
+    assert (
+        sum(row["stall_turn_count"] for row in by_cycle)
+        == (lifetime.summary["stall_turn_count"])
+    )

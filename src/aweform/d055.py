@@ -387,6 +387,7 @@ def run_d055_lifetime(
     previous_mode: D052Mode | None = None
     previous_source: D052CommandSource | D055CommandSource | None = None
     previous_d050_mode: D050ControlMode | None = None
+    stall_detected_by_cycle: Counter[int] = Counter()
 
     trace.append(_trace_reset(env, observation))
     for _ in range(horizon):
@@ -546,6 +547,8 @@ def run_d055_lifetime(
             "truncated": truncated,
         }
         trace.append(sample)
+        if decision.stall_detected:
+            stall_detected_by_cycle[cast(int, sample["cycle_index"])] += 1
         if (
             events
             or decision.active_mode is not previous_mode
@@ -668,6 +671,9 @@ def run_d055_lifetime(
                 if row.get("command_source") == "STALL_TURN"
                 and row.get("cycle_index") == cycle["cycle_index"]
             ),
+            "stall_detected_count": stall_detected_by_cycle[
+                cast(int, cycle["cycle_index"])
+            ],
         }
         for cycle in cycles
     ]
