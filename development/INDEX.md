@@ -12,7 +12,7 @@ This file is the canonical **committed D-record ledger**. Add one row when a mea
 
 Do not use roadmap prose or README text as a replacement for this ledger. Work that is authorized in GitHub but does not yet have a committed D-record belongs in the current authorization issue/PR, not as a premature row here.
 
-Committed Development records currently extend through **D-053**; D-051 was stopped before merge and has no committed D-record. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage; and D-049, D-050, D-052, and D-053 are the committed V0.5 Level-1 viability lineage.
+Committed Development records currently extend through **D-054**; D-051 was stopped before merge and has no committed D-record. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage; D-049, D-050, D-052, and D-053 are the committed V0.5 Level-1 viability lineage; and D-054 is its evaluator-only boundary-wedge diagnostic.
 
 ## Disposition vocabulary
 
@@ -82,5 +82,6 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-050 | Paired Level-1 homing control comparison (corrected rerun) | CONTINUING | [`D-050-level1-homing-controller-comparison.md`](D-050-level1-homing-controller-comparison.md) |
 | D-052 | V0.5 innate autonomous return-charge-recovery loop | CONTINUING | [`D-052-v05-innate-autonomous-return-charge-recovery.md`](D-052-v05-innate-autonomous-return-charge-recovery.md) |
 | D-053 | V0.5 seeded continuous-lifetime return-charge-recovery characterization | CONTINUING | [`D-053-v05-continuous-lifetime-return-charge-recovery.md`](D-053-v05-continuous-lifetime-return-charge-recovery.md) |
+| D-054 | V0.5 return-boundary wedge diagnosis | CONTINUING | [`D-054-v05-return-boundary-wedge-diagnosis.md`](D-054-v05-return-boundary-wedge-diagnosis.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeded to the next ecology question rather than that D-001 remains unexecuted. The same distinction applies to later records whose own work is complete but whose scientific thread continues.
