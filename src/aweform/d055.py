@@ -47,8 +47,13 @@ D055_INVALIDATED_PRIOR_RUNS: Final = (
         ),
         "artifact_size_bytes": 1_722_930,
         "invalidation_reason": (
-            "The frozen runner reversed the U_ONLY_FAIL/C_ONLY_FAIL labels "
-            "relative to issue 191; this run is not pooled into interpretation."
+            "The complete official protocol ran at this commit, including all 25 "
+            "lifetimes and the 768-state matrix, but the frozen runner reversed "
+            "the U_ONLY_FAIL/C_ONLY_FAIL labels relative to issue 191 and the "
+            "artifact omitted the pre-declared per-cycle stall_detected_count "
+            "readout. The corrected freeze changes only that label mapping, that "
+            "readout, provenance, and tests; this run is not pooled into "
+            "interpretation."
         ),
         "rerun_relationship": (
             "The complete official protocol is rerun from the corrected "
@@ -56,6 +61,25 @@ D055_INVALIDATED_PRIOR_RUNS: Final = (
         ),
     },
 )
+D055_PRE_FREEZE_EXPOSURE: Final = {
+    "case_id": "bottom_wall-i0.00-p0.10-0.00-h14",
+    "decisions_observed": 2,
+    "observed_before": "the first official run",
+    "parameters_selected_or_modified_from_observation": False,
+    "part_a_states_total": 768,
+    "part_a_states_unexposed_before_official_execution": 767,
+    "note": (
+        "A candidate unit test observed this frozen Part A state before the first "
+        "official run. The frozen 768-state aggregate and signature are reported "
+        "exactly as predeclared; this exposure is a provenance limitation, and the "
+        "state is not excluded or replaced."
+    ),
+    "fresh_seeds_executed_by_invalidated_run": D055_FRESH_SEEDS,
+    "fresh_seed_note": (
+        "The invalidated official run had already executed fresh seeds "
+        "22550-22569 before the corrected freeze."
+    ),
+}
 
 
 class D055CommandSource:
@@ -935,6 +959,7 @@ def run_d055_protocol(executed_commit_sha: str) -> dict[str, object]:
         "execution_base_sha": "45e946fb295b594954542e5f31fd54b9d15ec107",
         "executed_commit_sha": executed_commit_sha,
         "invalidated_prior_runs": D055_INVALIDATED_PRIOR_RUNS,
+        "pre_freeze_exposure": D055_PRE_FREEZE_EXPOSURE,
         "result_kind": "development_causal_candidate_intervention",
         "claims_boundary": (
             "descriptive Development only; no promotion or confirmatory claim"
