@@ -7,7 +7,6 @@ import json
 import math
 from collections import Counter
 from dataclasses import dataclass
-from decimal import ROUND_HALF_EVEN, Decimal
 from pathlib import Path
 from typing import Any, Final, Sequence, cast
 
@@ -124,10 +123,7 @@ class D055StallTurnCandidate:
         elif detected:
             self.stall_detected_non_pursuit_count += 1
         self.prior_return_command = (
-            wheels
-            if decision.active_mode is D052Mode.RETURN
-            and "RETURN_ACTIVATED" not in decision.events
-            else None
+            wheels if decision.active_mode is D052Mode.RETURN else None
         )
         source_label = D055CommandSource() if turned else decision.command_source
         return D055Decision(decision, source_label, wheels, bool(detected), turned)
@@ -651,21 +647,6 @@ def run_d055_lifetime(
     return D053Lifetime(seed, summary, tuple(trace))
 
 
-def _canonicalize(value: object) -> object:
-    if isinstance(value, float):
-        if not math.isfinite(value):
-            raise ValueError("non-finite float")
-        result = float(
-            Decimal(value).quantize(Decimal("1e-12"), rounding=ROUND_HALF_EVEN)
-        )
-        return 0.0 if result == 0.0 else result
-    if isinstance(value, dict):
-        return {key: _canonicalize(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [_canonicalize(item) for item in value]
-    return value
-
-
 def validate_fresh_seeds(seeds: Sequence[int]) -> tuple[int, ...]:
     checked = validate_exp003_development_seeds(seeds)
     if checked != D055_FRESH_SEEDS:
@@ -725,16 +706,16 @@ def run_d055_protocol(executed_commit_sha: str) -> dict[str, object]:
     for row in arm_u:
         old = prior_smooth[row["case_id"]]
         if row["outcome"] == "DOCKED":
-            if _canonicalize({k: row[k] for k in fields}) != _canonicalize(
+            if d053._canonicalize({k: row[k] for k in fields}) != d053._canonicalize(
                 {k: old[k] for k in fields}
             ):
                 raise RuntimeError("D-054 compact-record identity failed")
     paired: Counter[tuple[str, str]] = Counter()
     for u, c in zip(arm_u, arm_c):
         paired[(cast(str, u["outcome"]), cast(str, c["outcome"]))] += 1
-        if c["stall_turn_count"] == 0 and _canonicalize(
+        if c["stall_turn_count"] == 0 and d053._canonicalize(
             {k: c[k] for k in fields}
-        ) != _canonicalize({k: u[k] for k in fields}):
+        ) != d053._canonicalize({k: u[k] for k in fields}):
             raise RuntimeError("no-intervention identity failed")
     rescued = sum(
         u["outcome"] != "DOCKED" and c["outcome"] == "DOCKED"
@@ -949,7 +930,7 @@ def write_artifact(path: Path, executed_commit_sha: str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
-            _canonicalize(run_d055_protocol(executed_commit_sha)),
+            d053._canonicalize(run_d055_protocol(executed_commit_sha)),
             indent=2,
             sort_keys=True,
             allow_nan=False,

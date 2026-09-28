@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from aweform import d054
 from aweform.d045 import D045_ENCODER_QUANTUM_RAD
 from aweform.d050 import D050ControlMode, D050SmoothController
 from aweform.d052 import D052CommandSource, D052Decision, D052Mode
@@ -10,6 +11,7 @@ from aweform.d054 import D054Case, _run_classified
 from aweform.d055 import (
     D055StallTurnCandidate,
     _prefix_identical,
+    _reset_case,
     run_d055_lifetime,
     run_matrix_case,
 )
@@ -42,21 +44,39 @@ def test_stall_turn_projects_current_command_differential() -> None:
         _Controller(
             [
                 _decision(1, events=("RETURN_ACTIVATED",)),
-                _decision(2),
-                _decision(3, wheels=(-0.2, 0.6)),
+                _decision(2, wheels=(-0.2, 0.6)),
             ]
         )
     )  # type: ignore[arg-type]
     observation = np.zeros(8, dtype=np.float32)
     first = candidate.command(observation, (0.0, 0.0))
+    assert not first.stall_detected
     assert first.wheels == (-0.4, 0.5)
-    assert candidate.prior_return_command is None
+    assert candidate.prior_return_command == (-0.4, 0.5)
     second = candidate.command(observation, (0.0, 0.0))
-    assert not second.stall_detected
-    third = candidate.command(observation, (0.0, 0.0))
-    assert third.stall_detected and third.stall_turned
-    assert third.wheels == (-0.4, 0.4)
-    assert third.command_source.value == "STALL_TURN"
+    assert second.stall_detected and second.stall_turned
+    assert second.wheels == (-0.4, 0.4)
+    assert second.command_source.value == "STALL_TURN"
+
+
+def test_wall_pinned_activation_pursuit_is_turned_on_second_decision() -> None:
+    (case,) = (
+        item
+        for item in d054.frozen_cases()
+        if item.case_id == "bottom_wall-i0.00-p0.10-0.00-h14"
+    )
+    env, observation = _reset_case(case.position, case.heading, 20)
+    candidate = D055StallTurnCandidate()
+    first = candidate.command(observation, (0.0, 0.0))
+    assert "RETURN_ACTIVATED" in first.events
+    assert first.d050_mode is D050ControlMode.CURVED_PURSUIT
+    assert not first.stall_detected
+    observation, *_ = env.step(list(first.wheels))
+    assert observation[6] == 0.0 and observation[7] == 0.0
+    second = candidate.command(observation, (0.0, 0.0))
+    assert second.stall_detected and second.stall_turned
+    assert second.wheels[0] == -second.wheels[1] != 0.0
+    assert candidate.first_stall_turn_transition == second.transition_index
 
 
 def test_small_previous_command_does_not_trigger() -> None:
