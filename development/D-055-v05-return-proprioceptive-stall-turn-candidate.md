@@ -7,8 +7,8 @@
 - **authorized launch base:** `f16a676bd60e0f92cbfaee36b54c6145b0d85706`
 - **rebased execution base:** `45e946fb295b594954542e5f31fd54b9d15ec107`; docs-only PR #190 merged after launch, changing no D-055 source, tests, or protocol
 - **corrected executable/protocol freeze:** the exact pushed SHA passed as the artifact's `executed_commit_sha`; the completed results section records it
-- **status:** corrected executable/protocol freeze; official execution is not part of this commit
-- **disposition:** pending official descriptive outcome
+- **status:** completed; the corrected official execution from freeze 598c0677ff7a8c1ed16601dea634f3bb63c6c128 is recorded in Official corrected results below.
+- **disposition:** CONTINUING
 
 ### Question
 
@@ -42,9 +42,9 @@ The artifact's top-level `pre_freeze_exposure` record discloses that a candidate
 
 This is an exploratory descriptive Development intervention. It does not promote the candidate to `D052Controller` or the constitutive Level-1 floor, change D-045 contact/boundary physics, make an EXP claim, or authorize a successor. Evaluator scale/position/telemetry are post-hoc diagnostics only. The programmed return behaviour remains engineered competence; no learning, consciousness, emotion, subjective experience, or genuine-life claim follows.
 
-**surprised_by:** Pending the frozen official comparison; no candidate pilot is authorized before the executable/protocol freeze.
+**surprised_by:** The candidate resolved every diagnosed wedge state, including the 64 quasi-absorbing 1.0-wall states that D-054's bit-identical detector missed, using 224 one-decision stall turns. Every detection followed a boundary scale of at most 1e-12, so the predicate never fired on a partial wall scrape, and the candidate never intervened on any of the 640 states the unchanged floor already docked. The lifetime failure rate of the unchanged floor was far higher than D-053's one in five suggested: 10 of 25 first RETURN episodes never docked and were truncated in RETURN (9 of 20 in the allocated block), and each was rescued with one or two stall turns (17 in total). The allocated block had already been observed in the invalidated run, so this rate is descriptive, not a prospective estimate.
 
-**disposition:** Pending execution. Preserve any null, negative, or surprising result as observed; Flow decides whether any later action is warranted.
+**disposition:** CONTINUING. Preserve this result, the invalidated first run and the provenance limitations as recorded. The candidate is not promoted into D052Controller or the Level-1 floor. Flow decides whether any next step is warranted: adoption through the required ADR/boundary decision, the D-045 collision/contact substrate direction, or none. No successor is started.
 
 ## Official corrected results
 
