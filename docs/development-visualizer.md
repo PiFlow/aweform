@@ -46,7 +46,15 @@ replay:
 
 ```text
 uv run aweform-export-d053-html --output development/D-053-v05-continuous-lifetime-replay.html
+uv run aweform-export-d055-html --output development/D-055-v05-stall-turn-replay.html
 ```
+
+D-055's exporter deterministically replays selected Part-A/Part-B examples
+from the merged D-055 implementation and refuses to render unless every replay
+matches its committed compact result under D-053 canonicalization. Its
+synchronized Arm U/Arm C panels mark each `STALL_TURN` and the D-054 wedge onset;
+pose and heading are evaluator-side only. This is display-only post-hoc replay,
+not new evidence and does not change the accepted D-055 record.
 
 D-053's replay displays evaluator-only body/dock geometry, the energy history,
 20% RETURN and 80% RECOVERY thresholds, mode/source/cycle readouts, and event
