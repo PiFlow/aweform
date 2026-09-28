@@ -27,4 +27,23 @@ Tests use constructed fixtures and only test-only D-053 seed `22058` with a hori
 
 ## Results
 
-Pending official execution from the frozen executable/protocol SHA.
+Official execution and independent regeneration used the clean executable/protocol freeze `33b1a9c3d2839e9a5c458911bc69051f0ee3c0a8`. The artifact is [`D-054-v05-return-boundary-wedge-diagnosis.json`](D-054-v05-return-boundary-wedge-diagnosis.json), 907,485 bytes, SHA-256 `9a212be70a46d4508e1226db4c56fef06e630832715fdd82854cafd0107de245`. Regeneration from a `git archive` of the same freeze was byte-identical. Execution status is `COMPLETED`.
+
+Part A identity control **PASS**. The D-053 seed-22053 trace supports H1: absorbing onset `t* = 71,218`, two transitions after `RETURN_ACTIVATED` at 71,216. The body was at `(0.277377611636, 0.0)`, labelled bottom wall, heading `-6.597344572539` rad, with command `(-0.565040862351, 0.645771823238)`. Evaluator bearing error was `1.466063142415` rad; outward-normal component was `0.309016994375`. Across 68,783 transitions from onset through the end, the maximum absolute deviation of battery drop from the 0.015 J electronics-only amount was `0.0` J.
+
+Part B restoration fidelity control **PASS**: all 13 transitions through transition 71,228 (`t*+10`) matched official `x`, `y`, and `heading` bit-for-bit. From the same restored activation state, classified Arm S reached `ABSORBING_ZERO_MOTION` at transition 3; Arm B docked at transition 42.
+
+Part C outcomes across 768 paired states:
+
+| Arm | DOCKED | ABSORBING_ZERO_MOTION | HORIZON_CENSORED |
+|---|---:|---:|---:|
+| S — unchanged D-050 smooth | 640 | 64 | 64 |
+| B — unchanged D-050 baseline / D-049 | 464 | 0 | 304 |
+
+All 64 Arm-S absorbing cases had zero organism-visible left/right wheel-delta channels after the non-zero command, so the declared proprioceptive stall-visibility predicate was true in 64/64. Their evaluator `|β_eval|` ranged from `0.981747704247` to `1.563643823459` rad, and outward-normal component ranged from `0.195090322016` to `0.678800745533`. In the paired cross-tab, all 64 Arm-S absorbing cases were horizon-censored by Arm B; 464 states docked under both arms, 176 docked under S but were horizon-censored under B, and 64 were horizon-censored under both.
+
+The measurements bear on correction families without selecting among them: (a) the observed smooth-arm `|β_eval|` range at absorption is as above; (b) the unchanged baseline had no absorbing outcomes and was horizon-censored on the same 64 smooth-arm absorbing states (its total was 464 docked/304 censored); (c) all 64 stalls met the existing proprioceptive-visibility predicate; and (d) absorption was observed with the accepted common-mode boundary scaling at exactly zero scale. No alternative boundary rule was tested. These are descriptive facts, not a choice among families (a)–(d); that choice, or choosing none, remains Flow's.
+
+**surprised_by:** The official failure's persistent zero-motion signature was reproduced almost immediately from the exact activation state, and the seedless support found 64 smooth-arm absorbing cases. The unchanged D-049 baseline was not absorbing on those same states, but was horizon-censored on all 64; more broadly it docked fewer states than smooth pursuit (464 versus 640). Every detected smooth-arm stall was visible in already-authorized wheel-delta channels. This diagnosis does not establish that a proprioceptive response is an innate-floor correction or select any controller or substrate change.
+
+**disposition:** `CONTINUING` — preserve the diagnosis and unchanged-law baseline. No correction is selected or authorized by this result; Flow decides whether any separately authorized next step is warranted. No learned capability or successor stage is started.

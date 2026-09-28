@@ -82,5 +82,6 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-050 | Paired Level-1 homing control comparison (corrected rerun) | CONTINUING | [`D-050-level1-homing-controller-comparison.md`](D-050-level1-homing-controller-comparison.md) |
 | D-052 | V0.5 innate autonomous return-charge-recovery loop | CONTINUING | [`D-052-v05-innate-autonomous-return-charge-recovery.md`](D-052-v05-innate-autonomous-return-charge-recovery.md) |
 | D-053 | V0.5 seeded continuous-lifetime return-charge-recovery characterization | CONTINUING | [`D-053-v05-continuous-lifetime-return-charge-recovery.md`](D-053-v05-continuous-lifetime-return-charge-recovery.md) |
+| D-054 | V0.5 return-boundary wedge diagnosis | CONTINUING | [`D-054-v05-return-boundary-wedge-diagnosis.md`](D-054-v05-return-boundary-wedge-diagnosis.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeded to the next ecology question rather than that D-001 remains unexecuted. The same distinction applies to later records whose own work is complete but whose scientific thread continues.
