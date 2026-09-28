@@ -44,6 +44,7 @@ D054_HEADINGS: Final[tuple[float, ...]] = tuple(
     (2 * k + 1) * math.pi / 16.0 for k in range(16)
 )
 D054_STATION: Final[tuple[float, float]] = D049_STATION_CENTER
+D054_BOUNDARY_TOLERANCE_M: Final[float] = 1e-9
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,13 +101,13 @@ def frozen_cases() -> tuple[D054Case, ...]:
 def _wall_label(position: tuple[float, float]) -> str:
     x, y = position
     edges: list[str] = []
-    if y == 0.0:
+    if y <= D054_BOUNDARY_TOLERANCE_M:
         edges.append("bottom")
-    if y == 1.0:
+    if y >= 1.0 - D054_BOUNDARY_TOLERANCE_M:
         edges.append("top")
-    if x == 0.0:
+    if x <= D054_BOUNDARY_TOLERANCE_M:
         edges.append("left")
-    if x == 1.0:
+    if x >= 1.0 - D054_BOUNDARY_TOLERANCE_M:
         edges.append("right")
     if len(edges) > 1:
         return "corner_" + "_".join(edges)
@@ -122,13 +123,13 @@ def _bearing_error(position: tuple[float, float], heading: float) -> float:
 def _outward_component(position: tuple[float, float], heading: float) -> float:
     x, y = position
     components: list[float] = []
-    if x == 0.0:
+    if x <= D054_BOUNDARY_TOLERANCE_M:
         components.append(-math.cos(heading))
-    if x == 1.0:
+    if x >= 1.0 - D054_BOUNDARY_TOLERANCE_M:
         components.append(math.cos(heading))
-    if y == 0.0:
+    if y <= D054_BOUNDARY_TOLERANCE_M:
         components.append(-math.sin(heading))
-    if y == 1.0:
+    if y >= 1.0 - D054_BOUNDARY_TOLERANCE_M:
         components.append(math.sin(heading))
     return max(components, default=0.0)
 
@@ -375,9 +376,7 @@ def _part_a(lifetime: object, committed_record: dict[str, object]) -> dict[str, 
         cast(float, sample["y"]),
         cast(float, sample["heading"]),
     )
-    dx, dy = D054_STATION[0] - pose[0], D054_STATION[1] - pose[1]
-    bearing = math.atan2(dy, dx)
-    beta = math.atan2(math.sin(bearing - pose[2]), math.cos(bearing - pose[2]))
+    beta = _bearing_error((pose[0], pose[1]), pose[2])
     command = cast(list[float], sample["wheel_command"])
     start_return = next(
         cast(int, row["transition"])
@@ -432,32 +431,25 @@ def _part_b_run(
     restore: D054Restore,
     controller: object,
     *,
-    fidelity_end: int | None,
-    official: tuple[dict[str, object], ...] | None,
-    official_start: int | None,
-    horizon: int,
+    fidelity_end: int,
+    official: tuple[dict[str, object], ...],
 ) -> dict[str, object]:
-    position = restore["position"]
-    heading, battery = restore["heading"], restore["battery_j"]
+    """S-fidelity replay with D-052 holds stepped and no diagnostic early stop."""
+    rows = {cast(int, row["transition"]): row for row in official}
+    end = min(fidelity_end, max(rows))
     env, observation = _reset_env(
-        position,
-        heading,
-        battery,
+        restore["position"],
+        restore["heading"],
+        restore["battery_j"],
         restore["temperature_c_approximate"],
-        horizon,
+        end - restore["transition"] + 1,
     )
     spins = transitions = 0
-    outcome = "HORIZON_CENSORED"
+    stopped_by = "FIDELITY_WINDOW_END"
     fidelity_matches = True
-    while transitions < horizon:
+    while restore["transition"] + transitions < end:
         wrapped = wrapped_decision(controller, observation, spins)
-        if wrapped.mode is D050ControlMode.CONTACT:
-            outcome = "DOCKED"
-            break
-        if wrapped.exhausted:
-            outcome = "TERMINAL_SPIN_EXHAUSTED"
-            break
-        observation, reward, terminated, truncated, info = env.step(wrapped.wheels)
+        observation, reward, terminated, _, info = env.step(wrapped.wheels)
         if reward != 0.0 or info != {}:
             raise RuntimeError("D-045 reward/info contract changed")
         telemetry = env.last_transition
@@ -465,59 +457,28 @@ def _part_b_run(
             raise RuntimeError("D-045 telemetry missing")
         transitions += 1
         spins = wrapped.count_after
-        if official is not None:
-            expected = next(
-                (
-                    x
-                    for x in official
-                    if cast(int, x["transition"])
-                    == cast(int, official_start) + transitions - 1
-                ),
-                None,
+        expected = rows.get(restore["transition"] + transitions)
+        if expected is None:
+            raise RuntimeError("D-054 fidelity window missing an official trace row")
+        fidelity_matches = fidelity_matches and all(
+            cast(float, expected[key]).hex() == float(actual).hex()
+            for key, actual in (
+                ("x", telemetry.position_after[0]),
+                ("y", telemetry.position_after[1]),
+                ("heading", telemetry.heading_after),
             )
-            if expected is None:
-                fidelity_matches = False
-            else:
-                fidelity_matches = fidelity_matches and all(
-                    cast(float, expected[key]).hex() == float(actual).hex()
-                    for key, actual in (
-                        ("x", telemetry.position_after[0]),
-                        ("y", telemetry.position_after[1]),
-                        ("heading", telemetry.heading_after),
-                    )
-                )
-        if fidelity_end is None and is_absorbing_step(
-            command=wrapped.wheels,
-            boundary_scale=telemetry.boundary_scale,
-            before=(*telemetry.position_before, telemetry.heading_before),
-            after=(*telemetry.position_after, telemetry.heading_after),
-        ):
-            outcome = "ABSORBING_ZERO_MOTION"
-            break
-        if wrapped.mode is D050ControlMode.INVALID_BEACON:
-            outcome = "INVALID_BEACON"
-            break
+        )
         if terminated:
-            reason = (
-                telemetry.termination_reason.value
-                if telemetry.termination_reason
-                else "UNKNOWN"
-            )
-            outcome = f"TERMINATED_{reason}"
-            break
-        if truncated:
-            outcome = "HORIZON_CENSORED"
-            break
-        if (
-            fidelity_end is not None
-            and transitions + restore["transition"] >= fidelity_end
-        ):
+            reason = telemetry.termination_reason
+            stopped_by = f"TERMINATED_{reason.value if reason else 'UNKNOWN'}"
             break
     env.close()
     return {
-        "outcome": outcome,
-        "outcome_transition": transitions,
-        "fidelity_matches_bitwise": fidelity_matches if official is not None else None,
+        "stopped_by": stopped_by,
+        "fidelity_window_end_transition": end,
+        "last_compared_transition": restore["transition"] + transitions,
+        "window_completed": restore["transition"] + transitions == end,
+        "fidelity_matches_bitwise": fidelity_matches,
         "executed_transitions": transitions,
     }
 
@@ -607,16 +568,13 @@ def run_d054_protocol(
         if "RETURN_ACTIVATED" in cast(list[str], row.get("events", []))
     )
     end = onset + 10 if onset is not None else activated + 999
-    fidelity_count = end - activated + 1
     fidelity = _part_b_run(
-        restore,
-        D050SmoothController(),
-        fidelity_end=end,
-        official=trace,
-        official_start=activated,
-        horizon=fidelity_count + 1,
+        restore, D050SmoothController(), fidelity_end=end, official=trace
     )
-    if fidelity["fidelity_matches_bitwise"] is not True:
+    if (
+        fidelity["fidelity_matches_bitwise"] is not True
+        or fidelity["window_completed"] is not True
+    ):
         raise RuntimeError("D-054 Part B fidelity control failed")
     classified_s = _run_classified(
         "part-b-return-activation",
