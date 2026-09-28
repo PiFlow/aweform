@@ -1,20 +1,28 @@
 from __future__ import annotations
 
 import math
-from typing import cast
 
 import numpy as np
+import pytest
 
 from aweform import d054
-from aweform.d045 import D045_ENCODER_QUANTUM_RAD
+from aweform.d045 import (
+    D045_AMBIENT_TEMPERATURE_C,
+    D045_BATTERY_CAPACITY_J,
+    D045_ENCODER_QUANTUM_RAD,
+    D045Env,
+    D045PhysicalConfig,
+)
+from aweform.d049 import D049_STATION_CENTER
 from aweform.d050 import D050ControlMode, D050SmoothController
 from aweform.d052 import D052CommandSource, D052Decision, D052Mode
 from aweform.d053 import _canonicalize, run_d053_lifetime
 from aweform.d054 import D054Case, _run_classified
 from aweform.d055 import (
+    D055_TEST_SEED,
+    D055Decision,
     D055StallTurnCandidate,
     _prefix_identical,
-    _reset_case,
     first_return_pair_class,
     run_d055_lifetime,
     run_matrix_case,
@@ -69,7 +77,17 @@ def test_wall_pinned_activation_pursuit_is_turned_on_second_decision() -> None:
         (item.position, item.heading) != (position, heading)
         for item in d054.frozen_cases()
     )
-    env, observation = _reset_case(position, heading, 20)
+    env = D045Env(D045PhysicalConfig(episode_horizon=20))
+    observation, _ = env.reset(
+        options={
+            "body_position": position,
+            "station_center": D049_STATION_CENTER,
+            "heading": heading,
+            "battery_j": 0.20 * D045_BATTERY_CAPACITY_J,
+            "body_temperature_c": D045_AMBIENT_TEMPERATURE_C,
+            "charger_termination_latched": False,
+        }
+    )
     candidate = D055StallTurnCandidate()
     first = candidate.command(observation, (0.0, 0.0))
     assert "RETURN_ACTIVATED" in first.events
@@ -209,13 +227,71 @@ def test_test_seed_runner_matches_unchanged_runner_prefix() -> None:
     assert _canonicalize(summary) == _canonicalize(baseline.summary)
 
 
-def test_lifetime_reports_stall_detections_per_cycle() -> None:
-    lifetime = run_d055_lifetime(22573, horizon=5000, initial_battery_fraction=0.21)
-    by_cycle = cast(list[dict[str, int]], lifetime.summary["stall_counts_by_cycle"])
-    detected = cast(int, lifetime.summary["stall_detected_count"])
-    assert detected > 0
-    assert sum(row["stall_detected_count"] for row in by_cycle) == detected
-    assert (
-        sum(row["stall_turn_count"] for row in by_cycle)
-        == (lifetime.summary["stall_turn_count"])
+class _ScriptedCandidate:
+    def __init__(self, script: list[tuple[D052Decision, bool]]) -> None:
+        self.script = iter(script)
+        self.mode = D052Mode.NORMAL
+        self.preemption_transition_count = 0
+        self.stall_detected_count = 0
+        self.stall_turn_count = 0
+        self.first_stall_turn_transition: int | None = None
+
+    def command(self, observation: np.ndarray, proposal: object) -> D055Decision:
+        decision, detected = next(self.script)
+        self.mode = decision.active_mode
+        self.preemption_transition_count += int(decision.preempted)
+        self.stall_detected_count += int(detected)
+        return D055Decision(
+            decision,
+            decision.command_source,
+            (decision.wheel_delta_left, decision.wheel_delta_right),
+            detected,
+            False,
+        )
+
+
+def test_lifetime_attributes_stall_detections_to_cycles(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def hold(index: int, *events: str) -> D052Decision:
+        return _decision(
+            index,
+            source=D052CommandSource.RETURN_HOLD,
+            wheels=(0.0, 0.0),
+            events=events,
+        )
+
+    def charge(index: int, *events: str) -> D052Decision:
+        return D052Decision(
+            index,
+            D052Mode.CHARGE,
+            D052CommandSource.CHARGE_HOLD,
+            0.0,
+            0.0,
+            False,
+            True,
+            None,
+            0,
+            False,
+            events,
+        )
+
+    script = [
+        (hold(1, "RETURN_ACTIVATED"), False),
+        (hold(2), True),
+        (charge(3, "RECOVERY_YIELD"), False),
+        (hold(4, "RETURN_ACTIVATED"), False),
+        (hold(5), True),
+        (charge(6), True),
+    ]
+    monkeypatch.setattr(
+        "aweform.d055.D055StallTurnCandidate", lambda: _ScriptedCandidate(script)
     )
+    lifetime = run_d055_lifetime(
+        D055_TEST_SEED, horizon=len(script), initial_battery_fraction=0.21
+    )
+    assert lifetime.summary["stall_detected_count"] == 3
+    assert lifetime.summary["stall_counts_by_cycle"] == [
+        {"cycle_index": 1, "stall_turn_count": 0, "stall_detected_count": 1},
+        {"cycle_index": 2, "stall_turn_count": 0, "stall_detected_count": 2},
+    ]
