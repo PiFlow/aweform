@@ -39,6 +39,23 @@ D055_SUPPORT_SEEDS: Final = (22053, 22054, 22055, 22056, 22057)
 D055_FRESH_SEEDS: Final = tuple(range(22550, 22570))
 D055_TEST_SEED: Final = 22570
 STALL_COMMAND_FLOOR: Final = D045_ENCODER_QUANTUM_RAD
+D055_INVALIDATED_PRIOR_RUNS: Final = (
+    {
+        "executed_commit_sha": "1a5bc2aecf708288ae55aa3da4529baaa96a4385",
+        "artifact_sha256": (
+            "12059a2b9d2e61b25dae0ec708b8c8626a688863c5b01975137bf5c002b23b17"
+        ),
+        "artifact_size_bytes": 1_722_930,
+        "invalidation_reason": (
+            "The frozen runner reversed the U_ONLY_FAIL/C_ONLY_FAIL labels "
+            "relative to issue 191; this run is not pooled into interpretation."
+        ),
+        "rerun_relationship": (
+            "The complete official protocol is rerun from the corrected "
+            "result-free freeze; the invalidated output is preserved separately."
+        ),
+    },
+)
 
 
 class D055CommandSource:
@@ -147,6 +164,19 @@ def _reset_case(
         raise RuntimeError("D-045 reset contract changed")
     env.body.heading = heading
     return env, env._observation().as_array()
+
+
+def first_return_pair_class(u_docked: bool | None, c_docked: bool | None) -> str:
+    """Classify whether the first paired RETURN episode reached contact."""
+    if u_docked is None or c_docked is None:
+        return "NO_RETURN"
+    if u_docked and c_docked:
+        return "BOTH_DOCK"
+    if not u_docked and c_docked:
+        return "U_ONLY_FAIL"
+    if u_docked and not c_docked:
+        return "C_ONLY_FAIL"
+    return "BOTH_FAIL"
 
 
 def _prefix_identical(
@@ -770,20 +800,17 @@ def run_d055_protocol(executed_commit_sha: str) -> dict[str, object]:
         c_cycles = cast(list[dict[str, object]], c_lifetime.summary["cycles"])
         uc = next((cy for cy in u_cycles if cy["outcome"] is not None), None)
         cc = next((cy for cy in c_cycles if cy["outcome"] is not None), None)
-        if uc is None or cc is None:
-            pair_class = "NO_RETURN"
-        else:
-            ud = uc["energy_after_first_charging_contact"] is not None
-            cd = cc["energy_after_first_charging_contact"] is not None
-            pair_class = (
-                "BOTH_DOCK"
-                if ud and cd
-                else "U_ONLY_FAIL"
-                if ud
-                else "C_ONLY_FAIL"
-                if cd
-                else "BOTH_FAIL"
-            )
+        u_first_docked = (
+            None
+            if uc is None
+            else uc["energy_after_first_charging_contact"] is not None
+        )
+        c_first_docked = (
+            None
+            if cc is None
+            else cc["energy_after_first_charging_contact"] is not None
+        )
+        pair_class = first_return_pair_class(u_first_docked, c_first_docked)
         pairs.append(
             {
                 "seed": seed,
@@ -899,7 +926,9 @@ def run_d055_protocol(executed_commit_sha: str) -> dict[str, object]:
         "development_id": D055_ID,
         "protocol_version": "d055-v05-return-proprioceptive-stall-turn-candidate-v1",
         "authorized_base_sha": "f16a676bd60e0f92cbfaee36b54c6145b0d85706",
+        "execution_base_sha": "45e946fb295b594954542e5f31fd54b9d15ec107",
         "executed_commit_sha": executed_commit_sha,
+        "invalidated_prior_runs": D055_INVALIDATED_PRIOR_RUNS,
         "result_kind": "development_causal_candidate_intervention",
         "claims_boundary": (
             "descriptive Development only; no promotion or confirmatory claim"

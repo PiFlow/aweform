@@ -4,8 +4,10 @@
 
 - **id:** D-055
 - **lane:** Development; paired causal candidate intervention, not a Level-1 promotion or confirmatory claim
-- **authorized_base_sha:** `f16a676bd60e0f92cbfaee36b54c6145b0d85706`
-- **status:** executable/protocol freeze; official execution is not part of this commit
+- **authorized launch base:** `f16a676bd60e0f92cbfaee36b54c6145b0d85706`
+- **rebased execution base:** `45e946fb295b594954542e5f31fd54b9d15ec107`; docs-only PR #190 merged after launch, changing no D-055 source, tests, or protocol
+- **corrected executable/protocol freeze:** the exact pushed SHA passed as the artifact's `executed_commit_sha`; the completed results section records it
+- **status:** corrected executable/protocol freeze; official execution is not part of this commit
 - **disposition:** pending official descriptive outcome
 
 ### Question
@@ -30,7 +32,7 @@ Required controls are D-054 Arm-S identity on the 640 docked states and non-dock
 
 Pre-declared Part A readouts are the paired outcome cross-tab, docked/wedged/rescued/harmed counts, non-docked inset × wall/corner breakdown, intervention-conditioned paired docking-transition differences, stall counts, and detector audit (preceding boundary scale, scale strata, missed stalls). Part B reports paired first-RETURN-episode classes and per-seed pairs, separately for support and fresh blocks. Signature fields are `A_WEDGE_RESOLUTION` (`ALL`/`PARTIAL`/`NONE`), `A_HARM` (`NONE`/`SOME`), `B_SUPPORT`, and `B_FRESH`. A fresh block with no Arm-U failures is uninformative about rescue but remains informative about harm; harm/candidate-only failures are negative evidence and are not repaired in this stage.
 
-The single deterministic JSON has no transition traces or visualization. Artifact floats use output-only `Decimal(x).quantize(Decimal('1e-12'), ROUND_HALF_EVEN)`, normalize negative zero, and reject non-finite values. Official output and independent byte-identical regeneration must be attributed to the pushed clean executable/protocol freeze SHA. After that freeze only this completed record, its JSON artifact, and one index row may change.
+The single deterministic JSON has no transition traces or visualization. Artifact floats use output-only `Decimal(x).quantize(Decimal('1e-12'), ROUND_HALF_EVEN)`, normalize negative zero, and reject non-finite values. The corrected artifact includes the invalidated first-run provenance and does not pool that output into interpretation. Official output and independent byte-identical regeneration are attributed to the corrected pushed freeze via `executed_commit_sha`; `authorized_base_sha` remains the launch base above, and `execution_base_sha` identifies the documentation-only rebased base. After the corrected freeze only this completed record, its JSON artifact, and one index row may change.
 
 ### Validation and claim boundary
 

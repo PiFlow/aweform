@@ -12,6 +12,7 @@ from aweform.d055 import (
     D055StallTurnCandidate,
     _prefix_identical,
     _reset_case,
+    first_return_pair_class,
     run_d055_lifetime,
     run_matrix_case,
 )
@@ -134,6 +135,14 @@ def test_nonzero_wheel_delta_prevents_detection() -> None:
     candidate.command(observation, (0.0, 0.0))
     observation[6] = D045_ENCODER_QUANTUM_RAD
     assert not candidate.command(observation, (0.0, 0.0)).stall_detected
+
+
+def test_first_return_pair_classes_cover_all_five_outcomes() -> None:
+    assert first_return_pair_class(None, None) == "NO_RETURN"
+    assert first_return_pair_class(True, True) == "BOTH_DOCK"
+    assert first_return_pair_class(False, True) == "U_ONLY_FAIL"
+    assert first_return_pair_class(True, False) == "C_ONLY_FAIL"
+    assert first_return_pair_class(False, False) == "BOTH_FAIL"
 
 
 def test_prefix_identity_detects_synthetic_divergence() -> None:
