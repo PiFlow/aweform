@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import cast
 
@@ -11,6 +12,7 @@ from aweform.development_visualizer import (
     DevelopmentCausalGeometry,
     DevelopmentVisualizationData,
     DevelopmentVisualizationFrame,
+    DevelopmentVisualizationPair,
     DevelopmentVisualizationRange,
     DevelopmentVisualizationVisibility,
     _d055_adapt_lifetime,
@@ -55,8 +57,10 @@ def _trace_row(
 
 def test_d055_adapter_marks_stall_turn_in_shared_neutral_frame() -> None:
     data = _d055_adapt_lifetime(
-        (_trace_row(0, source=None, events=["RESET"]),
-         _trace_row(1, source="STALL_TURN", events=[])),
+        (
+            _trace_row(0, source=None, events=["RESET"]),
+            _trace_row(1, source="STALL_TURN", events=[]),
+        ),
         seed=22570,
         arm_c=True,
     )
@@ -128,6 +132,32 @@ def test_shared_single_replay_html_matches_main_golden() -> None:
     assert hashlib.sha256(output.encode("utf-8")).hexdigest() == (
         "e93529d75f22e4e999aab83e2acb0e63868018f9e20076d4eca670cbb9feb5f2"
     )
+    paired = replace(
+        data,
+        energy_thresholds=((0.20, "RETURN 20%"), (0.80, "RECOVERY 80%")),
+        figure_annotation="Example-specific display note.",
+    )
+    paired_html = build_development_html_replay(
+        [paired],
+        schema="fixture.paired.v1",
+        title="paired fixture",
+        event_navigation=True,
+        pairs=[
+            DevelopmentVisualizationPair(
+                pair_id="seed-22053 — U_ONLY_FAIL",
+                baseline=paired,
+                smooth=paired,
+                baseline_outcome="NOT_DOCKED",
+                smooth_outcome="DOCKED · CHARGED · YIELDED",
+                baseline_label="ARM U — floor",
+                smooth_label="ARM C — candidate",
+            )
+        ],
+    )
+    assert 'id="energy-u"' in paired_html
+    assert 'id="energy-c"' in paired_html
+    assert "drawPairEnergy" in paired_html
+    assert "Example-specific display note." in paired_html
 
 
 def test_d055_fidelity_gate_rejects_tampered_record() -> None:

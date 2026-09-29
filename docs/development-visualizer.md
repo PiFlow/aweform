@@ -51,10 +51,16 @@ uv run aweform-export-d055-html --output development/D-055-v05-stall-turn-replay
 
 D-055's exporter deterministically replays selected Part-A/Part-B examples
 from the merged D-055 implementation and refuses to render unless every replay
-matches its committed compact result under D-053 canonicalization. Its
-synchronized Arm U/Arm C panels mark each `STALL_TURN` and the D-054 wedge onset;
-pose and heading are evaluator-side only. This is display-only post-hoc replay,
-not new evidence and does not change the accepted D-055 record.
+matches its committed compact result under D-053 canonicalization. The default
+view is lifetime seed 22053; the D-054 Part-A wedge rescue remains selectable.
+The synchronized Arm U/Arm C panels show the arena using the same projection as
+the trajectories, a bounded recent trail, a prominent heading marker, per-arm
+energy histories with 20%/80% thresholds, charge state, example-specific notes,
+and explicit run-end outcomes. Wedge onset and every committed `STALL_TURN`
+are marked and reachable through event navigation. Part A explicitly states
+that it stops at first dock contact and does not simulate charging. Pose,
+heading, and the replay are display-only/evaluator-side—not new evidence—and do
+not change the accepted D-055 record or existing non-paired exports.
 
 D-053's replay displays evaluator-only body/dock geometry, the energy history,
 20% RETURN and 80% RECOVERY thresholds, mode/source/cycle readouts, and event

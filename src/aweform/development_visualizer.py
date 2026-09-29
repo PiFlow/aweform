@@ -4991,7 +4991,10 @@ def select_d053_replay_indices(
 
 
 def adapt_d053_trace(
-    trace: Sequence[Mapping[str, object]], *, seed: int
+    trace: Sequence[Mapping[str, object]],
+    *,
+    seed: int,
+    selected_indices: Sequence[int] | None = None,
 ) -> DevelopmentVisualizationData:
     """Adapt a full evaluator-side D-053 trace into display-sampled neutral data."""
     from .d045 import (
@@ -5003,7 +5006,12 @@ def adapt_d053_trace(
     from .d049 import D049_STATION_CENTER
 
     frames = []
-    for index in select_d053_replay_indices(trace):
+    indices = (
+        select_d053_replay_indices(trace)
+        if selected_indices is None
+        else tuple(sorted(set(selected_indices)))
+    )
+    for index in indices:
         row = trace[index]
         reset = index == 0
         events = cast(list[str], row["events"])
@@ -5080,12 +5088,14 @@ def _enable_development_html_pairs(template: str) -> str:
             "canvas[hidden] { display: none; }\n"
             ".pair-world { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }\n"
             ".pair-world[hidden] { display: none; }\n"
-            ".pair-world canvas { height: min(58vh, 540px); min-height: 280px; }\n",
+            ".pair-world canvas { height: min(48vh, 440px); min-height: 260px; }\n"
+            ".pair-world .pair-energy { height: 120px; min-height: 120px; }\n"
+            ".readout #status { white-space: pre-line; flex-basis: 100%; }\n",
         ),
         (
             "<h1>__AWEFORM_TITLE__</h1>\n",
             "<h1>__AWEFORM_TITLE__</h1>\n"
-            "<p class=\"note\">Display-only, evaluator-side post-hoc replay "
+            '<p class="note">Display-only, evaluator-side post-hoc replay '
             "of merged D-055\n"
             "  (main 1a9dee33). Not new evidence; results are the committed "
             "D-055 record.\n"
@@ -5094,22 +5104,27 @@ def _enable_development_html_pairs(template: str) -> str:
         (
             '<canvas id="world" aria-label="Development replay world view"></canvas>\n',
             '<canvas id="world" aria-label="Development replay world view"></canvas>\n'
+            '<p id="example-note" class="note"></p>\n'
             '<div id="pair-world" class="pair-world" hidden>\n'
             '  <section><canvas id="world-u" '
             'aria-label="Arm U replay world view"></canvas>\n'
-            '    <p class="note">Display-only, evaluator-side post-hoc replay '\
-            'of merged D-055\n'
-            '      (main 1a9dee33). Not new evidence; results are the committed '\
-            'D-055 record.\n'
-            '      Evaluator pose and heading are not organism-visible.</p></section>\n'
+            '    <canvas id="energy-u" class="pair-energy" '
+            'aria-label="Arm U energy history"></canvas>\n'
+            '    <p class="note">Display-only, evaluator-side post-hoc replay '
+            "of merged D-055\n"
+            "      (main 1a9dee33). Not new evidence; results are the committed "
+            "D-055 record.\n"
+            "      Evaluator pose and heading are not organism-visible.</p></section>\n"
             '  <section><canvas id="world-c" '
             'aria-label="Arm C replay world view"></canvas>\n'
-            '    <p class="note">Display-only, evaluator-side post-hoc replay '\
-            'of merged D-055\n'
-            '      (main 1a9dee33). Not new evidence; results are the committed '\
-            'D-055 record.\n'
-            '      Evaluator pose and heading are not organism-visible.</p></section>\n'
-            '</div>\n',
+            '    <canvas id="energy-c" class="pair-energy" '
+            'aria-label="Arm C energy history"></canvas>\n'
+            '    <p class="note">Display-only, evaluator-side post-hoc replay '
+            "of merged D-055\n"
+            "      (main 1a9dee33). Not new evidence; results are the committed "
+            "D-055 record.\n"
+            "      Evaluator pose and heading are not organism-visible.</p></section>\n"
+            "</div>\n",
         ),
         (
             '  const ctx = canvas.getContext("2d");\n',
@@ -5119,55 +5134,54 @@ def _enable_development_html_pairs(template: str) -> str:
             '  const pairCanvasC = document.getElementById("world-c");\n',
         ),
         (
-            '    timeline.max = String(Math.max(0, state.replay.frames.length - 1));\n',
-            '    timeline.max = String(Math.max(0, state.replay.frames.length - 1));\n'
-            '    canvas.hidden = Boolean(state.replay.pair);\n'
-            '    pairWorld.hidden = !state.replay.pair;\n'
-            '    if (state.replay.pair) {\n'
+            "    timeline.max = String(Math.max(0, state.replay.frames.length - 1));\n",
+            "    timeline.max = String(Math.max(0, state.replay.frames.length - 1));\n"
+            "    canvas.hidden = Boolean(state.replay.pair);\n"
+            "    pairWorld.hidden = !state.replay.pair;\n"
+            "    if (state.replay.pair) {\n"
             '      sizeCanvas(pairCanvasU, pairCanvasU.getContext("2d"),\n'
-            '        Math.max(1, Math.min(2, window.devicePixelRatio || 1)));\n'
+            "        Math.max(1, Math.min(2, window.devicePixelRatio || 1)));\n"
             '      sizeCanvas(pairCanvasC, pairCanvasC.getContext("2d"),\n'
-            '        Math.max(1, Math.min(2, window.devicePixelRatio || 1)));\n'
-            '    }\n',
+            "        Math.max(1, Math.min(2, window.devicePixelRatio || 1)));\n"
+            "    }\n",
         ),
         (
-            '      state.replay.frames.forEach(function (item, frameIndex) {\n'
-            '        if (!item.event) return;\n',
-            '      const sources = state.replay.pair ? [state.replay.frames,\n'
-            '        state.replay.pair.arm_c.frames] : [state.replay.frames];\n'
-            '      state.replay.frames.forEach(function (item, frameIndex) {\n'
-            '        if (!sources.some(function (frames) {\n'
-            '          return frames[Math.min(frameIndex, frames.length - 1)].event;\n'
-            '        })) return;\n',
+            "      state.replay.frames.forEach(function (item, frameIndex) {\n"
+            "        if (!item.event) return;\n",
+            "      const sources = state.replay.pair ? [state.replay.frames,\n"
+            "        state.replay.pair.arm_c.frames] : [state.replay.frames];\n"
+            "      state.replay.frames.forEach(function (item, frameIndex) {\n"
+            "        if (!sources.some(function (frames) {\n"
+            "          return frames[Math.min(frameIndex, frames.length - 1)].event;\n"
+            "        })) return;\n",
         ),
         (
-            '    energyCanvas.hidden = !state.replay.energy_strip;\n',
-            '    energyCanvas.hidden = Boolean(state.replay.pair) || '\
-            '!state.replay.energy_strip;\n',
+            "    energyCanvas.hidden = !state.replay.energy_strip;\n",
+            "    energyCanvas.hidden = Boolean(state.replay.pair) || "
+            "!state.replay.energy_strip;\n",
         ),
         (
-            '    sizeCanvas(canvas, ctx, scale);\n',
-            '    if (state.replay.pair) {\n'
+            "    sizeCanvas(canvas, ctx, scale);\n",
+            "    if (state.replay.pair) {\n"
             '      sizeCanvas(pairCanvasU, pairCanvasU.getContext("2d"), scale);\n'
             '      sizeCanvas(pairCanvasC, pairCanvasC.getContext("2d"), scale);\n'
-            '    } else { sizeCanvas(canvas, ctx, scale); }\n',
+            "    } else { sizeCanvas(canvas, ctx, scale); }\n",
         ),
         (
-            '  function draw() {\n'
-            '    const rect = canvas.getBoundingClientRect();\n',
-            '  function draw() {\n'
-            '    if (state.replay.pair) { drawPair(); return; }\n'
-            '    const rect = canvas.getBoundingClientRect();\n',
+            "  function draw() {\n    const rect = canvas.getBoundingClientRect();\n",
+            "  function draw() {\n"
+            "    if (state.replay.pair) { drawPair(); return; }\n"
+            "    const rect = canvas.getBoundingClientRect();\n",
         ),
         (
-            '  function tick(now) {\n',
-            _D055_PAIRED_DRAW_SCRIPT + '  function tick(now) {\n',
+            "  function tick(now) {\n",
+            _D055_PAIRED_DRAW_SCRIPT + "  function tick(now) {\n",
         ),
         (
-            '    option.value = String(index); option.textContent = '\
-            'String(replay.seed);\n',
-            '    option.value = String(index); option.textContent = replay.pair ?\n'
-            '      replay.pair.id : String(replay.seed);\n',
+            "    option.value = String(index); option.textContent = "
+            "String(replay.seed);\n",
+            "    option.value = String(index); option.textContent = replay.pair ?\n"
+            "      replay.pair.id : String(replay.seed);\n",
         ),
     )
     for old, new in replacements:
@@ -5181,62 +5195,117 @@ _D055_PAIRED_DRAW_SCRIPT = r"""  function drawPair() {
     const pair = state.replay.pair;
     const armU = state.replay, armC = pair.arm_c;
     const frameU = armU.frames[state.frame];
-    const frameC = armC.frames[Math.min(state.frame, armC.frames.length - 1)];
-    [[pairCanvasU, armU, frameU, pair.arm_u_label, "#277da1"],
-      [pairCanvasC, armC, frameC, pair.arm_c_label, "#df7b20"]].forEach(
+    const cIndex = Math.min(state.frame, armC.frames.length - 1);
+    const frameC = armC.frames[cIndex];
+    const isPartA = pair.id.indexOf("-i0.") >= 0;
+    const exampleNote = document.getElementById("example-note");
+    exampleNote.textContent = pair.example_note || "";
+    [[pairCanvasU, document.getElementById("energy-u"), armU, frameU,
+      pair.arm_u_label, pair.arm_u_outcome, "#277da1", state.frame],
+      [pairCanvasC, document.getElementById("energy-c"), armC, frameC,
+      pair.arm_c_label, pair.arm_c_outcome, "#df7b20", cIndex]].forEach(
       function (item) {
-        const target = item[0], replay = item[1], frame = item[2];
-        const label = item[3], color = item[4];
+        const target = item[0], energyTarget = item[1], replay = item[2];
+        const frame = item[3], label = item[4], outcome = item[5];
+        const color = item[6], frameIndex = item[7];
         const rect = target.getBoundingClientRect();
         const width = rect.width, height = rect.height;
         const context = target.getContext("2d");
         context.clearRect(0, 0, width, height);
         context.fillStyle = "#f7f9fb"; context.fillRect(0, 0, width, height);
+        const worldMin = project(replay.world.min, replay, width, height);
+        const worldMax = project(replay.world.max, replay, width, height);
         context.strokeStyle = "#526170";
-        context.strokeRect(20, 20, width - 40, height - 40);
+        context.strokeRect(Math.min(worldMin[0], worldMax[0]),
+          Math.min(worldMin[1], worldMax[1]),
+          Math.abs(worldMax[0] - worldMin[0]), Math.abs(worldMax[1] - worldMin[1]));
         const station = project(replay.station, replay, width, height);
         context.fillStyle = "#43aa8b"; context.beginPath();
-        context.arc(station[0], station[1], 6, 0, 2 * Math.PI); context.fill();
+        context.arc(station[0], station[1], 7, 0, 2 * Math.PI); context.fill();
         context.beginPath();
-        replay.frames.slice(0, state.frame + 1).forEach(function (point, index) {
-          const p = project([point.x, point.y], replay, width, height);
-          if (!index || point.trajectory_break_before) context.moveTo(p[0], p[1]);
-          else context.lineTo(p[0], p[1]);
-        });
-        context.strokeStyle = color; context.lineWidth = 2; context.stroke();
+        let trailStart = Math.max(0, frameIndex - 50);
+        for (let index = frameIndex; index >= trailStart; index--) {
+          if ((replay.frames[index].event || "").includes("RETURN_ACTIVATED")) {
+            trailStart = index; break;
+          }
+        }
+        replay.frames.slice(trailStart, frameIndex + 1).forEach(
+          function (point, offset) {
+            const p = project([point.x, point.y], replay, width, height);
+            if (!offset || point.trajectory_break_before) context.moveTo(p[0], p[1]);
+            else context.lineTo(p[0], p[1]);
+          });
+        context.strokeStyle = color; context.lineWidth = 2.5; context.stroke();
         const centre = project([frame.x, frame.y], replay, width, height);
         context.fillStyle = frame.charging ? "#43aa8b" : color;
-        context.beginPath(); context.arc(centre[0], centre[1], 8, 0, 2 * Math.PI);
-        context.fill();
-        const nose = project([frame.x + 0.08 * Math.cos(frame.heading),
-          frame.y + 0.08 * Math.sin(frame.heading)], replay, width, height);
+        context.beginPath(); context.arc(centre[0], centre[1], 10, 0, 2 * Math.PI);
+        context.fill(); context.strokeStyle = "#10151b"; context.lineWidth = 2;
+        context.stroke();
+        const nose = project([frame.x + 0.12 * Math.cos(frame.heading),
+          frame.y + 0.12 * Math.sin(frame.heading)], replay, width, height);
         context.strokeStyle = "#10151b"; context.lineWidth = 3; context.beginPath();
-        context.moveTo(centre[0], centre[1]);
-        context.lineTo(nose[0], nose[1]); context.stroke();
+        context.moveTo(centre[0], centre[1]); context.lineTo(nose[0], nose[1]);
+        context.stroke();
         if ((frame.event || "").includes("STALL_TURN")) {
-          context.strokeStyle = "#d1495b"; context.lineWidth = 3;
-          context.beginPath(); context.arc(centre[0], centre[1], 15, 0, 2 * Math.PI);
+          context.strokeStyle = "#d1495b"; context.lineWidth = 4;
+          context.beginPath(); context.arc(centre[0], centre[1], 17, 0, 2 * Math.PI);
           context.stroke(); context.fillStyle = "#b42318";
-          context.font = "bold 13px sans-serif";
-          context.fillText("STALL_TURN", 28, 42);
+          context.font = "bold 14px sans-serif";
+          context.fillText("STALL_TURN", 28, 48);
         }
+        const badge = frame.mode === "CHARGE" && frame.charging ?
+          "CHARGING" : "MODE: " + frame.mode;
+        context.fillStyle = frame.mode === "CHARGE" && frame.charging ?
+          "#176b4d" : "#10151b";
+        context.font = "bold 13px sans-serif";
+        context.fillText((label.indexOf("ARM U") === 0 ? "ARM U" : "ARM C") +
+          " · " + badge + " · " + outcome, 28, 28);
         context.fillStyle = "#10151b"; context.font = "bold 13px sans-serif";
-        context.fillText(label, 28, height - 26);
+        context.textAlign = "right";
+        context.fillText("ENERGY " + frame.energy.toFixed(3), width - 18, height - 26);
+        context.textAlign = "left";
+        drawPairEnergy(replay, frame, energyTarget, color);
       });
     fields.progress.textContent = pair.id + " · transition " + frameU.transition +
       " / " + armU.frames[armU.frames.length - 1].transition;
-    fields.mode.textContent = "U mode: " + frameU.mode + " · C mode: " + frameC.mode;
+    fields.mode.textContent = "U mode: " + frameU.mode +
+      (frameU.mode === "CHARGE" && frameU.charging ? " (CHARGING)" : "") +
+      " · C mode: " + frameC.mode +
+      (frameC.mode === "CHARGE" && frameC.charging ? " (CHARGING)" : "");
     fields.action.textContent = "U action: " + frameU.action +
       " · C action: " + frameC.action;
     fields.energy.textContent = "U energy: " + frameU.energy.toFixed(3) +
       " · C energy: " + frameC.energy.toFixed(3);
     fields.thermal.textContent = "U thermal: " + frameU.thermal.toFixed(3) +
       " · C thermal: " + frameC.thermal.toFixed(3);
-    fields.contact.textContent = "U contact: " + (frameU.charging ? "YES" : "NO") +
-      " · C contact: " + (frameC.charging ? "YES" : "NO");
+    fields.contact.textContent = "U dock/contact: " + (frameU.charging ? "YES" : "NO") +
+      " · C dock/contact: " + (frameC.charging ? "YES" : "NO");
     fields.beacon.hidden = true;
-    fields.status.textContent = "U outcome: " + pair.arm_u_outcome +
-      " · C outcome: " + pair.arm_c_outcome;
+    const armStatus = function (replay, frame, outcome) {
+      const events = replay.frames.filter(function (candidate) {
+        return (candidate.event || "").includes("U_WEDGE_ONSET");
+      });
+      const wedge = events.length ? events[0].transition : null;
+      const activation = replay.frames.find(function (candidate) {
+        return (candidate.event || "").includes("RETURN_ACTIVATED");
+      });
+      const episode = activation && frame.mode === "RETURN" ?
+        " · RETURN episode " + Math.max(
+          1, frame.transition - activation.transition + 1) + " transitions" : "";
+      let status = "outcome: " + outcome;
+      if (wedge !== null && frame.transition >= wedge) {
+        status = "WEDGED at wall: zero motion since transition " + wedge + episode;
+      }
+      const last = replay.frames[replay.frames.length - 1];
+      if (frame.transition >= last.transition) {
+        status += " · run ended: " + outcome + " at transition " + last.transition;
+        if (isPartA) status += " (Part A stop rule: first dock contact; " +
+          "no charging in Part A)";
+      }
+      return status;
+    };
+    fields.status.textContent = "U: " + armStatus(armU, frameU, pair.arm_u_outcome) +
+      "\nC: " + armStatus(armC, frameC, pair.arm_c_outcome);
     fields.source.hidden = false;
     fields.source.textContent = "U source: " + (frameU.command_source || "—") +
       " · C source: " + (frameC.command_source || "—");
@@ -5245,6 +5314,43 @@ _D055_PAIRED_DRAW_SCRIPT = r"""  function drawPair() {
       " · C cycle: " + (frameC.cycle_index || "—");
     fields.event.textContent = "U: " + (frameU.event || "—") +
       " · C: " + (frameC.event || "—");
+  }
+  function drawPairEnergy(replay, frame, target, color) {
+    const rect = target.getBoundingClientRect();
+    const width = rect.width, height = rect.height;
+    const context = target.getContext("2d");
+    const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    target.width = Math.round(width * scale);
+    target.height = Math.round(height * scale);
+    context.setTransform(scale, 0, 0, scale, 0, 0);
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = "#fff"; context.fillRect(0, 0, width, height);
+    const left = 44, right = width - 12, top = 12, bottom = height - 22;
+    const range = replay.energy_strip.range;
+    const y = function (energy) {
+      return bottom - (energy - range[0]) / (range[1] - range[0]) * (bottom - top);
+    };
+    context.font = "11px sans-serif"; context.setLineDash([4, 4]);
+    replay.energy_strip.thresholds.forEach(function (threshold) {
+      const yy = y(threshold[0]); context.strokeStyle = "#68727d";
+      context.beginPath(); context.moveTo(left, yy); context.lineTo(right, yy);
+      context.stroke(); context.fillStyle = "#39424c";
+      context.fillText(threshold[1], 2, yy - 2);
+    });
+    context.setLineDash([]); context.beginPath();
+    replay.frames.forEach(function (point, index) {
+      const xx = left + index / Math.max(1, replay.frames.length - 1) * (right - left);
+      if (!index) context.moveTo(xx, y(point.energy));
+      else context.lineTo(xx, y(point.energy));
+    });
+    context.strokeStyle = color; context.lineWidth = 2; context.stroke();
+    const cursorX = left + Math.min(state.frame, replay.frames.length - 1) /
+      Math.max(1, replay.frames.length - 1) * (right - left);
+    context.strokeStyle = "#111"; context.lineWidth = 1.5;
+    context.beginPath(); context.moveTo(cursorX, top); context.lineTo(cursorX, bottom);
+    context.stroke(); context.fillStyle = "#111";
+    context.fillText("transition " + frame.transition.toLocaleString(),
+      left, height - 5);
   }
 """
 
@@ -5279,6 +5385,9 @@ def build_development_html_replay(
                 "arm_c_label": pair.smooth_label,
                 "arm_u_outcome": pair.baseline_outcome,
                 "arm_c_outcome": pair.smooth_outcome,
+                "example_note": pair.baseline.figure_annotation
+                or pair.baseline.figure_title
+                or "Display-only paired D-055 replay.",
             }
     if event_navigation:
         for replay in replays:
@@ -5292,9 +5401,9 @@ def build_development_html_replay(
     template = _DEVELOPMENT_HTML_TEMPLATE
     if pairs is not None:
         template = _enable_development_html_pairs(template)
-    return template.replace(
-        "__AWEFORM_TITLE__", html.escape(title)
-    ).replace("__AWEFORM_D043_PAYLOAD__", serialized)
+    return template.replace("__AWEFORM_TITLE__", html.escape(title)).replace(
+        "__AWEFORM_D043_PAYLOAD__", serialized
+    )
 
 
 def d053_html_main(argv: Sequence[str] | None = None) -> int:
@@ -5353,22 +5462,25 @@ def select_d055_replay_examples(artifact: Mapping[str, object]) -> tuple[str, ..
     paired = cast(list[Mapping[str, object]], part_b["pairs"])
     seed_rows = {cast(int, row["seed"]): row for row in paired}
     support = seed_rows[22054]
-    if support["paired_class"] != "BOTH_DOCK" or cast(
-        Mapping[str, object], support["arm_c"]
-    )["stall_turn_count"] != 0:
+    if (
+        support["paired_class"] != "BOTH_DOCK"
+        or cast(Mapping[str, object], support["arm_c"])["stall_turn_count"] != 0
+    ):
         raise ValueError("committed D-055 seed 22054 is not BOTH_DOCK/no-intervention")
     allocated = seed_rows[22554]
     two_turn_rescues = sorted(
-        seed for seed, row in seed_rows.items()
+        seed
+        for seed, row in seed_rows.items()
         if 22550 <= seed <= 22569
         and row["paired_class"] == "U_ONLY_FAIL"
         and cast(Mapping[str, object], row["arm_c"])["stall_turn_count"] == 2
     )
     if not two_turn_rescues or two_turn_rescues[0] != 22554:
         raise ValueError("committed D-055 lowest two-turn rescue is not seed 22554")
-    if allocated["paired_class"] != "U_ONLY_FAIL" or cast(
-        Mapping[str, object], allocated["arm_c"]
-    )["stall_turn_count"] != 2:
+    if (
+        allocated["paired_class"] != "U_ONLY_FAIL"
+        or cast(Mapping[str, object], allocated["arm_c"])["stall_turn_count"] != 2
+    ):
         raise ValueError("committed D-055 seed 22554 is not the two-turn rescue")
     failure = seed_rows.get(22053)
     if failure is None or failure["paired_class"] != "U_ONLY_FAIL":
@@ -5416,39 +5528,41 @@ def _d055_mark_trace_events(
     for index, events in events_by_index.items():
         if "STALL_TURN" in events or "U_WEDGE_ONSET" in events:
             selected.update(
-                range(max(0, index - D053_REPLAY_WINDOW),
-                      min(len(marked) - 1, index + D053_REPLAY_WINDOW) + 1)
+                range(
+                    max(0, index - D053_REPLAY_WINDOW),
+                    min(len(marked) - 1, index + D053_REPLAY_WINDOW) + 1,
+                )
             )
     return tuple(marked), tuple(sorted(selected))
 
 
 def _d055_adapt_lifetime(
-    trace: Sequence[Mapping[str, object]], *, seed: int, arm_c: bool,
-    selected_indices: Sequence[int] | None = None,
+    trace: Sequence[Mapping[str, object]],
+    *,
+    seed: int,
+    arm_c: bool,
     mark_wedge_onset: bool = False,
+    example_note: str | None = None,
 ) -> DevelopmentVisualizationData:
     marked, selected = _d055_mark_trace_events(
         trace, arm_c=arm_c, mark_wedge_onset=mark_wedge_onset
     )
-    if selected_indices is not None:
-        selected = tuple(sorted(set(selected_indices)))
-    adapted = adapt_d053_trace(marked, seed=seed)
-    by_transition = {frame.transition_index: frame for frame in adapted.frames}
-    frames = tuple(by_transition[index] for index in selected if index in by_transition)
+    adapted = adapt_d053_trace(marked, seed=seed, selected_indices=selected)
+    frames = adapted.frames
     if not frames:
         raise ValueError("D-055 replay sampling produced no frames")
     return DevelopmentVisualizationData(
         **{
             field: getattr(adapted, field)
             for field in adapted.__dataclass_fields__
-            if field not in {
-                "frames", "source_label", "figure_title", "figure_annotation"
-            }
+            if field
+            not in {"frames", "source_label", "figure_title", "figure_annotation"}
         },
         source_label=f"D-055 Arm {'C' if arm_c else 'U'} evaluator replay",
         frames=frames,
         figure_title=f"D-055 seed {seed} — Arm {'C' if arm_c else 'U'}",
-        figure_annotation=(
+        figure_annotation=example_note
+        or (
             "Display-only evaluator-side post-hoc replay; position and heading "
             "are not organism-visible."
         ),
@@ -5456,7 +5570,12 @@ def _d055_adapt_lifetime(
 
 
 def _d055_adapt_matrix_trace(
-    trace: Sequence[tuple[object, ...]], *, case_id: str, seed: int, arm_c: bool
+    trace: Sequence[tuple[object, ...]],
+    *,
+    case_id: str,
+    seed: int,
+    arm_c: bool,
+    example_note: str,
 ) -> DevelopmentVisualizationData:
     from . import d054
     from .d045 import (
@@ -5475,35 +5594,47 @@ def _d055_adapt_matrix_trace(
 
     case = next(item for item in d054.frozen_cases() if item.case_id == case_id)
     env = D045Env(D045PhysicalConfig(episode_horizon=1000))
-    obs, _ = env.reset(options={
-        "body_position": case.position, "station_center": D049_STATION_CENTER,
-        "heading": case.heading, "battery_j": 0.20 * D045_BATTERY_CAPACITY_J,
-        "body_temperature_c": D045_AMBIENT_TEMPERATURE_C,
-        "charger_termination_latched": False,
-    })
+    obs, _ = env.reset(
+        options={
+            "body_position": case.position,
+            "station_center": D049_STATION_CENTER,
+            "heading": case.heading,
+            "battery_j": 0.20 * D045_BATTERY_CAPACITY_J,
+            "body_temperature_c": D045_AMBIENT_TEMPERATURE_C,
+            "charger_termination_latched": False,
+        }
+    )
     if env.body is None:
         raise RuntimeError("D-045 body missing during Part A replay")
     env.body.heading = case.heading
     obs = env._observation().as_array()
     controller = D055StallTurnCandidate() if arm_c else D052Controller()
-    frames = [DevelopmentVisualizationFrame(
-        transition_index=0, x=case.position[0], y=case.position[1],
-        heading=case.heading, action="INITIAL", decision_mode="RETURN",
-        energy=float(obs[0]), thermal=float(obs[1]), charging_contact=bool(obs[5]),
-        terminated=False, truncated=False, event_label="RETURN_ACTIVATED",
-        command_source="D050_SMOOTH", cycle_index=1,
-    )]
+    frames = [
+        DevelopmentVisualizationFrame(
+            transition_index=0,
+            x=case.position[0],
+            y=case.position[1],
+            heading=case.heading,
+            action="INITIAL",
+            decision_mode="RETURN",
+            energy=float(obs[0]),
+            thermal=float(obs[1]),
+            charging_contact=bool(obs[5]),
+            terminated=False,
+            truncated=False,
+            event_label="RETURN_ACTIVATED",
+            command_source="D050_SMOOTH",
+            cycle_index=1,
+        )
+    ]
+    wedge_marked = False
     for index, row in enumerate(trace):
         if arm_c:
-            emitted_c = cast(
-                D055Decision, controller.command(obs, (0.0, 0.0))
-            )
+            emitted_c = cast(D055Decision, controller.command(obs, (0.0, 0.0)))
             left, right = emitted_c.wheels
             source = "STALL_TURN" if emitted_c.stall_turned else "D050_SMOOTH"
         else:
-            emitted_u = cast(
-                D052Decision, controller.command(obs, (0.0, 0.0))
-            )
+            emitted_u = cast(D052Decision, controller.command(obs, (0.0, 0.0)))
             left, right = (
                 emitted_u.wheel_delta_left,
                 emitted_u.wheel_delta_right,
@@ -5513,26 +5644,49 @@ def _d055_adapt_matrix_trace(
             raise ValueError("D-055 Part A display replay diverged from runner trace")
         obs, _, terminated, truncated, _ = env.step((left, right))
         events = [source] if source == "STALL_TURN" else []
-        frames.append(DevelopmentVisualizationFrame(
-            transition_index=index + 1, x=cast(float, row[5]), y=cast(float, row[6]),
-            heading=cast(float, row[7]), action=f"{source} ({left:.3f}, {right:.3f})",
-            decision_mode="RETURN", energy=float(obs[0]), thermal=float(obs[1]),
-            charging_contact=bool(obs[5]), terminated=bool(terminated),
-            truncated=bool(truncated),
-            event_label=", ".join(events) if events else None,
-            command_source=source, cycle_index=1,
-        ))
+        if (
+            not arm_c
+            and not wedge_marked
+            and index > 0
+            and (row[2], row[3]) == (row[5], row[6])
+            and max(abs(cast(float, value)) for value in trace[index - 1][:2])
+            >= math.pi / 180
+        ):
+            events.append("U_WEDGE_ONSET")
+            wedge_marked = True
+        frames.append(
+            DevelopmentVisualizationFrame(
+                transition_index=index + 1,
+                x=cast(float, row[5]),
+                y=cast(float, row[6]),
+                heading=cast(float, row[7]),
+                action=f"{source} ({left:.3f}, {right:.3f})",
+                decision_mode="RETURN",
+                energy=float(obs[0]),
+                thermal=float(obs[1]),
+                charging_contact=bool(obs[5]),
+                terminated=bool(terminated),
+                truncated=bool(truncated),
+                event_label=", ".join(events) if events else None,
+                command_source=source,
+                cycle_index=1,
+            )
+        )
     env.close()
     station = D049_STATION_CENTER
     return DevelopmentVisualizationData(
-        source_label=f"D-055 Part A {case_id}", seed=seed,
-        world_min=D045_WORLD_MIN, world_max=D045_WORLD_MAX,
-        station_center=station, charging_radius=None,
+        source_label=f"D-055 Part A {case_id}",
+        seed=seed,
+        world_min=D045_WORLD_MIN,
+        world_max=D045_WORLD_MAX,
+        station_center=station,
+        charging_radius=None,
         energy_range=DevelopmentVisualizationRange(0.0, 1.0),
         thermal_range=DevelopmentVisualizationRange(0.0, 1.0),
         frames=tuple(frames),
         visibility=DevelopmentVisualizationVisibility(
-            position_heading="EVALUATOR ONLY", station_location="EVALUATOR ONLY",
+            position_heading="EVALUATOR ONLY",
+            station_location="EVALUATOR ONLY",
             energy="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
             thermal="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
             charging_contact="ORGANISM-VISIBLE BINARY + EVALUATOR",
@@ -5540,16 +5694,19 @@ def _d055_adapt_matrix_trace(
         ),
         energy_thresholds=((0.20, "RETURN 20%"), (0.80, "RECOVERY 80%")),
         causal_geometry=DevelopmentCausalGeometry(
-            body_length=0.180, body_width=0.215,
+            body_length=0.180,
+            body_width=0.215,
             rear_contact_plus=(0.0, D045_CONTACT_OFFSET_METRES),
             rear_contact_minus=(0.0, -D045_CONTACT_OFFSET_METRES),
-            front_midpoint=(0.0, 0.0), dock_orientation=0.0,
+            front_midpoint=(0.0, 0.0),
+            dock_orientation=0.0,
             dock_contact_plus=(station[0], station[1] + D045_CONTACT_OFFSET_METRES),
             dock_contact_minus=(station[0], station[1] - D045_CONTACT_OFFSET_METRES),
             contact_tolerance=D045_CONTACT_TOLERANCE_METRES,
             contact_label="under-body contacts",
         ),
         figure_title=f"D-055 {case_id}",
+        figure_annotation=example_note,
     )
 
 
@@ -5558,8 +5715,11 @@ def d055_html_main(argv: Sequence[str] | None = None) -> int:
     from . import d053, d054, d055
 
     parser = argparse.ArgumentParser(description="Export the D-055 offline replay")
-    parser.add_argument("--output", type=Path,
-                        default=Path("development/D-055-v05-stall-turn-replay.html"))
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("development/D-055-v05-stall-turn-replay.html"),
+    )
     args = parser.parse_args(argv)
     root = Path(__file__).resolve().parents[2]
     artifact_path = (
@@ -5571,22 +5731,23 @@ def d055_html_main(argv: Sequence[str] | None = None) -> int:
     selected = select_d055_replay_examples(artifact)
     matrix, lifetime_records = _d055_artifact_records(artifact)
     labels = (
-        "(a) lexicographically first D-054 U-not-docked/C-docked case, excluding "
-        "bottom_wall-i0.00-p0.10-0.00-h14",
-        "(b) support seed 22053",
-        "(c) lowest allocated U_ONLY_FAIL seed with exactly two stall turns; "
-        "asserted 22554",
-        "(d) support seed 22054, BOTH_DOCK with zero stall turns",
+        "(a) D-054 wedge rescue case",
+        "(b) support seed 22053 — U wedged; C rescues, charges to 0.80, and yields",
+        "(c) allocated seed 22554 — U wedged; C uses two stall turns",
+        "(d) support seed 22054 — BOTH_DOCK with no intervention",
     )
     output_pairs: list[DevelopmentVisualizationPair] = []
     display_data: list[DevelopmentVisualizationData] = []
     case_id = selected[0]
+    part_a_note = (
+        f"Part A D-054 wedge rescue ({case_id}). Look for Arm U pinned at the "
+        "wall with zero movement, while Arm C turns free and reaches the dock. "
+        "Part A stops at first dock contact, so charging is not simulated."
+    )
     for arm, candidate in (("U", False), ("C", True)):
         trace_out: list[tuple[object, ...]] = []
         case = next(c for c in d054.frozen_cases() if c.case_id == case_id)
-        record = d055.run_matrix_case(
-            case, candidate, trace_out=trace_out
-        )
+        record = d055.run_matrix_case(case, candidate, trace_out=trace_out)
         record["arm"] = arm
         expected = matrix[case_id][arm]
         _d055_require_fidelity(record, expected, context=f"Part A {case_id} arm {arm}")
@@ -5598,10 +5759,18 @@ def d055_html_main(argv: Sequence[str] | None = None) -> int:
             record_c = record
     seed_for_matrix = 55055
     data_u = _d055_adapt_matrix_trace(
-        trace_u, case_id=case_id, seed=seed_for_matrix, arm_c=False
+        trace_u,
+        case_id=case_id,
+        seed=seed_for_matrix,
+        arm_c=False,
+        example_note=part_a_note,
     )
     data_c = _d055_adapt_matrix_trace(
-        trace_c, case_id=case_id, seed=seed_for_matrix + 1, arm_c=True
+        trace_c,
+        case_id=case_id,
+        seed=seed_for_matrix + 1,
+        arm_c=True,
+        example_note=part_a_note,
     )
     output_pairs.append(
         DevelopmentVisualizationPair(
@@ -5614,7 +5783,27 @@ def d055_html_main(argv: Sequence[str] | None = None) -> int:
             smooth_label="ARM C — D055 candidate",
         )
     )
+    if sum(
+        "STALL_TURN" in (frame.event_label or "") for frame in data_c.frames
+    ) != cast(int, record_c["stall_turn_count"]):
+        raise ValueError("D-055 Part A replay dropped a committed STALL_TURN marker")
     display_data.append(data_u)
+    example_notes = {
+        22053: (
+            "Support seed 22053 (U_ONLY_FAIL). Look for Arm U pinned at the wall "
+            "during RETURN while Arm C executes one STALL_TURN, docks, charges, "
+            "and yields at the 0.80 recovery threshold."
+        ),
+        22554: (
+            "Allocated-block seed 22554 (U_ONLY_FAIL). Look for Arm U wedged "
+            "during RETURN while Arm C uses two marked STALL_TURN decisions "
+            "before docking, charging, and yielding."
+        ),
+        22054: (
+            "Support seed 22054 (BOTH_DOCK). Both arms dock; Arm C has zero "
+            "STALL_TURN interventions. Compare their identical trajectories."
+        ),
+    }
     for seed in (22053, 22554, 22054):
         committed = lifetime_records[seed]
         lifetime_data: dict[str, DevelopmentVisualizationData] = {}
@@ -5636,7 +5825,8 @@ def d055_html_main(argv: Sequence[str] | None = None) -> int:
                 lifetime.trace,
                 seed=seed,
                 arm_c=arm == "C",
-                mark_wedge_onset=seed == 22053 and arm == "U",
+                mark_wedge_onset=arm == "U" and seed in (22053, 22554),
+                example_note=example_notes[seed],
             )
             lifetime_data[arm] = data
             summaries[arm] = lifetime.summary
@@ -5648,6 +5838,19 @@ def d055_html_main(argv: Sequence[str] | None = None) -> int:
         common_transitions = transition_sets[0] & transition_sets[1]
         if not common_transitions:
             raise ValueError(f"D-055 seed {seed} has no synchronized replay samples")
+        expected_stalls = cast(int, summaries["C"]["stall_turn_count"])
+        stall_transitions = [
+            frame.transition_index
+            for frame in lifetime_data["C"].frames
+            if "STALL_TURN" in (frame.event_label or "")
+        ]
+        if len(stall_transitions) != expected_stalls:
+            raise ValueError(
+                f"D-055 seed {seed} replay retained {len(stall_transitions)} "
+                f"STALL_TURN frames; expected {expected_stalls}"
+            )
+        if not set(stall_transitions).issubset(common_transitions):
+            raise ValueError(f"D-055 seed {seed} synchronization dropped a STALL_TURN")
         aligned: dict[str, DevelopmentVisualizationData] = {}
         for arm in ("U", "C"):
             original = lifetime_data[arm]
@@ -5658,37 +5861,46 @@ def d055_html_main(argv: Sequence[str] | None = None) -> int:
                     if field != "frames"
                 },
                 frames=tuple(
-                    frame for frame in original.frames
+                    frame
+                    for frame in original.frames
                     if frame.transition_index in common_transitions
                 ),
             )
         pair = DevelopmentVisualizationPair(
-            pair_id=f"seed-{seed}",
+            pair_id=f"seed-{seed} — {committed['paired_class']}",
             baseline=aligned["U"],
             smooth=aligned["C"],
-            baseline_outcome=str(
-                summaries["U"]["final_mode"]
+            baseline_outcome=(
+                "DOCKED"
+                if cast(int, summaries["U"]["return_dock_acquisition_count"]) > 0
+                else "NOT_DOCKED"
             ),
-            smooth_outcome=str(
-                summaries["C"]["final_mode"]
+            smooth_outcome=(
+                "DOCKED · CHARGED · YIELDED"
+                if cast(int, summaries["C"]["return_dock_acquisition_count"]) > 0
+                and cast(int, summaries["C"]["completed_recovery_yield_count"]) > 0
+                else "DOCKED"
+                if cast(int, summaries["C"]["return_dock_acquisition_count"]) > 0
+                else "NOT_DOCKED"
             ),
             baseline_label="ARM U — unchanged D052Controller floor",
             smooth_label="ARM C — D055 candidate",
         )
-        if (
-            seed == 22054
-            and summaries["C"]["stall_turn_count"] != 0
-        ):
+        if seed == 22054 and summaries["C"]["stall_turn_count"] != 0:
             raise ValueError("support seed 22054 unexpectedly intervened")
         if seed == 22054 and aligned["U"].frames != aligned["C"].frames:
             raise ValueError("support seed 22054 replay arms are not identical")
         output_pairs.append(pair)
         display_data.append(aligned["U"])
+    # The first dropdown option is the lifetime example that visibly includes charging.
+    output_pairs = output_pairs[1:] + output_pairs[:1]
+    display_data = display_data[1:] + display_data[:1]
     replay_html = build_development_html_replay(
         display_data,
         schema="aweform.d055.offline-replay.v1",
         title=(
             "Aweform D-055 — synchronized evaluator-side Arm U / Arm C replay. "
+            "Default: support seed 22053; Part A wedge rescue remains selectable. "
             "Examples: " + "; ".join(labels)
         ),
         event_navigation=True,
