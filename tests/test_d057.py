@@ -96,6 +96,40 @@ def test_r0_identity_against_d055_on_one_permitted_matrix_case() -> None:
     )
 
 
+def test_part_a_only_candidate_detection_breaks_dormancy() -> None:
+    def row(part: str, arm: str, rule: str, detections: int) -> dict:
+        r = {
+            "arm": arm,
+            "rule": rule,
+            "outcome": "DOCKED",
+            "WEDGED": False,
+            "counterfactual_centre_reduction_count": 0,
+            "outcome_transition": 10,
+            "actuator_energy_j": 1.0,
+        }
+        if part == "A":
+            r["case_id"] = "case-1"
+        else:
+            r["seed"], r["activation_transition"] = 22601, 100
+        if arm == "C":
+            r["stall_detected_count"] = detections
+            r["stall_turn_count"] = detections
+            r["stall_detected_non_pursuit_count"] = 0
+        return r
+
+    a = [
+        row("A", arm, rule, 1 if (arm, rule) == ("C", "R1") else 0)
+        for arm in d057.ARMS
+        for rule in d057.RULES
+    ]
+    b = [row("B", arm, rule, 0) for arm in d057.ARMS for rule in d057.RULES]
+    sig, agg = d057._readouts(a, b)
+    assert agg["A"]["candidate_diagnostics"]["R1"]["stall_detections"] == 1
+    assert agg["B"]["candidate_diagnostics"]["R1"]["stall_detections"] == 0
+    assert sig["C_R1_DORMANT"] == "NO"
+    assert sig["C_R2_DORMANT"] == "YES"
+
+
 def test_test_only_lifetime_runs_at_guarded_horizon() -> None:
     d057.validate_test_run(22620, 20, 0.2)
     result = d053.run_d053_lifetime(22620, horizon=20, initial_battery_fraction=0.2)

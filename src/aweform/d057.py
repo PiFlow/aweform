@@ -712,17 +712,19 @@ def _readouts(
                         else "PARTIAL"
                     )
                     sig[f"{part}_U_{rule}_HARM"] = "NONE" if harm == 0 else "SOME"
-        c = [r for r in rows if r["arm"] == "C" and r["rule"] == rule]
-        agg[part].setdefault("candidate_diagnostics", {})[rule] = {
-            "stall_detections": sum(r.get("stall_detected_count", 0) for r in c),
-            "stall_turns": sum(r.get("stall_turn_count", 0) for r in c),
-            "non_pursuit_detections": sum(
-                r.get("stall_detected_non_pursuit_count", 0) for r in c
-            ),
-        }
-        sig[f"C_{rule}_DORMANT"] = (
-            "YES" if sum(r.get("stall_detected_count", 0) for r in c) == 0 else "NO"
+            c = [r for r in rows if r["arm"] == "C" and r["rule"] == rule]
+            agg[part].setdefault("candidate_diagnostics", {})[rule] = {
+                "stall_detections": sum(r.get("stall_detected_count", 0) for r in c),
+                "stall_turns": sum(r.get("stall_turn_count", 0) for r in c),
+                "non_pursuit_detections": sum(
+                    r.get("stall_detected_non_pursuit_count", 0) for r in c
+                ),
+            }
+        detections = sum(
+            agg[part]["candidate_diagnostics"][rule]["stall_detections"]
+            for part in ("A", "B")
         )
+        sig[f"C_{rule}_DORMANT"] = "YES" if detections == 0 else "NO"
     supported = any(
         all(
             sig[f"{p}_U_{r}_RESOLUTION"] == "ALL" and sig[f"{p}_U_{r}_HARM"] == "NONE"
