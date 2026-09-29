@@ -85,5 +85,6 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-054 | V0.5 return-boundary wedge diagnosis | CONTINUING | [`D-054-v05-return-boundary-wedge-diagnosis.md`](D-054-v05-return-boundary-wedge-diagnosis.md) |
 | D-055 | V0.5 RETURN proprioceptive stall-turn candidate comparison | CONTINUING | [`D-055-v05-return-proprioceptive-stall-turn-candidate.md`](D-055-v05-return-proprioceptive-stall-turn-candidate.md) |
 | D-056 | V0.5 multi-cycle stall-turn lifetime characterization | CONTINUING | [`D-056-v05-multi-cycle-stall-turn-lifetimes.md`](D-056-v05-multi-cycle-stall-turn-lifetimes.md) |
+| D-057 | V0.5 evaluator-only boundary-rule counterfactual for the RETURN wall wedge | CONTINUING | [`D-057-v05-boundary-rule-counterfactual.md`](D-057-v05-boundary-rule-counterfactual.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeded to the next ecology question rather than that D-001 remains unexecuted. The same distinction applies to later records whose own work is complete but whose scientific thread continues.
