@@ -1,7 +1,9 @@
 """D-057 evaluator-only boundary-rule counterfactual diagnostic.
 
 The canonical D-045 substrate and all controller implementations are imported
-unchanged. R1/R2 exist only as post-step reductions in this harness.
+unchanged. R1/R2 exist only as post-step reductions in this harness. Official
+supports are executable only through the CLI from the pushed freeze; test code
+cannot directly start Part A, Part B, or the official protocol.
 """
 
 from __future__ import annotations
@@ -30,6 +32,8 @@ from .d050 import D050ControlMode
 from .d052 import D052CommandSource, D052Controller, D052Mode
 from .d055 import D055StallTurnCandidate
 
+_CLI_OFFICIAL_EXECUTION = False
+
 D057_ID: Final = "D-057"
 PROTOCOL_VERSION: Final = "d057-v05-boundary-rule-counterfactual-v1"
 BASE_SHA: Final = "c11022ad167ac7bfb17748bc8e1de3463b1aa61d"
@@ -54,6 +58,11 @@ PROTECTED: Final = tuple(
         "development_visualizer.py",
     )
 )
+
+
+def _require_official_execution() -> None:
+    if not _CLI_OFFICIAL_EXECUTION:
+        raise RuntimeError("official D-057 execution is CLI-only")
 
 
 def _inside(p: tuple[float, float]) -> bool:
@@ -147,7 +156,6 @@ def _run(
     path = energy = 0.0
     centres: list[tuple[float, float]] = []
     trace: list[dict[str, Any]] = []
-    detections = turns = 0
     outcome = "HORIZON_CENSORED"
     prev_pose: tuple[float, float, float] | None = None
     while transitions < horizon:
@@ -217,10 +225,14 @@ def _run(
             ):
                 raise RuntimeError("control 5b stale charge consequence")
             env.body.x, env.body.y = reduced
+            if env.charging_contact:
+                raise RuntimeError(
+                    "control 5 reduced pose unexpectedly contacts charger"
+                )
             reductions += 1
         obs = env._observation().as_array() if rule != "R0" else obs_step
-        if rule != "R0" and not np.array_equal(obs, env._observation().as_array()):
-            raise RuntimeError("post-reduction observation mismatch")
+        if changed and (env.charging_contact or obs[5] != 0.0):
+            raise RuntimeError("control 5 reduced-pose contact observation mismatch")
         transitions += 1
         actual_pose = (env.body.x, env.body.y, env.body.heading)
         prev_pose = actual_pose
@@ -233,9 +245,6 @@ def _run(
             scaled += 1
             if first_scaled is None:
                 first_scaled = transitions
-        if emitted:
-            detections += int(emitted.stall_detected)
-            turns += int(emitted.stall_turned)
         if capture:
             trace.append(
                 {
@@ -289,8 +298,8 @@ def _run(
     }
     if wrapped:
         record.update(
-            stall_detected_count=detections,
-            stall_turn_count=turns,
+            stall_detected_count=wrapped.stall_detected_count,
+            stall_turn_count=wrapped.stall_turn_count,
             stall_detected_non_pursuit_count=wrapped.stall_detected_non_pursuit_count,
             first_stall_turn_transition=wrapped.first_stall_turn_transition,
         )
@@ -324,6 +333,7 @@ def _prior_json(name: str) -> dict[str, Any]:
 
 
 def _part_a() -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    _require_official_execution()
     cases = d054.frozen_cases()
     previous = _prior_json("D-055-v05-return-proprioceptive-stall-turn-candidate.json")
     prior = {(r["arm"], r["case_id"]): r for r in previous["part_a"]["per_run"]}
@@ -405,12 +415,15 @@ def _round(value: Any) -> Any:
 
 
 def main() -> None:
+    """Run the frozen official protocol from its pushed executable freeze."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", required=True)
     parser.add_argument("--executed-commit-sha", required=True)
     args = parser.parse_args()
     if len(args.executed_commit_sha) != 40:
         raise ValueError("expected exact commit SHA")
+    global _CLI_OFFICIAL_EXECUTION
+    _CLI_OFFICIAL_EXECUTION = True
     payload = run_protocol(args.executed_commit_sha)
     Path(args.output).write_text(
         json.dumps(_round(payload), sort_keys=True, indent=2) + "\n"
@@ -418,7 +431,8 @@ def main() -> None:
 
 
 def run_protocol(executed_commit_sha: str) -> dict[str, Any]:
-    """Official runner; every STOP control raises before artifact writing."""
+    """Official runner; callable only through the CLI from the pushed freeze."""
+    _require_official_execution()
     if len(executed_commit_sha) != 40 or any(
         c not in "0123456789abcdef" for c in executed_commit_sha
     ):
@@ -484,6 +498,7 @@ def _replay_window_end(activation: int, end: int) -> int:
 
 
 def _part_b() -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    _require_official_execution()
     # Full extractor and replay controls are implemented here to keep lifetime
     # execution delegated to the unchanged D-053 runner.
     prior = _prior_json("D-056-v05-multi-cycle-stall-turn-lifetimes.json")

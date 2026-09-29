@@ -7,7 +7,8 @@ from pathlib import Path
 import pytest
 
 from aweform import d053, d054, d055, d057
-from aweform.d045 import D045_BATTERY_CAPACITY_J
+from aweform.d045 import D045_AMBIENT_TEMPERATURE_C, D045_BATTERY_CAPACITY_J
+from aweform.d052 import D052Controller
 
 BASE = d057.BASE_SHA
 
@@ -71,6 +72,32 @@ def test_replay_window_end_horizon_bounded_wedged_episode() -> None:
     edge = activation + d057.PART_B_HORIZON - 1
     assert d057._replay_window_end(activation, edge) == edge
     assert d057._replay_window_end(activation, edge + 1) == edge
+
+
+def test_official_execution_requires_cli_flag() -> None:
+    with pytest.raises(RuntimeError, match="CLI-only"):
+        d057._part_a()
+    with pytest.raises(RuntimeError, match="CLI-only"):
+        d057._part_b()
+    with pytest.raises(RuntimeError, match="CLI-only"):
+        d057.run_protocol("0" * 40)
+
+
+def test_d055_wrapper_counts_all_decisions() -> None:
+    from aweform.d055 import D055StallTurnCandidate
+
+    env, observation = d057._reset(
+        (0.5, 0.5), 0.0, 0.8 * D045_BATTERY_CAPACITY_J, 23.0, 5, "R0"
+    )
+    wrapper = D055StallTurnCandidate()
+    wrapper.prior_return_command = (0.1, 0.1)
+    emitted = wrapper.command(observation, (0.0, 0.0))
+    assert emitted.stall_detected
+    assert wrapper.stall_detected_count == 1
+    assert wrapper.stall_turn_count == 0
+    # This decision is counted even though the harness need not step it.
+    assert emitted.command_source.value == "PASS_THROUGH"
+    env.close()
 
 
 def test_test_seed_guards() -> None:
@@ -152,10 +179,36 @@ def test_part_a_only_candidate_detection_breaks_dormancy() -> None:
     assert sig["C_R2_DORMANT"] == "YES"
 
 
-def test_test_only_lifetime_runs_at_guarded_horizon() -> None:
-    d057.validate_test_run(22620, 20, 0.2)
-    result = d053.run_d053_lifetime(22620, horizon=20, initial_battery_fraction=0.2)
-    assert result.seed == 22620 and len(result.trace) <= 21
+def test_test_only_lifetime_restoration_fidelity() -> None:
+    seed, horizon, battery_fraction = 22620, 5, 0.21
+    d057.validate_test_run(seed, horizon, battery_fraction)
+    lifetime = d053.run_d053_lifetime(
+        seed, horizon=horizon, initial_battery_fraction=battery_fraction
+    )
+    reset_row = lifetime.trace[0]
+    env, observation = d057._reset(
+        (reset_row["x"], reset_row["y"]),
+        reset_row["heading"],
+        battery_fraction * D045_BATTERY_CAPACITY_J,
+        D045_AMBIENT_TEMPERATURE_C,
+        horizon,
+        "R0",
+    )
+    proposal = d053.D053RoamingFixture(seed).propose()
+    decision = D052Controller().command(observation, proposal.wheel_command)
+    wheels = (decision.wheel_delta_left, decision.wheel_delta_right)
+    assert [float(v) for v in wheels] == lifetime.trace[1]["wheel_command"]
+    observation, reward, terminated, truncated, info = env.step(wheels)
+    telemetry = env.last_transition
+    assert telemetry is not None and reward == 0.0 and info == {}
+    expected = lifetime.trace[1]
+    assert telemetry.position_after[0].hex() == expected["x"].hex()
+    assert telemetry.position_after[1].hex() == expected["y"].hex()
+    assert telemetry.heading_after.hex() == expected["heading"].hex()
+    assert telemetry.battery_after_j.hex() == expected["battery_after_j"].hex()
+    assert observation.shape == (8,)
+    assert not terminated and not truncated
+    env.close()
 
 
 def test_protected_sources_unchanged() -> None:
