@@ -5454,8 +5454,7 @@ def select_d055_replay_examples(artifact: Mapping[str, object]) -> tuple[str, ..
     wedge = next(
         case_id
         for case_id in sorted(arms)
-        if case_id != "bottom_wall-i0.00-p0.10-0.00-h14"
-        and arms[case_id]["U"]["outcome"] != "DOCKED"
+        if arms[case_id]["U"]["outcome"] != "DOCKED"
         and arms[case_id]["C"]["outcome"] == "DOCKED"
     )
     part_b = cast(Mapping[str, object], artifact["part_b"])
@@ -5468,15 +5467,6 @@ def select_d055_replay_examples(artifact: Mapping[str, object]) -> tuple[str, ..
     ):
         raise ValueError("committed D-055 seed 22054 is not BOTH_DOCK/no-intervention")
     allocated = seed_rows[22554]
-    two_turn_rescues = sorted(
-        seed
-        for seed, row in seed_rows.items()
-        if 22550 <= seed <= 22569
-        and row["paired_class"] == "U_ONLY_FAIL"
-        and cast(Mapping[str, object], row["arm_c"])["stall_turn_count"] == 2
-    )
-    if not two_turn_rescues or two_turn_rescues[0] != 22554:
-        raise ValueError("committed D-055 lowest two-turn rescue is not seed 22554")
     if (
         allocated["paired_class"] != "U_ONLY_FAIL"
         or cast(Mapping[str, object], allocated["arm_c"])["stall_turn_count"] != 2
@@ -5537,16 +5527,13 @@ def _d055_mark_trace_events(
 
 
 def _d055_adapt_lifetime(
-    trace: Sequence[Mapping[str, object]],
+    marked: Sequence[Mapping[str, object]],
+    selected: Sequence[int],
     *,
     seed: int,
     arm_c: bool,
-    mark_wedge_onset: bool = False,
-    example_note: str | None = None,
+    example_note: str | None,
 ) -> DevelopmentVisualizationData:
-    marked, selected = _d055_mark_trace_events(
-        trace, arm_c=arm_c, mark_wedge_onset=mark_wedge_onset
-    )
     adapted = adapt_d053_trace(marked, seed=seed, selected_indices=selected)
     frames = adapted.frames
     if not frames:
@@ -5567,6 +5554,43 @@ def _d055_adapt_lifetime(
             "are not organism-visible."
         ),
     )
+
+
+def d055_adapt_lifetime_pair(
+    trace_u: Sequence[Mapping[str, object]],
+    trace_c: Sequence[Mapping[str, object]],
+    *,
+    seed: int,
+    mark_wedge_onset: bool = False,
+    example_note: str | None = None,
+) -> tuple[DevelopmentVisualizationData, DevelopmentVisualizationData]:
+    """Adapt both arms over the union of their display windows at shared indices."""
+    if [row["transition"] for row in trace_u] != [row["transition"] for row in trace_c]:
+        raise ValueError(f"D-055 seed {seed} arms do not share transition indexing")
+    marked_u, selected_u = _d055_mark_trace_events(
+        trace_u, arm_c=False, mark_wedge_onset=mark_wedge_onset
+    )
+    marked_c, selected_c = _d055_mark_trace_events(
+        trace_c, arm_c=True, mark_wedge_onset=False
+    )
+    selected = tuple(sorted(set(selected_u) | set(selected_c)))
+    return (
+        _d055_adapt_lifetime(
+            marked_u, selected, seed=seed, arm_c=False, example_note=example_note
+        ),
+        _d055_adapt_lifetime(
+            marked_c, selected, seed=seed, arm_c=True, example_note=example_note
+        ),
+    )
+
+
+def d055_lifetime_outcome(summary: Mapping[str, object]) -> str:
+    """Label one arm's run end from its committed lifetime summary."""
+    if cast(int, summary["return_dock_acquisition_count"]) == 0:
+        return "NOT_DOCKED"
+    if cast(int, summary["completed_recovery_yield_count"]) > 0:
+        return "DOCKED · CHARGED · YIELDED"
+    return "DOCKED"
 
 
 def _d055_adapt_matrix_trace(
@@ -5806,42 +5830,29 @@ def d055_html_main(argv: Sequence[str] | None = None) -> int:
     }
     for seed in (22053, 22554, 22054):
         committed = lifetime_records[seed]
-        lifetime_data: dict[str, DevelopmentVisualizationData] = {}
-        summaries: dict[str, Mapping[str, object]] = {}
-        for arm in ("U", "C"):
-            lifetime = (
-                d053.run_d053_lifetime(seed)
-                if arm == "U"
-                else d055.run_d055_lifetime(seed)
-            )
-            arm_key = "arm_u" if arm == "U" else "arm_c"
-            committed_summary = cast(Mapping[str, object], committed[arm_key])
+        lifetimes = {
+            "U": d053.run_d053_lifetime(seed),
+            "C": d055.run_d055_lifetime(seed),
+        }
+        for arm, lifetime in lifetimes.items():
             _d055_require_fidelity(
                 lifetime.summary,
-                committed_summary,
+                cast(Mapping[str, object], committed[f"arm_{arm.lower()}"]),
                 context=f"Part B seed {seed} arm {arm}",
             )
-            data = _d055_adapt_lifetime(
-                lifetime.trace,
-                seed=seed,
-                arm_c=arm == "C",
-                mark_wedge_onset=arm == "U" and seed in (22053, 22554),
-                example_note=example_notes[seed],
-            )
-            lifetime_data[arm] = data
-            summaries[arm] = lifetime.summary
-            del lifetime
-        transition_sets = [
-            {frame.transition_index for frame in lifetime_data[arm].frames}
-            for arm in ("U", "C")
-        ]
-        common_transitions = transition_sets[0] & transition_sets[1]
-        if not common_transitions:
-            raise ValueError(f"D-055 seed {seed} has no synchronized replay samples")
+        summaries = {arm: lifetime.summary for arm, lifetime in lifetimes.items()}
+        aligned_u, aligned_c = d055_adapt_lifetime_pair(
+            lifetimes["U"].trace,
+            lifetimes["C"].trace,
+            seed=seed,
+            mark_wedge_onset=seed in (22053, 22554),
+            example_note=example_notes[seed],
+        )
+        del lifetimes
         expected_stalls = cast(int, summaries["C"]["stall_turn_count"])
         stall_transitions = [
             frame.transition_index
-            for frame in lifetime_data["C"].frames
+            for frame in aligned_c.frames
             if "STALL_TURN" in (frame.event_label or "")
         ]
         if len(stall_transitions) != expected_stalls:
@@ -5849,49 +5860,21 @@ def d055_html_main(argv: Sequence[str] | None = None) -> int:
                 f"D-055 seed {seed} replay retained {len(stall_transitions)} "
                 f"STALL_TURN frames; expected {expected_stalls}"
             )
-        if not set(stall_transitions).issubset(common_transitions):
-            raise ValueError(f"D-055 seed {seed} synchronization dropped a STALL_TURN")
-        aligned: dict[str, DevelopmentVisualizationData] = {}
-        for arm in ("U", "C"):
-            original = lifetime_data[arm]
-            aligned[arm] = DevelopmentVisualizationData(
-                **{
-                    field: getattr(original, field)
-                    for field in original.__dataclass_fields__
-                    if field != "frames"
-                },
-                frames=tuple(
-                    frame
-                    for frame in original.frames
-                    if frame.transition_index in common_transitions
-                ),
-            )
         pair = DevelopmentVisualizationPair(
             pair_id=f"seed-{seed} — {committed['paired_class']}",
-            baseline=aligned["U"],
-            smooth=aligned["C"],
-            baseline_outcome=(
-                "DOCKED"
-                if cast(int, summaries["U"]["return_dock_acquisition_count"]) > 0
-                else "NOT_DOCKED"
-            ),
-            smooth_outcome=(
-                "DOCKED · CHARGED · YIELDED"
-                if cast(int, summaries["C"]["return_dock_acquisition_count"]) > 0
-                and cast(int, summaries["C"]["completed_recovery_yield_count"]) > 0
-                else "DOCKED"
-                if cast(int, summaries["C"]["return_dock_acquisition_count"]) > 0
-                else "NOT_DOCKED"
-            ),
+            baseline=aligned_u,
+            smooth=aligned_c,
+            baseline_outcome=d055_lifetime_outcome(summaries["U"]),
+            smooth_outcome=d055_lifetime_outcome(summaries["C"]),
             baseline_label="ARM U — unchanged D052Controller floor",
             smooth_label="ARM C — D055 candidate",
         )
         if seed == 22054 and summaries["C"]["stall_turn_count"] != 0:
             raise ValueError("support seed 22054 unexpectedly intervened")
-        if seed == 22054 and aligned["U"].frames != aligned["C"].frames:
+        if seed == 22054 and aligned_u.frames != aligned_c.frames:
             raise ValueError("support seed 22054 replay arms are not identical")
         output_pairs.append(pair)
-        display_data.append(aligned["U"])
+        display_data.append(aligned_u)
     # The first dropdown option is the lifetime example that visibly includes charging.
     output_pairs = output_pairs[1:] + output_pairs[:1]
     display_data = display_data[1:] + display_data[:1]

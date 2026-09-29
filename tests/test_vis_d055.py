@@ -15,10 +15,11 @@ from aweform.development_visualizer import (
     DevelopmentVisualizationPair,
     DevelopmentVisualizationRange,
     DevelopmentVisualizationVisibility,
-    _d055_adapt_lifetime,
     _d055_require_fidelity,
     _development_html_frame_payload,
     build_development_html_replay,
+    d055_adapt_lifetime_pair,
+    d055_lifetime_outcome,
     select_d055_replay_examples,
 )
 
@@ -55,19 +56,64 @@ def _trace_row(
     }
 
 
+def _embedded_payload(html: str) -> dict[str, object]:
+    prefix = "window.__AWEFORM_D043_REPLAYS__ = "
+    start = html.index(prefix) + len(prefix)
+    end = html.index(";\n(function", start)
+    return cast(dict[str, object], json.loads(html[start:end]))
+
+
 def test_d055_adapter_marks_stall_turn_in_shared_neutral_frame() -> None:
-    data = _d055_adapt_lifetime(
-        (
-            _trace_row(0, source=None, events=["RESET"]),
-            _trace_row(1, source="STALL_TURN", events=[]),
-        ),
-        seed=22570,
-        arm_c=True,
+    trace = (
+        _trace_row(0, source=None, events=["RESET"]),
+        _trace_row(1, source="STALL_TURN", events=[]),
     )
-    marked = next(frame for frame in data.frames if frame.transition_index == 1)
+    arm_u, arm_c = d055_adapt_lifetime_pair(trace, trace, seed=22570)
+    marked = next(frame for frame in arm_c.frames if frame.transition_index == 1)
     assert marked.command_source == "STALL_TURN"
     assert marked.event_label == "STALL_TURN"
     assert _development_html_frame_payload(marked)["event"] == "STALL_TURN"
+    floor = next(frame for frame in arm_u.frames if frame.transition_index == 1)
+    assert floor.event_label is None
+
+
+def test_d055_pair_keeps_one_arm_events_at_shared_transitions() -> None:
+    trace_u = [_trace_row(index, source=None, events=[]) for index in range(300)]
+    trace_c = [dict(row) for row in trace_u]
+    trace_c[250] = _trace_row(250, source=None, events=["RECOVERY_YIELD"])
+    arm_u, arm_c = d055_adapt_lifetime_pair(trace_u, trace_c, seed=22570)
+    transitions_u = [frame.transition_index for frame in arm_u.frames]
+    transitions_c = [frame.transition_index for frame in arm_c.frames]
+    assert transitions_u == transitions_c
+    assert set(range(200, 300)) <= set(transitions_c)
+    yield_frames = [
+        frame.transition_index
+        for frame in arm_c.frames
+        if "RECOVERY_YIELD" in (frame.event_label or "")
+    ]
+    assert yield_frames == [250]
+
+
+def test_d055_pair_rejects_misaligned_transition_indexing() -> None:
+    trace_u = [_trace_row(index, source=None, events=[]) for index in range(3)]
+    trace_c = [*trace_u[:2], _trace_row(3, source=None, events=[])]
+    with pytest.raises(ValueError, match="do not share transition indexing"):
+        d055_adapt_lifetime_pair(trace_u, trace_c, seed=22570)
+
+
+def test_d055_outcomes_are_symmetric_over_committed_summaries() -> None:
+    artifact = json.loads(ARTIFACT.read_text(encoding="utf-8"))
+    pairs = {row["seed"]: row for row in artifact["part_b"]["pairs"]}
+    assert d055_lifetime_outcome(pairs[22054]["arm_u"]) == (
+        "DOCKED · CHARGED · YIELDED"
+    )
+    assert d055_lifetime_outcome(pairs[22054]["arm_c"]) == (
+        "DOCKED · CHARGED · YIELDED"
+    )
+    assert d055_lifetime_outcome(pairs[22053]["arm_u"]) == "NOT_DOCKED"
+    assert d055_lifetime_outcome(pairs[22053]["arm_c"]) == (
+        "DOCKED · CHARGED · YIELDED"
+    )
 
 
 def test_d055_example_selection_matches_committed_result() -> None:
@@ -154,10 +200,18 @@ def test_shared_single_replay_html_matches_main_golden() -> None:
             )
         ],
     )
-    assert 'id="energy-u"' in paired_html
-    assert 'id="energy-c"' in paired_html
-    assert "drawPairEnergy" in paired_html
-    assert "Example-specific display note." in paired_html
+    replay = cast(list[dict[str, object]], _embedded_payload(paired_html)["replays"])[0]
+    pair = cast(dict[str, object], replay["pair"])
+    arm_c = cast(dict[str, object], pair["arm_c"])
+    assert arm_c["frames"] == replay["frames"]
+    assert pair["arm_u_outcome"] == "NOT_DOCKED"
+    assert pair["arm_c_outcome"] == "DOCKED · CHARGED · YIELDED"
+    assert pair["example_note"] == "Example-specific display note."
+    for payload in (replay, arm_c):
+        assert payload["energy_strip"] == {
+            "range": [0.0, 1.0],
+            "thresholds": [[0.2, "RETURN 20%"], [0.8, "RECOVERY 80%"]],
+        }
 
 
 def test_d055_fidelity_gate_rejects_tampered_record() -> None:
