@@ -105,12 +105,10 @@ def _reset(
     horizon: int,
     rule: str,
 ) -> tuple[D045Env, np.ndarray]:
-    config = D045PhysicalConfig(
-        episode_horizon=horizon,
-        **(
-            {"world_min": (-1.0, -1.0), "world_max": (2.0, 2.0)} if rule != "R0" else {}
-        ),
+    bounds: dict[str, Any] = (
+        {"world_min": (-1.0, -1.0), "world_max": (2.0, 2.0)} if rule != "R0" else {}
     )
+    config = D045PhysicalConfig(episode_horizon=horizon, **bounds)
     env = D045Env(config)
     obs, info = env.reset(
         options={
@@ -326,9 +324,10 @@ def _canon(x: object) -> object:
 
 
 def _prior_json(name: str) -> dict[str, Any]:
-    return json.loads(
+    data: dict[str, Any] = json.loads(
         (Path(__file__).resolve().parents[2] / "development" / name).read_text()
     )
+    return data
 
 
 def _part_a() -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -495,10 +494,11 @@ def _part_b() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     activation_total = fresh_activations = support_activations = 0
     for seed in (*FRESH, *SUPPORT):
         lifetime = d053.run_d053_lifetime(seed, horizon=300_000)
+        lifetime_trace: tuple[dict[str, Any], ...] = lifetime.trace
         if _canon(lifetime.summary) != _canon(summaries[seed]):
             raise RuntimeError(f"6a summary mismatch seed {seed}")
         activation_rows = [
-            r for r in lifetime.trace if "RETURN_ACTIVATED" in r.get("events", [])
+            r for r in lifetime_trace if "RETURN_ACTIVATED" in r.get("events", [])
         ]
         activation_total += len(activation_rows)
         if seed in FRESH:
@@ -507,7 +507,7 @@ def _part_b() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             support_activations += len(activation_rows)
         for cycle_index, activation_row in enumerate(activation_rows, start=1):
             activation = int(activation_row["transition"])
-            restore_row = lifetime.trace[activation - 1]
+            restore_row = lifetime_trace[activation - 1]
             pos = (float(restore_row["x"]), float(restore_row["y"]))
             heading = float(restore_row["heading"])
             battery = float(restore_row["battery_after_j"])
@@ -520,7 +520,7 @@ def _part_b() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             compare_end = _replay_window_end(activation, end)
             expected = {
                 int(r["transition"]): r
-                for r in lifetime.trace
+                for r in lifetime_trace
                 if activation <= int(r["transition"]) <= compare_end
             }
             branch_traces: dict[tuple[str, str], list[dict[str, Any]]] = {}
@@ -638,7 +638,7 @@ def _readouts(
     a: list[dict[str, Any]], b: list[dict[str, Any]]
 ) -> tuple[dict[str, str], dict[str, Any]]:
     parts = {"A": a, "B": b}
-    agg = {}
+    agg: dict[str, Any] = {}
     sig = {}
     for part, rows in parts.items():
         agg[part] = {}
