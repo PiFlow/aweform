@@ -12,7 +12,6 @@ import argparse
 import json
 import math
 from collections import Counter
-from decimal import ROUND_HALF_EVEN, Decimal
 from pathlib import Path
 from typing import Any, Final
 
@@ -338,8 +337,9 @@ def _part_a() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     previous = _prior_json("D-055-v05-return-proprioceptive-stall-turn-candidate.json")
     prior = {(r["arm"], r["case_id"]): r for r in previous["part_a"]["per_run"]}
     rows: list[dict[str, Any]] = []
-    traces: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
     for case in cases:
+        traces: dict[tuple[str, str], list[dict[str, Any]]] = {}
+        c_r0_stalls = 0
         for arm in ARMS:
             for rule in RULES:
                 row, trace = _run(
@@ -363,30 +363,22 @@ def _part_a() -> tuple[list[dict[str, Any]], dict[str, Any]]:
                         {k: old[k] for k in shared}
                     ):
                         raise RuntimeError("control 2 D-055 per-run identity failed")
-                traces[(case.case_id, arm, rule)] = trace
+                    if arm == "C":
+                        c_r0_stalls = row["stall_detected_count"]
+                traces[(arm, rule)] = trace
                 rows.append(row)
-    for case in cases:
         for arm in ARMS:
-            baseline = traces[(case.case_id, arm, "R0")]
+            baseline = traces[(arm, "R0")]
             first_scaled = next(
                 (i for i, t in enumerate(baseline) if t["scale"] < 1.0), None
             )
             limit = len(baseline) if first_scaled is None else first_scaled
             for rule in ("R1", "R2"):
-                candidate = traces[(case.case_id, arm, rule)]
+                candidate = traces[(arm, rule)]
                 if len(candidate) < limit or baseline[:limit] != candidate[:limit]:
                     raise RuntimeError("control 4 R1/R2 prefix identity failed")
-            ctrace = traces[(case.case_id, "C", "R0")]
-            utr = traces[(case.case_id, "U", "R0")]
-            crow = next(
-                r
-                for r in rows
-                if r["case_id"] == case.case_id
-                and r["arm"] == "C"
-                and r["rule"] == "R0"
-            )
-            if crow["stall_detected_count"] == 0 and ctrace != utr:
-                raise RuntimeError("control 2 no-detection C/U trace identity failed")
+        if c_r0_stalls == 0 and traces[("C", "R0")] != traces[("U", "R0")]:
+            raise RuntimeError("control 2 no-detection C/U trace identity failed")
     controls = {
         "r0_committed_identity": "PASS",
         "widened_bounds_inertness": "PASS",
@@ -397,21 +389,6 @@ def _part_a() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "no_detection_trace_identity": "PASS",
     }
     return rows, controls
-
-
-def _round(value: Any) -> Any:
-    if isinstance(value, float):
-        if not math.isfinite(value):
-            raise ValueError("nonfinite artifact float")
-        result = float(
-            Decimal(value).quantize(Decimal("1e-12"), rounding=ROUND_HALF_EVEN)
-        )
-        return 0.0 if result == 0.0 else result
-    if isinstance(value, dict):
-        return {k: _round(v) for k, v in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [_round(v) for v in value]
-    return value
 
 
 def main() -> None:
@@ -426,7 +403,7 @@ def main() -> None:
     _CLI_OFFICIAL_EXECUTION = True
     payload = run_protocol(args.executed_commit_sha)
     Path(args.output).write_text(
-        json.dumps(_round(payload), sort_keys=True, indent=2) + "\n"
+        json.dumps(d053._canonicalize(payload), sort_keys=True, indent=2) + "\n"
     )
 
 
