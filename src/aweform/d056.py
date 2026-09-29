@@ -6,7 +6,6 @@ import argparse
 import json
 import math
 from collections import Counter
-from decimal import ROUND_HALF_EVEN, Decimal
 from pathlib import Path
 from typing import Any, Final, Sequence, cast
 
@@ -325,21 +324,6 @@ def _lifetime_readouts(
         "preemption_fraction": summary["level1_preemption_fraction"],
         "boundary_scaled_transitions": summary["boundary_scaled_transition_count"],
     }
-
-
-def _canonical(value: object) -> object:
-    if isinstance(value, float):
-        if not math.isfinite(value):
-            raise ValueError("non-finite artifact float")
-        rounded = float(
-            Decimal(value).quantize(Decimal("1e-12"), rounding=ROUND_HALF_EVEN)
-        )
-        return 0.0 if rounded == 0.0 else rounded
-    if isinstance(value, dict):
-        return {k: _canonical(v) for k, v in value.items()}
-    if isinstance(value, (tuple, list)):
-        return [_canonical(v) for v in value]
-    return value
 
 
 def _prior_d055_part_b() -> dict[int, dict[str, object]]:
@@ -676,7 +660,7 @@ def write_artifact(path: Path, executed_commit_sha: str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
-            _canonical(run_protocol(executed_commit_sha)),
+            d053._canonicalize(run_protocol(executed_commit_sha)),
             sort_keys=True,
             indent=2,
             allow_nan=False,
