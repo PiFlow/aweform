@@ -32,7 +32,7 @@ canvas[hidden] { display: none; }
 .pair-world { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .pair-world[hidden] { display: none; }
 .pair-world canvas { height: min(58vh, 540px); min-height: 280px; }
-
+</style>
 </head>
 <body>
 <main>
@@ -105,16 +105,12 @@ window.__AWEFORM_D043_REPLAYS__ = {"replays":[{"energy_strip":{"range":[0.0,1.0]
   const state = { replay: replays[0], frame: 0, playing: false, lastTime: 0,
     carry: 0, events: [] };
 
-  function currentReplay() {
-    return state.replay.pair ? state.replay.pair.arm_u : state.replay;
-  }
-  function currentFrame() { return currentReplay().frames[state.frame]; }
+  function currentFrame() { return state.replay.frames[state.frame]; }
   function setReplay(index) {
     state.replay = replays[index];
     state.frame = 0;
     state.carry = 0;
-    const replay = currentReplay();
-    timeline.max = String(Math.max(0, replay.frames.length - 1));
+    timeline.max = String(Math.max(0, state.replay.frames.length - 1));
     canvas.hidden = Boolean(state.replay.pair);
     pairWorld.hidden = !state.replay.pair;
     if (state.replay.pair) {
@@ -129,7 +125,7 @@ window.__AWEFORM_D043_REPLAYS__ = {"replays":[{"energy_strip":{"range":[0.0,1.0]
     if (state.replay.event_navigation) {
       const sources = state.replay.pair ? [state.replay.frames,
         state.replay.pair.arm_c.frames] : [state.replay.frames];
-      replay.frames.forEach(function (_item, frameIndex) {
+      state.replay.frames.forEach(function (item, frameIndex) {
         if (!sources.some(function (frames) {
           return frames[Math.min(frameIndex, frames.length - 1)].event;
         })) return;
@@ -157,9 +153,7 @@ window.__AWEFORM_D043_REPLAYS__ = {"replays":[{"energy_strip":{"range":[0.0,1.0]
     if (state.replay.pair) {
       sizeCanvas(pairCanvasU, pairCanvasU.getContext("2d"), scale);
       sizeCanvas(pairCanvasC, pairCanvasC.getContext("2d"), scale);
-    } else {
-      sizeCanvas(canvas, ctx, scale);
-    }
+    } else { sizeCanvas(canvas, ctx, scale); }
     if (!energyCanvas.hidden) sizeCanvas(energyCanvas, energyCtx, scale);
     draw();
   }
@@ -226,10 +220,7 @@ window.__AWEFORM_D043_REPLAYS__ = {"replays":[{"energy_strip":{"range":[0.0,1.0]
       centre[1] + dx * Math.sin(angle) + dy * Math.cos(angle)];
   }
   function draw() {
-    if (state.replay.pair) {
-      drawPair();
-      return;
-    }
+    if (state.replay.pair) { drawPair(); return; }
     const rect = canvas.getBoundingClientRect();
     const width = rect.width, height = rect.height;
     ctx.clearRect(0, 0, width, height);
@@ -320,7 +311,7 @@ window.__AWEFORM_D043_REPLAYS__ = {"replays":[{"energy_strip":{"range":[0.0,1.0]
   function drawPair() {
     const pair = state.replay.pair;
     const armU = state.replay, armC = pair.arm_c;
-    const frameU = armU.frames[Math.min(state.frame, armU.frames.length - 1)];
+    const frameU = armU.frames[state.frame];
     const frameC = armC.frames[Math.min(state.frame, armC.frames.length - 1)];
     [[pairCanvasU, armU, frameU, pair.arm_u_label, "#277da1"],
       [pairCanvasC, armC, frameC, pair.arm_c_label, "#df7b20"]].forEach(
@@ -331,7 +322,6 @@ window.__AWEFORM_D043_REPLAYS__ = {"replays":[{"energy_strip":{"range":[0.0,1.0]
         const width = rect.width, height = rect.height;
         const context = target.getContext("2d");
         context.clearRect(0, 0, width, height);
-        const geometry = replay.geometry;
         context.fillStyle = "#f7f9fb"; context.fillRect(0, 0, width, height);
         context.strokeStyle = "#526170";
         context.strokeRect(20, 20, width - 40, height - 40);
@@ -347,8 +337,7 @@ window.__AWEFORM_D043_REPLAYS__ = {"replays":[{"energy_strip":{"range":[0.0,1.0]
         context.strokeStyle = color; context.lineWidth = 2; context.stroke();
         const centre = project([frame.x, frame.y], replay, width, height);
         context.fillStyle = frame.charging ? "#43aa8b" : color;
-        context.beginPath();
-        context.arc(centre[0], centre[1], 8, 0, 2 * Math.PI);
+        context.beginPath(); context.arc(centre[0], centre[1], 8, 0, 2 * Math.PI);
         context.fill();
         const nose = project([frame.x + 0.08 * Math.cos(frame.heading),
           frame.y + 0.08 * Math.sin(frame.heading)], replay, width, height);

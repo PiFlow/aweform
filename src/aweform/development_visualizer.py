@@ -4422,17 +4422,11 @@ canvas {
 .note { color: #aebdca; font-size: .82rem; }
 #energy-strip { height: 150px; min-height: 0; margin-top: 8px; }
 canvas[hidden] { display: none; }
-.pair-world { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.pair-world[hidden] { display: none; }
-.pair-world canvas { height: min(58vh, 540px); min-height: 280px; }
-
+</style>
 </head>
 <body>
 <main>
 <h1>__AWEFORM_TITLE__</h1>
-<p class="note">Display-only, evaluator-side post-hoc replay of merged D-055
-  (main 1a9dee33). Not new evidence; results are the committed D-055 record.
-  Evaluator pose and heading are not organism-visible.</p>
 <div class="controls">
   <label>Seed <select id="seed"></select></label>
   <button id="play" type="button">Play</button>
@@ -4455,16 +4449,6 @@ canvas[hidden] { display: none; }
   <span id="event" class="event"></span>
 </div>
 <canvas id="world" aria-label="Development replay world view"></canvas>
-<div id="pair-world" class="pair-world" hidden>
-  <section><canvas id="world-u" aria-label="Arm U replay world view"></canvas>
-    <p class="note">Display-only, evaluator-side post-hoc replay of merged D-055
-      (main 1a9dee33). Not new evidence; results are the committed D-055 record.
-      Evaluator pose and heading are not organism-visible.</p></section>
-  <section><canvas id="world-c" aria-label="Arm C replay world view"></canvas>
-    <p class="note">Display-only, evaluator-side post-hoc replay of merged D-055
-      (main 1a9dee33). Not new evidence; results are the committed D-055 record.
-      Evaluator pose and heading are not organism-visible.</p></section>
-</div>
 <canvas id="energy-strip" hidden aria-label="Energy history"></canvas>
 <p class="note">This file is a deterministic post-hoc display of accepted
   development evaluator data. Coordinates, heading, geometry, event labels,
@@ -4482,9 +4466,6 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
   const timeline = document.getElementById("timeline");
   const canvas = document.getElementById("world");
   const ctx = canvas.getContext("2d");
-  const pairWorld = document.getElementById("pair-world");
-  const pairCanvasU = document.getElementById("world-u");
-  const pairCanvasC = document.getElementById("world-c");
   const energyCanvas = document.getElementById("energy-strip");
   const energyCtx = energyCanvas.getContext("2d");
   const prevButton = document.getElementById("prev-event");
@@ -4498,34 +4479,18 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
   const state = { replay: replays[0], frame: 0, playing: false, lastTime: 0,
     carry: 0, events: [] };
 
-  function currentReplay() {
-    return state.replay.pair ? state.replay.pair.arm_u : state.replay;
-  }
-  function currentFrame() { return currentReplay().frames[state.frame]; }
+  function currentFrame() { return state.replay.frames[state.frame]; }
   function setReplay(index) {
     state.replay = replays[index];
     state.frame = 0;
     state.carry = 0;
-    const replay = currentReplay();
-    timeline.max = String(Math.max(0, replay.frames.length - 1));
-    canvas.hidden = Boolean(state.replay.pair);
-    pairWorld.hidden = !state.replay.pair;
-    if (state.replay.pair) {
-      sizeCanvas(pairCanvasU, pairCanvasU.getContext("2d"),
-        Math.max(1, Math.min(2, window.devicePixelRatio || 1)));
-      sizeCanvas(pairCanvasC, pairCanvasC.getContext("2d"),
-        Math.max(1, Math.min(2, window.devicePixelRatio || 1)));
-    }
+    timeline.max = String(Math.max(0, state.replay.frames.length - 1));
     timeline.value = "0";
     state.events = [];
     eventTicks.replaceChildren();
     if (state.replay.event_navigation) {
-      const sources = state.replay.pair ? [state.replay.frames,
-        state.replay.pair.arm_c.frames] : [state.replay.frames];
-      replay.frames.forEach(function (_item, frameIndex) {
-        if (!sources.some(function (frames) {
-          return frames[Math.min(frameIndex, frames.length - 1)].event;
-        })) return;
+      state.replay.frames.forEach(function (item, frameIndex) {
+        if (!item.event) return;
         state.events.push(frameIndex);
         const tick = document.createElement("option");
         tick.value = String(frameIndex);
@@ -4536,7 +4501,7 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
       timeline.removeAttribute("list");
     }
     prevButton.hidden = nextButton.hidden = !state.replay.event_navigation;
-    energyCanvas.hidden = Boolean(state.replay.pair) || !state.replay.energy_strip;
+    energyCanvas.hidden = !state.replay.energy_strip;
     resizeCanvas();
   }
   function sizeCanvas(target, context, scale) {
@@ -4547,12 +4512,7 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
   }
   function resizeCanvas() {
     const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-    if (state.replay.pair) {
-      sizeCanvas(pairCanvasU, pairCanvasU.getContext("2d"), scale);
-      sizeCanvas(pairCanvasC, pairCanvasC.getContext("2d"), scale);
-    } else {
-      sizeCanvas(canvas, ctx, scale);
-    }
+    sizeCanvas(canvas, ctx, scale);
     if (!energyCanvas.hidden) sizeCanvas(energyCanvas, energyCtx, scale);
     draw();
   }
@@ -4619,10 +4579,6 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
       centre[1] + dx * Math.sin(angle) + dy * Math.cos(angle)];
   }
   function draw() {
-    if (state.replay.pair) {
-      drawPair();
-      return;
-    }
     const rect = canvas.getBoundingClientRect();
     const width = rect.width, height = rect.height;
     ctx.clearRect(0, 0, width, height);
@@ -4710,77 +4666,6 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
     fields.event.textContent = frame.event || "";
     if (replay.energy_strip) drawEnergyStrip(replay, frame);
   }
-  function drawPair() {
-    const pair = state.replay.pair;
-    const armU = state.replay, armC = pair.arm_c;
-    const frameU = armU.frames[Math.min(state.frame, armU.frames.length - 1)];
-    const frameC = armC.frames[Math.min(state.frame, armC.frames.length - 1)];
-    [[pairCanvasU, armU, frameU, pair.arm_u_label, "#277da1"],
-      [pairCanvasC, armC, frameC, pair.arm_c_label, "#df7b20"]].forEach(
-      function (item) {
-        const target = item[0], replay = item[1], frame = item[2];
-        const label = item[3], color = item[4];
-        const rect = target.getBoundingClientRect();
-        const width = rect.width, height = rect.height;
-        const context = target.getContext("2d");
-        context.clearRect(0, 0, width, height);
-        const geometry = replay.geometry;
-        context.fillStyle = "#f7f9fb"; context.fillRect(0, 0, width, height);
-        context.strokeStyle = "#526170";
-        context.strokeRect(20, 20, width - 40, height - 40);
-        const station = project(replay.station, replay, width, height);
-        context.fillStyle = "#43aa8b"; context.beginPath();
-        context.arc(station[0], station[1], 6, 0, 2 * Math.PI); context.fill();
-        context.beginPath();
-        replay.frames.slice(0, state.frame + 1).forEach(function (point, index) {
-          const p = project([point.x, point.y], replay, width, height);
-          if (!index || point.trajectory_break_before) context.moveTo(p[0], p[1]);
-          else context.lineTo(p[0], p[1]);
-        });
-        context.strokeStyle = color; context.lineWidth = 2; context.stroke();
-        const centre = project([frame.x, frame.y], replay, width, height);
-        context.fillStyle = frame.charging ? "#43aa8b" : color;
-        context.beginPath();
-        context.arc(centre[0], centre[1], 8, 0, 2 * Math.PI);
-        context.fill();
-        const nose = project([frame.x + 0.08 * Math.cos(frame.heading),
-          frame.y + 0.08 * Math.sin(frame.heading)], replay, width, height);
-        context.strokeStyle = "#10151b"; context.lineWidth = 3; context.beginPath();
-        context.moveTo(centre[0], centre[1]);
-        context.lineTo(nose[0], nose[1]); context.stroke();
-        if ((frame.event || "").includes("STALL_TURN")) {
-          context.strokeStyle = "#d1495b"; context.lineWidth = 3;
-          context.beginPath(); context.arc(centre[0], centre[1], 15, 0, 2 * Math.PI);
-          context.stroke(); context.fillStyle = "#b42318";
-          context.font = "bold 13px sans-serif";
-          context.fillText("STALL_TURN", 28, 42);
-        }
-        context.fillStyle = "#10151b"; context.font = "bold 13px sans-serif";
-        context.fillText(label, 28, height - 26);
-      });
-    fields.progress.textContent = pair.id + " · transition " + frameU.transition +
-      " / " + armU.frames[armU.frames.length - 1].transition;
-    fields.mode.textContent = "U mode: " + frameU.mode + " · C mode: " + frameC.mode;
-    fields.action.textContent = "U action: " + frameU.action +
-      " · C action: " + frameC.action;
-    fields.energy.textContent = "U energy: " + frameU.energy.toFixed(3) +
-      " · C energy: " + frameC.energy.toFixed(3);
-    fields.thermal.textContent = "U thermal: " + frameU.thermal.toFixed(3) +
-      " · C thermal: " + frameC.thermal.toFixed(3);
-    fields.contact.textContent = "U contact: " + (frameU.charging ? "YES" : "NO") +
-      " · C contact: " + (frameC.charging ? "YES" : "NO");
-    fields.beacon.hidden = true;
-    fields.status.textContent = "U outcome: " + pair.arm_u_outcome +
-      " · C outcome: " + pair.arm_c_outcome;
-    fields.source.hidden = false;
-    fields.source.textContent = "U source: " + (frameU.command_source || "—") +
-      " · C source: " + (frameC.command_source || "—");
-    fields.cycle.hidden = false;
-    fields.cycle.textContent = "U cycle: " + (frameU.cycle_index || "—") +
-      " · C cycle: " + (frameC.cycle_index || "—");
-    fields.event.textContent = "U: " + (frameU.event || "—") +
-      " · C: " + (frameC.event || "—");
-  }
   function tick(now) {
     if (!state.playing) return;
     if (!state.lastTime) state.lastTime = now;
@@ -4798,8 +4683,7 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
   }
   replays.forEach(function (replay, index) {
     const option = document.createElement("option");
-    option.value = String(index); option.textContent = replay.pair ?
-      replay.pair.id : String(replay.seed);
+    option.value = String(index); option.textContent = String(replay.seed);
     seedSelect.appendChild(option);
   });
   seedSelect.addEventListener("change", function () {
@@ -5188,6 +5072,183 @@ def adapt_d053_trace(
     )
 
 
+def _enable_development_html_pairs(template: str) -> str:
+    """Add the synchronized paired view only for payloads that request it."""
+    replacements = (
+        (
+            "canvas[hidden] { display: none; }\n",
+            "canvas[hidden] { display: none; }\n"
+            ".pair-world { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }\n"
+            ".pair-world[hidden] { display: none; }\n"
+            ".pair-world canvas { height: min(58vh, 540px); min-height: 280px; }\n",
+        ),
+        (
+            "<h1>__AWEFORM_TITLE__</h1>\n",
+            "<h1>__AWEFORM_TITLE__</h1>\n"
+            "<p class=\"note\">Display-only, evaluator-side post-hoc replay "
+            "of merged D-055\n"
+            "  (main 1a9dee33). Not new evidence; results are the committed "
+            "D-055 record.\n"
+            "  Evaluator pose and heading are not organism-visible.</p>\n",
+        ),
+        (
+            '<canvas id="world" aria-label="Development replay world view"></canvas>\n',
+            '<canvas id="world" aria-label="Development replay world view"></canvas>\n'
+            '<div id="pair-world" class="pair-world" hidden>\n'
+            '  <section><canvas id="world-u" '
+            'aria-label="Arm U replay world view"></canvas>\n'
+            '    <p class="note">Display-only, evaluator-side post-hoc replay '\
+            'of merged D-055\n'
+            '      (main 1a9dee33). Not new evidence; results are the committed '\
+            'D-055 record.\n'
+            '      Evaluator pose and heading are not organism-visible.</p></section>\n'
+            '  <section><canvas id="world-c" '
+            'aria-label="Arm C replay world view"></canvas>\n'
+            '    <p class="note">Display-only, evaluator-side post-hoc replay '\
+            'of merged D-055\n'
+            '      (main 1a9dee33). Not new evidence; results are the committed '\
+            'D-055 record.\n'
+            '      Evaluator pose and heading are not organism-visible.</p></section>\n'
+            '</div>\n',
+        ),
+        (
+            '  const ctx = canvas.getContext("2d");\n',
+            '  const ctx = canvas.getContext("2d");\n'
+            '  const pairWorld = document.getElementById("pair-world");\n'
+            '  const pairCanvasU = document.getElementById("world-u");\n'
+            '  const pairCanvasC = document.getElementById("world-c");\n',
+        ),
+        (
+            '    timeline.max = String(Math.max(0, state.replay.frames.length - 1));\n',
+            '    timeline.max = String(Math.max(0, state.replay.frames.length - 1));\n'
+            '    canvas.hidden = Boolean(state.replay.pair);\n'
+            '    pairWorld.hidden = !state.replay.pair;\n'
+            '    if (state.replay.pair) {\n'
+            '      sizeCanvas(pairCanvasU, pairCanvasU.getContext("2d"),\n'
+            '        Math.max(1, Math.min(2, window.devicePixelRatio || 1)));\n'
+            '      sizeCanvas(pairCanvasC, pairCanvasC.getContext("2d"),\n'
+            '        Math.max(1, Math.min(2, window.devicePixelRatio || 1)));\n'
+            '    }\n',
+        ),
+        (
+            '      state.replay.frames.forEach(function (item, frameIndex) {\n'
+            '        if (!item.event) return;\n',
+            '      const sources = state.replay.pair ? [state.replay.frames,\n'
+            '        state.replay.pair.arm_c.frames] : [state.replay.frames];\n'
+            '      state.replay.frames.forEach(function (item, frameIndex) {\n'
+            '        if (!sources.some(function (frames) {\n'
+            '          return frames[Math.min(frameIndex, frames.length - 1)].event;\n'
+            '        })) return;\n',
+        ),
+        (
+            '    energyCanvas.hidden = !state.replay.energy_strip;\n',
+            '    energyCanvas.hidden = Boolean(state.replay.pair) || '\
+            '!state.replay.energy_strip;\n',
+        ),
+        (
+            '    sizeCanvas(canvas, ctx, scale);\n',
+            '    if (state.replay.pair) {\n'
+            '      sizeCanvas(pairCanvasU, pairCanvasU.getContext("2d"), scale);\n'
+            '      sizeCanvas(pairCanvasC, pairCanvasC.getContext("2d"), scale);\n'
+            '    } else { sizeCanvas(canvas, ctx, scale); }\n',
+        ),
+        (
+            '  function draw() {\n'
+            '    const rect = canvas.getBoundingClientRect();\n',
+            '  function draw() {\n'
+            '    if (state.replay.pair) { drawPair(); return; }\n'
+            '    const rect = canvas.getBoundingClientRect();\n',
+        ),
+        (
+            '  function tick(now) {\n',
+            _D055_PAIRED_DRAW_SCRIPT + '  function tick(now) {\n',
+        ),
+        (
+            '    option.value = String(index); option.textContent = '\
+            'String(replay.seed);\n',
+            '    option.value = String(index); option.textContent = replay.pair ?\n'
+            '      replay.pair.id : String(replay.seed);\n',
+        ),
+    )
+    for old, new in replacements:
+        if template.count(old) != 1:
+            raise RuntimeError("paired HTML template anchor is not unique")
+        template = template.replace(old, new)
+    return template
+
+
+_D055_PAIRED_DRAW_SCRIPT = r"""  function drawPair() {
+    const pair = state.replay.pair;
+    const armU = state.replay, armC = pair.arm_c;
+    const frameU = armU.frames[state.frame];
+    const frameC = armC.frames[Math.min(state.frame, armC.frames.length - 1)];
+    [[pairCanvasU, armU, frameU, pair.arm_u_label, "#277da1"],
+      [pairCanvasC, armC, frameC, pair.arm_c_label, "#df7b20"]].forEach(
+      function (item) {
+        const target = item[0], replay = item[1], frame = item[2];
+        const label = item[3], color = item[4];
+        const rect = target.getBoundingClientRect();
+        const width = rect.width, height = rect.height;
+        const context = target.getContext("2d");
+        context.clearRect(0, 0, width, height);
+        context.fillStyle = "#f7f9fb"; context.fillRect(0, 0, width, height);
+        context.strokeStyle = "#526170";
+        context.strokeRect(20, 20, width - 40, height - 40);
+        const station = project(replay.station, replay, width, height);
+        context.fillStyle = "#43aa8b"; context.beginPath();
+        context.arc(station[0], station[1], 6, 0, 2 * Math.PI); context.fill();
+        context.beginPath();
+        replay.frames.slice(0, state.frame + 1).forEach(function (point, index) {
+          const p = project([point.x, point.y], replay, width, height);
+          if (!index || point.trajectory_break_before) context.moveTo(p[0], p[1]);
+          else context.lineTo(p[0], p[1]);
+        });
+        context.strokeStyle = color; context.lineWidth = 2; context.stroke();
+        const centre = project([frame.x, frame.y], replay, width, height);
+        context.fillStyle = frame.charging ? "#43aa8b" : color;
+        context.beginPath(); context.arc(centre[0], centre[1], 8, 0, 2 * Math.PI);
+        context.fill();
+        const nose = project([frame.x + 0.08 * Math.cos(frame.heading),
+          frame.y + 0.08 * Math.sin(frame.heading)], replay, width, height);
+        context.strokeStyle = "#10151b"; context.lineWidth = 3; context.beginPath();
+        context.moveTo(centre[0], centre[1]);
+        context.lineTo(nose[0], nose[1]); context.stroke();
+        if ((frame.event || "").includes("STALL_TURN")) {
+          context.strokeStyle = "#d1495b"; context.lineWidth = 3;
+          context.beginPath(); context.arc(centre[0], centre[1], 15, 0, 2 * Math.PI);
+          context.stroke(); context.fillStyle = "#b42318";
+          context.font = "bold 13px sans-serif";
+          context.fillText("STALL_TURN", 28, 42);
+        }
+        context.fillStyle = "#10151b"; context.font = "bold 13px sans-serif";
+        context.fillText(label, 28, height - 26);
+      });
+    fields.progress.textContent = pair.id + " · transition " + frameU.transition +
+      " / " + armU.frames[armU.frames.length - 1].transition;
+    fields.mode.textContent = "U mode: " + frameU.mode + " · C mode: " + frameC.mode;
+    fields.action.textContent = "U action: " + frameU.action +
+      " · C action: " + frameC.action;
+    fields.energy.textContent = "U energy: " + frameU.energy.toFixed(3) +
+      " · C energy: " + frameC.energy.toFixed(3);
+    fields.thermal.textContent = "U thermal: " + frameU.thermal.toFixed(3) +
+      " · C thermal: " + frameC.thermal.toFixed(3);
+    fields.contact.textContent = "U contact: " + (frameU.charging ? "YES" : "NO") +
+      " · C contact: " + (frameC.charging ? "YES" : "NO");
+    fields.beacon.hidden = true;
+    fields.status.textContent = "U outcome: " + pair.arm_u_outcome +
+      " · C outcome: " + pair.arm_c_outcome;
+    fields.source.hidden = false;
+    fields.source.textContent = "U source: " + (frameU.command_source || "—") +
+      " · C source: " + (frameC.command_source || "—");
+    fields.cycle.hidden = false;
+    fields.cycle.textContent = "U cycle: " + (frameU.cycle_index || "—") +
+      " · C cycle: " + (frameC.cycle_index || "—");
+    fields.event.textContent = "U: " + (frameU.event || "—") +
+      " · C: " + (frameC.event || "—");
+  }
+"""
+
+
 def build_development_html_replay(
     data: Sequence[DevelopmentVisualizationData],
     *,
@@ -5228,7 +5289,10 @@ def build_development_html_replay(
         separators=(",", ":"),
         sort_keys=True,
     ).replace("</", "<\\/")
-    return _DEVELOPMENT_HTML_TEMPLATE.replace(
+    template = _DEVELOPMENT_HTML_TEMPLATE
+    if pairs is not None:
+        template = _enable_development_html_pairs(template)
+    return template.replace(
         "__AWEFORM_TITLE__", html.escape(title)
     ).replace("__AWEFORM_D043_PAYLOAD__", serialized)
 
