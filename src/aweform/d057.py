@@ -473,6 +473,16 @@ def run_protocol(executed_commit_sha: str) -> dict[str, Any]:
     }
 
 
+def _replay_window_end(activation: int, end: int) -> int:
+    """Inclusive last official transition replayed by a Part-B branch.
+
+    Branch step k replays official transition ``activation + k - 1``, so a
+    ``PART_B_HORIZON``-step branch covers at most ``activation`` through
+    ``activation + PART_B_HORIZON - 1``.
+    """
+    return min(end, activation + PART_B_HORIZON - 1)
+
+
 def _part_b() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     # Full extractor and replay controls are implemented here to keep lifetime
     # execution delegated to the unchanged D-053 runner.
@@ -515,7 +525,7 @@ def _part_b() -> tuple[list[dict[str, Any]], dict[str, Any]]:
                 episode.get("first_charging_contact_transition")
                 or episode.get("end_transition", activation + PART_B_HORIZON)
             )
-            compare_end = min(end, activation + PART_B_HORIZON)
+            compare_end = _replay_window_end(activation, end)
             expected = {
                 int(r["transition"]): r
                 for r in lifetime.trace

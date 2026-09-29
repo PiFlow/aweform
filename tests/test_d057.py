@@ -51,6 +51,28 @@ def test_constructed_prefix_identity_without_boundary_scale() -> None:
     assert traces["R1"] == traces["R0"] == traces["R2"]
 
 
+def test_replay_window_end_contact_bounded_docked_episode() -> None:
+    # Branch step k replays official transition activation + k - 1, so a branch
+    # that docks at contact on step 25 covers activation .. contact inclusive.
+    activation = 1000
+    contact = activation + 24
+    end = d057._replay_window_end(activation, contact)
+    assert end == contact
+    assert end - activation + 1 == 25
+
+
+def test_replay_window_end_horizon_bounded_wedged_episode() -> None:
+    # A WEDGED episode ends ~71k transitions later; the 1,000-step branch covers
+    # exactly activation .. activation + PART_B_HORIZON - 1.
+    activation = 70758
+    end = d057._replay_window_end(activation, activation + 71_000)
+    assert end == activation + d057.PART_B_HORIZON - 1
+    assert end - activation + 1 == d057.PART_B_HORIZON
+    edge = activation + d057.PART_B_HORIZON - 1
+    assert d057._replay_window_end(activation, edge) == edge
+    assert d057._replay_window_end(activation, edge + 1) == edge
+
+
 def test_test_seed_guards() -> None:
     d057.validate_test_run(22620, 100, 0.21)
     for args in ((22600, 5, 0.2), (22620, 5001, 0.2), (22620, 2, 0.22)):
