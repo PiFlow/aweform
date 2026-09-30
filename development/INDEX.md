@@ -12,7 +12,7 @@ This file is the canonical **committed D-record ledger**. Add one row when a mea
 
 Do not use roadmap prose or README text as a replacement for this ledger. Work that is authorized in GitHub but does not yet have a committed D-record belongs in the current authorization issue/PR, not as a premature row here.
 
-Committed Development records currently extend through **D-055**; D-051 was stopped before merge and has no committed D-record. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage; D-049, D-050, D-052, and D-053 are the committed V0.5 Level-1 viability lineage; D-054 is its evaluator-only boundary-wedge diagnostic; and D-055 is its RETURN stall-turn candidate comparison.
+Committed Development records currently extend through **D-056**; D-051 was stopped before merge and has no committed D-record. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage; D-049, D-050, D-052, and D-053 are the committed V0.5 Level-1 viability lineage; D-054 is its evaluator-only boundary-wedge diagnostic; D-055 is its RETURN stall-turn candidate comparison; and D-056 is that candidate's multi-cycle lifetime characterization.
 
 ## Disposition vocabulary
 
@@ -85,5 +85,6 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-054 | V0.5 return-boundary wedge diagnosis | CONTINUING | [`D-054-v05-return-boundary-wedge-diagnosis.md`](D-054-v05-return-boundary-wedge-diagnosis.md) |
 | D-055 | V0.5 RETURN proprioceptive stall-turn candidate comparison | CONTINUING | [`D-055-v05-return-proprioceptive-stall-turn-candidate.md`](D-055-v05-return-proprioceptive-stall-turn-candidate.md) |
 | D-056 | V0.5 multi-cycle stall-turn lifetime characterization | CONTINUING | [`D-056-v05-multi-cycle-stall-turn-lifetimes.md`](D-056-v05-multi-cycle-stall-turn-lifetimes.md) |
+| D-057 | V0.5 evaluator-only boundary-rule counterfactual for the RETURN wall wedge | CONTINUING | [`D-057-v05-boundary-rule-counterfactual.md`](D-057-v05-boundary-rule-counterfactual.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeded to the next ecology question rather than that D-001 remains unexecuted. The same distinction applies to later records whose own work is complete but whose scientific thread continues.
