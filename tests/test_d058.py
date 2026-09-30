@@ -94,6 +94,60 @@ def test_clamp_full_yaw_projection_slip_and_private_telemetry() -> None:
     assert env._observation().wheel_delta_right == quantize_wheel_delta(m)
 
 
+def test_oblique_wall_contact_removes_normal_and_retains_tangential_motion() -> None:
+    m = D045_MAX_WHEEL_DELTA_RAD
+    heading = math.pi / 4
+    start = d058._start_position("wall", "x_min", "flush", heading, 3.0)
+    env = d058.D058Env()
+    env.reset(options={"body_position": start, "heading": heading})
+    env.step((-m, -m))
+    contact = env.last_contact
+    assert contact is not None
+    assert contact.pushing_x_min
+    assert not (contact.pushing_x_max or contact.pushing_y_min or contact.pushing_y_max)
+    assert contact.unconstrained_endpoint[0] < contact.hx_m
+    assert env.body.position[0] == contact.hx_m
+    assert env.body.position[1] == contact.unconstrained_endpoint[1] != start[1]
+
+
+def test_endpoint_invariants_cover_interior_encoder_and_energy_identities() -> None:
+    m = D045_MAX_WHEEL_DELTA_RAD
+    env = d058.D058Env()
+    env.reset(options={"body_position": (1.5, 1.5), "heading": 0.3})
+    observation, *_ = env.step((m, 0.0))
+    assert d058._endpoint_invariants(env, observation, (1.5, 1.5), 0.3, (m, 0.0)) == (
+        0.0,
+        None,
+        None,
+    )
+    tampered = observation.copy()
+    tampered[6] = 0.0
+    with pytest.raises(AssertionError):
+        d058._endpoint_invariants(env, tampered, (1.5, 1.5), 0.3, (m, 0.0))
+
+
+def test_conformance_reports_onset_bottom_wall_outcomes_descriptively() -> None:
+    checks = d058.run_d058_conformance("test")["checks"]
+    assert checks["3_projection_invariants"]["interior_grid_cases"] == 5184
+    wall_cases = checks["4_wall_corner_cases"]
+    outcomes = wall_cases["onset_bottom_wall_descriptive_outcomes"]
+    assert len(outcomes) == wall_cases["onset_bottom_wall_descriptive_cases"] == 64
+    _, _, headings = d058._probe_sets()
+    assert [(o["room_side_m"], o["heading_rad"]) for o in outcomes] == [
+        (length, heading) for length in (3.0, 1.0) for heading in headings
+    ]
+    for outcome in outcomes:
+        assert outcome["start"] == d058._start_position(
+            "wall", "y_min", "flush", outcome["heading_rad"], outcome["room_side_m"]
+        )
+        assert outcome["wall_contact"] == any(
+            outcome[f"pushing_{wall}"] for wall in ("x_min", "x_max", "y_min", "y_max")
+        )
+        assert outcome["slip_magnitude_m"] == math.dist(
+            outcome["unconstrained_endpoint"], outcome["executed_endpoint"]
+        )
+
+
 def test_free_space_matches_d045_oracle_for_representative_state() -> None:
     for length in (3.0, 1.0):
         options = {

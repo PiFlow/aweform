@@ -496,6 +496,65 @@ def _verification_tau(length: float) -> float:
     return 64.0 * (2.0**-52) * length
 
 
+def _endpoint_invariants(
+    env: D058Env,
+    observation: np.ndarray,
+    start: Coordinate,
+    heading: float,
+    command: tuple[float, float],
+) -> tuple[float, Coordinate | None, str | None]:
+    """Assert the check-3 endpoint invariants and return the corner violation."""
+    m = D045_MAX_WHEEL_DELTA_RAD
+    length = env.config.room_side_m
+    tr = env.last_transition
+    assert (
+        env.last_contact is not None
+        and tr is not None
+        and _penetration(tr.position_after, tr.heading_after, length) == 0.0
+    )
+    # Verification-only amendment; no simulator change.
+    violation, point, wall = _independent_corner_violation(
+        tr.position_after, tr.heading_after, length
+    )
+    if violation > _verification_tau(length):
+        raise AssertionError(
+            f"corner violation {violation!r} exceeds tau={_verification_tau(length)!r}"
+        )
+    clamped = (min(max(command[0], -m), m), min(max(command[1], -m), m))
+    assert tr.heading_after == integrate_differential_drive(start, heading, *clamped)[1]
+    assert (tr.actual_delta_left, tr.actual_delta_right) == clamped
+    assert env._previous_wheel_delta == clamped
+    assert observation[6] == quantize_wheel_delta(
+        clamped[0], env.config.encoder_quantum_rad
+    )
+    assert observation[7] == quantize_wheel_delta(
+        clamped[1], env.config.encoder_quantum_rad
+    )
+    assert tr.actuator_electrical_power_w == env.config.wheel_power_scale_w * (
+        wheel_effort(*clamped, m)
+    )
+    assert (
+        tr.total_electrical_load_w
+        == tr.electronics_electrical_power_w + tr.actuator_electrical_power_w
+    )
+    assert tr.battery_after_j == min(
+        env.config.battery_capacity_j,
+        max(
+            0.0,
+            tr.battery_before_j
+            + tr.actual_stored_power_w * env.config.dt_seconds
+            - tr.total_electrical_load_w * env.config.dt_seconds,
+        ),
+    )
+    hx_exec, hy_exec = env._extent(tr.heading_after)
+    projected = (
+        min(max(tr.position_after[0], hx_exec), length - hx_exec),
+        min(max(tr.position_after[1], hy_exec), length - hy_exec),
+    )
+    assert projected == tr.position_after
+    return violation, point, wall
+
+
 def _start_position(
     kind: str, ident: str, variant: str, heading: float, length: float
 ) -> Coordinate:
@@ -542,6 +601,16 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
         "verification_amendment": (
             "Verification amendment 1: tau(L)=64*2^-52*L, checks 3 and 5 only"
         ),
+        "invalidated_official_candidates": [
+            {
+                "executed_source_sha": "ddefe63b31a3b83872599b128e7c5d290d22e4de",
+                "artifact_sha256": (
+                    "2b0bb325313f352f42690eb8f4efe9ad0fdc8bf030da76e27ea5ccd053f37c6e"
+                ),
+                "artifact_bytes": 33817,
+                "reason": "review gate 01M3SFYRWNH42D2KXX5MT1HS7M",
+            }
+        ],
         "pre_official_roundoff_exposure": {
             "L": 3.0,
             "start": "x_min flush",
@@ -722,25 +791,9 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
                                 }
                             )
                             out = env.step(cmd)
-                            tele = env.last_contact
-                            tr = env.last_transition
-                            assert (
-                                tele is not None
-                                and tr is not None
-                                and _penetration(
-                                    tr.position_after, tr.heading_after, length
-                                )
-                                == 0
+                            violation, point, wall = _endpoint_invariants(
+                                env, out[0], (x, y), h, cmd
                             )
-                            # Verification-only amendment; no simulator change.
-                            violation, point, wall = _independent_corner_violation(
-                                tr.position_after, tr.heading_after, length
-                            )
-                            if violation > _verification_tau(length):
-                                raise AssertionError(
-                                    f"corner violation {violation!r} exceeds "
-                                    f"tau={_verification_tau(length)!r}"
-                                )
                             if violation > 0.0:
                                 positive_corner_cases += 1
                                 if violation > max_corner_violation:
@@ -757,51 +810,6 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
                                         "wall": wall,
                                     }
                             clamped = (min(max(cmd[0], -m), m), min(max(cmd[1], -m), m))
-                            assert (
-                                tr.heading_after
-                                == integrate_differential_drive((x, y), h, *clamped)[1]
-                            )
-                            assert (
-                                tr.actual_delta_left,
-                                tr.actual_delta_right,
-                            ) == clamped
-                            assert env._previous_wheel_delta == clamped
-                            assert out[0][6] == quantize_wheel_delta(
-                                clamped[0], env.config.encoder_quantum_rad
-                            )
-                            assert out[0][7] == quantize_wheel_delta(
-                                clamped[1], env.config.encoder_quantum_rad
-                            )
-                            assert (
-                                tr.actuator_electrical_power_w
-                                == env.config.wheel_power_scale_w
-                                * wheel_effort(*clamped, m)
-                            )
-                            assert (
-                                tr.total_electrical_load_w
-                                == tr.electronics_electrical_power_w
-                                + tr.actuator_electrical_power_w
-                            )
-                            assert tr.battery_after_j == min(
-                                env.config.battery_capacity_j,
-                                max(
-                                    0.0,
-                                    tr.battery_before_j
-                                    + tr.actual_stored_power_w * env.config.dt_seconds
-                                    - tr.total_electrical_load_w
-                                    * env.config.dt_seconds,
-                                ),
-                            )
-                            hx_exec, hy_exec = env._extent(tr.heading_after)
-                            projected = (
-                                min(
-                                    max(tr.position_after[0], hx_exec), length - hx_exec
-                                ),
-                                min(
-                                    max(tr.position_after[1], hy_exec), length - hy_exec
-                                ),
-                            )
-                            assert projected == tr.position_after
                             if cmd[0] or cmd[1]:
                                 key = (
                                     f"{kind}:{ident}:{variant}:L={length}:"
@@ -887,22 +895,10 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
                                 "heading": h,
                             }
                         )
-                        env.step(cmd)
-                        tr = env.last_transition
-                        assert (
-                            tr is not None
-                            and _penetration(
-                                tr.position_after, tr.heading_after, length
-                            )
-                            == 0.0
+                        out = env.step(cmd)
+                        violation, point, wall = _endpoint_invariants(
+                            env, out[0], (x, y), h, cmd
                         )
-                        violation, point, wall = _independent_corner_violation(
-                            tr.position_after, tr.heading_after, length
-                        )
-                        if violation > _verification_tau(length):
-                            raise AssertionError(
-                                "interior endpoint corner violation exceeds tau"
-                            )
                         if violation > 0.0:
                             positive_corner_cases += 1
                             if violation > max_corner_violation:
@@ -916,22 +912,6 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
                                     "corner": point,
                                     "wall": wall,
                                 }
-                        assert (
-                            tr.heading_after
-                            == integrate_differential_drive(
-                                (x, y),
-                                h,
-                                min(max(cmd[0], -m), m),
-                                min(max(cmd[1], -m), m),
-                            )[1]
-                        )
-                        assert env._previous_wheel_delta == (
-                            min(max(cmd[0], -m), m),
-                            min(max(cmd[1], -m), m),
-                        )
-                        assert tr.actuator_electrical_power_w == wheel_effort(
-                            *env._previous_wheel_delta, m
-                        )
                         interior_cases += 1
     assert max_pen <= bound
     results["checks"]["3_projection_invariants"] = {
@@ -950,7 +930,7 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
     }
     # Explicit structural cases in §I.4, independent of the sampled matrix.
     wall_spin_cases = 0
-    onset_cases = 0
+    onset_outcomes = []
     spin_bound = math.hypot(D058_HULL_HALF_LENGTH_METRES, D058_HULL_HALF_WIDTH_METRES)
     for length in (3.0, 1.0):
         for wall in walls:
@@ -992,8 +972,37 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
                         }
                     )
                     env.step(U_ONSET)
-                    assert env.last_transition is not None
-                    onset_cases += 1
+                    tr, contact = env.last_transition, env.last_contact
+                    assert tr is not None and contact is not None
+                    onset_outcomes.append(
+                        {
+                            "room_side_m": length,
+                            "heading_rad": h,
+                            "start": position,
+                            "unconstrained_endpoint": contact.unconstrained_endpoint,
+                            "executed_endpoint": contact.executed_endpoint,
+                            "heading_after_rad": tr.heading_after,
+                            "wall_contact": any(
+                                (
+                                    contact.pushing_x_min,
+                                    contact.pushing_x_max,
+                                    contact.pushing_y_min,
+                                    contact.pushing_y_max,
+                                )
+                            ),
+                            "pushing_x_min": contact.pushing_x_min,
+                            "pushing_x_max": contact.pushing_x_max,
+                            "pushing_y_min": contact.pushing_y_min,
+                            "pushing_y_max": contact.pushing_y_max,
+                            "removed_normal_displacement_m": (
+                                contact.removed_normal_displacement_m
+                            ),
+                            "slip_magnitude_m": contact.slip_magnitude_m,
+                            "tangential_displacement_m": (
+                                contact.executed_endpoint[0] - position[0]
+                            ),
+                        }
+                    )
     # Head-on/oblique retain tangent; corner contact removes both components.
     head = D058Env()
     head.reset(
@@ -1004,7 +1013,17 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
         }
     )
     head.step((-m, -m))
-    assert head.body.position[0] == 0.09 and head.body.position[1] == 1.5
+    assert (
+        head.last_contact is not None
+        and head.last_contact.pushing_x_min
+        and not head.last_contact.pushing_x_max
+        and not head.last_contact.pushing_y_min
+        and not head.last_contact.pushing_y_max
+        and head.last_contact.unconstrained_endpoint[0] < 0.09
+        and head.last_contact.removed_normal_displacement_m > 0.0
+        and head.body.position[0] == 0.09
+        and head.body.position[1] == 1.5
+    )
     oblique_position = _start_position("wall", "x_min", "flush", math.pi / 4, 3.0)
     oblique = D058Env()
     oblique.reset(
@@ -1014,10 +1033,20 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
             "heading": math.pi / 4,
         }
     )
-    oblique.step((m, m))
+    oblique.step((-m, -m))
+    oblique_contact = oblique.last_contact
     assert (
-        oblique.last_contact is not None
-        and oblique.body.position[1] == oblique.last_contact.unconstrained_endpoint[1]
+        oblique_contact is not None
+        and oblique_contact.pushing_x_min
+        and not oblique_contact.pushing_x_max
+        and not oblique_contact.pushing_y_min
+        and not oblique_contact.pushing_y_max
+        and oblique_contact.unconstrained_endpoint[0] < oblique_contact.hx_m
+        and oblique.body.position[0] == oblique_contact.hx_m
+        and oblique_contact.removed_normal_displacement_m
+        == oblique_contact.hx_m - oblique_contact.unconstrained_endpoint[0]
+        and oblique.body.position[1] == oblique_contact.unconstrained_endpoint[1]
+        and oblique.body.position[1] != oblique_position[1]
     )
     corner_heading = 5 * math.pi / 4
     corner_start = _start_position(
@@ -1032,14 +1061,24 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
         }
     )
     corner.step((m, m))
-    assert corner.body.position == corner_start
+    assert (
+        corner.last_contact is not None
+        and corner.last_contact.pushing_x_min
+        and corner.last_contact.pushing_y_min
+        and not corner.last_contact.pushing_x_max
+        and not corner.last_contact.pushing_y_max
+        and corner.last_contact.unconstrained_endpoint[0] < corner_start[0]
+        and corner.last_contact.unconstrained_endpoint[1] < corner_start[1]
+        and corner.body.position == corner_start
+    )
     results["checks"]["4_wall_corner_cases"] = {
         "status": "PASS",
         "headings": len(headings),
         "head_on_oblique_corner": "PASS",
         "pure_spin_cases": wall_spin_cases,
         "pure_spin_displacement_bound_m": "hypot(A,C)*abs(delta_theta)",
-        "onset_bottom_wall_descriptive_cases": onset_cases,
+        "onset_bottom_wall_descriptive_cases": len(onset_outcomes),
+        "onset_bottom_wall_descriptive_outcomes": onset_outcomes,
     }
     # Check 5: reset legality, dock, and all legal probe endpoints.
     reset_checks = 0
