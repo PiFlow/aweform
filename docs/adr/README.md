@@ -26,6 +26,7 @@ An accepted ADR is a durable decision record, not a progress log. Current implem
 | [0016](0016-v0.4-d042-founder-selected-embodiment-boundary.md) | D-042 founder-selected 5° turn / front-contact V0.4 boundary |
 | [0017](0017-v0.5-direct-differential-drive-centered-dock-boundary.md) | V0.5 direct differential drive / centred under-body dock boundary |
 | [0018](0018-three-layer-developmental-architecture-and-innate-viability-floor.md) | Three-layer developmental architecture / innate viability floor |
+| [0019](0019-v0.5-physical-arena-wall-contact-boundary.md) | V0.5 Phase B physical room-wall contact boundary (3 m room, rectangular hull) |
 
 The ADR file itself is authoritative for its exact status, scope, supersession/amendment semantics, and review provenance.
 

@@ -9,6 +9,7 @@ This boundary was written for V0.1 and applies unchanged through V0.2, V0.3, V0.
 - ADR 0015 defines the accepted V0.4 finite-body dual-contact docking boundary.
 - ADR 0016 defines the historical D-042 fine-turn/front-contact V0.4 embodiment boundary.
 - ADR 0017 defines the accepted V0.5 differential-drive, centred-dock, proprioceptive-information, and actuator-bookkeeping boundary; D-045 is its first committed deterministic substrate implementation.
+- ADR 0019 prospectively defines the V0.5 physical room-wall contact boundary (3 m room, rectangular hull), subject to its exact-HEAD acceptance gate; it does not authorize D-058 implementation.
 
 None of those ADRs changes anything this document allows or forbids.
 
