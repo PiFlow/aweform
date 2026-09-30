@@ -7,7 +7,7 @@ import json
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 import gymnasium as gym
 import numpy as np
@@ -72,7 +72,7 @@ class D058PhysicalConfig:
             ),
         )
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         # Preserve D-045's frozen physical parameters without exposing world bounds.
         if name in ("world_min", "world_max"):
             raise AttributeError(name)
@@ -577,6 +577,12 @@ def _start_position(
     return x, y
 
 
+def _body(env: D058Env) -> Body:
+    body = env.body
+    assert body is not None
+    return body
+
+
 def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, object]:
     """Deterministic evaluator-only checks 1–7; contains no seeded lifetimes."""
     u9, u10, headings = _probe_sets()
@@ -589,14 +595,15 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
         * math.sin(dtheta / 2)
         + dmax
     )
-    results = {
+    checks: dict[str, object] = {}
+    results: dict[str, object] = {
         "schema_version": "d058-v1",
         "artifact_schema_version": ARTIFACT_SCHEMA_VERSION,
         "protocol_version": PROTOCOL_VERSION,
         "authorized_base_sha": BASE_SHA,
         "executed_source_sha": executed_commit_sha,
         "protocol_sha": executed_commit_sha,
-        "checks": {},
+        "checks": checks,
         "symbolic_penetration_bound_m": bound,
         "verification_amendment": (
             "Verification amendment 1: tau(L)=64*2^-52*L, checks 3 and 5 only"
@@ -622,7 +629,7 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
         },
     }
     # 1: git protected-source assertion is also enforced by test suite.
-    results["checks"]["1_protected_sources"] = "PASS"
+    checks["1_protected_sources"] = "PASS"
     # 2: free-space single steps on grid/headings/commands; plus sequence.
     identity_cases = 0
     for length in (3.0, 1.0):
@@ -653,8 +660,8 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
                         aa, ra, ta, tra, ia = a.step(cmd)
                         ab, rb, tb, trb, ib = b.step(cmd)
                         assert (
-                            a.body.position == b.body.position
-                            and a.body.heading == b.body.heading
+                            _body(a).position == b.body.position
+                            and _body(a).heading == b.body.heading
                             and aa.tobytes() == ab.tobytes()
                             and a.battery_j == b.battery_j
                             and a.body_temperature_c == b.body_temperature_c
@@ -691,8 +698,8 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
                         xa = actual.step(cmd)
                         xb = oracle.step(cmd)
                         assert (
-                            actual.body.position == oracle.body.position
-                            and actual.body.heading == oracle.body.heading
+                            _body(actual).position == oracle.body.position
+                            and _body(actual).heading == oracle.body.heading
                             and xa[0].tobytes() == xb[0].tobytes()
                         )
                         assert (
@@ -723,21 +730,21 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
         for i in range(64):
             cmd = u10[i % 10]
             p, t = integrate_differential_drive(
-                env.body.position, env.body.heading, *cmd
+                _body(env).position, _body(env).heading, *cmd
             )
             if _penetration(p, t, length) > 0:
                 break
             xa = env.step(cmd)
             xb = oracle.step(cmd)
             assert (
-                env.body.position == oracle.body.position
-                and env.body.heading == oracle.body.heading
+                _body(env).position == oracle.body.position
+                and _body(env).heading == oracle.body.heading
                 and xa[0].tobytes() == xb[0].tobytes()
                 and env.battery_j == oracle.battery_j
                 and env.body_temperature_c == oracle.body_temperature_c
             )
             seq_steps += 1
-    results["checks"]["2_free_space_identity"] = {
+    checks["2_free_space_identity"] = {
         "status": "PASS",
         "single_step_cases": identity_cases,
         "low_battery_single_step_cases": low_battery_identity_cases,
@@ -753,7 +760,7 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
     max_case = None
     nonzero = 0
     case_count = 0
-    per = {}
+    per: dict[str, float] = {}
     max_corner_violation = 0.0
     positive_corner_cases = 0
     corner_case = None
@@ -914,7 +921,7 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
                                 }
                         interior_cases += 1
     assert max_pen <= bound
-    results["checks"]["3_projection_invariants"] = {
+    checks["3_projection_invariants"] = {
         "status": "PASS",
         "wall_corner_cases": case_count,
         "interior_grid_cases": interior_cases,
@@ -1021,8 +1028,8 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
         and not head.last_contact.pushing_y_max
         and head.last_contact.unconstrained_endpoint[0] < 0.09
         and head.last_contact.removed_normal_displacement_m > 0.0
-        and head.body.position[0] == 0.09
-        and head.body.position[1] == 1.5
+        and _body(head).position[0] == 0.09
+        and _body(head).position[1] == 1.5
     )
     oblique_position = _start_position("wall", "x_min", "flush", math.pi / 4, 3.0)
     oblique = D058Env()
@@ -1042,11 +1049,11 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
         and not oblique_contact.pushing_y_min
         and not oblique_contact.pushing_y_max
         and oblique_contact.unconstrained_endpoint[0] < oblique_contact.hx_m
-        and oblique.body.position[0] == oblique_contact.hx_m
+        and _body(oblique).position[0] == oblique_contact.hx_m
         and oblique_contact.removed_normal_displacement_m
         == oblique_contact.hx_m - oblique_contact.unconstrained_endpoint[0]
-        and oblique.body.position[1] == oblique_contact.unconstrained_endpoint[1]
-        and oblique.body.position[1] != oblique_position[1]
+        and _body(oblique).position[1] == oblique_contact.unconstrained_endpoint[1]
+        and _body(oblique).position[1] != oblique_position[1]
     )
     corner_heading = 5 * math.pi / 4
     corner_start = _start_position(
@@ -1069,9 +1076,9 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
         and not corner.last_contact.pushing_y_max
         and corner.last_contact.unconstrained_endpoint[0] < corner_start[0]
         and corner.last_contact.unconstrained_endpoint[1] < corner_start[1]
-        and corner.body.position == corner_start
+        and _body(corner).position == corner_start
     )
-    results["checks"]["4_wall_corner_cases"] = {
+    checks["4_wall_corner_cases"] = {
         "status": "PASS",
         "headings": len(headings),
         "head_on_oblique_corner": "PASS",
@@ -1088,14 +1095,15 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
         env.reset()
         assert (
             env.station_center == (length / 2, length / 2)
-            and env.body.position == (length / 4, length / 4)
-            and env.body.heading == 0.0
+            and _body(env).position == (length / 4, length / 4)
+            and _body(env).heading == 0.0
         )
         reset_checks += 1
-        for options in (
+        invalid_options: tuple[dict[str, object], ...] = (
             {"station_center": (length / 2 + 0.01, length / 2)},
             {"unknown": True},
-        ):
+        )
+        for options in invalid_options:
             try:
                 D058Env(D058PhysicalConfig(length)).reset(options=options)
             except ValueError:
@@ -1140,7 +1148,7 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
             }
         )
         assert dock.charging_contact
-    results["checks"]["5_reset_dock_envelope"] = {
+    checks["5_reset_dock_envelope"] = {
         "status": "PASS",
         "default_and_rejection_checks": reset_checks,
         "rejected_invalid_options_and_hull_starts": rejection_checks,
@@ -1154,11 +1162,11 @@ def run_d058_conformance(executed_commit_sha: str | None = None) -> dict[str, ob
         "corner_violation_positive_cases": positive_corner_cases,
         "all_within_tau": True,
     }
-    results["checks"]["6_determinism"] = {
+    checks["6_determinism"] = {
         "status": "PASS",
         "regeneration": "fresh git archive byte comparison (recorded separately)",
     }
-    results["checks"]["7_intermediate_penetration"] = {
+    checks["7_intermediate_penetration"] = {
         "status": "PASS",
         "cases": case_count,
         "sampled_cases_with_nonzero_penetration": nonzero,
