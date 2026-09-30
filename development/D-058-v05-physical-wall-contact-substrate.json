@@ -47,6 +47,1608 @@
       "head_on_oblique_corner": "PASS",
       "headings": 32,
       "onset_bottom_wall_descriptive_cases": 64,
+      "onset_bottom_wall_descriptive_outcomes": [
+        {
+          "executed_endpoint": [
+            1.5017902995465682,
+            0.1289965803636245
+          ],
+          "heading_after_rad": 0.2945220046027059,
+          "heading_rad": 0.0,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.021231016622644136,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.021231016622644136,
+          "start": [
+            1.5,
+            0.1075
+          ],
+          "tangential_displacement_m": 0.0017902995465681748,
+          "unconstrained_endpoint": [
+            1.5017902995465682,
+            0.10776556374098036
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            1.5016605636149694,
+            0.13881529572103105
+          ],
+          "heading_after_rad": 0.5563213924018553,
+          "heading_rad": 0.2617993877991494,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.010964676840700238,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.010964676840700238,
+          "start": [
+            1.5,
+            0.1271307403853017
+          ],
+          "tangential_displacement_m": 0.001660563614969357,
+          "unconstrained_endpoint": [
+            1.5016605636149694,
+            0.1278506188803308
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            1.5014176630172216,
+            0.13922286562612424
+          ],
+          "heading_after_rad": 0.8181207802010046,
+          "heading_rad": 0.5235987755982988,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.13809773090682714
+          ],
+          "tangential_displacement_m": 0.001417663017221571,
+          "unconstrained_endpoint": [
+            1.5014176630172216,
+            0.13922286562612424
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.501078151027649,
+            0.14110730415616113
+          ],
+          "heading_after_rad": 1.0799201680001542,
+          "heading_rad": 0.7853981633974483,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.13965358928434313
+          ],
+          "tangential_displacement_m": 0.0010781510276489659,
+          "unconstrained_endpoint": [
+            1.501078151027649,
+            0.14110730415616113
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.500665164827271,
+            0.13337551309880144
+          ],
+          "heading_after_rad": 1.3417195557993036,
+          "heading_rad": 1.0471975511965976,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.13169228634059948
+          ],
+          "tangential_displacement_m": 0.0006651648272710808,
+          "unconstrained_endpoint": [
+            1.500665164827271,
+            0.13337551309880144
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.5002068487431515,
+            0.11655440123721529
+          ],
+          "heading_after_rad": 1.6035189435984532,
+          "heading_rad": 1.3089969389957472,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.11475637171453712
+          ],
+          "tangential_displacement_m": 0.0002068487431514665,
+          "unconstrained_endpoint": [
+            1.5002068487431515,
+            0.11655440123721529
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.4997344362590197,
+            0.11733005599387665
+          ],
+          "heading_after_rad": 1.8653183313976025,
+          "heading_rad": 1.5707963267948966,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.025539756447308506,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.025539756447308506,
+          "start": [
+            1.5,
+            0.09
+          ],
+          "tangential_displacement_m": -0.00026556374098030133,
+          "unconstrained_endpoint": [
+            1.4997344362590197,
+            0.09179029954656814
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            1.499280121504971,
+            0.1331953893347994
+          ],
+          "heading_after_rad": 2.1271177191967516,
+          "heading_rad": 1.832595714594046,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.016778454005292917,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.016778454005292917,
+          "start": [
+            1.5,
+            0.1147563717145371
+          ],
+          "tangential_displacement_m": -0.0007198784950290804,
+          "unconstrained_endpoint": [
+            1.499280121504971,
+            0.11641693532950649
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            1.498874865280703,
+            0.1399836770083439
+          ],
+          "heading_after_rad": 2.388917106995901,
+          "heading_rad": 2.0943951023931953,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.006873727650522854,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.006873727650522854,
+          "start": [
+            1.5,
+            0.13169228634059946
+          ],
+          "tangential_displacement_m": -0.001125134719297094,
+          "unconstrained_endpoint": [
+            1.498874865280703,
+            0.13310994935782106
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            1.4985462851281819,
+            0.14073174031199218
+          ],
+          "heading_after_rad": 2.650716494795051,
+          "heading_rad": 2.356194490192345,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.13965358928434313
+          ],
+          "tangential_displacement_m": -0.0014537148718181125,
+          "unconstrained_endpoint": [
+            1.4985462851281819,
+            0.14073174031199218
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.4983167732417981,
+            0.1387628957340982
+          ],
+          "heading_after_rad": 2.9125158825942004,
+          "heading_rad": 2.6179938779914944,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.13809773090682714
+          ],
+          "tangential_displacement_m": -0.0016832267582018723,
+          "unconstrained_endpoint": [
+            1.4983167732417981,
+            0.1387628957340982
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.4982019704773217,
+            0.1273375891284531
+          ],
+          "heading_after_rad": 3.1743152703933495,
+          "heading_rad": 2.8797932657906435,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.12713074038530173
+          ],
+          "tangential_displacement_m": -0.0017980295226782683,
+          "unconstrained_endpoint": [
+            1.4982019704773217,
+            0.1273375891284531
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.4982097004534318,
+            0.1289965803636245
+          ],
+          "heading_after_rad": 3.436114658192499,
+          "heading_rad": 3.141592653589793,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.021762144104604836,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.021762144104604836,
+          "start": [
+            1.5,
+            0.10750000000000001
+          ],
+          "tangential_displacement_m": -0.0017902995465681748,
+          "unconstrained_endpoint": [
+            1.4982097004534318,
+            0.10723443625901966
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            1.4983394363850306,
+            0.13881529572103105
+          ],
+          "heading_after_rad": 3.6979140459916486,
+          "heading_rad": 3.4033920413889427,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.012404433830758427,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.012404433830758427,
+          "start": [
+            1.5,
+            0.12713074038530173
+          ],
+          "tangential_displacement_m": -0.001660563614969357,
+          "unconstrained_endpoint": [
+            1.4983394363850306,
+            0.12641086189027262
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            1.4985823369827784,
+            0.13917397807817206
+          ],
+          "heading_after_rad": 3.9597134337907978,
+          "heading_rad": 3.665191429188092,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.002201381890642007,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.002201381890642007,
+          "start": [
+            1.5,
+            0.13809773090682714
+          ],
+          "tangential_displacement_m": -0.001417663017221571,
+          "unconstrained_endpoint": [
+            1.4985823369827784,
+            0.13697259618753005
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            1.498921848972351,
+            0.13819987441252513
+          ],
+          "heading_after_rad": 4.221512821589947,
+          "heading_rad": 3.926990816987241,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.13965358928434313
+          ],
+          "tangential_displacement_m": -0.0010781510276489659,
+          "unconstrained_endpoint": [
+            1.498921848972351,
+            0.13819987441252513
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.499334835172729,
+            0.13000905958239753
+          ],
+          "heading_after_rad": 4.483312209389096,
+          "heading_rad": 4.1887902047863905,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.13169228634059948
+          ],
+          "tangential_displacement_m": -0.0006651648272710808,
+          "unconstrained_endpoint": [
+            1.499334835172729,
+            0.13000905958239753
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.4997931512568485,
+            0.11295834219185893
+          ],
+          "heading_after_rad": 4.745111597188246,
+          "heading_rad": 4.4505895925855405,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.1147563717145371
+          ],
+          "tangential_displacement_m": -0.0002068487431514665,
+          "unconstrained_endpoint": [
+            1.4997931512568485,
+            0.11295834219185893
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.5002655637409803,
+            0.11733005599387662
+          ],
+          "heading_after_rad": 5.006910984987395,
+          "heading_rad": 4.71238898038469,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.02912035554044476,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.02912035554044476,
+          "start": [
+            1.5,
+            0.09000000000000001
+          ],
+          "tangential_displacement_m": 0.00026556374098030133,
+          "unconstrained_endpoint": [
+            1.5002655637409803,
+            0.08820970045343186
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            1.500719878495029,
+            0.13319538933479938
+          ],
+          "heading_after_rad": 5.268710372786544,
+          "heading_rad": 4.974188368183839,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.020099581235231673,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.020099581235231673,
+          "start": [
+            1.5,
+            0.11475637171453709
+          ],
+          "tangential_displacement_m": 0.0007198784950290804,
+          "unconstrained_endpoint": [
+            1.500719878495029,
+            0.11309580809956771
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            1.501125134719297,
+            0.1399836770083439
+          ],
+          "heading_after_rad": 5.530509760585694,
+          "heading_rad": 5.235987755982989,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.009709053684966024,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.009709053684966024,
+          "start": [
+            1.5,
+            0.13169228634059948
+          ],
+          "tangential_displacement_m": 0.001125134719297094,
+          "unconstrained_endpoint": [
+            1.501125134719297,
+            0.13027462332337789
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            1.5014537148718181,
+            0.13857543825669408
+          ],
+          "heading_after_rad": 5.7923091483848435,
+          "heading_rad": 5.497787143782138,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.13965358928434313
+          ],
+          "tangential_displacement_m": 0.0014537148718181125,
+          "unconstrained_endpoint": [
+            1.5014537148718181,
+            0.13857543825669408
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.5016832267582019,
+            0.1374325660795561
+          ],
+          "heading_after_rad": 6.054108536183993,
+          "heading_rad": 5.759586531581287,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.13809773090682714
+          ],
+          "tangential_displacement_m": 0.0016832267582018723,
+          "unconstrained_endpoint": [
+            1.5016832267582019,
+            0.1374325660795561
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.5017980295226783,
+            0.12692389164215037
+          ],
+          "heading_after_rad": 6.315907923983142,
+          "heading_rad": 6.021385919380436,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.12713074038530175
+          ],
+          "tangential_displacement_m": 0.0017980295226782683,
+          "unconstrained_endpoint": [
+            1.5017980295226783,
+            0.12692389164215037
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.5009456358689193,
+            0.13955958215300765
+          ],
+          "heading_after_rad": 1.168296954145003,
+          "heading_rad": 0.8737749495422971,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.1380163811387587
+          ],
+          "tangential_displacement_m": 0.0009456358689192701,
+          "unconstrained_endpoint": [
+            1.5009456358689193,
+            0.13955958215300765
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.49864711805895,
+            0.13922962173039255
+          ],
+          "heading_after_rad": 2.5623397086502018,
+          "heading_rad": 2.267817704047496,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 1.0989777308428872e-05,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 1.0989777308428872e-05,
+          "start": [
+            1.5,
+            0.1380163811387587
+          ],
+          "tangential_displacement_m": -0.0013528819410499882,
+          "unconstrained_endpoint": [
+            1.49864711805895,
+            0.13921863195308412
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            1.4990543641310807,
+            0.13647318012450974
+          ],
+          "heading_after_rad": 4.309889607734796,
+          "heading_rad": 4.01536760313209,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.1380163811387587
+          ],
+          "tangential_displacement_m": -0.0009456358689192701,
+          "unconstrained_endpoint": [
+            1.4990543641310807,
+            0.13647318012450974
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.50135288194105,
+            0.13922962173039258
+          ],
+          "heading_after_rad": 5.7039323622399944,
+          "heading_rad": 5.409410357637289,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.0024154914059593136,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0024154914059593136,
+          "start": [
+            1.5,
+            0.1380163811387587
+          ],
+          "tangential_displacement_m": 0.0013528819410499882,
+          "unconstrained_endpoint": [
+            1.50135288194105,
+            0.13681413032443326
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            1.5012022508143255,
+            0.1415536308691496
+          ],
+          "heading_after_rad": 0.9915433818553054,
+          "heading_rad": 0.6970213772525995,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.14020074892809953
+          ],
+          "tangential_displacement_m": 0.0012022508143254562,
+          "unconstrained_endpoint": [
+            1.5012022508143255,
+            0.1415536308691496
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.4984567989857511,
+            0.14114638479701871
+          ],
+          "heading_after_rad": 2.7390932809399,
+          "heading_rad": 2.444571276337194,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.14020074892809953
+          ],
+          "tangential_displacement_m": -0.001543201014248874,
+          "unconstrained_endpoint": [
+            1.4984567989857511,
+            0.14114638479701871
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.4987977491856745,
+            0.13884786698704946
+          ],
+          "heading_after_rad": 4.133136035445098,
+          "heading_rad": 3.8386140308423924,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.14020074892809953
+          ],
+          "tangential_displacement_m": -0.0012022508143254562,
+          "unconstrained_endpoint": [
+            1.4987977491856745,
+            0.13884786698704946
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            1.5015432010142489,
+            0.13925511305918034
+          ],
+          "heading_after_rad": 5.8806859345296925,
+          "heading_rad": 5.586163929926987,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 3.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            1.5,
+            0.14020074892809953
+          ],
+          "tangential_displacement_m": 0.001543201014248874,
+          "unconstrained_endpoint": [
+            1.5015432010142489,
+            0.13925511305918034
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.5017902995465682,
+            0.1289965803636245
+          ],
+          "heading_after_rad": 0.2945220046027059,
+          "heading_rad": 0.0,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.021231016622644136,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.021231016622644136,
+          "start": [
+            0.5,
+            0.1075
+          ],
+          "tangential_displacement_m": 0.0017902995465681748,
+          "unconstrained_endpoint": [
+            0.5017902995465682,
+            0.10776556374098036
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            0.5016605636149694,
+            0.13881529572103105
+          ],
+          "heading_after_rad": 0.5563213924018553,
+          "heading_rad": 0.2617993877991494,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.010964676840700238,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.010964676840700238,
+          "start": [
+            0.5,
+            0.1271307403853017
+          ],
+          "tangential_displacement_m": 0.001660563614969357,
+          "unconstrained_endpoint": [
+            0.5016605636149694,
+            0.1278506188803308
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            0.5014176630172216,
+            0.13922286562612424
+          ],
+          "heading_after_rad": 0.8181207802010046,
+          "heading_rad": 0.5235987755982988,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.13809773090682714
+          ],
+          "tangential_displacement_m": 0.001417663017221571,
+          "unconstrained_endpoint": [
+            0.5014176630172216,
+            0.13922286562612424
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.5010781510276491,
+            0.14110730415616113
+          ],
+          "heading_after_rad": 1.0799201680001542,
+          "heading_rad": 0.7853981633974483,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.13965358928434313
+          ],
+          "tangential_displacement_m": 0.0010781510276490769,
+          "unconstrained_endpoint": [
+            0.5010781510276491,
+            0.14110730415616113
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.5006651648272711,
+            0.13337551309880144
+          ],
+          "heading_after_rad": 1.3417195557993036,
+          "heading_rad": 1.0471975511965976,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.13169228634059948
+          ],
+          "tangential_displacement_m": 0.0006651648272710808,
+          "unconstrained_endpoint": [
+            0.5006651648272711,
+            0.13337551309880144
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.5002068487431514,
+            0.11655440123721529
+          ],
+          "heading_after_rad": 1.6035189435984532,
+          "heading_rad": 1.3089969389957472,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.11475637171453712
+          ],
+          "tangential_displacement_m": 0.00020684874315135549,
+          "unconstrained_endpoint": [
+            0.5002068487431514,
+            0.11655440123721529
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.49973443625901964,
+            0.11733005599387665
+          ],
+          "heading_after_rad": 1.8653183313976025,
+          "heading_rad": 1.5707963267948966,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.025539756447308506,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.025539756447308506,
+          "start": [
+            0.5,
+            0.09
+          ],
+          "tangential_displacement_m": -0.00026556374098035684,
+          "unconstrained_endpoint": [
+            0.49973443625901964,
+            0.09179029954656814
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            0.49928012150497086,
+            0.1331953893347994
+          ],
+          "heading_after_rad": 2.1271177191967516,
+          "heading_rad": 1.832595714594046,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.016778454005292917,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.016778454005292917,
+          "start": [
+            0.5,
+            0.1147563717145371
+          ],
+          "tangential_displacement_m": -0.0007198784950291359,
+          "unconstrained_endpoint": [
+            0.49928012150497086,
+            0.11641693532950649
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            0.4988748652807029,
+            0.1399836770083439
+          ],
+          "heading_after_rad": 2.388917106995901,
+          "heading_rad": 2.0943951023931953,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.006873727650522854,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.006873727650522854,
+          "start": [
+            0.5,
+            0.13169228634059946
+          ],
+          "tangential_displacement_m": -0.001125134719297094,
+          "unconstrained_endpoint": [
+            0.4988748652807029,
+            0.13310994935782106
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            0.498546285128182,
+            0.14073174031199218
+          ],
+          "heading_after_rad": 2.650716494795051,
+          "heading_rad": 2.356194490192345,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.13965358928434313
+          ],
+          "tangential_displacement_m": -0.0014537148718180015,
+          "unconstrained_endpoint": [
+            0.498546285128182,
+            0.14073174031199218
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.49831677324179807,
+            0.1387628957340982
+          ],
+          "heading_after_rad": 2.9125158825942004,
+          "heading_rad": 2.6179938779914944,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.13809773090682714
+          ],
+          "tangential_displacement_m": -0.0016832267582019278,
+          "unconstrained_endpoint": [
+            0.49831677324179807,
+            0.1387628957340982
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.49820197047732184,
+            0.1273375891284531
+          ],
+          "heading_after_rad": 3.1743152703933495,
+          "heading_rad": 2.8797932657906435,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.12713074038530173
+          ],
+          "tangential_displacement_m": -0.0017980295226781573,
+          "unconstrained_endpoint": [
+            0.49820197047732184,
+            0.1273375891284531
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.4982097004534319,
+            0.1289965803636245
+          ],
+          "heading_after_rad": 3.436114658192499,
+          "heading_rad": 3.141592653589793,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.021762144104604836,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.021762144104604836,
+          "start": [
+            0.5,
+            0.10750000000000001
+          ],
+          "tangential_displacement_m": -0.0017902995465681193,
+          "unconstrained_endpoint": [
+            0.4982097004534319,
+            0.10723443625901966
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            0.4983394363850306,
+            0.13881529572103105
+          ],
+          "heading_after_rad": 3.6979140459916486,
+          "heading_rad": 3.4033920413889427,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.012404433830758427,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.012404433830758427,
+          "start": [
+            0.5,
+            0.12713074038530173
+          ],
+          "tangential_displacement_m": -0.0016605636149694125,
+          "unconstrained_endpoint": [
+            0.4983394363850306,
+            0.12641086189027262
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            0.49858233698277843,
+            0.13917397807817206
+          ],
+          "heading_after_rad": 3.9597134337907978,
+          "heading_rad": 3.665191429188092,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.002201381890642007,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.002201381890642007,
+          "start": [
+            0.5,
+            0.13809773090682714
+          ],
+          "tangential_displacement_m": -0.001417663017221571,
+          "unconstrained_endpoint": [
+            0.49858233698277843,
+            0.13697259618753005
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            0.4989218489723509,
+            0.13819987441252513
+          ],
+          "heading_after_rad": 4.221512821589947,
+          "heading_rad": 3.926990816987241,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.13965358928434313
+          ],
+          "tangential_displacement_m": -0.0010781510276490769,
+          "unconstrained_endpoint": [
+            0.4989218489723509,
+            0.13819987441252513
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.499334835172729,
+            0.13000905958239753
+          ],
+          "heading_after_rad": 4.483312209389096,
+          "heading_rad": 4.1887902047863905,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.13169228634059948
+          ],
+          "tangential_displacement_m": -0.0006651648272710253,
+          "unconstrained_endpoint": [
+            0.499334835172729,
+            0.13000905958239753
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.49979315125684864,
+            0.11295834219185893
+          ],
+          "heading_after_rad": 4.745111597188246,
+          "heading_rad": 4.4505895925855405,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.1147563717145371
+          ],
+          "tangential_displacement_m": -0.00020684874315135549,
+          "unconstrained_endpoint": [
+            0.49979315125684864,
+            0.11295834219185893
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.5002655637409803,
+            0.11733005599387662
+          ],
+          "heading_after_rad": 5.006910984987395,
+          "heading_rad": 4.71238898038469,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.02912035554044476,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.02912035554044476,
+          "start": [
+            0.5,
+            0.09000000000000001
+          ],
+          "tangential_displacement_m": 0.00026556374098030133,
+          "unconstrained_endpoint": [
+            0.5002655637409803,
+            0.08820970045343186
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            0.5007198784950291,
+            0.13319538933479938
+          ],
+          "heading_after_rad": 5.268710372786544,
+          "heading_rad": 4.974188368183839,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.020099581235231673,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.020099581235231673,
+          "start": [
+            0.5,
+            0.11475637171453709
+          ],
+          "tangential_displacement_m": 0.0007198784950290804,
+          "unconstrained_endpoint": [
+            0.5007198784950291,
+            0.11309580809956771
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            0.5011251347192971,
+            0.1399836770083439
+          ],
+          "heading_after_rad": 5.530509760585694,
+          "heading_rad": 5.235987755982989,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.009709053684966024,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.009709053684966024,
+          "start": [
+            0.5,
+            0.13169228634059948
+          ],
+          "tangential_displacement_m": 0.001125134719297094,
+          "unconstrained_endpoint": [
+            0.5011251347192971,
+            0.13027462332337789
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            0.501453714871818,
+            0.13857543825669408
+          ],
+          "heading_after_rad": 5.7923091483848435,
+          "heading_rad": 5.497787143782138,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.13965358928434313
+          ],
+          "tangential_displacement_m": 0.0014537148718180015,
+          "unconstrained_endpoint": [
+            0.501453714871818,
+            0.13857543825669408
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.501683226758202,
+            0.1374325660795561
+          ],
+          "heading_after_rad": 6.054108536183993,
+          "heading_rad": 5.759586531581287,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.13809773090682714
+          ],
+          "tangential_displacement_m": 0.0016832267582019833,
+          "unconstrained_endpoint": [
+            0.501683226758202,
+            0.1374325660795561
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.5017980295226782,
+            0.12692389164215037
+          ],
+          "heading_after_rad": 6.315907923983142,
+          "heading_rad": 6.021385919380436,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.12713074038530175
+          ],
+          "tangential_displacement_m": 0.0017980295226781573,
+          "unconstrained_endpoint": [
+            0.5017980295226782,
+            0.12692389164215037
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.5009456358689192,
+            0.13955958215300765
+          ],
+          "heading_after_rad": 1.168296954145003,
+          "heading_rad": 0.8737749495422971,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.1380163811387587
+          ],
+          "tangential_displacement_m": 0.0009456358689191591,
+          "unconstrained_endpoint": [
+            0.5009456358689192,
+            0.13955958215300765
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.4986471180589499,
+            0.13922962173039255
+          ],
+          "heading_after_rad": 2.5623397086502018,
+          "heading_rad": 2.267817704047496,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 1.0989777308428872e-05,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 1.0989777308428872e-05,
+          "start": [
+            0.5,
+            0.1380163811387587
+          ],
+          "tangential_displacement_m": -0.0013528819410500992,
+          "unconstrained_endpoint": [
+            0.4986471180589499,
+            0.13921863195308412
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            0.4990543641310808,
+            0.13647318012450974
+          ],
+          "heading_after_rad": 4.309889607734796,
+          "heading_rad": 4.01536760313209,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.1380163811387587
+          ],
+          "tangential_displacement_m": -0.0009456358689192146,
+          "unconstrained_endpoint": [
+            0.4990543641310808,
+            0.13647318012450974
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.5013528819410501,
+            0.13922962173039258
+          ],
+          "heading_after_rad": 5.7039323622399944,
+          "heading_rad": 5.409410357637289,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": true,
+          "removed_normal_displacement_m": 0.0024154914059593136,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0024154914059593136,
+          "start": [
+            0.5,
+            0.1380163811387587
+          ],
+          "tangential_displacement_m": 0.0013528819410500992,
+          "unconstrained_endpoint": [
+            0.5013528819410501,
+            0.13681413032443326
+          ],
+          "wall_contact": true
+        },
+        {
+          "executed_endpoint": [
+            0.5012022508143255,
+            0.1415536308691496
+          ],
+          "heading_after_rad": 0.9915433818553054,
+          "heading_rad": 0.6970213772525995,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.14020074892809953
+          ],
+          "tangential_displacement_m": 0.0012022508143254562,
+          "unconstrained_endpoint": [
+            0.5012022508143255,
+            0.1415536308691496
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.498456798985751,
+            0.14114638479701871
+          ],
+          "heading_after_rad": 2.7390932809399,
+          "heading_rad": 2.444571276337194,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.14020074892809953
+          ],
+          "tangential_displacement_m": -0.001543201014248985,
+          "unconstrained_endpoint": [
+            0.498456798985751,
+            0.14114638479701871
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.49879774918567454,
+            0.13884786698704946
+          ],
+          "heading_after_rad": 4.133136035445098,
+          "heading_rad": 3.8386140308423924,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.14020074892809953
+          ],
+          "tangential_displacement_m": -0.0012022508143254562,
+          "unconstrained_endpoint": [
+            0.49879774918567454,
+            0.13884786698704946
+          ],
+          "wall_contact": false
+        },
+        {
+          "executed_endpoint": [
+            0.501543201014249,
+            0.13925511305918034
+          ],
+          "heading_after_rad": 5.8806859345296925,
+          "heading_rad": 5.586163929926987,
+          "pushing_x_max": false,
+          "pushing_x_min": false,
+          "pushing_y_max": false,
+          "pushing_y_min": false,
+          "removed_normal_displacement_m": 0.0,
+          "room_side_m": 1.0,
+          "slip_magnitude_m": 0.0,
+          "start": [
+            0.5,
+            0.14020074892809953
+          ],
+          "tangential_displacement_m": 0.001543201014248985,
+          "unconstrained_endpoint": [
+            0.501543201014249,
+            0.13925511305918034
+          ],
+          "wall_contact": false
+        }
+      ],
       "pure_spin_cases": 512,
       "pure_spin_displacement_bound_m": "hypot(A,C)*abs(delta_theta)",
       "status": "PASS"
@@ -381,7 +1983,15 @@
       "status": "PASS"
     }
   },
-  "executed_source_sha": "ddefe63b31a3b83872599b128e7c5d290d22e4de",
+  "executed_source_sha": "0776b2a76fbff9a9937180e8d260cac26200d0df",
+  "invalidated_official_candidates": [
+    {
+      "artifact_bytes": 33817,
+      "artifact_sha256": "2b0bb325313f352f42690eb8f4efe9ad0fdc8bf030da76e27ea5ccd053f37c6e",
+      "executed_source_sha": "ddefe63b31a3b83872599b128e7c5d290d22e4de",
+      "reason": "review gate 01M3SFYRWNH42D2KXX5MT1HS7M"
+    }
+  ],
   "pre_official_roundoff_exposure": {
     "L": 3.0,
     "U9_index": 2,
@@ -394,7 +2004,7 @@
     "official_run": false,
     "start": "x_min flush"
   },
-  "protocol_sha": "ddefe63b31a3b83872599b128e7c5d290d22e4de",
+  "protocol_sha": "0776b2a76fbff9a9937180e8d260cac26200d0df",
   "protocol_version": "d058-v05-physical-wall-contact-substrate-v1",
   "schema_version": "d058-v1",
   "symbolic_penetration_bound_m": 0.07292419035931953,
