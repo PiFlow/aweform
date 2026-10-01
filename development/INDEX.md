@@ -12,7 +12,7 @@ This file is the canonical **committed D-record ledger**. Add one row when a mea
 
 Do not use roadmap prose or README text as a replacement for this ledger. Work that is authorized in GitHub but does not yet have a committed D-record belongs in the current authorization issue/PR, not as a premature row here.
 
-Committed Development records currently extend through **D-058**; D-051 was stopped before merge and has no committed D-record. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage; D-049, D-050, D-052, and D-053 are the committed V0.5 Level-1 viability lineage; D-054 is its evaluator-only boundary-wedge diagnostic; D-055 is its RETURN stall-turn candidate comparison; and D-056 is that candidate's multi-cycle lifetime characterization.
+Committed Development records currently extend through **D-058**; D-051 was stopped before merge and has no committed D-record. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage; D-049, D-050, and D-052 through D-056 are the committed V0.5 Level-1 viability lineage and its candidate comparisons/characterizations; D-057 is an evaluator-only boundary-rule counterfactual for the RETURN wall wedge; and D-058 is S1 physical wall-contact substrate conformance.
 
 ## Disposition vocabulary
 

@@ -8,16 +8,17 @@ Here, **electronic cell** is a developmental analogy for that minimal inside/out
 
 ## Current research state
 
-Aweform currently combines accepted V0.3/V0.4 boundaries with an accepted V0.5 boundary whose first deterministic substrate slice is now committed:
+Aweform currently combines accepted V0.3/V0.4 boundaries with accepted V0.5 boundaries whose deterministic substrate slices are committed:
 
 - **V0.3 lifetime plasticity / sensory-plasticity closure**, opened by [`ADR 0010`](docs/adr/0010-v0.3-lifetime-plasticity.md), permits bounded persistent learned state within one continuous lifetime when every causal write obeys the declared sensory/plasticity provenance boundary.
 - **V0.4 physical energy / thermal embodiment and historical finite-body docking**, opened by [`ADR 0012`](docs/adr/0012-v0.4-minimal-physical-energy-thermal-boundary.md) and refined by [`ADR 0014`](docs/adr/0014-v0.4-thermal-operating-and-failure-thresholds.md), [`ADR 0015`](docs/adr/0015-v0.4-finite-body-dual-contact-docking-boundary.md), and [`ADR 0016`](docs/adr/0016-v0.4-d042-founder-selected-embodiment-boundary.md), defines the historical D-019→D-044 physical-development lineage.
 - **V0.5 direct differential drive**, defined by accepted [`ADR 0017`](docs/adr/0017-v0.5-direct-differential-drive-centered-dock-boundary.md), replaces only the explicitly listed future-facing V0.4 surfaces with one continuous signed bilateral wheel-delta action, minimal differential-drive kinematics, a centred under-body dock, exactly two quantized wheel-delta proprioceptive channels, and continuous wheel-dependent actuator bookkeeping. [`D-045`](development/D-045-v05-deterministic-embodiment-bookkeeping-probe.md) is the first committed implementation of that substrate boundary.
+- **V0.5 physical room-wall contact**, defined by accepted [`ADR 0019`](docs/adr/0019-v0.5-physical-arena-wall-contact-boundary.md), sets a 3 m room with a rectangular hull and endpoint-constrained wall contact. [`D-058`](development/D-058-v05-physical-wall-contact-substrate.md) records conformance of this endpoint-only kinematic idealization; it does not establish continuous-contact or hardware fidelity.
 - **Three-layer developmental architecture / innate viability floor**, defined by [`ADR 0018`](docs/adr/0018-three-layer-developmental-architecture-and-innate-viability-floor.md), distinguishes Level 1 constitutive viability/embodiment, Level 2 sensorimotor skill integration, and Level 3 adaptive/open-ended learning. Basic assumption-bounded energy return and docking may be constitutive Level-1 competence; learned contribution must be attributed above that baseline.
 
 These layers supplement rather than erase earlier work. Historical experiments, ADRs, records, source semantics, and artifacts remain part of the record.
 
-The committed development lane now extends through **D-050**. The canonical ledger is [`development/INDEX.md`](development/INDEX.md); detailed records live under [`development/`](development/).
+The committed development lane now extends through **D-058**. D-045 through D-057 remain bound to the D-045 substrate; D-058 is the first conformance record for the separate wall-contact substrate. The canonical ledger is [`development/INDEX.md`](development/INDEX.md); detailed records live under [`development/`](development/).
 
 Important recent milestones include:
 
@@ -32,8 +33,14 @@ Important recent milestones include:
 - D-048 tested eight continuous passes of the unchanged D-046 learner under the same experience distribution. Training diagnostics improved broadly, while held-out beacon discrimination approximately plateaued, energy became mixed with later deterioration, wheel consequences remained strong, and contact remained sparse/mixed. D-048 itself authorized no successor.
 - D-049 implemented the first bounded programmed Level-1 direct-return/contact-seeking docking core on the V0.5 substrate. Its frozen deterministic matrix established charging in 104/104 cases using the revalidated organism-visible beacon reconstruction and contact feedback, with no learned-state contribution.
 - D-050 compared the unchanged D-049 stop-turn-straight homing law with a frozen smooth curved-pursuit alternative on 96 fresh paired fixed states. The baseline docked-and-charged in 80/96 cases within the frozen horizon; smooth pursuit did so in 96/96. This is descriptive Development evidence on the ideal deterministic V0.5 support, not a claim of physical-robot superiority or robustness.
+- D-052 characterized a fixed programmed Level-1 return-charge-recovery loop on 24 D-045 cases; all completed the frozen loop without learned-state contribution.
+- D-053 characterized five 140,000-transition D-045 lifetimes with the unchanged programmed Level-1 floor. Four returned and yielded once; one ended in RETURN without contact. These remain descriptive, non-confirmatory results.
+- D-054 reproduced and mapped the D-045 RETURN boundary wedge; D-055 compared the unchanged floor with a programmed stall-turn candidate, which rescued the frozen wall-wedge matrix but was not promoted.
+- D-056 characterized that unchanged candidate over multi-cycle lifetimes; all 20 allocated fresh candidate lifetimes completed three yields, with no candidate failure observed. The first RETURN episode of the unchanged floor docked on 11/20 fresh seeds.
+- D-057 found that evaluator-only yaw-free boundary-rule counterfactuals resolved the observed U failures without harm on the frozen supports. Those rules are diagnostics, not adopted contact models.
+- D-058 passed its seven frozen substrate conformance checks, including deterministic regeneration and sampled intermediate-penetration characterization. It ran no seeded lifetimes or controller evaluations; its endpoint-only law is not continuous-contact or hardware validation.
 
-ADR 0018 establishes the **Innate Autonomous Viability** architecture milestone and separates the near-term viability floor from later open-ended learning. D-049 and D-050 now exercise part of that Level-1 floor through separately authorized Development work; neither result automatically authorizes a successor stage.
+ADR 0018 establishes the **Innate Autonomous Viability** architecture milestone and separates the near-term viability floor from later open-ended learning. D-049, D-050, and D-052 through D-056 exercise or compare programmed Level-1 behaviour; none of these results automatically authorizes a successor stage. D-058 is substrate conformance only.
 
 ## Evidence lane
 
@@ -52,7 +59,7 @@ Aweform uses biology and evolution as inspiration for **problems and principles*
 
 The long-term direction includes homeostasis, coordinated subsystems, sensorimotor survival, learning, play and curiosity, social interaction, machine-native communication, richer cognition, and eventually physical embodiment.
 
-The V0.5 lineage contains a bounded shadow consequence learner through D-048 whose predictions still have **no causal behavioral role**, plus separately authorized programmed Level-1 return/docking development through D-050. The D-049/D-050 viability baseline must not be misreported as learned competence. The project does **not** thereby contain PPO, deep RL, JEPA-scale cognition, an LLM controller, camera vision, a mature learned world model, social behaviour, play, awe, networking, or physical robot control. Those remain separately governed future questions.
+The V0.5 lineage contains a bounded shadow consequence learner through D-048 whose predictions still have **no causal behavioral role**, plus programmed Level-1 return/docking development through D-056 and conformance-only wall-contact substrate work in D-058. The D-049/D-050/D-052–D-056 viability behaviour is engineered, not learned; D-055 was not promoted. D-045–D-057 remain bound to D-045. The project does **not** thereby contain PPO, deep RL, JEPA-scale cognition, an LLM controller, camera vision, a mature learned world model, social behaviour, play, awe, networking, or physical robot control. Those remain separately governed future questions.
 
 Read:
 
