@@ -1508,6 +1508,8 @@ def _decision_branch(
 
 
 def _run_endurance_seed(seed: int, substrate: str, arm: str) -> dict[str, object]:
+    if not _OFFICIAL_CLI_GUARD:
+        raise RuntimeError("official endurance runs are CLI-guarded")
     return _run_lifetime(
         seed,
         substrate=substrate,
@@ -1520,6 +1522,8 @@ def _run_endurance_seed(seed: int, substrate: str, arm: str) -> dict[str, object
 
 
 def _run_primary_seed(seed: int, arm: str) -> dict[str, object]:
+    if not _OFFICIAL_CLI_GUARD:
+        raise RuntimeError("official primary runs are CLI-guarded")
     return _run_lifetime(
         seed,
         substrate="S1_3M",
@@ -1532,6 +1536,8 @@ def _run_primary_seed(seed: int, arm: str) -> dict[str, object]:
 
 
 def _run_support_control(seed: int, arm: str) -> dict[str, object]:
+    if not _OFFICIAL_CLI_GUARD:
+        raise RuntimeError("official support runs are CLI-guarded")
     return _run_lifetime(
         seed,
         substrate="D045_1M",
@@ -1603,6 +1609,26 @@ def _s1_identity(
     return {
         "status": "PASS",
         "checked_runs": len(runs),
+        "identity": "C causal digest equals U",
+    }
+
+
+def _part_a_identity(runs: Sequence[dict[str, object]]) -> dict[str, object]:
+    by_case: dict[tuple[str, str], dict[str, object]] = {}
+    checked = 0
+    for run in runs:
+        key = (str(run["substrate"]), str(run["start_id"]))
+        arm = cast(str, run["arm"])
+        if arm == "U":
+            by_case[key] = run
+        else:
+            u = by_case.get(key)
+            if u is None or run["causal_digest_sha256"] != u["causal_digest_sha256"]:
+                raise RuntimeError(f"C identity failed for Part-A case {key}")
+            checked += 1
+    return {
+        "status": "PASS",
+        "checked_pairs": checked,
         "identity": "C causal digest equals U",
     }
 
@@ -1814,21 +1840,35 @@ def run_protocol(executed_commit_sha: str, *, jobs: int = 1) -> dict[str, object
             s1_only += 1
         if sf is False and df is True:
             d045_only += 1
-        s1_life = any(
-            bool(ep["failed"])
+        s1_runs = [
+            run
             for run in endurance_runs
             if run["substrate"] == "S1_1M"
             and run["arm"] == "U"
             and int(cast(int, run["seed"])) == seed
-            for ep in cast(list[dict[str, object]], run["episodes"])
-        )
-        d_life = any(
-            bool(ep["failed"])
+        ]
+        d045_runs = [
+            run
             for run in endurance_runs
             if run["substrate"] == "D045_1M"
             and run["arm"] == "U"
             and int(cast(int, run["seed"])) == seed
-            for ep in cast(list[dict[str, object]], run["episodes"])
+        ]
+        s1_life = any(
+            bool(cast(dict[str, object], run["primary"])["failed"])
+            or any(
+                bool(ep["failed"])
+                for ep in cast(list[dict[str, object]], run["episodes"])
+            )
+            for run in s1_runs
+        )
+        d_life = any(
+            bool(cast(dict[str, object], run["primary"])["failed"])
+            or any(
+                bool(ep["failed"])
+                for ep in cast(list[dict[str, object]], run["episodes"])
+            )
+            for run in d045_runs
         )
         lifetime_cross[f"S1_1M_{s1_life}_x_D045_1M_{d_life}"] += 1
     attribution["matched_first_return_cross_tab"] = dict(sorted(first_cross.items()))
@@ -1839,8 +1879,11 @@ def run_protocol(executed_commit_sha: str, *, jobs: int = 1) -> dict[str, object
         s1_only, d045_only
     )
 
-    _s1_identity(
+    s1_endurance_identity = _s1_identity(
         [run for run in endurance_runs if run["substrate"] in {"S1_3M", "S1_1M"}]
+    )
+    part_a_identity = _part_a_identity(
+        [run for run in part_a_runs if run["substrate"] in {"S1_3M", "S1_1M"}]
     )
     protected = _protected_sources_pass()
     seam = _horizon_seam_record()
@@ -1860,7 +1903,11 @@ def run_protocol(executed_commit_sha: str, *, jobs: int = 1) -> dict[str, object
         "horizon_seam": seam,
         "d045_1m_support_identity": support_identity,
         "primary_snapshot_non_feedback": primary_measurement_control,
-        "s1_c_identity": "PASS (C causal digest equals U on every S1 run)",
+        "s1_c_identity": {
+            "status": "PASS",
+            "endurance": s1_endurance_identity,
+            "part_a": part_a_identity,
+        },
         "part_a_legality": {"status": "PASS", "starts_per_substrate": 1248},
         "seed_guards": {
             "primary": list(validate_primary_seeds(PRIMARY_SEEDS)),
@@ -1927,7 +1974,16 @@ def run_protocol(executed_commit_sha: str, *, jobs: int = 1) -> dict[str, object
         "execution_status": "COMPLETED",
         "frozen_protocol": _protocol_record(jobs),
         "pre_freeze_exposure": {
-            "official_seeds_executed_before_freeze": False,
+            "official_primary_or_part_a_seeds_executed_before_freeze": False,
+            "pre_freeze_support_exposure": {
+                "status": "DISCLOSED",
+                "seed": 22053,
+                "arms": ["U", "C"],
+                "runs": (
+                    "bounded local identity probes before the executable freeze; "
+                    "not used for result selection"
+                ),
+            },
             "test_only_seed": TEST_SEED,
             "test_only_runs_bounded": True,
             "construction_only_checks_before_freeze": True,

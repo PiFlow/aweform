@@ -108,6 +108,24 @@ def test_part_a_case_uses_no_seed_and_keeps_information_boundary() -> None:
     assert summary_readout["organism_info_exactly_empty"] is True
 
 
+def test_part_a_c_identity_control() -> None:
+    rows = [
+        {
+            "substrate": "S1_3M",
+            "start_id": "case-0",
+            "arm": "U",
+            "causal_digest_sha256": "same",
+        },
+        {
+            "substrate": "S1_3M",
+            "start_id": "case-0",
+            "arm": "C",
+            "causal_digest_sha256": "same",
+        },
+    ]
+    assert d059._part_a_identity(rows)["checked_pairs"] == 1
+
+
 def test_wall_exposure_is_orthogonal_to_terminal_outcome() -> None:
     episode = {
         "cycle_index": 1,
