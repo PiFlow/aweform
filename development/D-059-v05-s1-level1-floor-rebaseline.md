@@ -2,15 +2,28 @@
 
 ## Status, authority, and separation of roles
 
-This is the result-free bounded repair of raw B, **not** a second bake-off, not a raw-candidate PASS, not the selected protocol freeze, and not an official D-059 result. Raw B was nonconformant before repair and is preserved unchanged at `63ba49d4ce4f10fe4d630248c873b5a1fca27390`. This record contains no scientific outcomes or acceptance decision.
+This is the selected, result-free bounded repair of raw B, **not** a raw-candidate PASS and not an official D-059 result. Raw B was nonconformant before repair and is preserved unchanged at `63ba49d4ce4f10fe4d630248c873b5a1fca27390`. The selected implementation passed exact-HEAD manager QA and the immediate pre-freeze collision/exposure audit. This result-free freeze contains no scientific outcomes or acceptance decision.
 
 - **Repair authorization:** #206 comment `5943123218`; frozen repair brief `/private/tmp/aweform-d059-bakeoff.gxVFDv/repair-brief-b-v1.md`, SHA-256 `fb1d7778e9e7e2f75da2e0f7a5bbf350f182576235dfe70817ba0a506ff878ce`.
 - **Unchanged scientific authority:** #206 PROPOSAL_VERSION 2, Sol PASS `5932464537`, seam ruling `5932171938`, and controlling brief-v3 SHA-256 `2cfcf87fa589becfefb9e5d1bcf56b6bfd8dbca9607c494e10c101cb875aade6`.
 - **Authorized project base:** `0f4b0ae22564293dd178567c4c745e5903256682`.
 - **Repair base:** exact raw B HEAD `63ba49d4ce4f10fe4d630248c873b5a1fca27390`.
 - **Repair branch:** `codex/d059-repair-b`.
-- **Implementer / reviewer separation:** this is worker-authored repair. Firstmate is the manager/spec owner and later QA reviewer; Firstmate did not author source/tests. Raw A remains preserved as benchmark provenance and was not inspected. Candidate C remains disqualified; no ranking or code-quality inference is added. Sol corrected the manager-session label: Firstmate's actual manager session is user-requested GPT-6.1 Sol/Codex. Manager/reviewer separation remains binding.
-- **Selected freeze SHA:** not yet selected/frozen. No support execution is authorized by this repair candidate.
+- **Implementer / reviewer separation:** this is worker-authored repair. Firstmate is the manager/spec owner and QA reviewer; Firstmate did not author source/tests. The initial blinded A/B technical comparison is preserved in `/private/tmp/aweform-d059-bakeoff.gxVFDv/technical-comparison.md`; anonymous axis reviews and model reveal are preserved separately. Raw A remains unchanged as benchmark provenance, and none of its implementation was imported into this repair. Candidate C remains disqualified under #206 ruling `5941551976`; it is neither scored nor ranked. Sol corrected the manager-session label: Firstmate's actual manager session is user-requested GPT-6.1 Sol/Codex. Manager/reviewer separation remains binding.
+- **Bake-off decision:** raw A (DeepSeek V4.1 Flash) and raw B (GPT-6 Luna) both failed conformance and neither raw commit was eligible. B was selected only as the repair base because it had more complete historical D-056 and archive/execution scaffolding; it was not selected for raw correctness or model superiority. The sole GPT-6 Luna repair at `7f940a222618e4b5f8eb48c235c3419dca9197d4` closes the reproduced attribution/identity defects and passes bounded exact-HEAD manager QA. The repaired B is selected for the one D-059 result-free freeze. C (GLM-5.3-Flash) was disqualified for prohibited exposure and source access; no code-quality conclusion is drawn. This single task and the two eligible candidate attempts support no general model ranking. Provider limits, context recovery, and elapsed time are operational provenance, not a quality score.
+- **Selected freeze SHA:** assigned by the result-free freeze commit below; it is the only source SHA permitted for official execution and independent regeneration. No D-059 support execution has yet occurred.
+
+## Bake-off comparison and selection
+
+The three workers received the same base and frozen implementation brief through Pi → OpenCode Go. C is excluded from candidate comparison under ruling `5941551976`. The blinded A/B first-pass standards/spec reviews and post-review reveal are retained in the external bake-off archive. Both raw implementations were rejected for correctness/boundary defects despite passing their own tests; test counts were not treated as acceptance evidence.
+
+| Candidate | Raw technical strengths | Raw defects / disposition |
+| --- | --- | --- |
+| A — DeepSeek V4.1 Flash, `05e13e67441141c351855adbe7a940b2f07ddac4` | More complete pure-statistics/classification and branch tests; deterministic multiprocess work items; both-arm attribution. | Incomplete historic D-056 identity and stop propagation; censor-prefix and archive/seed/hash-seed gates were insufficient. Rejected; not used as repair source. |
+| B — GPT-6 Luna, `63ba49d4ce4f10fe4d630248c873b5a1fca27390` | More complete historical D-056 summary/class comparators and concise tests; original archive/execution guards. | Fake copied-prefix/non-feedback evidence; production `FAILED` mapping and missing C attribution; caller-CWD/source provenance, archive proof, and censor controls were insufficient. Rejected as raw implementation; used only as the authorized repair base. |
+| C — GLM-5.3-Flash | Not scored. | Disqualified by `5941551976` after prohibited retired-seed exposure and reading unmerged prior candidate material. No restart or model ranking. |
+
+Repair selection is a manager engineering judgment after exact repaired-HEAD QA, not a scientific result or vendor/model benchmark. Root-cause findings, synthetic reproductions, and the complete comparison are preserved in the external archive. Historical exposure of the retired `23000–23319` block remains invalidated provenance and contributes zero evidence; no current official `26000–26319` support trajectory has been run.
 
 Only the five authorized paths are changed. The repair preserves #206's scientific protocol, seed allocation, substrates, U/C, D-053 fixture/RNG, horizons, classifiers, statistics, branch logic, information boundary, and durable safety boundary. No P/D-060/S2/successor work is included.
 
@@ -40,6 +53,8 @@ Final repair validation ran under locked CPython 3.14.7 with `PYTHONHASHSEED=0`:
 - Repository-wide `ruff format --check src tests` reports pre-existing format drift in unchanged files (55 under `src`, 102 across `src` and `tests`); no out-of-scope files were reformatted. Repository CI requires `ruff check .`, not the full-repo format check.
 
 Two earlier full-suite attempts timed out before completion; a final full run completed with the result above. The repository suite includes pre-existing historical D-stage tests; the D-059-specific trajectories remained bounded to seed `26320`. No official D-059 support, official Part-A trajectory, official CLI, or full 300,000-decision D-045 identity control was run, and no scientific result was generated.
+
+The immediate fresh pre-freeze collision/exposure audit passed after this QA. Its exact record is `/private/tmp/aweform-d059-bakeoff.gxVFDv/collision-exposure-recheck-7f940a2.md`, SHA-256 `8f7cea7c9966159f53f81f36b15f1ea5f01a16a8a13476d4771de2747749827a`. GitHub issue/PR/commit/code queries and exact structured seed-field scans found no current-allocation collision; the inherited retired `23000–23319` branch was recognized as invalidated provenance. No official support trajectory was produced. This audit clears only the result-free freeze gate.
 
 ## Post-selection freeze, controls, and execution
 

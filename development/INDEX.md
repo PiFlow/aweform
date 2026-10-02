@@ -87,6 +87,6 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-056 | V0.5 multi-cycle stall-turn lifetime characterization | CONTINUING | [`D-056-v05-multi-cycle-stall-turn-lifetimes.md`](D-056-v05-multi-cycle-stall-turn-lifetimes.md) |
 | D-057 | V0.5 evaluator-only boundary-rule counterfactual for the RETURN wall wedge | CONTINUING | [`D-057-v05-boundary-rule-counterfactual.md`](D-057-v05-boundary-rule-counterfactual.md) |
 | D-058 | V0.5 physical wall-contact substrate conformance | CONTINUING | [`D-058-v05-physical-wall-contact-substrate.md`](D-058-v05-physical-wall-contact-substrate.md) |
-| D-059 | V0.5 S1 Level-1 floor re-baseline (bounded repair of raw B; support unexecuted) | CONTINUING | [`D-059-v05-s1-level1-floor-rebaseline.md`](D-059-v05-s1-level1-floor-rebaseline.md) |
+| D-059 | V0.5 S1 Level-1 floor re-baseline (selected result-free freeze; support unexecuted) | CONTINUING | [`D-059-v05-s1-level1-floor-rebaseline.md`](D-059-v05-s1-level1-floor-rebaseline.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeded to the next ecology question rather than that D-001 remains unexecuted. The same distinction applies to later records whose own work is complete but whose scientific thread continues.
