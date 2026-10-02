@@ -5,8 +5,16 @@
     "raw_transition_traces_retained": false
   },
   "authorized_base_sha": "0f4b0ae22564293dd178567c4c745e5903256682",
+  "bounded_repair_defects": [
+    "module-root-bound clean/protected/tree provenance and literal archive attestation",
+    "independent streaming primary-prefix and non-feedback comparison",
+    "production FAIL mapping, exact McNemar, and censor/termination accounting",
+    "matched U/C endurance attribution on both arms",
+    "adversarial synthetic and bounded test-only regression controls"
+  ],
+  "candidate_status": "RAW_B_NOT_CONFORMANT_NOT_PASS",
   "development_id": "D-059",
-  "execution_status": "NOT_EXECUTED_RESULT_FREE_IMPLEMENTATION_CANDIDATE",
+  "execution_status": "NOT_EXECUTED_BOUNDED_REPAIR_CANDIDATE",
   "frozen_brief_sha256": "2cfcf87fa589becfefb9e5d1bcf56b6bfd8dbca9607c494e10c101cb875aade6",
   "horizons": {
     "endurance": 300000,
@@ -43,11 +51,12 @@
       "status": "RETIRED_NO_FINAL_EVIDENCE_USE"
     }
   ],
-  "latest_authorizing_ruling_comment": "5941551976",
+  "manager_authored_candidate_code": false,
+  "manager_session_model_correction": "Firstmate's manager session is user-requested GPT-6.1 Sol/Codex; the earlier Sol label was inaccurate.",
   "model_availability_note": "GPT-6 Luna rate limits are operational availability observations; no model substitution is made.",
   "official_execution_gate": {
     "cli_only": true,
-    "fresh_archive_requires_archive_source_sha_attestation": true,
+    "fresh_archive_requires_external_git_objects_and_tree_match": true,
     "official_execution_performed": false,
     "requires_clean_checkout_at_executed_commit_sha": true,
     "requires_external_seed_collision_exposure_recheck_before_freeze": true,
@@ -60,12 +69,19 @@
     "trajectory_execution": "NOT_RUN"
   },
   "protocol_version": "d059-v05-s1-level1-floor-rebaseline-v2",
+  "raw_a_and_raw_b_benchmark_provenance_preserved": true,
+  "raw_a_reviewed_or_inspected": false,
+  "raw_b_commit_preserved": true,
+  "raw_b_status": "NOT_CONFORMANT_NOT_PASS",
+  "repair_base_sha": "63ba49d4ce4f10fe4d630248c873b5a1fca27390",
+  "repair_ruling_comment": "5943123218",
   "runtime_plan_seconds": {
     "actual": null,
     "conservative_capped_approximate": 11160,
     "expected_approximate": 7200
   },
   "schema_version": "d059-protocol-manifest-v1",
+  "second_bakeoff": false,
   "seed_contract": {
     "d045_harness_identity_support": [
       22053,

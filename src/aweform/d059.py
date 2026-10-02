@@ -16,9 +16,10 @@ import subprocess
 import sys
 import time
 from collections import Counter, deque
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field, fields, is_dataclass, replace
 from decimal import Decimal
-from pathlib import Path
+from enum import Enum
+from pathlib import Path, PurePosixPath
 from typing import Any, Final, Sequence, cast
 
 import numpy as np
@@ -32,7 +33,7 @@ from .d045 import (
     D045PhysicalConfig,
 )
 from .d050 import D050ControlMode
-from .d052 import D052CommandSource, D052Controller, D052Mode
+from .d052 import D052CommandSource, D052Controller, D052Decision, D052Mode
 from .d053 import D053Proposal, D053RoamingFixture
 from .d055 import D055StallTurnCandidate
 from .d058 import D058Env, D058PhysicalConfig
@@ -41,6 +42,15 @@ from .exp003_seed_policy import validate_exp003_development_seeds
 D059_ID: Final = "D-059"
 PROTOCOL_VERSION: Final = "d059-v05-s1-level1-floor-rebaseline-v2"
 BASE_SHA: Final = "0f4b0ae22564293dd178567c4c745e5903256682"
+REPAIR_BASE_SHA: Final = "63ba49d4ce4f10fe4d630248c873b5a1fca27390"
+REPAIR_RULING_COMMENT: Final = "5943123218"
+REPAIR_DEFECTS: Final = (
+    "module-root-bound clean/protected/tree provenance and literal archive attestation",
+    "independent streaming primary-prefix and non-feedback comparison",
+    "production FAIL mapping, exact McNemar, and censor/termination accounting",
+    "matched U/C endurance attribution on both arms",
+    "adversarial synthetic and bounded test-only regression controls",
+)
 FROZEN_BRIEF_SHA256: Final = (
     "2cfcf87fa589becfefb9e5d1bcf56b6bfd8dbca9607c494e10c101cb875aade6"
 )
@@ -57,6 +67,21 @@ ALPHA: Final = 0.05
 P_STAR: Final = 0.01
 ARTIFACT_QUANTUM: Final = Decimal("1e-12")
 MAX_EVENT_ROWS: Final = 4096
+IGNORED_GENERATED_SOURCE_DIRS: Final = frozenset(
+    {
+        ".venv",
+        "__pycache__",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".tox",
+        ".nox",
+        "build",
+        "dist",
+        "aweform.egg-info",
+    }
+)
+IGNORED_GENERATED_SOURCE_FILES: Final = frozenset({".coverage", "coverage.xml"})
 ROOMS: Final = {"S1_3M": 3.0, "S1_1M": 1.0, "D045_1M": 1.0}
 ARMS: Final = ("U", "C")
 PART_A_SETS: Final = ("A1_WALL_CORNER", "A2_ROOM_RANGE")
@@ -498,12 +523,239 @@ def _episode_fields(
     }
 
 
-def _failure(outcome: str) -> bool:
-    return (
-        outcome != "DOCKED"
-        and not outcome.startswith("CENSORED_")
-        and outcome != "HORIZON_CENSORED"
+class _PrimaryPrefixAudit:
+    """Independent passive reducer of the frozen primary causal prefix."""
+
+    _ANATOMY = (
+        "dynamic=projection flags (D-058), or boundary_scale<1 (D-045); "
+        "static=executed centre on the corresponding legal wall boundary"
     )
+
+    def __init__(self, substrate: str, room_side_m: float, horizon: int) -> None:
+        self.substrate = substrate
+        self.room_side_m = room_side_m
+        self.horizon = horizon
+        self.start_transition: int | None = None
+        self.return_decisions = 0
+        self.exposed_count = 0
+        self.all_dynamic_walls: set[str] = set()
+        self.all_dynamic_corners: set[str] = set()
+        self.all_static_walls: set[str] = set()
+        self.final_samples: deque[
+            tuple[tuple[float, float], tuple[str, ...], tuple[str, ...]]
+        ] = deque(maxlen=100)
+        self.frozen_record: dict[str, object] | None = None
+
+    @staticmethod
+    def _corners(walls: Sequence[str]) -> tuple[str, ...]:
+        wall_set = frozenset(walls)
+        corner_pairs = (
+            ("x_min", "y_min", "x_min_y_min"),
+            ("x_max", "y_min", "x_max_y_min"),
+            ("x_min", "y_max", "x_min_y_max"),
+            ("x_max", "y_max", "x_max_y_max"),
+        )
+        return tuple(
+            corner
+            for x_wall, y_wall, corner in corner_pairs
+            if x_wall in wall_set and y_wall in wall_set
+        )
+
+    def _projection_walls(
+        self,
+        env: D045Env | D058Env,
+        telemetry: Any,
+    ) -> tuple[str, ...]:
+        if self.substrate.startswith("S1_"):
+            contact = cast(D058Env, env).last_contact
+            if contact is None:
+                raise RuntimeError("independent prefix audit lacks D-058 telemetry")
+            active = (
+                ("x_min", contact.pushing_x_min),
+                ("x_max", contact.pushing_x_max),
+                ("y_min", contact.pushing_y_min),
+                ("y_max", contact.pushing_y_max),
+            )
+            return tuple(name for name, value in active if value)
+        if telemetry.boundary_scale >= 1.0:
+            return ()
+        x, y = telemetry.position_after
+        active_walls: list[str] = []
+        if x == 0.0:
+            active_walls.append("x_min")
+        if x == self.room_side_m:
+            active_walls.append("x_max")
+        if y == 0.0:
+            active_walls.append("y_min")
+        if y == self.room_side_m:
+            active_walls.append("y_max")
+        return tuple(active_walls)
+
+    def _static_walls(
+        self, env: D045Env | D058Env, position: tuple[float, float], heading: float
+    ) -> tuple[str, ...]:
+        x, y = position
+        if self.substrate.startswith("S1_"):
+            half_length = d058.D058_HULL_HALF_LENGTH_METRES
+            half_width = d058.D058_HULL_HALF_WIDTH_METRES
+            cosine, sine = abs(math.cos(heading)), abs(math.sin(heading))
+            hx = half_length * cosine + half_width * sine
+            hy = half_length * sine + half_width * cosine
+            limits = (
+                ("x_min", hx),
+                ("x_max", self.room_side_m - hx),
+                ("y_min", hy),
+                ("y_max", self.room_side_m - hy),
+            )
+        else:
+            limits = (
+                ("x_min", 0.0),
+                ("x_max", self.room_side_m),
+                ("y_min", 0.0),
+                ("y_max", self.room_side_m),
+            )
+        actual = {"x_min": x, "x_max": x, "y_min": y, "y_max": y}
+        return tuple(name for name, bound in limits if actual[name] == bound)
+
+    def _freeze_episode(
+        self, outcome: str, boundary: str, transition: int
+    ) -> dict[str, object]:
+        if self.start_transition is None:
+            raise RuntimeError("cannot freeze a missing primary RETURN")
+        samples = tuple(self.final_samples)
+        final_dynamic_walls = sorted(
+            {wall for _, walls, _ in samples for wall in walls}
+        )
+        final_static_walls = sorted({wall for _, _, walls in samples for wall in walls})
+        final_positions = tuple(position for position, _, _ in samples)
+        return {
+            "cycle_index": 1,
+            "start_transition": self.start_transition,
+            "end_transition": transition,
+            "return_decisions": self.return_decisions,
+            "outcome": outcome,
+            "classification_boundary": boundary,
+            "wall_exposed_any": self.exposed_count > 0,
+            "wall_exposed_any_transition_count": self.exposed_count,
+            "wall_exposed_final_100": any(walls for _, walls, _ in samples),
+            "wall_exposed_final_100_transition_count": sum(
+                bool(walls) for _, walls, _ in samples
+            ),
+            "final_100_centre_path_m": sum(
+                math.dist(left, right)
+                for left, right in zip(final_positions, final_positions[1:])
+            ),
+            "active_wall_ids": sorted(self.all_dynamic_walls),
+            "active_corner_ids": sorted(self.all_dynamic_corners),
+            "final_100_dynamic_wall_ids": final_dynamic_walls,
+            "final_100_dynamic_corner_ids": sorted(self._corners(final_dynamic_walls)),
+            "final_100_static_wall_ids": final_static_walls,
+            "static_wall_ids": sorted(self.all_static_walls),
+            "anatomy_definition": self._ANATOMY,
+            "measurement_role": "primary",
+        }
+
+    def observe(
+        self,
+        *,
+        transition: int,
+        decision: D052Decision,
+        contact_after: bool,
+        terminated: bool,
+        termination_reason: str | None,
+        env: D045Env | D058Env,
+        telemetry: Any,
+    ) -> None:
+        """Consume one post-step observation without retaining its raw row."""
+        if self.frozen_record is not None:
+            return
+        if self.start_transition is None and "RETURN_ACTIVATED" in decision.events:
+            self.start_transition = decision.transition_index
+        if (
+            self.start_transition is not None
+            and decision.active_mode is D052Mode.RETURN
+        ):
+            self.return_decisions += 1
+            dynamic_walls = self._projection_walls(env, telemetry)
+            static_walls = self._static_walls(
+                env, telemetry.position_after, telemetry.heading_after
+            )
+            self.exposed_count += int(bool(dynamic_walls))
+            self.all_dynamic_walls.update(dynamic_walls)
+            self.all_dynamic_corners.update(self._corners(dynamic_walls))
+            self.all_static_walls.update(static_walls)
+            self.final_samples.append(
+                (telemetry.position_after, dynamic_walls, static_walls)
+            )
+
+        terminal: tuple[str, str] | None = None
+        if decision.active_mode is D052Mode.RETURN and contact_after:
+            terminal = ("DOCKED", "CHARGING_CONTACT")
+        elif "TERMINAL_SPIN_EXHAUSTED" in decision.events:
+            terminal = ("SPIN_EXHAUSTED", "TERMINAL_SPIN_EXHAUSTION")
+        elif (
+            "INVALID_BEACON" in decision.events
+            or decision.d050_mode is D050ControlMode.INVALID_BEACON
+        ):
+            terminal = ("INVALID_BEACON", "INVALID_BEACON")
+        elif terminated:
+            terminal = (
+                f"TERMINATED_{termination_reason or 'UNKNOWN'}",
+                "ENVIRONMENT_TERMINATION",
+            )
+        elif self.start_transition is not None and self.return_decisions >= W_C:
+            terminal = ("RETURN_TIMEOUT_FAILURE", "RETURN_WINDOW_2000")
+
+        if terminal is not None and self.start_transition is not None:
+            self.frozen_record = self._freeze_episode(
+                terminal[0], terminal[1], transition
+            )
+        elif transition >= self.horizon:
+            if self.start_transition is None:
+                self.frozen_record = {
+                    "outcome": "CENSORED_NO_RETURN",
+                    "classification_boundary": "PRIMARY_HORIZON_NO_RETURN",
+                    "wall_exposed_any": False,
+                    "wall_exposed_any_transition_count": 0,
+                    "wall_exposed_final_100": False,
+                    "wall_exposed_final_100_transition_count": 0,
+                    "measurement_role": "primary",
+                }
+            else:
+                self.frozen_record = self._freeze_episode(
+                    "CENSORED_IN_PROGRESS", "PRIMARY_HORIZON", transition
+                )
+
+    def finish(self, transition: int) -> dict[str, object]:
+        if self.frozen_record is None:
+            if self.start_transition is None:
+                self.frozen_record = {
+                    "outcome": "CENSORED_NO_RETURN",
+                    "classification_boundary": "EXECUTION_END_NO_RETURN",
+                    "wall_exposed_any": False,
+                    "wall_exposed_any_transition_count": 0,
+                    "wall_exposed_final_100": False,
+                    "wall_exposed_final_100_transition_count": 0,
+                    "measurement_role": "primary",
+                }
+            else:
+                self.frozen_record = self._freeze_episode(
+                    "CENSORED_IN_PROGRESS", "EXECUTION_END", transition
+                )
+        return dict(self.frozen_record)
+
+
+def _failure(outcome: str) -> bool:
+    if outcome in FAILURE_OUTCOMES or outcome.startswith("TERMINATED_"):
+        return True
+    if outcome == "DOCKED" or outcome in {
+        "CENSORED",
+        "CENSORED_IN_PROGRESS",
+        "CENSORED_NO_RETURN",
+        "HORIZON_CENSORED",
+    }:
+        return False
+    raise RuntimeError(f"unrecognized D-059 terminal/classification label: {outcome}")
 
 
 def _new_env(substrate: str, room_side_m: float, horizon: int) -> D045Env | D058Env:
@@ -552,15 +804,111 @@ def _legacy_episode_class(
     return "OTHER_NOT_DOCKED"
 
 
-def _derive_prefix_record(
-    return_records: Sequence[dict[str, object]],
-    no_return_record: dict[str, object],
-) -> dict[str, object]:
-    """Derive the primary snapshot from compact records frozen on its prefix."""
-    primary_rows = [
-        row for row in return_records if row.get("measurement_role") == "primary"
-    ]
-    return dict(primary_rows[0]) if primary_rows else dict(no_return_record)
+def _stable_state_token(value: object) -> object:
+    """Canonicalize bounded evaluator state without object IDs or repr addresses."""
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, np.ndarray):
+        return [_stable_state_token(item) for item in value.tolist()]
+    if isinstance(value, np.generic):
+        return _stable_state_token(value.item())
+    if is_dataclass(value) and not isinstance(value, type):
+        return {
+            "type": type(value).__qualname__,
+            "fields": {
+                item.name: _stable_state_token(getattr(value, item.name))
+                for item in fields(cast(Any, value))
+            },
+        }
+    if isinstance(value, dict):
+        return {
+            str(key): _stable_state_token(item)
+            for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+        }
+    if isinstance(value, (tuple, list)):
+        return [_stable_state_token(item) for item in value]
+    if isinstance(value, set):
+        normalized = [_stable_state_token(item) for item in value]
+        return sorted(
+            normalized,
+            key=lambda item: json.dumps(
+                cast(Any, item), sort_keys=True, separators=(",", ":")
+            ),
+        )
+    if isinstance(value, float):
+        return _float_token(value)
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    if hasattr(value, "__dict__"):
+        return {
+            "type": type(value).__qualname__,
+            "attributes": _stable_state_token(vars(value)),
+        }
+    raise RuntimeError(
+        f"unsupported value in bounded causal-state audit: {type(value)}"
+    )
+
+
+def _final_causal_state_digests(
+    env: D045Env | D058Env,
+    controller: D052Controller,
+    candidate: D055StallTurnCandidate | None,
+    fixture: D053RoamingFixture | None,
+    observation: np.ndarray,
+) -> tuple[str, str | None]:
+    fixture_state: object | None = None
+    if fixture is not None:
+        explorer = fixture._explorer
+        fixture_state = {
+            "decision_count": fixture.decision_count,
+            "rng_state": explorer.policy_rng.bit_generator.state,
+            "forward_actions_remaining": explorer._forward_actions_remaining,
+            "turn_action": (
+                explorer._turn_action.name
+                if explorer._turn_action is not None
+                else None
+            ),
+            "turn_actions_remaining": explorer._turn_actions_remaining,
+        }
+    fixture_digest = (
+        hashlib.sha256(
+            json.dumps(
+                _stable_state_token(fixture_state),
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            ).encode("utf-8")
+        ).hexdigest()
+        if fixture_state is not None
+        else None
+    )
+    body = env.body
+    causal_state = {
+        "observation_bytes": observation.tobytes().hex(),
+        "controller": candidate if candidate is not None else controller,
+        "environment": {
+            "body": body,
+            "station_center": env.station_center,
+            "battery_j": env.battery_j,
+            "body_temperature_c": env.body_temperature_c,
+            "charger_termination_latched": env.charger_termination_latched,
+            "previous_wheel_delta": env._previous_wheel_delta,
+            "step_count": env._step_count,
+            "episode_done": env._episode_done,
+            "last_transition": env.last_transition,
+            "last_contact": getattr(env, "last_contact", None),
+        },
+        "fixture": fixture_state,
+    }
+    final_digest = hashlib.sha256(
+        json.dumps(
+            _stable_state_token(causal_state),
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+    return final_digest, fixture_digest
 
 
 def _summary_lifetime(
@@ -661,16 +1009,18 @@ def _summary_lifetime(
     rewards_zero = True
     infos_empty = True
     primary_record: dict[str, object] | None = None
-    primary_mirror: dict[str, object] | None = None
     primary_prefix_record: dict[str, object] | None = None
+    prefix_audit = (
+        _PrimaryPrefixAudit(substrate, room_side_m, primary_cut)
+        if measure_primary
+        else None
+    )
     transitions = 0
 
     def freeze_primary(record: dict[str, object]) -> None:
-        nonlocal primary_record, primary_mirror
+        nonlocal primary_record
         if primary_record is None:
             primary_record = dict(record)
-            # Independent measurement mirror: a pure copy of the frozen causal prefix.
-            primary_mirror = dict(record)
 
     for _ in range(horizon):
         energy_before = float(observation[0])
@@ -851,6 +1201,16 @@ def _summary_lifetime(
 
         dynamic_walls = _active_walls(env, room_side_m, telemetry.boundary_scale < 1.0)
         static_walls = _static_walls(env, room_side_m)
+        if prefix_audit is not None:
+            prefix_audit.observe(
+                transition=transitions,
+                decision=decision,
+                contact_after=contact_after,
+                terminated=terminated,
+                termination_reason=termination_reason,
+                env=env,
+                telemetry=telemetry,
+            )
         if (
             current_return is not None
             and not current_return.classified
@@ -1083,7 +1443,6 @@ def _summary_lifetime(
                     "wall_exposed_final_100_transition_count": 0,
                     "measurement_role": "primary",
                 }
-                primary_mirror = dict(primary_record)
             elif not current_return.classified:
                 row = _episode_fields(
                     current_return,
@@ -1167,14 +1526,18 @@ def _summary_lifetime(
                 current_return, outcome, "EXECUTION_END", final_transition
             )
             primary_record["measurement_role"] = "primary"
-        primary_mirror = dict(primary_record)
     if measure_primary and primary_record is not None:
-        primary_prefix_record = _derive_prefix_record(return_records, primary_record)
-        if primary_mirror is None or d053._canonicalize(
-            primary_mirror
-        ) != d053._canonicalize(primary_record):
-            raise RuntimeError("primary online/prefix snapshot identity failed")
+        if prefix_audit is None:
+            raise RuntimeError("independent primary-prefix audit was not initialized")
+        primary_prefix_record = prefix_audit.finish(final_transition)
+        if d053._canonicalize(primary_prefix_record) != d053._canonicalize(
+            primary_record
+        ):
+            raise RuntimeError("independent primary-prefix classification differed")
 
+    final_causal_state_digest, final_fixture_state_digest = _final_causal_state_digests(
+        env, controller, candidate, fixture, observation
+    )
     reset_sample: dict[str, object] = {
         "transition": 0,
         "events": ["RESET"],
@@ -1244,6 +1607,8 @@ def _summary_lifetime(
         "trajectory_digest_sha256": digest.hexdigest(),
         "primary_prefix_digest_sha256": prefix_digest.hexdigest(),
         "fixture_decision_count": fixture.decision_count if fixture is not None else 0,
+        "final_causal_state_digest_sha256": final_causal_state_digest,
+        "final_fixture_state_digest_sha256": final_fixture_state_digest,
     }
     if (
         sum(counts.values()) != total
@@ -1579,10 +1944,23 @@ def protocol_manifest() -> dict[str, object]:
         "schema_version": "d059-protocol-manifest-v1",
         "development_id": D059_ID,
         "protocol_version": PROTOCOL_VERSION,
-        "execution_status": "NOT_EXECUTED_RESULT_FREE_IMPLEMENTATION_CANDIDATE",
+        "execution_status": "NOT_EXECUTED_BOUNDED_REPAIR_CANDIDATE",
+        "candidate_status": "RAW_B_NOT_CONFORMANT_NOT_PASS",
         "authorized_base_sha": BASE_SHA,
+        "repair_base_sha": REPAIR_BASE_SHA,
         "frozen_brief_sha256": FROZEN_BRIEF_SHA256,
-        "latest_authorizing_ruling_comment": "5941551976",
+        "repair_ruling_comment": REPAIR_RULING_COMMENT,
+        "manager_authored_candidate_code": False,
+        "manager_session_model_correction": (
+            "Firstmate's manager session is user-requested GPT-6.1 Sol/Codex; "
+            "the earlier Sol label was inaccurate."
+        ),
+        "raw_b_commit_preserved": True,
+        "raw_b_status": "NOT_CONFORMANT_NOT_PASS",
+        "raw_a_reviewed_or_inspected": False,
+        "raw_a_and_raw_b_benchmark_provenance_preserved": True,
+        "second_bakeoff": False,
+        "bounded_repair_defects": list(REPAIR_DEFECTS),
         "selected_freeze_sha": None,
         "seed_contract": {
             "primary": list(PRIMARY_SEEDS),
@@ -1629,7 +2007,7 @@ def protocol_manifest() -> dict[str, object]:
         "official_execution_gate": {
             "cli_only": True,
             "requires_clean_checkout_at_executed_commit_sha": True,
-            "fresh_archive_requires_archive_source_sha_attestation": True,
+            "fresh_archive_requires_external_git_objects_and_tree_match": True,
             "requires_protected_source_hashes_equal_base": True,
             "requires_pyhashseed_0": True,
             "requires_external_seed_collision_exposure_recheck_before_freeze": True,
@@ -1638,9 +2016,15 @@ def protocol_manifest() -> dict[str, object]:
     }
 
 
+def _module_root() -> Path:
+    """Return the root containing the imported ``src/aweform`` package."""
+    return Path(__file__).resolve().parents[2]
+
+
 def _git_output(args: Sequence[str]) -> str:
+    """Run git relative to this imported source tree, never the caller's CWD."""
     completed = subprocess.run(
-        ["git", *args],
+        ["git", "-C", str(_module_root()), *args],
         check=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -1651,7 +2035,7 @@ def _git_output(args: Sequence[str]) -> str:
 
 def verify_protected_sources() -> dict[str, str]:
     """Require protected mechanisms/dependencies to match authorized-base hashes."""
-    repo = Path(__file__).resolve().parents[2]
+    repo = _module_root()
     if set(PROTECTED_SHA256) != set(PROTECTED):
         raise RuntimeError("protected source hash table does not cover the frozen list")
     hashes: dict[str, str] = {}
@@ -1666,58 +2050,194 @@ def verify_protected_sources() -> dict[str, str]:
     return hashes
 
 
-def verify_clean_frozen_checkout(
-    executed_commit_sha: str, archive_source_sha: str | None = None
-) -> dict[str, object]:
-    """Verify a clean freeze checkout or an externally attested git archive."""
-    archive_mode = False
-    try:
-        head = _git_output(("rev-parse", "HEAD"))
-    except OSError, subprocess.CalledProcessError:
-        if archive_source_sha != executed_commit_sha:
-            raise RuntimeError("archive_source_sha must equal the frozen commit SHA")
-        head = executed_commit_sha
-        archive_mode = True
+def _git_object_output(git_dir: Path, args: Sequence[str]) -> bytes:
+    completed = subprocess.run(
+        ["git", f"--git-dir={git_dir}", *args],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    return completed.stdout
+
+
+def _git_commit_tree_sha(git_dir: Path, commit_sha: str) -> str:
+    resolved = (
+        _git_object_output(
+            git_dir, ("rev-parse", "--verify", f"{commit_sha}^{{commit}}")
+        )
+        .decode("ascii")
+        .strip()
+    )
+    if resolved != commit_sha:
+        raise RuntimeError("frozen commit SHA failed Git object verification")
+    return (
+        _git_object_output(git_dir, ("rev-parse", f"{commit_sha}^{{tree}}"))
+        .decode("ascii")
+        .strip()
+    )
+
+
+def _verify_frozen_commit_scope(git_dir: Path, commit_sha: str) -> None:
+    _git_object_output(git_dir, ("merge-base", "--is-ancestor", BASE_SHA, commit_sha))
+    _git_object_output(
+        git_dir, ("merge-base", "--is-ancestor", REPAIR_BASE_SHA, commit_sha)
+    )
+    paths = set(
+        _git_object_output(git_dir, ("diff", "--name-only", BASE_SHA, commit_sha))
+        .decode("utf-8")
+        .splitlines()
+    )
+    allowed_paths = {
+        "src/aweform/d059.py",
+        "tests/test_d059.py",
+        "development/D-059-v05-s1-level1-floor-rebaseline.md",
+        "development/D-059-v05-s1-level1-floor-rebaseline.json",
+        "development/INDEX.md",
+    }
+    if paths != allowed_paths:
+        raise RuntimeError("frozen commit does not have the exact five-path diff")
+
+
+def _git_tree_entries(git_dir: Path, commit_sha: str) -> dict[str, tuple[str, str]]:
+    listing = _git_object_output(
+        git_dir, ("ls-tree", "-r", "-z", "--full-tree", commit_sha)
+    )
+    entries: dict[str, tuple[str, str]] = {}
+    for record in listing.split(b"\0"):
+        if not record:
+            continue
+        header, raw_path = record.split(b"\t", 1)
+        mode_raw, kind_raw, oid_raw = header.split(b" ", 2)
+        mode, kind, oid = (
+            mode_raw.decode("ascii"),
+            kind_raw.decode("ascii"),
+            oid_raw.decode("ascii"),
+        )
+        if kind != "blob" or mode not in {"100644", "100755", "120000"}:
+            raise RuntimeError("unsupported non-file entry in frozen source tree")
+        relative = PurePosixPath(os.fsdecode(raw_path))
+        if relative.is_absolute() or ".." in relative.parts:
+            raise RuntimeError("unsafe path in frozen source tree")
+        entries[relative.as_posix()] = (mode, oid)
+    return entries
+
+
+def _git_sha1_blob_oid(data: bytes) -> str:
+    object_data = b"blob " + str(len(data)).encode("ascii") + b"\0" + data
+    return hashlib.sha1(object_data, usedforsecurity=False).hexdigest()
+
+
+def _verify_git_tree_matches_source(
+    source_root: Path, commit_sha: str, git_dir: Path, *, archive_mode: bool
+) -> tuple[str, int]:
+    root = source_root.resolve()
+    object_dir = git_dir.resolve(strict=True)
+    if not object_dir.is_dir():
+        raise RuntimeError("source Git object reference must be a directory")
     if archive_mode:
-        if (
-            archive_source_sha is None
-            or len(archive_source_sha) != 40
-            or any(c not in "0123456789abcdef" for c in archive_source_sha)
+        if object_dir == root or root in object_dir.parents:
+            raise RuntimeError(
+                "archive Git object reference must be outside its source tree"
+            )
+        if (root / ".git").exists():
+            raise RuntimeError(
+                "fresh source archive must not contain an embedded .git directory"
+            )
+    object_format = (
+        _git_object_output(object_dir, ("rev-parse", "--show-object-format"))
+        .decode("ascii")
+        .strip()
+    )
+    if object_format != "sha1":
+        raise RuntimeError(
+            "D-059 frozen base requires the recorded SHA-1 object format"
+        )
+    tree_sha = _git_commit_tree_sha(object_dir, commit_sha)
+    expected = _git_tree_entries(object_dir, commit_sha)
+    actual: dict[str, Path] = {}
+    for path in root.rglob("*"):
+        relative = path.relative_to(root)
+        if any(
+            part in IGNORED_GENERATED_SOURCE_DIRS
+            or (not archive_mode and part == ".git")
+            for part in relative.parts
         ):
-            raise RuntimeError("invalid fresh archive source SHA")
+            continue
+        if path.is_symlink() or path.is_file():
+            if path.name in IGNORED_GENERATED_SOURCE_FILES or path.name.startswith(
+                ".coverage."
+            ):
+                continue
+            actual[relative.as_posix()] = path
+    if set(actual) != set(expected):
+        raise RuntimeError("executed source files do not match the frozen Git tree")
+    for name, path in actual.items():
+        expected_mode, expected_oid = expected[name]
+        if path.is_symlink():
+            mode = "120000"
+            data = os.fsencode(os.readlink(path))
+        else:
+            mode = "100755" if path.stat().st_mode & 0o111 else "100644"
+            data = path.read_bytes()
+        if mode != expected_mode or _git_sha1_blob_oid(data) != expected_oid:
+            raise RuntimeError(f"executed source file differs from frozen tree: {name}")
+    return tree_sha, len(expected)
+
+
+def verify_clean_frozen_checkout(
+    executed_commit_sha: str, source_git_dir: str | Path | None = None
+) -> dict[str, object]:
+    """Verify the imported tree via its Git checkout or external Git objects."""
+    root = _module_root().resolve()
+    try:
+        git_root = Path(_git_output(("rev-parse", "--show-toplevel"))).resolve()
+    except OSError, subprocess.CalledProcessError:
+        git_root = None
+    archive_mode = git_root is None or git_root != root
+    if archive_mode:
+        if source_git_dir is None:
+            if git_root is not None:
+                raise RuntimeError(
+                    "imported source lies under a different Git worktree"
+                )
+            raise RuntimeError(
+                "fresh git-archive execution requires an external Git object directory"
+            )
+        object_dir = Path(source_git_dir).expanduser()
+        if not object_dir.is_absolute():
+            raise RuntimeError("source_git_dir must be an absolute external path")
+        object_dir = object_dir.resolve()
+        _verify_frozen_commit_scope(object_dir, executed_commit_sha)
+        tree_sha, file_count = _verify_git_tree_matches_source(
+            root, executed_commit_sha, object_dir, archive_mode=True
+        )
+        head = executed_commit_sha
     else:
-        if archive_source_sha is not None and archive_source_sha != executed_commit_sha:
-            raise RuntimeError("archive_source_sha must equal executed_commit_sha")
+        if source_git_dir is not None:
+            raise RuntimeError(
+                "source_git_dir is only for literal git-archive extraction"
+            )
+        head = _git_output(("rev-parse", "HEAD"))
         if head != executed_commit_sha:
-            raise RuntimeError("executed_commit_sha must equal current HEAD")
-        status = _git_output(("status", "--porcelain=v1"))
-        if status:
-            raise RuntimeError("official execution requires a clean checkout")
-        subprocess.run(
-            ["git", "merge-base", "--is-ancestor", BASE_SHA, "HEAD"],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            raise RuntimeError(
+                "executed_commit_sha must equal the imported tree's HEAD"
+            )
+        if _git_output(("status", "--porcelain=v1", "--untracked-files=all")):
+            raise RuntimeError(
+                "official execution requires the imported tree to be clean"
+            )
+        object_dir = Path(_git_output(("rev-parse", "--absolute-git-dir"))).resolve()
+        _verify_frozen_commit_scope(object_dir, head)
+        tree_sha, file_count = _verify_git_tree_matches_source(
+            root, head, object_dir, archive_mode=False
         )
-        changed_paths = set(
-            _git_output(("diff", "--name-only", BASE_SHA, "HEAD")).splitlines()
-        )
-        allowed_paths = {
-            "src/aweform/d059.py",
-            "tests/test_d059.py",
-            "development/D-059-v05-s1-level1-floor-rebaseline.md",
-            "development/D-059-v05-s1-level1-floor-rebaseline.json",
-            "development/INDEX.md",
-        }
-        if changed_paths != allowed_paths:
-            raise RuntimeError("official execution requires the exact five-path diff")
-        if _git_output(("rev-parse", "HEAD^{tree}")) == "":
-            raise RuntimeError("could not determine frozen source tree")
     if os.environ.get("PYTHONHASHSEED") != "0":
         raise RuntimeError("official execution requires PYTHONHASHSEED=0")
     protected_hashes = verify_protected_sources()
     return {
         "head": head,
+        "source_tree_sha": tree_sha,
+        "source_file_count": file_count,
         "clean_checkout": True,
         "protected_source_hashes_match_base": True,
         "protected_file_sha256": protected_hashes,
@@ -1777,6 +2297,8 @@ def _d056_identity_fields(summary: dict[str, object]) -> dict[str, object]:
         "trajectory_digest_sha256",
         "primary_prefix_digest_sha256",
         "fixture_decision_count",
+        "final_causal_state_digest_sha256",
+        "final_fixture_state_digest_sha256",
     }
     return {key: value for key, value in summary.items() if key not in extra}
 
@@ -1880,6 +2402,8 @@ def assert_candidate_identity(u: dict[str, object], c: dict[str, object]) -> Non
             "stall_detected_count",
             "first_stall_turn_transition",
             "stall_counts_by_cycle",
+            "final_causal_state_digest_sha256",
+            "final_fixture_state_digest_sha256",
         }
         reduced_candidate = {
             key: value for key, value in cs.items() if key not in stall_fields
@@ -1915,9 +2439,16 @@ def _first_return(run: dict[str, object]) -> dict[str, object]:
 def _common_outcome(outcome: str) -> str:
     if outcome == "DOCKED":
         return "DOCKED"
-    if outcome.startswith("CENSORED_") or outcome == "HORIZON_CENSORED":
+    if outcome in {
+        "CENSORED",
+        "CENSORED_IN_PROGRESS",
+        "CENSORED_NO_RETURN",
+        "HORIZON_CENSORED",
+    }:
         return "CENSORED"
-    return "FAILED"
+    if _failure(outcome):
+        return "FAIL"
+    raise RuntimeError(f"unrecognized D-059 paired outcome: {outcome}")
 
 
 def _cross_tab(pairs: Sequence[tuple[str, str]]) -> dict[str, int]:
@@ -1929,27 +2460,145 @@ def _matched_contrast(
     pairs: Sequence[dict[str, object]], left_field: str, right_field: str
 ) -> dict[str, object]:
     outcomes = [(str(pair[left_field]), str(pair[right_field])) for pair in pairs]
-    left_only = sum(a == "FAIL" and b != "FAIL" for a, b in outcomes)
-    right_only = sum(a != "FAIL" and b == "FAIL" for a, b in outcomes)
+    valid_labels = {"FAIL", "DOCKED", "NO_FAILURE", "CENSORED"}
+    if any(
+        left not in valid_labels or right not in valid_labels
+        for left, right in outcomes
+    ):
+        raise RuntimeError("matched contrast contains an unclassified production label")
+    resolved_labels = {"FAIL", "DOCKED", "NO_FAILURE"}
+    comparable = [
+        (left, right)
+        for left, right in outcomes
+        if left in resolved_labels and right in resolved_labels
+    ]
+    left_only = sum(left == "FAIL" and right != "FAIL" for left, right in comparable)
+    right_only = sum(left != "FAIL" and right == "FAIL" for left, right in comparable)
     binary_outcomes = [
         (
-            "FAIL" if left == "FAIL" else "NOT_FAIL",
-            "FAIL" if right == "FAIL" else "NOT_FAIL",
+            "CENSORED"
+            if left == "CENSORED"
+            else "FAIL"
+            if left == "FAIL"
+            else "NOT_FAIL",
+            "CENSORED"
+            if right == "CENSORED"
+            else "FAIL"
+            if right == "FAIL"
+            else "NOT_FAIL",
         )
         for left, right in outcomes
     ]
     return {
-        "by_seed": [
-            {"seed": pair["seed"], "left": pair[left_field], "right": pair[right_field]}
-            for pair in pairs
-        ],
+        "by_seed": [dict(sorted(pair.items())) for pair in pairs],
         "common_outcome_crosstab": _cross_tab(outcomes),
         "failed_not_failed_crosstab": _cross_tab(binary_outcomes),
         "exact_two_sided_mcnemar": {
+            "comparable_pair_count": len(comparable),
+            "censored_pair_count": len(outcomes) - len(comparable),
             "left_only_failure": left_only,
             "right_only_failure": right_only,
             "p_value": exact_mcnemar_two_sided(left_only, right_only),
         },
+    }
+
+
+def _lifetime_any_failure_label(run: dict[str, object]) -> str:
+    summary = cast(dict[str, object], run["summary"])
+    if bool(summary["terminated"]):
+        return "FAIL"
+    if any(
+        _failure(str(record["outcome"]))
+        for record in cast(list[dict[str, object]], run["return_records"])
+    ):
+        return "FAIL"
+    return "NO_FAILURE"
+
+
+def _first_return_detail(run: dict[str, object]) -> dict[str, object]:
+    record = _first_return(run)
+    summary = cast(dict[str, object], run["summary"])
+    return {
+        "terminal_outcome": record["outcome"],
+        "classification_boundary": record.get("classification_boundary"),
+        "wall_exposed_any": record.get("wall_exposed_any", False),
+        "wall_exposed_any_transition_count": record.get(
+            "wall_exposed_any_transition_count", 0
+        ),
+        "environment_terminated": summary["terminated"],
+        "environment_termination_reason": summary["termination_reason"],
+    }
+
+
+def _build_matched_endurance_attribution(
+    s1_runs: dict[tuple[int, str, str], dict[str, object]],
+    matched_1m: dict[tuple[int, str, str], dict[str, object]],
+    seeds: Sequence[int] = ENDURANCE_SEEDS,
+) -> dict[str, object]:
+    """Build paired U/C readouts; never add C to the canonical primary sample."""
+    result: dict[str, object] = {"by_arm": {}}
+    by_arm = cast(dict[str, object], result["by_arm"])
+    for arm in ARMS:
+        first_pairs: dict[str, list[dict[str, object]]] = {
+            "S1_1M_vs_D045_1M": [],
+            "S1_3M_vs_S1_1M": [],
+        }
+        lifetime_pairs: dict[str, list[dict[str, object]]] = {
+            "S1_1M_vs_D045_1M": [],
+            "S1_3M_vs_S1_1M": [],
+        }
+        for seed in seeds:
+            try:
+                s1_1 = matched_1m[(seed, "S1_1M", arm)]
+                d045 = matched_1m[(seed, "D045_1M", arm)]
+                s1_3 = s1_runs[(seed, "S1_3M", arm)]
+            except KeyError as error:
+                raise RuntimeError(
+                    f"matched endurance attribution missing seed={seed} arm={arm}"
+                ) from error
+            for label, left, right in (
+                ("S1_1M_vs_D045_1M", s1_1, d045),
+                ("S1_3M_vs_S1_1M", s1_3, s1_1),
+            ):
+                left_record = _first_return(left)
+                right_record = _first_return(right)
+                first_pairs[label].append(
+                    {
+                        "seed": seed,
+                        "left": _common_outcome(str(left_record["outcome"])),
+                        "right": _common_outcome(str(right_record["outcome"])),
+                        "left_detail": _first_return_detail(left),
+                        "right_detail": _first_return_detail(right),
+                    }
+                )
+                lifetime_pairs[label].append(
+                    {
+                        "seed": seed,
+                        "left": _lifetime_any_failure_label(left),
+                        "right": _lifetime_any_failure_label(right),
+                        "left_termination_reason": cast(
+                            dict[str, object], left["summary"]
+                        )["termination_reason"],
+                        "right_termination_reason": cast(
+                            dict[str, object], right["summary"]
+                        )["termination_reason"],
+                    }
+                )
+        by_arm[arm] = {
+            "first_return": {
+                key: _matched_contrast(rows, "left", "right")
+                for key, rows in first_pairs.items()
+            },
+            "lifetime_any_failure_300000": {
+                key: _matched_contrast(rows, "left", "right")
+                for key, rows in lifetime_pairs.items()
+            },
+        }
+    return {
+        **result,
+        "attribution_boundary": "whole D-045 to D-058 wall-rule package only",
+        "arms_are_paired_not_pooled": list(ARMS),
+        "pair_count_per_arm_and_contrast": len(seeds),
     }
 
 
@@ -2076,6 +2725,8 @@ def _compact_endurance_readout(run: dict[str, object]) -> dict[str, object]:
         "trajectory_digest_sha256",
         "primary_prefix_digest_sha256",
         "fixture_decision_count",
+        "final_causal_state_digest_sha256",
+        "final_fixture_state_digest_sha256",
     )
     row: dict[str, object] = {
         "seed": run["seed"],
@@ -2097,11 +2748,95 @@ def _compact_endurance_readout(run: dict[str, object]) -> dict[str, object]:
     return row
 
 
+def _assert_nonfeedback_runs(
+    monitored: dict[str, object], unmonitored: dict[str, object]
+) -> dict[str, object]:
+    """Fail if monitoring alters a compact trace or final causal/RNG state."""
+    monitored_summary = cast(dict[str, object], monitored["summary"])
+    unmonitored_summary = cast(dict[str, object], unmonitored["summary"])
+    fields = (
+        "trajectory_digest_sha256",
+        "final_causal_state_digest_sha256",
+        "final_fixture_state_digest_sha256",
+        "reward_exactly_zero",
+        "organism_info_exactly_empty",
+    )
+    differences = {
+        key: (monitored_summary.get(key), unmonitored_summary.get(key))
+        for key in fields
+        if monitored_summary.get(key) != unmonitored_summary.get(key)
+    }
+    if differences:
+        raise RuntimeError(
+            f"primary monitor changed causal continuation: {differences}"
+        )
+    if (
+        monitored_summary["reward_exactly_zero"] is not True
+        or monitored_summary["organism_info_exactly_empty"] is not True
+    ):
+        raise RuntimeError("monitor non-feedback control crossed organism boundary")
+    return {
+        "trajectory_digest_sha256": monitored_summary["trajectory_digest_sha256"],
+        "final_causal_state_digest_sha256": monitored_summary[
+            "final_causal_state_digest_sha256"
+        ],
+        "final_fixture_state_digest_sha256": monitored_summary[
+            "final_fixture_state_digest_sha256"
+        ],
+        "result": "PASS",
+    }
+
+
+def _run_monitor_nonfeedback_control() -> dict[str, object]:
+    """Compare bounded test-seed continuations with the primary monitor toggled."""
+    start = D059Start(
+        case_id="bounded-monitor-nonfeedback-control",
+        support_set="TEST_ONLY",
+        position=(0.73, 0.81),
+        heading=0.3,
+        boundary_class="constructed-off-matrix",
+    )
+    monitored = run_test_lifetime(
+        TEST_SEED,
+        horizon=500,
+        initial_battery_fraction=0.20,
+        start=start,
+        measure_primary=True,
+        fixture_stream=True,
+    )
+    unmonitored = run_test_lifetime(
+        TEST_SEED,
+        horizon=500,
+        initial_battery_fraction=0.20,
+        start=start,
+        measure_primary=False,
+        fixture_stream=True,
+    )
+    evidence = _assert_nonfeedback_runs(monitored, unmonitored)
+    prefix_matches = d053._canonicalize(
+        monitored["primary_record"]
+    ) == d053._canonicalize(monitored["primary_prefix_record"])
+    if not prefix_matches:
+        raise RuntimeError("bounded test primary prefix comparison failed")
+    return {
+        "test_only_seed": TEST_SEED,
+        "horizon": 500,
+        "initial_battery_fraction": 0.20,
+        "constructed_start": {
+            "position": list(start.position),
+            "heading": start.heading,
+            "case_id": start.case_id,
+        },
+        "monitored_record_matches_independent_prefix": prefix_matches,
+        **evidence,
+    }
+
+
 def _official_protocol(
     executed_commit_sha: str,
     jobs: int,
     reservation_recheck_sha256: str,
-    archive_source_sha: str | None = None,
+    source_git_dir: str | Path | None = None,
 ) -> dict[str, object]:
     if not _CLI_OFFICIAL_EXECUTION:
         raise RuntimeError("official D-059 execution is CLI-only")
@@ -2120,11 +2855,10 @@ def _official_protocol(
         "test_only": TEST_SEED,
         "d045_support": list(validate_exp003_development_seeds(D045_SUPPORT_SEEDS)),
     }
-    freeze_control = verify_clean_frozen_checkout(
-        executed_commit_sha, archive_source_sha
-    )
+    freeze_control = verify_clean_frozen_checkout(executed_commit_sha, source_git_dir)
     horizon_control = verify_horizon_seams()
     identity_control = _run_support_identity()
+    monitor_control = _run_monitor_nonfeedback_control()
 
     primary_rows: list[dict[str, object]] = []
     primary_prefix_controls: list[dict[str, object]] = []
@@ -2159,6 +2893,8 @@ def _official_protocol(
                     for episode in cast(list[dict[str, object]], run["return_records"])
                 )
             if arm == "C":
+                if endurance:
+                    s1_endurance[(seed, "S1_3M", "C")] = run
                 if u_run_for_seed is None:
                     raise RuntimeError("canonical U run missing before C comparator")
                 u_run = u_run_for_seed
@@ -2396,53 +3132,11 @@ def _official_protocol(
         for episode in cast(list[dict[str, object]], run["return_records"])
     )
 
-    first_pairs_1m: dict[str, list[dict[str, object]]] = {
-        "S1_1M_vs_D045_1M": [],
-        "S1_3M_vs_S1_1M": [],
-    }
-    lifetime_pairs_1m: dict[str, list[dict[str, object]]] = {
-        "S1_1M_vs_D045_1M": [],
-        "S1_3M_vs_S1_1M": [],
-    }
-    for seed in ENDURANCE_SEEDS:
-        s1_1 = matched_1m[(seed, "S1_1M", "U")]
-        d045 = matched_1m[(seed, "D045_1M", "U")]
-        s1_3 = s1_endurance[(seed, "S1_3M", "U")]
-        for label, left, right in (
-            ("S1_1M_vs_D045_1M", s1_1, d045),
-            ("S1_3M_vs_S1_1M", s1_3, s1_1),
-        ):
-            left_first = _common_outcome(str(_first_return(left)["outcome"]))
-            right_first = _common_outcome(str(_first_return(right)["outcome"]))
-            first_pairs_1m[label].append(
-                {"seed": seed, "left": left_first, "right": right_first}
-            )
-            left_fail = any(
-                _failure(str(ep["outcome"]))
-                for ep in cast(list[dict[str, object]], left["return_records"])
-            )
-            right_fail = any(
-                _failure(str(ep["outcome"]))
-                for ep in cast(list[dict[str, object]], right["return_records"])
-            )
-            lifetime_pairs_1m[label].append(
-                {
-                    "seed": seed,
-                    "left": "FAIL" if left_fail else "NO_FAILURE",
-                    "right": "FAIL" if right_fail else "NO_FAILURE",
-                }
-            )
-    attribution = {
-        "first_return": {
-            key: _matched_contrast(rows, "left", "right")
-            for key, rows in first_pairs_1m.items()
-        },
-        "lifetime_any_failure_300000": {
-            key: _matched_contrast(rows, "left", "right")
-            for key, rows in lifetime_pairs_1m.items()
-        },
-        "attribution_boundary": "whole D-045 to D-058 wall-rule package only",
-    }
+    attribution = _build_matched_endurance_attribution(s1_endurance, matched_1m)
+    if cast(int, attribution["pair_count_per_arm_and_contrast"]) != len(
+        ENDURANCE_SEEDS
+    ):
+        raise RuntimeError("matched endurance attribution did not cover all 60 pairs")
     if len(primary_prefix_controls) != len(ENDURANCE_SEEDS):
         raise RuntimeError("primary prefix control did not cover all endurance seeds")
     if len(endurance_lifetime_summaries) != len(ENDURANCE_SEEDS) * 6:
@@ -2459,7 +3153,7 @@ def _official_protocol(
         "primary_snapshot_online_prefix_nonfeedback": {
             "result": "PASS",
             "endurance_prefix_records": primary_prefix_controls,
-            "monitor_changes_causal_digest": False,
+            "independent_bounded_monitor_toggle": monitor_control,
         },
         "s1_c_identity": {
             "result": "PASS",
@@ -2499,8 +3193,10 @@ def _official_protocol(
         "development_id": D059_ID,
         "protocol_version": PROTOCOL_VERSION,
         "authorized_base_sha": BASE_SHA,
+        "repair_base_sha": REPAIR_BASE_SHA,
+        "repair_ruling_comment": REPAIR_RULING_COMMENT,
+        "raw_b_status": "NOT_CONFORMANT_NOT_PASS_BEFORE_REPAIR",
         "frozen_brief_sha256": FROZEN_BRIEF_SHA256,
-        "latest_authorizing_ruling_comment": "5941551976",
         "executed_commit_sha": executed_commit_sha,
         "execution_status": "COMPLETED",
         "result_kind": "descriptive_development_not_confirmatory",
@@ -2608,9 +3304,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="accepted for regeneration parity; execution remains ordered and serial",
     )
     parser.add_argument(
-        "--archive-source-sha",
+        "--source-git-dir",
         default=None,
-        help="attest an immutable git archive when no .git directory is available",
+        help="external Git object directory for literal archive regeneration",
     )
     parser.add_argument(
         "--runtime-seconds",
@@ -2637,7 +3333,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.executed_commit_sha,
         args.jobs,
         args.reservation_recheck_sha256,
-        args.archive_source_sha,
+        args.source_git_dir,
     )
     elapsed = time.perf_counter() - started
     environment = cast(dict[str, object], payload["environment"])

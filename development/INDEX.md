@@ -12,7 +12,7 @@ This file is the canonical **committed D-record ledger**. Add one row when a mea
 
 Do not use roadmap prose or README text as a replacement for this ledger. Work that is authorized in GitHub but does not yet have a committed D-record belongs in the current authorization issue/PR, not as a premature row here.
 
-Committed Development records currently extend through **D-059**; D-051 was stopped before merge and has no committed D-record. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage; D-049, D-050, and D-052 through D-056 are the committed V0.5 Level-1 viability lineage and its candidate comparisons/characterizations; D-057 is an evaluator-only boundary-rule counterfactual for the RETURN wall wedge; D-058 is S1 physical wall-contact substrate conformance; and D-059 is a result-free S1 Level-1 re-baseline implementation candidate, not an executed support study.
+Committed Development records currently extend through **D-059**; D-051 was stopped before merge and has no committed D-record. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage; D-049, D-050, and D-052 through D-056 are the committed V0.5 Level-1 viability lineage and its candidate comparisons/characterizations; D-057 is an evaluator-only boundary-rule counterfactual for the RETURN wall wedge; D-058 is S1 physical wall-contact substrate conformance; and D-059 is a result-free bounded repair of the selected raw B implementation, not an executed support study.
 
 ## Disposition vocabulary
 
@@ -87,6 +87,6 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-056 | V0.5 multi-cycle stall-turn lifetime characterization | CONTINUING | [`D-056-v05-multi-cycle-stall-turn-lifetimes.md`](D-056-v05-multi-cycle-stall-turn-lifetimes.md) |
 | D-057 | V0.5 evaluator-only boundary-rule counterfactual for the RETURN wall wedge | CONTINUING | [`D-057-v05-boundary-rule-counterfactual.md`](D-057-v05-boundary-rule-counterfactual.md) |
 | D-058 | V0.5 physical wall-contact substrate conformance | CONTINUING | [`D-058-v05-physical-wall-contact-substrate.md`](D-058-v05-physical-wall-contact-substrate.md) |
-| D-059 | V0.5 S1 Level-1 floor re-baseline (result-free implementation candidate; support unexecuted) | CONTINUING | [`D-059-v05-s1-level1-floor-rebaseline.md`](D-059-v05-s1-level1-floor-rebaseline.md) |
+| D-059 | V0.5 S1 Level-1 floor re-baseline (bounded repair of raw B; support unexecuted) | CONTINUING | [`D-059-v05-s1-level1-floor-rebaseline.md`](D-059-v05-s1-level1-floor-rebaseline.md) |
 
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeded to the next ecology question rather than that D-001 remains unexecuted. The same distinction applies to later records whose own work is complete but whose scientific thread continues.
