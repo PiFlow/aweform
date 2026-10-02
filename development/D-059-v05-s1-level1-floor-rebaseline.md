@@ -17,7 +17,7 @@ Only the five authorized paths are changed. The repair preserves #206's scientif
 ## B-specific repairs
 
 1. **Actual imported-tree and provenance binding.** Git commands are anchored to the root containing the imported `src/aweform` module, never caller CWD. Normal execution checks that exact module root is the clean Git worktree, HEAD, ancestry, and exact five-path diff. It compares the imported source files/modes against the verified commit's Git tree, and verifies protected file hashes from the authorized base. Literal fresh `git archive` extraction remains supported: the runner requires an external local Git object directory outside the extracted tree, verifies the commit object, ancestry and allowed path diff, and compares every extracted path, mode and Git blob ID against the expected commit tree. An arbitrary SHA string is not treated as executable-source proof. No signing, network access, dependency, or general security framework was added.
-2. **Independent primary-prefix audit.** The online primary tracker and a separate streaming `_PrimaryPrefixAudit` now derive the primary record independently from the same causal decisions/telemetry. The audit has separate counters, stop-boundary logic, wall/anatomy calculations and a bounded tail; it neither copies nor selects the online record and retains no raw transition trace. Every measured U/C primary snapshot is compared with the independent prefix record, and any discrepancy stops before a scientific label. A bounded test-only monitor-on/off pair compares full per-decision trajectory digests and final controller/environment/observation and fixture RNG/phase state digests. The monitor is read-only and has no controller, environment, observation, reward/info, action, or RNG access.
+2. **Independent primary-prefix audit.** The online primary tracker and a separate streaming `_PrimaryPrefixAudit` independently derive the primary record from the same causal decisions and post-step telemetry. The prefix auditor reads D052 decision/event fields, charging-contact status, termination status, and evaluator-only D045/D058 contact/pose telemetry to calculate outcome, exposure, tail and anatomy. It has separate counters and stop-boundary logic; it neither copies nor selects the online record, retains no raw transition trace, and its output is never passed to the controller or fixture. Every measured U/C primary snapshot is compared with the independent prefix record; mismatch stops before scientific interpretation. A bounded test-only monitor-on/off pair compares full per-decision trajectory digests and read-only final digests of controller, environment, observation and fixture RNG/phase state. The monitor/control performs no writes and does not affect action selection, state, RNG, reward or `info`.
 3. **Production failure mapping and censoring.** The production common-outcome mapper emits `FAIL`, matching McNemar's failure mapping. Censored pairs remain explicitly `CENSORED` and are excluded from the exact McNemar comparable-pair count; counts and p-values are reported, including when no pairs are comparable. Per-seed output preserves substrate-specific terminal and lifetime termination details. A termination before first RETURN remains a censored first-RETURN unit (no fabricated RETURN); it is retained with its termination reason and prevents protocol-clean/floor-success claims. Lifetime-any-failure attribution treats environment termination as failure rather than silently reporting no failure.
 4. **Both-arm matched endurance attribution.** Matched U **and** C readouts now cover S1_1M–D045_1M and S1_3M–S1_1M first-RETURN and 300,000-decision lifetime-any-failure contrasts, by seed, with exact descriptive McNemar tests and explicit censor counts/details. C remains paired comparator information and is never added to canonical primary N3/F3/G3. Prior Part-A and room-size readouts are preserved.
 5. **Adversarial tests.** Synthetic Git-archive fixtures exercise correct and mismatched source/commit trees; changed caller-CWD and protected-source checks are covered. Synthetic prefix tests exercise horizon-seam censoring, timeout followed by later contact, exposure immutability, no-return censoring, both failure directions, agreeing pairs, and censored/no-comparable McNemar cases. Bounded test-only trajectories exercise monitor-on/off causal digests and final state/RNG equality. An intentionally corrupted independent snapshot must fail. Synthetic attribution tests require both arms and ensure termination-before-RETURN is retained rather than silently counted as success.
@@ -33,13 +33,13 @@ Preserved invalidated provenance, without reconstructing outcomes: two interrupt
 Final repair validation ran under locked CPython 3.14.7 with `PYTHONHASHSEED=0`:
 
 - Full repository `pytest -q`: **1193 passed**, with 8 Matplotlib animation-lifetime warnings from visualization tests.
-- Targeted D-059 suite: **17 passed**. Trajectories used only test-only seed `26320`, constructed off-matrix states, horizon ≤5000 and battery fraction 0.20.
+- Targeted D-059 suite: **17 passed**. D-059 trajectories used only test-only seed `26320`, constructed off-matrix states, horizon ≤5000 and battery fraction 0.20.
 - `ruff check .`: PASS; format check on both changed Python files: PASS.
 - `mypy src --strict` and `mypy tests/test_d059.py --strict`: PASS.
 - `compileall -q src` and `import aweform`: PASS.
 - Repository-wide `ruff format --check src tests` reports pre-existing format drift in unchanged files (55 under `src`, 102 across `src` and `tests`); no out-of-scope files were reformatted. Repository CI requires `ruff check .`, not the full-repo format check.
 
-These are implementation/control tests only. No official support, official Part-A trajectory, official CLI, or full 300,000-decision D-045 identity control was run; this repair generated no scientific results.
+Two earlier full-suite attempts timed out before completion; a final full run completed with the result above. The repository suite includes pre-existing historical D-stage tests; the D-059-specific trajectories remained bounded to seed `26320`. No official D-059 support, official Part-A trajectory, official CLI, or full 300,000-decision D-045 identity control was run, and no scientific result was generated.
 
 ## Post-selection freeze, controls, and execution
 
@@ -64,6 +64,9 @@ PYTHONHASHSEED=0 uv run --locked pytest -q
 PYTHONHASHSEED=0 uv run --locked ruff check .
 PYTHONHASHSEED=0 uv run --locked ruff format --check src/aweform/d059.py tests/test_d059.py
 PYTHONHASHSEED=0 uv run --locked mypy src --strict
+PYTHONHASHSEED=0 uv run --locked mypy tests/test_d059.py --strict
+PYTHONHASHSEED=0 uv run --locked python -m compileall -q src
+PYTHONHASHSEED=0 uv run --locked python -c 'import aweform'
 # Commit/push of the selected result-free freeze is manager-authorized only.
 ```
 

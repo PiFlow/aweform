@@ -849,13 +849,23 @@ def _stable_state_token(value: object) -> object:
     )
 
 
+def _state_digest(value: object) -> str:
+    encoded = json.dumps(
+        _stable_state_token(value),
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def _final_causal_state_digests(
     env: D045Env | D058Env,
     controller: D052Controller,
     candidate: D055StallTurnCandidate | None,
     fixture: D053RoamingFixture | None,
     observation: np.ndarray,
-) -> tuple[str, str | None]:
+) -> tuple[str, str | None, str | None]:
     fixture_state: object | None = None
     if fixture is not None:
         explorer = fixture._explorer
@@ -870,22 +880,29 @@ def _final_causal_state_digests(
             ),
             "turn_actions_remaining": explorer._turn_actions_remaining,
         }
-    fixture_digest = (
-        hashlib.sha256(
-            json.dumps(
-                _stable_state_token(fixture_state),
-                sort_keys=True,
-                separators=(",", ":"),
-                allow_nan=False,
-            ).encode("utf-8")
-        ).hexdigest()
-        if fixture_state is not None
+    fixture_digest = _state_digest(fixture_state) if fixture_state is not None else None
+    candidate_wrapper_state = (
+        None
+        if candidate is None
+        else {
+            "prior_return_command": candidate.prior_return_command,
+            "stall_detected_count": candidate.stall_detected_count,
+            "stall_turn_count": candidate.stall_turn_count,
+            "stall_detected_non_pursuit_count": (
+                candidate.stall_detected_non_pursuit_count
+            ),
+            "first_stall_turn_transition": candidate.first_stall_turn_transition,
+        }
+    )
+    candidate_wrapper_digest = (
+        _state_digest(candidate_wrapper_state)
+        if candidate_wrapper_state is not None
         else None
     )
     body = env.body
     causal_state = {
         "observation_bytes": observation.tobytes().hex(),
-        "controller": candidate if candidate is not None else controller,
+        "controller": controller,
         "environment": {
             "body": body,
             "station_center": env.station_center,
@@ -900,15 +917,8 @@ def _final_causal_state_digests(
         },
         "fixture": fixture_state,
     }
-    final_digest = hashlib.sha256(
-        json.dumps(
-            _stable_state_token(causal_state),
-            sort_keys=True,
-            separators=(",", ":"),
-            allow_nan=False,
-        ).encode("utf-8")
-    ).hexdigest()
-    return final_digest, fixture_digest
+    final_digest = _state_digest(causal_state)
+    return final_digest, fixture_digest, candidate_wrapper_digest
 
 
 def _summary_lifetime(
@@ -1535,9 +1545,11 @@ def _summary_lifetime(
         ):
             raise RuntimeError("independent primary-prefix classification differed")
 
-    final_causal_state_digest, final_fixture_state_digest = _final_causal_state_digests(
-        env, controller, candidate, fixture, observation
-    )
+    (
+        final_causal_state_digest,
+        final_fixture_state_digest,
+        final_candidate_wrapper_state_digest,
+    ) = _final_causal_state_digests(env, controller, candidate, fixture, observation)
     reset_sample: dict[str, object] = {
         "transition": 0,
         "events": ["RESET"],
@@ -1609,6 +1621,9 @@ def _summary_lifetime(
         "fixture_decision_count": fixture.decision_count if fixture is not None else 0,
         "final_causal_state_digest_sha256": final_causal_state_digest,
         "final_fixture_state_digest_sha256": final_fixture_state_digest,
+        "final_candidate_wrapper_state_digest_sha256": (
+            final_candidate_wrapper_state_digest
+        ),
     }
     if (
         sum(counts.values()) != total
@@ -2299,6 +2314,7 @@ def _d056_identity_fields(summary: dict[str, object]) -> dict[str, object]:
         "fixture_decision_count",
         "final_causal_state_digest_sha256",
         "final_fixture_state_digest_sha256",
+        "final_candidate_wrapper_state_digest_sha256",
     }
     return {key: value for key, value in summary.items() if key not in extra}
 
@@ -2402,8 +2418,18 @@ def assert_candidate_identity(u: dict[str, object], c: dict[str, object]) -> Non
             "stall_detected_count",
             "first_stall_turn_transition",
             "stall_counts_by_cycle",
-            "final_causal_state_digest_sha256",
-            "final_fixture_state_digest_sha256",
+            "final_candidate_wrapper_state_digest_sha256",
+        }
+        wrapper_digest = cs.get("final_candidate_wrapper_state_digest_sha256")
+        if (
+            wrapper_digest is None
+            or us.get("final_candidate_wrapper_state_digest_sha256") is not None
+        ):
+            raise RuntimeError("U/C candidate-wrapper state diagnostics are malformed")
+        reduced_u = {
+            key: value
+            for key, value in us.items()
+            if key != "final_candidate_wrapper_state_digest_sha256"
         }
         reduced_candidate = {
             key: value for key, value in cs.items() if key not in stall_fields
@@ -2416,7 +2442,7 @@ def assert_candidate_identity(u: dict[str, object], c: dict[str, object]) -> Non
             for key, value in candidate_sources.items()
             if key != "STALL_TURN"
         }
-        if d053._canonicalize(us) != d053._canonicalize(reduced_candidate):
+        if d053._canonicalize(reduced_u) != d053._canonicalize(reduced_candidate):
             raise RuntimeError("zero-stall U/C summary identity failed")
 
 
@@ -2907,6 +2933,21 @@ def _official_protocol(
                         "seed": seed,
                         "u_digest": u_summary["trajectory_digest_sha256"],
                         "c_digest": c_summary["trajectory_digest_sha256"],
+                        "u_causal_state_digest": u_summary[
+                            "final_causal_state_digest_sha256"
+                        ],
+                        "c_causal_state_digest": c_summary[
+                            "final_causal_state_digest_sha256"
+                        ],
+                        "u_fixture_rng_digest": u_summary[
+                            "final_fixture_state_digest_sha256"
+                        ],
+                        "c_fixture_rng_digest": c_summary[
+                            "final_fixture_state_digest_sha256"
+                        ],
+                        "c_wrapper_state_digest": c_summary[
+                            "final_candidate_wrapper_state_digest_sha256"
+                        ],
                         "u_primary_record": u_run["primary_record"],
                         "c_primary_record": run["primary_record"],
                         "c_stall_detections": c_summary.get("stall_detected_count", 0),
@@ -2997,6 +3038,21 @@ def _official_protocol(
                                 "seed": seed,
                                 "u_digest": u_summary["trajectory_digest_sha256"],
                                 "c_digest": c_summary["trajectory_digest_sha256"],
+                                "u_causal_state_digest": u_summary[
+                                    "final_causal_state_digest_sha256"
+                                ],
+                                "c_causal_state_digest": c_summary[
+                                    "final_causal_state_digest_sha256"
+                                ],
+                                "u_fixture_rng_digest": u_summary[
+                                    "final_fixture_state_digest_sha256"
+                                ],
+                                "c_fixture_rng_digest": c_summary[
+                                    "final_fixture_state_digest_sha256"
+                                ],
+                                "c_wrapper_state_digest": c_summary[
+                                    "final_candidate_wrapper_state_digest_sha256"
+                                ],
                                 "c_stall_detections": c_summary.get(
                                     "stall_detected_count", 0
                                 ),
@@ -3072,6 +3128,15 @@ def _official_protocol(
                     "trajectory_digest_sha256": cast(dict[str, object], run["summary"])[
                         "trajectory_digest_sha256"
                     ],
+                    "final_causal_state_digest_sha256": cast(
+                        dict[str, object], run["summary"]
+                    )["final_causal_state_digest_sha256"],
+                    "final_fixture_state_digest_sha256": cast(
+                        dict[str, object], run["summary"]
+                    )["final_fixture_state_digest_sha256"],
+                    "final_candidate_wrapper_state_digest_sha256": cast(
+                        dict[str, object], run["summary"]
+                    )["final_candidate_wrapper_state_digest_sha256"],
                 }
                 part_a_rows.append(row)
                 if substrate.startswith("S1_") and arm == "C":
@@ -3088,6 +3153,21 @@ def _official_protocol(
                             "case_id": start.case_id,
                             "arm_u_digest": u_row["trajectory_digest_sha256"],
                             "arm_c_digest": row["trajectory_digest_sha256"],
+                            "arm_u_causal_state_digest": u_row[
+                                "final_causal_state_digest_sha256"
+                            ],
+                            "arm_c_causal_state_digest": row[
+                                "final_causal_state_digest_sha256"
+                            ],
+                            "arm_u_fixture_rng_digest": u_row[
+                                "final_fixture_state_digest_sha256"
+                            ],
+                            "arm_c_fixture_rng_digest": row[
+                                "final_fixture_state_digest_sha256"
+                            ],
+                            "arm_c_wrapper_state_digest": row[
+                                "final_candidate_wrapper_state_digest_sha256"
+                            ],
                             "c_stall_detections": cast(
                                 dict[str, object], run["summary"]
                             ).get("stall_detected_count", 0),

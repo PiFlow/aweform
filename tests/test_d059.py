@@ -449,10 +449,29 @@ def test_bounded_test_seed_stream_snapshot_nonfeedback_and_s1_identity() -> None
     )
     candidate_summary = cast(dict[str, object], candidate["summary"])
     assert candidate_summary["stall_detected_count"] == 0
+    assert candidate_summary["final_candidate_wrapper_state_digest_sha256"] is not None
     assert (
         candidate_summary["trajectory_digest_sha256"]
         == observed_summary["trajectory_digest_sha256"]
     )
+    d059.assert_candidate_identity(observed, candidate)
+
+    bad_trace_summary = dict(candidate_summary)
+    bad_trace_summary["trajectory_digest_sha256"] = "f" * 64
+    with pytest.raises(RuntimeError, match="per-decision digest"):
+        d059.assert_candidate_identity(
+            observed, {**candidate, "summary": bad_trace_summary}
+        )
+    bad_summary = dict(candidate_summary)
+    bad_summary["minimum_observed_energy"] = -1.0
+    with pytest.raises(RuntimeError, match="summary identity"):
+        d059.assert_candidate_identity(observed, {**candidate, "summary": bad_summary})
+    bad_fixture_summary = dict(candidate_summary)
+    bad_fixture_summary["final_fixture_state_digest_sha256"] = "0" * 64
+    with pytest.raises(RuntimeError, match="summary identity"):
+        d059.assert_candidate_identity(
+            observed, {**candidate, "summary": bad_fixture_summary}
+        )
 
 
 def test_false_prefix_snapshot_fails_bounded_production_control(
