@@ -51,6 +51,13 @@ REPAIR_DEFECTS: Final = (
     "matched U/C endurance attribution on both arms",
     "adversarial synthetic and bounded test-only regression controls",
 )
+EXPOSURE_CORRECTION_RULING_COMMENT: Final = "5968523256"
+INVALIDATED_FREEZE_SHA: Final = "d7258046735e6c32ce865c03183e41c6d6fbad1f"
+INVALIDATED_RESULT_LAYER_SHA: Final = "f4b0df7523dc0bd3d29a8a0bf393d2c1cf3769b4"
+INVALIDATED_ARTIFACT_SHA256: Final = (
+    "685526fc9d74cb8dabe7b676676d9e8adcdbdc2012a4c8a499a2ec49e007b8bb"
+)
+INVALIDATED_ARTIFACT_BYTES: Final = 17_163_237
 FROZEN_BRIEF_SHA256: Final = (
     "2cfcf87fa589becfefb9e5d1bcf56b6bfd8dbca9607c494e10c101cb875aade6"
 )
@@ -412,19 +419,9 @@ def _active_walls(
             ("y_max", contact.pushing_y_max),
         )
         return tuple(name for name, active in pairs if active)
-    if not boundary_scaled or env.body is None:
-        return ()
-    x, y = env.body.position
-    flags = []
-    if x <= 0.0:
-        flags.append("x_min")
-    if x >= room_side_m:
-        flags.append("x_max")
-    if y <= 0.0:
-        flags.append("y_min")
-    if y >= room_side_m:
-        flags.append("y_max")
-    return tuple(flags)
+    # D-045 exposes only its bisection scale. Endpoint membership does not
+    # identify which wall constraint limited the requested motion.
+    return ()
 
 
 def _static_walls(env: D045Env | D058Env, room_side_m: float) -> tuple[str, ...]:
@@ -449,6 +446,37 @@ def _static_walls(env: D045Env | D058Env, room_side_m: float) -> tuple[str, ...]
     return tuple(name for name, active in edges if active)
 
 
+def _record_return_transition(
+    episode: _ReturnEpisode,
+    env: D045Env | D058Env,
+    telemetry: Any,
+    room_side_m: float,
+) -> None:
+    """Record exposure and wall anatomy as separate evaluator measurements."""
+    dynamic_walls = _active_walls(env, room_side_m, telemetry.boundary_scale < 1.0)
+    static_walls = _static_walls(env, room_side_m)
+    if isinstance(env, D045Env):
+        exposed = telemetry.boundary_scale < 1.0
+        identity_unknown = exposed
+    else:
+        exposed = bool(dynamic_walls)
+        identity_unknown = False
+    episode.wall_any_count += int(exposed)
+    episode.wall_identity_unknown_count += int(identity_unknown)
+    episode.walls.update(dynamic_walls)
+    episode.corners.update(_corner_ids(dynamic_walls))
+    episode.static_walls.update(static_walls)
+    episode.final_samples.append(
+        (
+            telemetry.position_after,
+            dynamic_walls,
+            static_walls,
+            exposed,
+            identity_unknown,
+        )
+    )
+
+
 def _corner_ids(walls: Sequence[str]) -> tuple[str, ...]:
     values = set(walls)
     corners = (
@@ -468,12 +496,12 @@ class _ReturnEpisode:
     primary_first: bool
     decisions: int = 0
     wall_any_count: int = 0
-    wall_final_100_count: int = 0
+    wall_identity_unknown_count: int = 0
     walls: set[str] = field(default_factory=set)
     corners: set[str] = field(default_factory=set)
     static_walls: set[str] = field(default_factory=set)
     final_samples: deque[
-        tuple[tuple[float, float], tuple[str, ...], tuple[str, ...]]
+        tuple[tuple[float, float], tuple[str, ...], tuple[str, ...], bool, bool]
     ] = field(init=False)
     classified: bool = False
     primary_censored: bool = False
@@ -486,6 +514,16 @@ def _path_length(points: Sequence[tuple[float, float]]) -> float:
     return sum(math.dist(a, b) for a, b in zip(points, points[1:]))
 
 
+def _wall_anatomy_status(exposed_count: int, unknown_count: int) -> str:
+    if exposed_count == 0:
+        return "NO_EXPOSURE"
+    if unknown_count == 0:
+        return "IDENTIFIED"
+    if unknown_count == exposed_count:
+        return "UNKNOWN"
+    return "PARTIAL"
+
+
 def _episode_fields(
     episode: _ReturnEpisode,
     outcome: str,
@@ -493,11 +531,12 @@ def _episode_fields(
     transition: int,
 ) -> dict[str, object]:
     samples = tuple(episode.final_samples)
-    final_walls = sorted({wall for _, walls, _ in samples for wall in walls})
-    final_static = sorted({wall for _, _, walls in samples for wall in walls})
+    final_walls = sorted({wall for _, walls, _, _, _ in samples for wall in walls})
+    final_static = sorted({wall for _, _, walls, _, _ in samples for wall in walls})
     final_corners = sorted(_corner_ids(final_walls))
-    tail_positions = tuple(point for point, _, _ in samples)
-    final_exposed_count = sum(bool(walls) for _, walls, _ in samples)
+    tail_positions = tuple(point for point, _, _, _, _ in samples)
+    final_exposed_count = sum(exposed for _, _, _, exposed, _ in samples)
+    final_unknown_count = sum(unknown for _, _, _, _, unknown in samples)
     return {
         "cycle_index": episode.cycle_index,
         "start_transition": episode.start_transition,
@@ -509,6 +548,14 @@ def _episode_fields(
         "wall_exposed_any_transition_count": episode.wall_any_count,
         "wall_exposed_final_100": final_exposed_count > 0,
         "wall_exposed_final_100_transition_count": final_exposed_count,
+        "wall_anatomy_status": _wall_anatomy_status(
+            episode.wall_any_count, episode.wall_identity_unknown_count
+        ),
+        "wall_identity_unknown_transition_count": episode.wall_identity_unknown_count,
+        "final_100_wall_anatomy_status": _wall_anatomy_status(
+            final_exposed_count, final_unknown_count
+        ),
+        "final_100_wall_identity_unknown_transition_count": final_unknown_count,
         "final_100_centre_path_m": _path_length(tail_positions),
         "active_wall_ids": sorted(episode.walls),
         "active_corner_ids": sorted(episode.corners),
@@ -517,8 +564,11 @@ def _episode_fields(
         "final_100_static_wall_ids": final_static,
         "static_wall_ids": sorted(episode.static_walls),
         "anatomy_definition": (
-            "dynamic=projection flags (D-058), or boundary_scale<1 (D-045); "
-            "static=executed centre on the corresponding legal wall boundary"
+            "exposure=D-058 projection flags or D-045 boundary_scale<1; "
+            "D-058 pushing flags identify dynamic walls; D-045 active dynamic wall "
+            "identity is unknown because scale telemetry does not identify its "
+            "limiting constraint; static=executed centre on the corresponding legal "
+            "wall boundary"
         ),
     }
 
@@ -527,8 +577,11 @@ class _PrimaryPrefixAudit:
     """Independent passive reducer of the frozen primary causal prefix."""
 
     _ANATOMY = (
-        "dynamic=projection flags (D-058), or boundary_scale<1 (D-045); "
-        "static=executed centre on the corresponding legal wall boundary"
+        "exposure=D-058 projection flags or D-045 boundary_scale<1; "
+        "D-058 pushing flags identify dynamic walls; D-045 active dynamic wall "
+        "identity is unknown because scale telemetry does not identify its "
+        "limiting constraint; static=executed centre on the corresponding legal "
+        "wall boundary"
     )
 
     def __init__(self, substrate: str, room_side_m: float, horizon: int) -> None:
@@ -538,11 +591,12 @@ class _PrimaryPrefixAudit:
         self.start_transition: int | None = None
         self.return_decisions = 0
         self.exposed_count = 0
+        self.identity_unknown_count = 0
         self.all_dynamic_walls: set[str] = set()
         self.all_dynamic_corners: set[str] = set()
         self.all_static_walls: set[str] = set()
         self.final_samples: deque[
-            tuple[tuple[float, float], tuple[str, ...], tuple[str, ...]]
+            tuple[tuple[float, float], tuple[str, ...], tuple[str, ...], bool, bool]
         ] = deque(maxlen=100)
         self.frozen_record: dict[str, object] | None = None
 
@@ -577,19 +631,9 @@ class _PrimaryPrefixAudit:
                 ("y_max", contact.pushing_y_max),
             )
             return tuple(name for name, value in active if value)
-        if telemetry.boundary_scale >= 1.0:
-            return ()
-        x, y = telemetry.position_after
-        active_walls: list[str] = []
-        if x == 0.0:
-            active_walls.append("x_min")
-        if x == self.room_side_m:
-            active_walls.append("x_max")
-        if y == 0.0:
-            active_walls.append("y_min")
-        if y == self.room_side_m:
-            active_walls.append("y_max")
-        return tuple(active_walls)
+        # D-045 telemetry cannot distinguish active constraints from other
+        # coincident endpoint boundaries, so dynamic identity remains unknown.
+        return ()
 
     def _static_walls(
         self, env: D045Env | D058Env, position: tuple[float, float], heading: float
@@ -624,10 +668,14 @@ class _PrimaryPrefixAudit:
             raise RuntimeError("cannot freeze a missing primary RETURN")
         samples = tuple(self.final_samples)
         final_dynamic_walls = sorted(
-            {wall for _, walls, _ in samples for wall in walls}
+            {wall for _, walls, _, _, _ in samples for wall in walls}
         )
-        final_static_walls = sorted({wall for _, _, walls in samples for wall in walls})
-        final_positions = tuple(position for position, _, _ in samples)
+        final_static_walls = sorted(
+            {wall for _, _, walls, _, _ in samples for wall in walls}
+        )
+        final_positions = tuple(position for position, _, _, _, _ in samples)
+        tail_exposed_count = sum(exposed for _, _, _, exposed, _ in samples)
+        tail_unknown_count = sum(unknown for _, _, _, _, unknown in samples)
         return {
             "cycle_index": 1,
             "start_transition": self.start_transition,
@@ -637,10 +685,16 @@ class _PrimaryPrefixAudit:
             "classification_boundary": boundary,
             "wall_exposed_any": self.exposed_count > 0,
             "wall_exposed_any_transition_count": self.exposed_count,
-            "wall_exposed_final_100": any(walls for _, walls, _ in samples),
-            "wall_exposed_final_100_transition_count": sum(
-                bool(walls) for _, walls, _ in samples
+            "wall_exposed_final_100": tail_exposed_count > 0,
+            "wall_exposed_final_100_transition_count": tail_exposed_count,
+            "wall_anatomy_status": _wall_anatomy_status(
+                self.exposed_count, self.identity_unknown_count
             ),
+            "wall_identity_unknown_transition_count": self.identity_unknown_count,
+            "final_100_wall_anatomy_status": _wall_anatomy_status(
+                tail_exposed_count, tail_unknown_count
+            ),
+            "final_100_wall_identity_unknown_transition_count": tail_unknown_count,
             "final_100_centre_path_m": sum(
                 math.dist(left, right)
                 for left, right in zip(final_positions, final_positions[1:])
@@ -677,15 +731,37 @@ class _PrimaryPrefixAudit:
         ):
             self.return_decisions += 1
             dynamic_walls = self._projection_walls(env, telemetry)
+            if self.substrate.startswith("S1_"):
+                contact = cast(D058Env, env).last_contact
+                if contact is None:
+                    raise RuntimeError("independent prefix audit lacks D-058 telemetry")
+                exposed = any(
+                    (
+                        contact.pushing_x_min,
+                        contact.pushing_x_max,
+                        contact.pushing_y_min,
+                        contact.pushing_y_max,
+                    )
+                )
+            else:
+                exposed = telemetry.boundary_scale < 1.0
+            identity_unknown = exposed and not self.substrate.startswith("S1_")
             static_walls = self._static_walls(
                 env, telemetry.position_after, telemetry.heading_after
             )
-            self.exposed_count += int(bool(dynamic_walls))
+            self.exposed_count += int(exposed)
+            self.identity_unknown_count += int(identity_unknown)
             self.all_dynamic_walls.update(dynamic_walls)
             self.all_dynamic_corners.update(self._corners(dynamic_walls))
             self.all_static_walls.update(static_walls)
             self.final_samples.append(
-                (telemetry.position_after, dynamic_walls, static_walls)
+                (
+                    telemetry.position_after,
+                    dynamic_walls,
+                    static_walls,
+                    exposed,
+                    identity_unknown,
+                )
             )
 
         terminal: tuple[str, str] | None = None
@@ -1209,8 +1285,6 @@ def _summary_lifetime(
                     else f"TRUNCATED_IN_{decision.active_mode.value}"
                 )
 
-        dynamic_walls = _active_walls(env, room_side_m, telemetry.boundary_scale < 1.0)
-        static_walls = _static_walls(env, room_side_m)
         if prefix_audit is not None:
             prefix_audit.observe(
                 transition=transitions,
@@ -1227,14 +1301,7 @@ def _summary_lifetime(
             and decision.active_mode is D052Mode.RETURN
         ):
             current_return.decisions += 1
-            current_return.walls.update(dynamic_walls)
-            current_return.corners.update(_corner_ids(dynamic_walls))
-            current_return.static_walls.update(static_walls)
-            current_return.wall_any_count += int(bool(dynamic_walls))
-            current_return.final_samples.append(
-                (telemetry.position_after, dynamic_walls, static_walls)
-            )
-            current_return.wall_final_100_count += int(bool(dynamic_walls))
+            _record_return_transition(current_return, env, telemetry, room_side_m)
         if cycle_for_transition is not None:
             cycle_tail.append(telemetry.position_after)
 
@@ -1954,29 +2021,49 @@ def write_artifact(path: Path, payload: dict[str, object]) -> Path:
 
 
 def protocol_manifest() -> dict[str, object]:
-    """Result-free JSON committed with the implementation candidate."""
+    """Result-free manifest for the authorized corrected-rerun candidate."""
     return {
         "schema_version": "d059-protocol-manifest-v1",
         "development_id": D059_ID,
         "protocol_version": PROTOCOL_VERSION,
-        "execution_status": "NOT_EXECUTED_BOUNDED_REPAIR_CANDIDATE",
-        "candidate_status": "RAW_B_NOT_CONFORMANT_NOT_PASS",
+        "execution_status": "CORRECTED_RERUN_PENDING",
+        "candidate_status": "SOURCE_REPAIR_PENDING_INDEPENDENT_MANAGER_QA",
         "authorized_base_sha": BASE_SHA,
+        "implementation_parent_sha": REPAIR_BASE_SHA,
         "repair_base_sha": REPAIR_BASE_SHA,
         "frozen_brief_sha256": FROZEN_BRIEF_SHA256,
-        "repair_ruling_comment": REPAIR_RULING_COMMENT,
-        "manager_authored_candidate_code": False,
-        "manager_session_model_correction": (
-            "Firstmate's manager session is user-requested GPT-6.1 Sol/Codex; "
-            "the earlier Sol label was inaccurate."
+        "controlling_correction_ruling_comment": EXPOSURE_CORRECTION_RULING_COMMENT,
+        "prior_repair_ruling_comment": REPAIR_RULING_COMMENT,
+        "implementation_worker": (
+            "GPT-6 Luna via Codex CLI native OpenAI Codex account route"
         ),
-        "raw_b_commit_preserved": True,
-        "raw_b_status": "NOT_CONFORMANT_NOT_PASS",
-        "raw_a_reviewed_or_inspected": False,
-        "raw_a_and_raw_b_benchmark_provenance_preserved": True,
-        "second_bakeoff": False,
-        "bounded_repair_defects": list(REPAIR_DEFECTS),
-        "selected_freeze_sha": None,
+        "manager_authored_source_or_tests": False,
+        "source_test_repair": {
+            "whole_return_d045_exposure": "telemetry.boundary_scale < 1.0",
+            "final_100_d045_exposure": "telemetry.boundary_scale < 1.0 per transition",
+            "wall_identity": (
+                "D-045 dynamic identity is unknown for scaled transitions because "
+                "boundary_scale telemetry does not identify limiting constraints; "
+                "static endpoint membership is reported separately"
+            ),
+            "independent_prefix_semantics": "independently derived from telemetry",
+        },
+        "invalidated_official_execution": {
+            "freeze_sha": INVALIDATED_FREEZE_SHA,
+            "result_layer_sha": INVALIDATED_RESULT_LAYER_SHA,
+            "artifact_path": "development/D-059-v05-s1-level1-floor-rebaseline.json",
+            "artifact_bytes": INVALIDATED_ARTIFACT_BYTES,
+            "artifact_sha256": INVALIDATED_ARTIFACT_SHA256,
+            "status": "INVALIDATED_FOR_FINAL_D059_ACCEPTANCE",
+            "reason": (
+                "D-045 wall exposure was inferred from endpoint wall IDs rather "
+                "than directly from boundary_scale < 1"
+            ),
+            "historical_copies_sha256_verified": True,
+            "corrected_freeze_sha": None,
+            "corrected_rerun_performed": False,
+        },
+        "repair_ruling_comment": REPAIR_RULING_COMMENT,
         "seed_contract": {
             "primary": list(PRIMARY_SEEDS),
             "endurance_subset": list(ENDURANCE_SEEDS),
@@ -1997,13 +2084,9 @@ def protocol_manifest() -> dict[str, object]:
             "part_a": H_PART_A,
         },
         "invalidated_and_exposed_provenance": list(_INVALIDATED_PROVENANCE),
-        "model_availability_note": (
-            "GPT-6 Luna rate limits are operational availability observations; "
-            "no model substitution is made."
-        ),
         "part_a_matrix": {
             "state_count_per_room": 1248,
-            "trajectory_execution": "NOT_RUN",
+            "trajectory_execution": "INVALIDATED_OLD_RUN_ONLY; CORRECTED_RERUN_PENDING",
             "canonical_support": "1.0 m and 3.0 m; explicit reset options only",
         },
         "runtime_plan_seconds": {
@@ -2012,7 +2095,8 @@ def protocol_manifest() -> dict[str, object]:
             "actual": None,
         },
         "artifact": {
-            "official_result_artifact_generated": False,
+            "official_corrected_result_artifact_generated": False,
+            "current_json_role": "RESULT_FREE_PROTOCOL_MANIFEST",
             "raw_transition_traces_retained": False,
             "float_canonicalization": (
                 "exact-binary Decimal quantize 1e-12 ROUND_HALF_EVEN; normalize -0; "
@@ -2024,9 +2108,17 @@ def protocol_manifest() -> dict[str, object]:
             "requires_clean_checkout_at_executed_commit_sha": True,
             "fresh_archive_requires_external_git_objects_and_tree_match": True,
             "requires_protected_source_hashes_equal_base": True,
+            "allowed_base_diff_paths": [
+                "src/aweform/d059.py",
+                "tests/test_d059.py",
+                "development/D-059-v05-s1-level1-floor-rebaseline.md",
+                "development/D-059-v05-s1-level1-floor-rebaseline.json",
+                "development/INDEX.md",
+                ".github/workflows/reproducibility.yml",
+            ],
             "requires_pyhashseed_0": True,
             "requires_external_seed_collision_exposure_recheck_before_freeze": True,
-            "official_execution_performed": False,
+            "corrected_official_execution_performed": False,
         },
     }
 
@@ -2092,6 +2184,17 @@ def _git_commit_tree_sha(git_dir: Path, commit_sha: str) -> str:
     )
 
 
+def _verify_approved_workflow_change(base: bytes, candidate: bytes) -> None:
+    checkout_step = b"      - uses: actions/checkout@v4\n"
+    fetch_depth = b"        with: { fetch-depth: 0 }\n"
+    if base.count(checkout_step) != 1 or candidate != base.replace(
+        checkout_step, checkout_step + fetch_depth, 1
+    ):
+        raise RuntimeError(
+            "reproducibility workflow differs beyond the approved fetch-depth change"
+        )
+
+
 def _verify_frozen_commit_scope(git_dir: Path, commit_sha: str) -> None:
     _git_object_output(git_dir, ("merge-base", "--is-ancestor", BASE_SHA, commit_sha))
     _git_object_output(
@@ -2102,15 +2205,30 @@ def _verify_frozen_commit_scope(git_dir: Path, commit_sha: str) -> None:
         .decode("utf-8")
         .splitlines()
     )
-    allowed_paths = {
+    d059_paths = {
         "src/aweform/d059.py",
         "tests/test_d059.py",
         "development/D-059-v05-s1-level1-floor-rebaseline.md",
         "development/D-059-v05-s1-level1-floor-rebaseline.json",
         "development/INDEX.md",
     }
-    if paths != allowed_paths:
-        raise RuntimeError("frozen commit does not have the exact five-path diff")
+    allowed_scopes = {
+        frozenset(d059_paths),
+        frozenset(d059_paths | {".github/workflows/reproducibility.yml"}),
+    }
+    if frozenset(paths) not in allowed_scopes:
+        raise RuntimeError(
+            "frozen commit does not have an exact authorized five- or six-path diff"
+        )
+    workflow_path = ".github/workflows/reproducibility.yml"
+    if workflow_path in paths:
+        base_workflow = _git_object_output(
+            git_dir, ("show", f"{BASE_SHA}:{workflow_path}")
+        )
+        candidate_workflow = _git_object_output(
+            git_dir, ("show", f"{commit_sha}:{workflow_path}")
+        )
+        _verify_approved_workflow_change(base_workflow, candidate_workflow)
 
 
 def _git_tree_entries(git_dir: Path, commit_sha: str) -> dict[str, tuple[str, str]]:

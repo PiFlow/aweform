@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import math
 import subprocess
 import tarfile
 from pathlib import Path
@@ -11,14 +12,20 @@ from typing import cast
 
 import pytest
 
-from aweform import d059  # type: ignore[import-untyped]
-from aweform.d050 import D050ControlMode  # type: ignore[import-untyped]
-from aweform.d052 import (  # type: ignore[import-untyped]
+from aweform import d059
+from aweform.d045 import (
+    D045_BATTERY_CAPACITY_J,
+    D045Env,
+    D045PhysicalConfig,
+    integrate_differential_drive,
+)
+from aweform.d050 import D050ControlMode
+from aweform.d052 import (
     D052CommandSource,
     D052Decision,
     D052Mode,
 )
-from aweform.d058 import D058Env  # type: ignore[import-untyped]
+from aweform.d058 import D058Env
 
 OFF_MATRIX_START = d059.D059Start(
     case_id="constructed-off-matrix-start",
@@ -47,14 +54,16 @@ def test_seed_contract_is_exact_and_result_free() -> None:
         d059.validate_test_run(26320, 500, 0.22)
 
     manifest = d059.protocol_manifest()
-    assert manifest["execution_status"] == "NOT_EXECUTED_BOUNDED_REPAIR_CANDIDATE"
-    assert manifest["candidate_status"] == "RAW_B_NOT_CONFORMANT_NOT_PASS"
+    assert manifest["execution_status"] == "CORRECTED_RERUN_PENDING"
+    assert (
+        manifest["candidate_status"] == "SOURCE_REPAIR_PENDING_INDEPENDENT_MANAGER_QA"
+    )
     assert manifest["repair_base_sha"] == d059.REPAIR_BASE_SHA
     assert manifest["repair_ruling_comment"] == "5943123218"
-    assert manifest["selected_freeze_sha"] is None
+    assert manifest["controlling_correction_ruling_comment"] == "5968523256"
     artifact = cast(dict[str, object], manifest["artifact"])
     provenance = cast(list[object], manifest["invalidated_and_exposed_provenance"])
-    assert artifact["official_result_artifact_generated"] is False
+    assert artifact["official_corrected_result_artifact_generated"] is False
     assert len(provenance) >= 4
 
 
@@ -359,6 +368,140 @@ def _observe_prefix_audit(
     )
 
 
+def test_d045_scaled_endpoint_exposure_is_independent_of_anatomy_and_tail() -> None:
+    env = D045Env(D045PhysicalConfig(episode_horizon=10))
+    env.reset(
+        seed=26320,
+        options={
+            "body_position": (0.5, 0.001),
+            "station_center": (0.5, 0.5),
+            "heading": -3.141592653589793 / 2.0,
+            "battery_j": 0.20 * D045_BATTERY_CAPACITY_J,
+        },
+    )
+    _, _, _, _, info = env.step((0.6457718232379019, 0.6457718232379019))
+    assert info == {}
+    telemetry = env.last_transition
+    assert telemetry is not None
+    assert telemetry.boundary_scale == pytest.approx(0.03441187958743683)
+    assert telemetry.position_after[1] == pytest.approx(2.168404344971009e-19)
+    assert d059._active_walls(env, 1.0, telemetry.boundary_scale < 1.0) == ()
+
+    episode = d059._ReturnEpisode(1, 1, True, True)
+    d059._record_return_transition(episode, env, telemetry, 1.0)
+    in_tail = d059._episode_fields(
+        episode, "RETURN_TIMEOUT_FAILURE", "RETURN_WINDOW_2000", 1
+    )
+    assert in_tail["wall_exposed_any"] is True
+    assert in_tail["wall_exposed_any_transition_count"] == 1
+    assert in_tail["wall_exposed_final_100"] is True
+    assert in_tail["wall_exposed_final_100_transition_count"] == 1
+    assert in_tail["active_wall_ids"] == []
+    assert in_tail["wall_anatomy_status"] == "UNKNOWN"
+    assert in_tail["wall_identity_unknown_transition_count"] == 1
+
+    ordinary = type(
+        "Telemetry",
+        (),
+        {
+            "boundary_scale": 1.0,
+            "position_after": (0.5, 0.5),
+            "heading_after": 0.0,
+        },
+    )()
+    for _ in range(100):
+        d059._record_return_transition(episode, env, ordinary, 1.0)
+    after_tail = d059._episode_fields(
+        episode, "RETURN_TIMEOUT_FAILURE", "RETURN_WINDOW_2000", 101
+    )
+    assert after_tail["wall_exposed_any"] is True
+    assert after_tail["wall_exposed_any_transition_count"] == 1
+    assert after_tail["wall_exposed_final_100"] is False
+    assert after_tail["wall_exposed_final_100_transition_count"] == 0
+    assert after_tail["final_100_wall_anatomy_status"] == "NO_EXPOSURE"
+
+    prefix = d059._PrimaryPrefixAudit("D045_1M", 1.0, horizon=1)
+    prefix.observe(
+        transition=1,
+        decision=_audit_decision(1, ("RETURN_ACTIVATED",)),
+        contact_after=False,
+        terminated=False,
+        termination_reason=None,
+        env=env,
+        telemetry=telemetry,
+    )
+    prefix_record = prefix.finish(1)
+    assert prefix_record["wall_exposed_any"] is True
+    assert prefix_record["wall_exposed_any_transition_count"] == 1
+    assert prefix_record["wall_exposed_final_100"] is True
+    assert prefix_record["wall_exposed_final_100_transition_count"] == 1
+    assert prefix_record["active_wall_ids"] == []
+    assert prefix_record["wall_anatomy_status"] == "UNKNOWN"
+    assert prefix_record["wall_identity_unknown_transition_count"] == 1
+
+
+def test_d045_corner_endpoint_does_not_identify_scaled_wall_constraints() -> None:
+    env = D045Env(D045PhysicalConfig(episode_horizon=10))
+    env.reset(
+        seed=26320,
+        options={
+            "body_position": (0.0, 0.0),
+            "station_center": (0.5, 0.5),
+            "heading": math.pi,
+            "battery_j": 0.20 * D045_BATTERY_CAPACITY_J,
+        },
+    )
+    unscaled_endpoint, _ = integrate_differential_drive(
+        (0.0, 0.0),
+        math.pi,
+        0.6457718232379019,
+        0.6457718232379019,
+        track_width_m=env.config.wheel_track_width_m,
+        wheel_radius_m=env.config.wheel_radius_m,
+    )
+    assert unscaled_endpoint[0] < 0.0
+    assert unscaled_endpoint[1] > 0.0
+
+    _, _, _, _, info = env.step((0.6457718232379019, 0.6457718232379019))
+    assert info == {}
+    telemetry = env.last_transition
+    assert telemetry is not None
+    assert telemetry.boundary_scale == 0.0
+    assert telemetry.position_after == (0.0, 0.0)
+
+    episode = d059._ReturnEpisode(1, 1, True, True)
+    d059._record_return_transition(episode, env, telemetry, 1.0)
+    online_record = d059._episode_fields(
+        episode, "RETURN_TIMEOUT_FAILURE", "RETURN_WINDOW_2000", 1
+    )
+    assert online_record["wall_exposed_any"] is True
+    assert online_record["wall_exposed_any_transition_count"] == 1
+    assert online_record["active_wall_ids"] == []
+    assert online_record["active_corner_ids"] == []
+    assert online_record["wall_anatomy_status"] == "UNKNOWN"
+    assert online_record["wall_identity_unknown_transition_count"] == 1
+    assert online_record["static_wall_ids"] == ["x_min", "y_min"]
+
+    prefix = d059._PrimaryPrefixAudit("D045_1M", 1.0, horizon=1)
+    prefix.observe(
+        transition=1,
+        decision=_audit_decision(1, ("RETURN_ACTIVATED",)),
+        contact_after=False,
+        terminated=False,
+        termination_reason=None,
+        env=env,
+        telemetry=telemetry,
+    )
+    prefix_record = prefix.finish(1)
+    assert prefix_record["wall_exposed_any"] is True
+    assert prefix_record["wall_exposed_any_transition_count"] == 1
+    assert prefix_record["active_wall_ids"] == []
+    assert prefix_record["active_corner_ids"] == []
+    assert prefix_record["wall_anatomy_status"] == "UNKNOWN"
+    assert prefix_record["wall_identity_unknown_transition_count"] == 1
+    assert prefix_record["static_wall_ids"] == ["x_min", "y_min"]
+
+
 def test_primary_prefix_audit_seam_and_frozen_timeout_are_immutable() -> None:
     seam = d059._PrimaryPrefixAudit("S1_3M", 3.0, horizon=3)
     _observe_prefix_audit(seam, 1, event=True, wall=True)
@@ -482,7 +625,7 @@ def test_false_prefix_snapshot_fails_bounded_production_control(
     def corrupt_snapshot(
         audit: d059._PrimaryPrefixAudit, transition: int
     ) -> dict[str, object]:
-        record = cast(dict[str, object], original_finish(audit, transition))
+        record = original_finish(audit, transition)
         record["classification_boundary"] = "CORRUPTED_BOUNDARY"
         return record
 
@@ -651,6 +794,24 @@ def test_test_helper_rejects_part_a_state_and_official_protocol_is_cli_only() ->
         )
     with pytest.raises(RuntimeError, match="CLI-only"):
         d059._official_protocol("0" * 40, 1, "0" * 64)
+
+
+def test_workflow_exception_allows_only_checkout_fetch_depth_insertion() -> None:
+    base = (
+        b"jobs:\n  test:\n    steps:\n"
+        b"      - uses: actions/checkout@v4\n"
+        b"      - run: validate\n"
+    )
+    approved = base.replace(
+        b"      - uses: actions/checkout@v4\n",
+        b"      - uses: actions/checkout@v4\n        with: { fetch-depth: 0 }\n",
+        1,
+    )
+    d059._verify_approved_workflow_change(base, approved)
+
+    arbitrary = approved.replace(b"      - run: validate\n", b"      - run: other\n")
+    with pytest.raises(RuntimeError, match="beyond the approved fetch-depth"):
+        d059._verify_approved_workflow_change(base, arbitrary)
 
 
 def test_result_writer_is_deterministic_for_synthetic_input(tmp_path: Path) -> None:
