@@ -10,6 +10,7 @@ This boundary was written for V0.1 and applies unchanged through V0.2, V0.3, V0.
 - ADR 0016 defines the historical D-042 fine-turn/front-contact V0.4 embodiment boundary.
 - ADR 0017 defines the accepted V0.5 differential-drive, centred-dock, proprioceptive-information, and actuator-bookkeeping boundary; D-045 is its first committed deterministic substrate implementation.
 - ADR 0019 defines the accepted V0.5 physical room-wall contact boundary (3 m room, rectangular hull); D-058 implements its substrate (PR #204).
+- ADR 0020 proposes the V0.5 Phase C frozen round interior-obstacle room; it is documentation-only under S2-A and does not authorize D-060.
 
 None of those ADRs changes anything this document allows or forbids.
 
