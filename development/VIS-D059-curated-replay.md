@@ -68,12 +68,13 @@ both digests.
 
 - **Exact command:** `PYTHONHASHSEED=0 MPLCONFIGDIR=/private/tmp/aweform-mpl UV_CACHE_DIR=/private/tmp/aweform-uv-cache uv run aweform-export-vis-d059-html`
 - **Run result:** all ten trajectory digests and all ten final causal-state digests matched; no mismatch.
-- **Runtime:** 208.42 seconds wall (`/usr/bin/time -p`, includes CLI startup and Matplotlib initialization).
+- **Runtime:** 198.56 seconds wall (`/usr/bin/time -p`, includes CLI startup and Matplotlib initialization).
 - **Python:** 3.14.7.
 - **`PYTHONHASHSEED`:** `0`.
-- **HTML bytes:** 20,025,090.
-- **HTML SHA-256:** `b1a177049b00e2fa5b2be35f88cf85566662d8dc6d9a058c7f763870580f7486`.
+- **HTML bytes:** 20,516,612.
+- **HTML SHA-256:** `9faaa7a110fdae70a0509e38b1380ba682dddf4d9a347f84e709d5e5e00600d5`.
 - **HTML:** [`VIS-D059-curated-replay.html`](VIS-D059-curated-replay.html).
+- **Frame label:** every frame's action line is prefixed with the lifetime identity `{substrate}/{arm}` (for example `D045_1M/U`, `S1_1M/U`, `D045_1M/C`).
 
 ## Protected-file hash proof
 

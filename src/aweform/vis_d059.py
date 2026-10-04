@@ -373,6 +373,7 @@ def adapt_vis_d059_trace(
         action = str(row.get("symbolic_proposal") or "INITIAL")
         if arm == "C":
             action = "D055 STALL-TURN CANDIDATE / " + action
+        action = f"{substrate}/{arm} / {action}"
         frames.append(
             visualizer.DevelopmentVisualizationFrame(
                 transition_index=cast(int, row["transition"]),

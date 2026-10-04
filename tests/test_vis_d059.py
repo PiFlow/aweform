@@ -70,6 +70,21 @@ def test_adapter_adds_wall_interaction_without_anatomy_claim() -> None:
     assert any(frame.cycle_index == 1 for frame in data.frames)
 
 
+@pytest.mark.parametrize(("seed", "substrate", "arm"), vis_d059.VIS_D059_TUPLES)
+def test_every_frame_shows_lifetime_identity(
+    seed: int, substrate: str, arm: str
+) -> None:
+    data = vis_d059.adapt_vis_d059_trace(
+        _trace(), seed=seed, substrate=substrate, arm=arm
+    )
+    assert data.frames
+    assert all(
+        frame.action.startswith(f"{substrate}/{arm} / ") for frame in data.frames
+    )
+    html_text = vis_d059.build_vis_d059_html([data])
+    assert f'"action":"{substrate}/{arm} / ' in html_text
+
+
 def test_candidate_label_and_html_warning_are_present_and_deterministic() -> None:
     data = vis_d059.adapt_vis_d059_trace(
         _trace(), seed=26051, substrate="D045_1M", arm="C"
