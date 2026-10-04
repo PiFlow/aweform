@@ -228,6 +228,29 @@ evidence on the deterministic idealized V0.5 support; this visualizer changes
 neither controller, protocol, matrix, horizon, physics, accepted artifact, nor
 scientific interpretation.
 
+## VIS-D059 curated replay
+
+VIS-D059 exports ten allowlisted D-059 endurance lifetimes to one deterministic,
+self-contained HTML file through the shared renderer:
+
+```text
+uv run aweform-export-vis-d059-html
+```
+
+The replay recomputes both accepted lifetime digests before writing the HTML.
+Any mismatch aborts the export. The selected seeds were curated after results
+were available, so the selector, title, and record carry this warning:
+
+> CURATED ILLUSTRATIVE EXAMPLES — selected post-result for visual interest; not a representative sample; zero evidential weight; does not alter or strengthen any D-059 conclusion.
+
+The replay shows D-052 mode/source, the D-055 candidate on C, cycle and
+RETURN/CHARGE events, and wall interaction. D-045 boundary-scaled transitions
+do not identify a dynamic wall or corner; their anatomy remains UNKNOWN. S1
+contact is labelled from D-058 contact telemetry. The display sampler does not
+change the causal replay or its digests. See the
+[`VIS-D059 record`](../development/VIS-D059-curated-replay.md) for the exact
+allowlist, curation reasons, digest matches, and generated-file provenance.
+
 ## Adding future visualization support
 
 For a future stage:

@@ -89,4 +89,6 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-058 | V0.5 physical wall-contact substrate conformance | CONTINUING | [`D-058-v05-physical-wall-contact-substrate.md`](D-058-v05-physical-wall-contact-substrate.md) |
 | D-059 | V0.5 S1 Level-1 floor re-baseline (corrected rerun reproduced; final QA/reviews pending) | CONTINUING | [`D-059-v05-s1-level1-floor-rebaseline.md`](D-059-v05-s1-level1-floor-rebaseline.md) |
 
+VIS-D059 is a curated, evaluator/presentation-only replay of ten digest-matched D-059 endurance lifetimes. It has zero evidential weight and does not alter or strengthen any D-059 conclusion; see [`VIS-D059-curated-replay.md`](VIS-D059-curated-replay.md).
+
 `D-001` answered its specific post-contact degeneracy question; `CONTINUING` indicates that the development thread proceeded to the next ecology question rather than that D-001 remains unexecuted. The same distinction applies to later records whose own work is complete but whose scientific thread continues.
