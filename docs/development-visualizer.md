@@ -144,6 +144,7 @@ aweform-visualize-d030
 aweform-visualize-d043
 aweform-export-d043-html
 aweform-export-d053-html
+aweform-export-vis-d059-html
 aweform-visualize-d050
 ```
 
