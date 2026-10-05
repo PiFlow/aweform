@@ -1,0 +1,189 @@
+from __future__ import annotations
+
+import math
+import subprocess
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+from aweform import d060
+from aweform.d045 import D045_MAX_WHEEL_DELTA_RAD, integrate_differential_drive
+from aweform.d060_oracle import ORACLE_LAYOUT, workspace_gap
+
+
+def test_fixed_config_and_frozen_layout_are_independent() -> None:
+    assert d060.D060PhysicalConfig().room_side_m == 3.0
+    for invalid in (1.0, 2.0, True, float("nan")):
+        with pytest.raises(ValueError):
+            d060.D060PhysicalConfig(invalid)
+    assert not hasattr(d060.D060PhysicalConfig(), "world_min")
+    assert not hasattr(d060.D060PhysicalConfig(), "world_max")
+    assert tuple(d060.FROZEN_LAYOUT) == ORACLE_LAYOUT
+
+
+def test_closed_segment_intersection_respects_finite_bounds() -> None:
+    # Regression for S1's y=.55 centre-line and a disjoint collinear hull edge.
+    assert not d060._segments_cross((2.0, .55), (2.5, .55), (1.175, .55), (1.825, .55))
+    # Collinear overlap and endpoint contact are intersections.
+    assert d060._segments_cross((1.5, .55), (2.0, .55), (1.175, .55), (1.825, .55))
+    assert d060._segments_cross((1.825, .55), (2.0, .55), (1.175, .55), (1.825, .55))
+    # Ordinary proper crossing remains an intersection.
+    assert d060._segments_cross((0.0, 0.0), (1.0, 1.0), (0.0, 1.0), (1.0, 0.0))
+    assert not d060._segments_cross((0.0, 0.0), (1.0, 0.0), (2.0, -1.0), (2.0, 1.0))
+
+
+def test_active_contact_witnesses_canonicalize_only_exact_shared_geometry() -> None:
+    obstacle = d060.FROZEN_LAYOUT[0]
+    selected = (1.7578254243912743, 2.4979607879517336)
+    measured, canonical = d060._active_contact_witnesses(selected, 0.0, obstacle)
+    assert [item["hull_feature"] for item in measured] == ["vertex-0", "edge-0", "edge-3"]
+    assert len(canonical) == 1
+    assert canonical[0]["obstacle_feature"] == "outer-surface"
+    assert all(item["hull_witness"] == measured[0]["hull_witness"] for item in measured)
+    assert all(item["boundary_witness"] == measured[0]["boundary_witness"] for item in measured)
+
+    # Equal clearance alone is insufficient: two separate S1 face witnesses
+    # remain distinct even though their scalar distances are exactly equal.
+    segment = d060.FROZEN_LAYOUT[3]
+    position = (1.5, .55 + d060.C + segment[3])
+    measured, canonical = d060._active_contact_witnesses(position, 0.0, segment)
+    vertices = [item for item in canonical if item["hull_feature"].startswith("vertex-")]
+    assert len(vertices) == 2
+    assert vertices[0]["distance_m"] == vertices[1]["distance_m"]
+    assert abs(vertices[0]["distance_m"] - segment[3]) <= d060.TAU_C
+    assert vertices[0]["hull_witness"] != vertices[1]["hull_witness"]
+    assert vertices[0]["boundary_witness"] != vertices[1]["boundary_witness"]
+
+
+def test_two_distinct_inner_arc_pocket_contacts_are_retained() -> None:
+    obstacle = d060.FROZEN_LAYOUT[0]
+    cx, cy, r0, _, _ = obstacle[2]
+    y = cy + math.sqrt((r0 - obstacle[3]) ** 2 - d060.A**2) - d060.C
+    measured, canonical = d060._active_contact_witnesses((cx, y), 0.0, obstacle)
+    assert len(canonical) == 2
+    assert {item["obstacle_feature"] for item in canonical} == {"inner-surface"}
+    assert canonical[0]["hull_witness"] != canonical[1]["hull_witness"]
+    assert canonical[0]["boundary_witness"] != canonical[1]["boundary_witness"]
+
+
+def test_reset_boundary_and_private_telemetry() -> None:
+    env = d060.make_d060_env()
+    observation, info = env.reset()
+    assert observation.dtype == np.float32 and observation.shape == (8,)
+    assert info == {} and env.body.position == (.75, .75)
+    assert env.station_center == (1.5, 1.5)
+    assert env.last_room_stage is env.last_obstacle_stage is env.last_step_contact is None
+    assert not hasattr(env, "last_contact")
+    with pytest.raises(ValueError):
+        env.reset(options={"station_center": (1.4, 1.5)})
+    with pytest.raises(ValueError):
+        env.reset(options={"unknown": 1})
+    with pytest.raises(ValueError):
+        env.reset(options={"body_position": (1.5, 1.5), "charger_termination_latched": 1})
+
+
+def test_no_contact_step_matches_d058_bit_for_bit() -> None:
+    options = {"body_position": (.75, .75), "station_center": (1.5, 1.5),
+               "heading": .2, "battery_j": 1065.6,
+               "body_temperature_c": 23.0, "charger_termination_latched": False}
+    actual, control = d060.D060Env(), d060.D058Env(d060.D058PhysicalConfig())
+    actual.reset(options=options); control.reset(options=options)
+    cmd = (D045_MAX_WHEEL_DELTA_RAD, 0.0)
+    oa, *_ = actual.step(cmd); ob, *_ = control.step(cmd)
+    assert actual.body.position == control.body.position
+    assert actual.body.heading == control.body.heading
+    assert oa.tobytes() == ob.tobytes()
+    assert actual.battery_j == control.battery_j
+    assert actual.body_temperature_c == control.body_temperature_c
+    assert actual.last_transition == control.last_transition
+    assert actual.last_room_stage == control.last_contact
+    assert actual.last_step_contact.executed_endpoint == control.body.position
+    assert actual.last_obstacle_stage is None
+
+
+def test_obstacle_endpoint_projection_and_yaw_are_exact() -> None:
+    obstacle = d060.FROZEN_LAYOUT[0]
+    cx, cy, r0, a0, a1 = obstacle[2]
+    angle = a0 + (a1 - a0) / 4
+    anchor = (cx + r0 * math.cos(angle), cy + r0 * math.sin(angle))
+    u = (math.cos(angle), math.sin(angle))
+    start = (anchor[0] + (obstacle[3] + d060.R_H + .005) * u[0],
+             anchor[1] + (obstacle[3] + d060.R_H + .005) * u[1])
+    env = d060.D060Env()
+    env.reset(options={"body_position": start, "heading": angle})
+    before, heading = env.body.position, env.body.heading
+    env.step((-D045_MAX_WHEEL_DELTA_RAD, -D045_MAX_WHEEL_DELTA_RAD))
+    env.step((-D045_MAX_WHEEL_DELTA_RAD, 0.0))
+    before, heading = env.body.position, env.body.heading
+    env.step((0.0, -D045_MAX_WHEEL_DELTA_RAD))
+    contact = env.last_obstacle_stage
+    assert contact is not None and contact.obstacle_id == "A1"
+    assert env.last_transition.heading_after == integrate_differential_drive(
+        before, heading, 0.0, -D045_MAX_WHEEL_DELTA_RAD
+    )[1]
+    assert all(workspace_gap(env.body.position, env.body.heading, item) >= -d060.TAU_C
+               for item in ORACLE_LAYOUT)
+    assert env.last_room_stage.pushing_x_min is False
+    assert env.last_step_contact.resolved_by == "obstacle"
+    assert env.last_step_contact.removed_displacement == (
+        env.body.position[0] - env.last_step_contact.unconstrained_endpoint[0],
+        env.body.position[1] - env.last_step_contact.unconstrained_endpoint[1],
+    )
+
+
+def test_conformance_oracle_uses_unified_unconstrained_endpoint() -> None:
+    obstacle = d060.FROZEN_LAYOUT[0]
+    cx, cy, r0, a0, a1 = obstacle[2]
+    angle = a0 + (a1 - a0) / 4
+    anchor = (cx + r0 * math.cos(angle), cy + r0 * math.sin(angle))
+    u = (math.cos(angle), math.sin(angle))
+    start = (anchor[0] + (obstacle[3] + d060.R_H + .005) * u[0],
+             anchor[1] + (obstacle[3] + d060.R_H + .005) * u[1])
+    env = d060.D060Env()
+    env.reset(options={"body_position": start, "heading": angle})
+    env.step((-D045_MAX_WHEEL_DELTA_RAD, -D045_MAX_WHEEL_DELTA_RAD))
+    env.step((-D045_MAX_WHEEL_DELTA_RAD, 0.0))
+    env.step((0.0, -D045_MAX_WHEEL_DELTA_RAD))
+    assert env.last_obstacle_stage is not None
+    expected_p_full = env.last_step_contact.unconstrained_endpoint
+    assert env.last_obstacle_stage.p_room == expected_p_full
+
+    class Oracle:
+        def oracle_best_free_distance(self, point, theta, target):
+            assert point == expected_p_full
+            assert theta == env.last_transition.heading_after
+            assert target == obstacle
+            return .125, 7
+
+    assert d060._oracle_best_for_obstacle_step(
+        env, env.last_transition.heading_after, obstacle, Oracle(),
+        {"family": "unit", "command": (0.0, -D045_MAX_WHEEL_DELTA_RAD), "p0": start},
+    ) == (.125, 7)
+
+
+@pytest.mark.parametrize(
+    ("lockstep", "obstacle_violations", "expected"),
+    ((True, [], False), (True, [0], False), (False, [0], False), (False, [], True)),
+)
+def test_h2b_fresh_control_only_covers_steps_after_lockstep(
+    lockstep: bool, obstacle_violations: list[int], expected: bool,
+) -> None:
+    assert d060._h2b_requires_fresh_control(lockstep, obstacle_violations) is expected
+
+
+def test_protected_sources_match_authorized_base() -> None:
+    root = Path(__file__).resolve().parents[1]
+    for path in (
+        "src/aweform/d045.py", "src/aweform/d049.py", "src/aweform/d050.py",
+        "src/aweform/d052.py", "src/aweform/d053.py", "src/aweform/d054.py",
+        "src/aweform/d055.py", "src/aweform/d056.py", "src/aweform/d057.py",
+        "src/aweform/d058.py", "src/aweform/d059.py", "src/aweform/vis_d059.py",
+        "src/aweform/development_visualizer.py", "src/aweform/body.py",
+        "src/aweform/env.py", "src/aweform/exp001.py", "src/aweform/exp003.py",
+        "src/aweform/exp003_seed_policy.py",
+    ):
+        current = (root / path).read_bytes()
+        base = subprocess.run(["git", "show", f"{d060.BASE_SHA}:{path}"],
+                              cwd=root, check=True, capture_output=True).stdout
+        assert current == base, path
