@@ -172,6 +172,23 @@ def test_h2b_fresh_control_only_covers_steps_after_lockstep(
     assert d060._h2b_requires_fresh_control(lockstep, obstacle_violations) is expected
 
 
+def test_h4_step_kind_bound_uses_only_authorized_evaluator_allowance() -> None:
+    p0 = (1.9885184987839886, 2.4938083338286465)
+    p_full = (2.0175782308296943, 2.4938083338286465)
+    d_max = d060.D045_WHEEL_RADIUS_METRES * D045_MAX_WHEEL_DELTA_RAD
+    raw = d060._h4_step_kind_displacement(math.dist(p0, p_full), d_max)
+    assert raw == {
+        "measured_displacement_m": 0.029059732045705777,
+        "analytic_bound_m": 0.029059732045705586,
+        "excess_m": 1.9081958235744878e-16,
+        "tau_eval_m": 4.263256414560601e-14,
+        "passes": True,
+    }
+    allowance = 64 * (2.0**-52) * 3.0
+    assert d060._h4_step_kind_displacement(d_max + allowance / 2, d_max)["passes"]
+    assert not d060._h4_step_kind_displacement(d_max + 2 * allowance, d_max)["passes"]
+
+
 def test_protected_sources_match_authorized_base() -> None:
     root = Path(__file__).resolve().parents[1]
     for path in (

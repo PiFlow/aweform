@@ -533,6 +533,14 @@ def _h2b_requires_fresh_control(lockstep:bool,obstacle_violations:list[int])->bo
     return not lockstep and not obstacle_violations
 
 
+def _h4_step_kind_displacement(displacement:float,bound:float)->dict[str,float|bool]:
+    """Apply Sol's evaluator-only arithmetic allowance to the H.4 bound check."""
+    excess=displacement-bound
+    allowance=64*(2.**-52)*ROOM_SIDE_M
+    return {"measured_displacement_m":displacement,"analytic_bound_m":bound,
+            "excess_m":excess,"tau_eval_m":allowance,"passes":excess<=allowance}
+
+
 def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
     """Run ADR-0020 H.1-H.8 on the authorized deterministic evaluator matrix."""
     from collections import Counter
@@ -648,7 +656,14 @@ def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
             bound=wheel_delta_max+math.sqrt(2.)*B
         else:
             bound=wheel_delta_max
-        if displacement>bound: raise AssertionError(f"H.4 step-kind displacement bound case={case} displacement={displacement!r} bound={bound!r}")
+        step_bound=_h4_step_kind_displacement(displacement,bound)
+        if ("worst_h4_step_kind_bound" not in attaining or
+                step_bound["excess_m"]>attaining["worst_h4_step_kind_bound"]["excess_m"]):
+            attaining["worst_h4_step_kind_bound"]={**step_bound,"case":_D060_LAST_CASE_CONTEXT}
+        if not step_bound["passes"]:
+            raise AssertionError(f"H.4 step-kind displacement bound case={case} "
+                f"measured={displacement!r} bound={bound!r} excess={step_bound['excess_m']!r} "
+                f"tau_eval={step_bound['tau_eval_m']!r}")
         for target in oracle.ORACLE_LAYOUT:
             if target[1] in ("arc","segment") and oracle.chord_crosses_centerline(start,env.body.position,target):
                 raise AssertionError(f"H.4 no-crossing case={case} target={target[0]}")
@@ -880,6 +895,9 @@ def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
         "contact_counts":{"|".join(k):v for k,v in sorted(contact_counts.items())},
         "primitive_class_counts":{"|".join(k):v for k,v in sorted(class_counts.items())},
         "protected_sha256":protected_sha,"symbolic_penetration_bound_m":B,"room_corner_allowance_m":tau_room,
+        "H.4_step_kind_displacement_bound":attaining.get("worst_h4_step_kind_bound",{
+            "measured_displacement_m":0.,"analytic_bound_m":0.,"excess_m":0.,
+            "tau_eval_m":64*(2.**-52)*ROOM_SIDE_M,"case":None}),
         "environment":{"python":sys.version,"numpy":np.__version__,"platform":platform.platform()}}
 
 
