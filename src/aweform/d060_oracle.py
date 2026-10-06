@@ -59,6 +59,21 @@ def _point_arc_dist(p,o):
     e0=(cx+r*math.cos(a0),cy+r*math.sin(a0)); e1=(cx+r*math.cos(a1),cy+r*math.sin(a1))
     return min(math.dist(p,e0),math.dist(p,e1))
 
+def _segment_arc_intersects(a,b,o):
+    """Return whether a finite segment meets the finite circular sweep."""
+    cx,cy,r,a0,a1=o[2]
+    dx,dy=b[0]-a[0],b[1]-a[1]; fx,fy=a[0]-cx,a[1]-cy
+    aa=dx*dx+dy*dy
+    if aa==0:
+        return math.hypot(fx,fy)==r and _angle(math.atan2(fy,fx),a0,a1)
+    bb=2*(fx*dx+fy*dy); cc=fx*fx+fy*fy-r*r; disc=bb*bb-4*aa*cc
+    if disc<0: return False
+    for t in ((-bb-math.sqrt(disc))/(2*aa),(-bb+math.sqrt(disc))/(2*aa)):
+        if 0<=t<=1:
+            q=(a[0]+t*dx,a[1]+t*dy)
+            if _angle(math.atan2(q[1]-cy,q[0]-cx),a0,a1): return True
+    return False
+
 def _edge_curve_distance(a,b,o):
     kind,g=o[1],o[2]
     if kind=="post": return _point_seg((g[0],g[1]),a,b)
@@ -67,7 +82,7 @@ def _edge_curve_distance(a,b,o):
         if _segments_intersect(a,b,c,d): return 0.
         return min(_point_seg(a,c,d),_point_seg(b,c,d),_point_seg(c,a,b),_point_seg(d,a,b))
     cx,cy,r,a0,a1=g
-    if _point_seg((cx,cy),a,b)<=r and _angle(math.atan2((a[1]+b[1])/2-cy,(a[0]+b[0])/2-cx),a0,a1): return 0.
+    if _segment_arc_intersects(a,b,o): return 0.
     # Closest point from arc to a segment: endpoint distances plus radial foot.
     best=min(_point_arc_dist(a,o),_point_arc_dist(b,o))
     dx,dy=b[0]-a[0],b[1]-a[1]; den=dx*dx+dy*dy
@@ -87,13 +102,6 @@ def workspace_gap(p,theta,o):
     else:
         d=min((_point_arc_dist(c,o) for c in corners),default=math.inf)
         d=min(d,*(_edge_curve_distance(corners[i],corners[(i+1)%4],o) for i in range(4)))
-        cx,cy,rr,a0,a1=g
-        for i in range(4):
-            a,b=corners[i],corners[(i+1)%4]; dx,dy=b[0]-a[0],b[1]-a[1]; fx,fy=a[0]-cx,a[1]-cy
-            aa=dx*dx+dy*dy; bb=2*(fx*dx+fy*dy); cc=fx*fx+fy*fy-rr*rr; disc=bb*bb-4*aa*cc
-            if disc>=0:
-                for t in ((-bb-math.sqrt(disc))/(2*aa),(-bb+math.sqrt(disc))/(2*aa)):
-                    if 0<=t<=1 and _angle(math.atan2(a[1]+t*dy-cy,a[0]+t*dx-cx),a0,a1): d=0.
     return d-o[3]
 
 def chord_crosses_centerline(p0,p1,o):

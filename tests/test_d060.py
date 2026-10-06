@@ -9,7 +9,7 @@ import pytest
 
 from aweform import d060
 from aweform.d045 import D045_MAX_WHEEL_DELTA_RAD, integrate_differential_drive
-from aweform.d060_oracle import ORACLE_LAYOUT, workspace_gap
+from aweform.d060_oracle import ORACLE_LAYOUT, _edge_curve_distance, workspace_gap
 
 
 def test_fixed_config_and_frozen_layout_are_independent() -> None:
@@ -31,6 +31,23 @@ def test_closed_segment_intersection_respects_finite_bounds() -> None:
     # Ordinary proper crossing remains an intersection.
     assert d060._segments_cross((0.0, 0.0), (1.0, 1.0), (0.0, 1.0), (1.0, 0.0))
     assert not d060._segments_cross((0.0, 0.0), (1.0, 0.0), (2.0, -1.0), (2.0, 1.0))
+
+
+def test_oracle_finite_arc_edge_distance_uses_real_sweep_intersections() -> None:
+    obstacle = ORACLE_LAYOUT[0]
+    # This exact legal endpoint was the H.4 STOP case. Rectangle/arc geometry
+    # has positive clearance; entering the full arc circle is not intersection
+    # with the finite A1 sweep.
+    pose = (1.5858398934902447, 2.199011989198904)
+    assert workspace_gap(pose, 0.0, obstacle) == pytest.approx(
+        0.021631541213240534, abs=1e-15
+    )
+
+    # A segment through the top of A1 genuinely intersects its 30°..150° arc.
+    assert _edge_curve_distance((1.2, 2.4), (1.8, 2.4), obstacle) == 0.0
+    # This segment crosses the supporting circle only at angles 0 and pi,
+    # outside A1's finite sweep, so its distance to the arc is positive.
+    assert _edge_curve_distance((1.0, 2.0), (2.0, 2.0), obstacle) > 0.0
 
 
 def test_active_contact_witnesses_canonicalize_only_exact_shared_geometry() -> None:

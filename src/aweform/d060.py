@@ -652,7 +652,14 @@ def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
         assert tr.battery_after_j==min(cfg.battery_capacity_j,max(0.,tr.battery_before_j+tr.actual_stored_power_w*cfg.dt_seconds-tr.total_electrical_load_w*cfg.dt_seconds))
         for i,o in enumerate(oracle.ORACLE_LAYOUT):
             gap=oracle.workspace_gap(env.body.position,tfull,o)
-            if gap < -TAU_C: raise AssertionError(f"H.4 endpoint obstacle violation case={case} obstacle={o[0]} gap={gap!r}")
+            if gap < -TAU_C:
+                diagnostic={"case":case,"obstacle":o[0],"oracle_gap_m":gap,
+                    "p_full":pfull,"p_exec":env.body.position,"theta_full":tfull,
+                    "production_gap_m":_gap(env.body.position,tfull,FROZEN_LAYOUT[i]),
+                    "last_step_contact":env.last_step_contact,
+                    "last_obstacle_stage":env.last_obstacle_stage,
+                    "last_transition":env.last_transition}
+                raise AssertionError(f"H.4 endpoint obstacle violation evidence={diagnostic!r}")
         corner_violation=max(0.,hx-env.body.position[0],env.body.position[0]-(ROOM_SIDE_M-hx),hy-env.body.position[1],env.body.position[1]-(ROOM_SIDE_M-hy))
         if corner_violation>tau_room: raise AssertionError(f"H.4 room corner violation case={case} violation={corner_violation!r}")
         assert_reconstruction(env)
