@@ -528,9 +528,46 @@ def _oracle_best_for_obstacle_step(env:D060Env,theta:float,obstacle:tuple[Any,..
     return oracle.oracle_best_free_distance(step.unconstrained_endpoint,theta,obstacle)
 
 
-def _h2b_requires_fresh_control(lockstep:bool,obstacle_violations:list[int])->bool:
-    """H.2(b) covers obstacle-free steps after lockstep has ended."""
-    return not lockstep and not obstacle_violations
+def _h2a_requires_lockstep_comparison(lockstep:bool,
+        production_obstacle_violations:list[int],sign_disagreements:tuple)->bool:
+    """Exclude boundary-sign disagreements from exact H.2(a) comparisons."""
+    return lockstep and not production_obstacle_violations and not sign_disagreements
+
+
+def _h2b_requires_fresh_control(lockstep:bool,production_obstacle_violations:list[int],
+        sign_disagreements:tuple=())->bool:
+    """H.2(b) covers production-classified obstacle-free steps without a sign mismatch."""
+    return not lockstep and not production_obstacle_violations and not sign_disagreements
+
+
+def _h2_boundary_sign_disagreements(production_gaps:tuple[float,...],
+        oracle_gaps:tuple[float,...])->tuple[tuple[int,float,float],...]:
+    """Return obstacle gaps whose strict negative/clear classifications disagree."""
+    if len(production_gaps)!=len(oracle_gaps):
+        raise ValueError("H.2 production and oracle gap lists must have equal length")
+    return tuple((i,production,oracle) for i,(production,oracle) in
+        enumerate(zip(production_gaps,oracle_gaps,strict=True))
+        if (production<0.)!=(oracle<0.))
+
+
+def _h2_comparison_failure_context(case:dict[str,Any],last_case_context:dict[str,Any],
+        actual:D060Env,control:D058Env,actual_observation:np.ndarray,
+        control_observation:np.ndarray,ignore_index:bool,mismatches:list[dict[str,Any]])->str:
+    """Format a context-complete exact H.2 failure without changing comparisons."""
+    context={"case":case,"last_case_context":last_case_context,
+        "actual_state":{"position":actual.body.position,"heading":actual.body.heading,
+            "battery_j":actual.battery_j,"body_temperature_c":actual.body_temperature_c,
+            "energy":actual.body.energy,"last_transition":actual.last_transition,
+            "last_room_stage":actual.last_room_stage,"last_obstacle_stage":actual.last_obstacle_stage,
+            "last_step_contact":actual.last_step_contact},
+        "control_state":{"position":control.body.position,"heading":control.body.heading,
+            "battery_j":control.battery_j,"body_temperature_c":control.body_temperature_c,
+            "energy":control.body.energy,"last_transition":control.last_transition,
+            "last_contact":control.last_contact},
+        "actual_observation_hex":actual_observation.tobytes().hex(),
+        "control_observation_hex":control_observation.tobytes().hex(),
+        "ignore_step_index":ignore_index,"mismatches":mismatches}
+    return f"H.2 exact comparison failed: {context!r}"
 
 
 def _h4_step_kind_displacement(displacement:float,bound:float)->dict[str,float|bool]:
@@ -590,6 +627,7 @@ def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
     tau_room=64*(2.**-52)*ROOM_SIDE_M
     counters=Counter(); contact_counts=Counter(); class_counts=Counter()
     oracle_counts=Counter(); idempotence=Counter(); maxima=Counter(); attaining={}
+    h2_boundary_sign_disagreement_cases=[]
     h6_max=Counter(); h6_case={}; h6_nonzero=Counter(); step_total=0; pocket_two=Counter()
 
     def opts(position,heading,battery=D045_INITIAL_BATTERY_J,temp=D045_AMBIENT_TEMPERATURE_C,latched=False):
@@ -597,15 +635,27 @@ def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
                 "battery_j":battery,"body_temperature_c":temp,"charger_termination_latched":latched}
     def transition_without_index(t):
         return tuple((f.name,getattr(t,f.name)) for f in fields(t) if f.name!="step_index")
-    def compare_step(actual,control,oa,ob,ignore_index=False):
-        assert actual.body.position==control.body.position and actual.body.heading==control.body.heading
-        assert oa.tobytes()==ob.tobytes()
-        assert actual.battery_j==control.battery_j and actual.body_temperature_c==control.body_temperature_c
-        assert actual.body.energy==control.body.energy
-        assert (transition_without_index(actual.last_transition)==transition_without_index(control.last_transition)) if ignore_index else actual.last_transition==control.last_transition
-        assert actual.last_room_stage==control.last_contact
-        assert actual.last_step_contact.executed_endpoint==control.last_contact.executed_endpoint
-        assert actual.last_obstacle_stage is None
+    def compare_step(actual,control,oa,ob,ignore_index=False,case=None):
+        actual_transition=transition_without_index(actual.last_transition) if ignore_index else actual.last_transition
+        control_transition=transition_without_index(control.last_transition) if ignore_index else control.last_transition
+        fields_to_compare=(
+            ("position",actual.body.position,control.body.position),
+            ("heading",actual.body.heading,control.body.heading),
+            ("observation_bytes",oa.tobytes(),ob.tobytes()),
+            ("battery_j",actual.battery_j,control.battery_j),
+            ("body_temperature_c",actual.body_temperature_c,control.body_temperature_c),
+            ("energy",actual.body.energy,control.body.energy),
+            ("transition",actual_transition,control_transition),
+            ("room_telemetry",actual.last_room_stage,control.last_contact),
+            ("executed_endpoint",actual.last_step_contact.executed_endpoint,
+                control.last_contact.executed_endpoint),
+            ("obstacle_stage",actual.last_obstacle_stage,None),
+        )
+        mismatches=[{"field":name,"actual":left,"control":right}
+            for name,left,right in fields_to_compare if left!=right]
+        if mismatches:
+            raise AssertionError(_h2_comparison_failure_context(case,_D060_LAST_CASE_CONTEXT,
+                actual,control,oa,ob,ignore_index,mismatches))
     def assert_reconstruction(env):
         room=env.last_room_stage; total=env.last_step_contact
         wall=(room.executed_endpoint[0]-room.unconstrained_endpoint[0],room.executed_endpoint[1]-room.unconstrained_endpoint[1])
@@ -624,10 +674,15 @@ def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
         pfull,tfull=integrate_differential_drive(start,heading,left,right,track_width_m=D045_WHEEL_TRACK_WIDTH_METRES,wheel_radius_m=D045_WHEEL_RADIUS_METRES)
         _D060_LAST_CASE_CONTEXT={**case,"reset":case.get("reset"),"command":command,"p0":start,"p_full":pfull,"theta_full":tfull}
         oracle_gaps=tuple(oracle.workspace_gap(pfull,tfull,o) for o in oracle.ORACLE_LAYOUT)
-        obstacle_violations=[i for i,g in enumerate(oracle_gaps) if g<0.]
+        oracle_obstacle_violations=[i for i,g in enumerate(oracle_gaps) if g<0.]
+        production_gaps=tuple(_gap(pfull,tfull,o) for o in FROZEN_LAYOUT)
+        production_obstacle_violations=[i for i,g in enumerate(production_gaps) if g<0.]
+        sign_disagreements=_h2_boundary_sign_disagreements(production_gaps,oracle_gaps)
+        # The independent oracle remains authoritative for H.4/O1/O2 below;
+        # H.2 identity candidates follow production's strict obstacle law.
         hx,hy=env._extent(tfull); room_bad=(pfull[0]<hx or pfull[0]>ROOM_SIDE_M-hx or pfull[1]<hy or pfull[1]>ROOM_SIDE_M-hy)
-        if len(obstacle_violations)+int(room_bad)>1: raise AssertionError(f"H.4 multi-constraint oracle case={case} obstacle={obstacle_violations} room={room_bad}")
-        if _h2b_requires_fresh_control(lockstep,obstacle_violations):
+        if len(oracle_obstacle_violations)+int(room_bad)>1: raise AssertionError(f"H.4 multi-constraint oracle case={case} obstacle={oracle_obstacle_violations} room={room_bad}")
+        if _h2b_requires_fresh_control(lockstep,production_obstacle_violations,sign_disagreements):
             fresh=D058Env(D058PhysicalConfig(ROOM_SIDE_M)); fresh.reset(options=explicit_current(env))
             _D060_LAST_CASE_CONTEXT.update({"h2b_raw_pre_heading":heading,
                 "h2b_reset_normalized_heading":fresh.body.heading,"h2b_restored_heading":None})
@@ -663,14 +718,32 @@ def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
         corner_violation=max(0.,hx-env.body.position[0],env.body.position[0]-(ROOM_SIDE_M-hx),hy-env.body.position[1],env.body.position[1]-(ROOM_SIDE_M-hy))
         if corner_violation>tau_room: raise AssertionError(f"H.4 room corner violation case={case} violation={corner_violation!r}")
         assert_reconstruction(env)
+        if sign_disagreements:
+            executed_push_out={"resolved_by":env.last_step_contact.resolved_by,
+                "obstacle_id":env.last_obstacle_stage.obstacle_id if env.last_obstacle_stage else None,
+                "unconstrained_endpoint":env.last_step_contact.unconstrained_endpoint,
+                "executed_endpoint":env.last_step_contact.executed_endpoint,
+                "vector":env.last_step_contact.removed_displacement,
+                "magnitude_m":env.last_step_contact.removed_displacement_magnitude_m}
+            for obstacle_index,production_gap,oracle_gap in sign_disagreements:
+                counters["H2_boundary_sign_disagreements"]+=1
+                h2_boundary_sign_disagreement_cases.append({
+                    "case":case,"command":command,"obstacle":FROZEN_LAYOUT[obstacle_index][0],
+                    "p0":start,
+                    "p_full":pfull,"theta_full":tfull,
+                    "production_gap_m":production_gap,"oracle_gap_m":oracle_gap,
+                    "production_classification":"penetrating" if production_gap<0. else "clear",
+                    "oracle_classification":"penetrating" if oracle_gap<0. else "clear",
+                    "production_violations":[FROZEN_LAYOUT[i][0] for i in production_obstacle_violations],
+                    "executed_push_out":executed_push_out})
         if fresh_result is not None:
-            compare_step(env,fresh,observation,fresh_result[0],ignore_index=True)
+            compare_step(env,fresh,observation,fresh_result[0],ignore_index=True,case=case)
             counters["H2b_re_reset_steps"]+=1
-        if lockstep and not obstacle_violations:
+        if _h2a_requires_lockstep_comparison(lockstep,production_obstacle_violations,sign_disagreements):
             control_result=control_lock.step(command)
-            compare_step(env,control_lock,observation,control_result[0])
+            compare_step(env,control_lock,observation,control_result[0],case=case)
             counters["H2a_lockstep_steps"]+=1
-        elif lockstep:
+        elif lockstep and production_obstacle_violations:
             counters["H2a_sequences_diverged"]+=1
 
         contact=env.last_obstacle_stage
@@ -911,7 +984,7 @@ def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
         "coverage":{"feature_rays":len(rays),"headings":len(headings),"ray_steps":233472,"pocket_steps":1728,
             "steps_executed":step_total,"ring_starts_accepted":counters["ring_starts_accepted"],
             "reset_rejection_starts_rejected":counters["reset_rejections"],"oracle_rays_per_obstacle_step":oracle.PHI_COUNT},
-        "checks":{"H.1_protected_byte_identity":"PASS","H.2_obstacle_free_identity":{"lockstep_steps":counters["H2a_lockstep_steps"],"re_reset_steps":counters["H2b_re_reset_steps"],"heading_representation_restorations":counters["H2b_heading_representation_restorations"],"heading_restoration_example":attaining.get("H2b_heading_restoration_example")},
+        "checks":{"H.1_protected_byte_identity":"PASS","H.2_obstacle_free_identity":{"lockstep_steps":counters["H2a_lockstep_steps"],"re_reset_steps":counters["H2b_re_reset_steps"],"heading_representation_restorations":counters["H2b_heading_representation_restorations"],"heading_restoration_example":attaining.get("H2b_heading_restoration_example"),"boundary_sign_disagreement_count":counters["H2_boundary_sign_disagreements"],"boundary_sign_disagreement_cases":h2_boundary_sign_disagreement_cases},
             "H.3_layout_and_reset":{"status":"PASS",**layout_metrics},"H.4_contact_conformance":"PASS","H.5_reset":"PASS",
             "H.6_intermediate_penetration":{"maxima_m":{"|".join(k):v for k,v in sorted(h6_max.items())},"nonzero_step_counts":{"|".join(k):v for k,v in sorted(h6_nonzero.items())},"attaining_cases":{"|".join(k):v for k,v in sorted(h6_case.items())}},
             "H.7_determinism":"REGENERATION_REQUIRED","H.8_residual_max_m":maxima.get("worst_accepted_candidate_residual_m",0.),

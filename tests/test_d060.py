@@ -210,6 +210,82 @@ def test_h2b_fresh_control_only_covers_steps_after_lockstep(
     assert d060._h2b_requires_fresh_control(lockstep, obstacle_violations) is expected
 
 
+def test_h2_boundary_sign_disagreement_and_h2b_eligibility_at_captured_one_ulp_case() -> None:
+    # Frozen A2/ray12/arc-convex/H32[15]/Q1 command 5 from the approved STOP.
+    options = {
+        "body_position": (2.2232031986427216, 1.7182063797369498),
+        "station_center": (1.5, 1.5),
+        "heading": 3.926990816987241,
+        "battery_j": 2664.0,
+        "body_temperature_c": 23.0,
+        "charger_termination_latched": False,
+    }
+    command = (-D045_MAX_WHEEL_DELTA_RAD, -D045_MAX_WHEEL_DELTA_RAD)
+    env = d060.D060Env()
+    env.reset(options=options)
+    for _ in range(5):
+        env.step(command)
+
+    p_full, theta_full = integrate_differential_drive(
+        env.body.position, env.body.heading, *command,
+        track_width_m=d060.D045_WHEEL_TRACK_WIDTH_METRES,
+        wheel_radius_m=d060.D045_WHEEL_RADIUS_METRES,
+    )
+    production_gaps = tuple(d060._gap(p_full, theta_full, obstacle)
+                            for obstacle in d060.FROZEN_LAYOUT)
+    oracle_gaps = tuple(workspace_gap(p_full, theta_full, obstacle)
+                        for obstacle in ORACLE_LAYOUT)
+    production_violations = [i for i, gap in enumerate(production_gaps) if gap < 0.0]
+
+    assert production_gaps[1] == -5.204170427930421e-17
+    assert oracle_gaps[1] == 1.0755285551056204e-16
+    assert d060._h2_boundary_sign_disagreements(production_gaps, oracle_gaps) == (
+        (1, production_gaps[1], oracle_gaps[1]),
+    )
+    assert not d060._h2b_requires_fresh_control(False, production_violations)
+    assert not d060._h2b_requires_fresh_control(
+        False, production_violations,
+        d060._h2_boundary_sign_disagreements(production_gaps, oracle_gaps),
+    )
+    opposite_sign = ((1, 1.0e-16, -1.0e-16),)
+    assert not d060._h2a_requires_lockstep_comparison(True, [], opposite_sign)
+    assert not d060._h2b_requires_fresh_control(False, [], opposite_sign)
+    assert d060._h2a_requires_lockstep_comparison(True, [], ())
+
+    env.step(command)
+    contact = env.last_obstacle_stage
+    assert contact is not None and contact.obstacle_id == "A2"
+    assert contact.push_out_magnitude_m == 2.220446049250313e-16
+    assert env.last_step_contact.resolved_by == "obstacle"
+
+
+def test_h2_exact_failure_context_keeps_case_geometry_and_outputs() -> None:
+    options = {"body_position": (.75, .75), "station_center": (1.5, 1.5),
+               "heading": .2, "battery_j": 2000., "body_temperature_c": 23.,
+               "charger_termination_latched": False}
+    actual, control = d060.D060Env(), d060.D058Env(d060.D058PhysicalConfig())
+    actual.reset(options=options); control.reset(options=options)
+    actual_observation, *_ = actual.step((0.0, 0.0))
+    control_observation, *_ = control.step((0.0, 0.0))
+    control.body.x = math.nextafter(control.body.x, math.inf)
+    case = {"family": "ray", "ray_index": 12, "heading_index": 15,
+            "sequence": "Q1", "command_index": 5, "reset": options}
+    context = {**case, "command": (0.0, 0.0), "p0": (.75, .75),
+               "p_full": (.75, .75), "theta_full": .2}
+
+    message = d060._h2_comparison_failure_context(
+        case, context, actual, control, actual_observation, control_observation,
+        True, [{"field": "position", "actual": actual.body.position,
+                "control": control.body.position}],
+    )
+
+    assert "H.2 exact comparison failed" in message
+    assert "ray_index" in message and "command_index" in message
+    assert "p_full" in message and "theta_full" in message
+    assert "actual_observation_hex" in message and "control_observation_hex" in message
+    assert "last_transition" in message and "mismatches" in message
+
+
 def test_h4_step_kind_bound_uses_only_authorized_evaluator_allowance() -> None:
     p0 = (1.9885184987839886, 2.4938083338286465)
     p_full = (2.0175782308296943, 2.4938083338286465)
