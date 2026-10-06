@@ -83,8 +83,12 @@ def _edge_curve_distance(a,b,o):
         return min(_point_seg(a,c,d),_point_seg(b,c,d),_point_seg(c,a,b),_point_seg(d,a,b))
     cx,cy,r,a0,a1=g
     if _segment_arc_intersects(a,b,o): return 0.
-    # Closest point from arc to a segment: endpoint distances plus radial foot.
-    best=min(_point_arc_dist(a,o),_point_arc_dist(b,o))
+    # Closest point from arc to a segment: both endpoint-feature directions,
+    # vertex-to-arc distances, and the radial stationary point on the edge.
+    cap_start=(cx+r*math.cos(a0),cy+r*math.sin(a0))
+    cap_end=(cx+r*math.cos(a1),cy+r*math.sin(a1))
+    best=min(_point_arc_dist(a,o),_point_arc_dist(b,o),
+             _point_seg(cap_start,a,b),_point_seg(cap_end,a,b))
     dx,dy=b[0]-a[0],b[1]-a[1]; den=dx*dx+dy*dy
     if den:
         t=max(0.,min(1.,((cx-a[0])*dx+(cy-a[1])*dy)/den)); q=(a[0]+t*dx,a[1]+t*dy)

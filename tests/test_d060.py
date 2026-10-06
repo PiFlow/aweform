@@ -50,6 +50,27 @@ def test_oracle_finite_arc_edge_distance_uses_real_sweep_intersections() -> None
     assert _edge_curve_distance((1.0, 2.0), (2.0, 2.0), obstacle) > 0.0
 
 
+def test_oracle_arc_caps_measure_distance_to_edge_interiors() -> None:
+    obstacle = ORACLE_LAYOUT[0]
+    # The A1 30° cap is (1.8464101615137756, 2.2). Its projection onto
+    # this horizontal edge is interior and exactly 0.04 m away.
+    edge = ((1.71, 2.16), (1.89, 2.16))
+    assert _edge_curve_distance(*edge, obstacle) == pytest.approx(0.04, abs=1e-15)
+
+    # Captured O1 ray endpoint: the same cap projects onto hull edge 0 at
+    # distance 0.024316968189213115 m, inside the 0.025 m obstacle radius.
+    illegal_point = (1.7075857012126152, 2.1279412153893746)
+    illegal_heading = 2.6179938779914944
+    assert workspace_gap(illegal_point, illegal_heading, obstacle) == pytest.approx(
+        -0.0006830318107868862, abs=5e-16
+    )
+
+    # At this independent pose the cap projects onto the top edge at 0.04 m,
+    # leaving 0.015 m positive clearance after the 0.025 m obstacle radius.
+    legal_pose = (1.8, 2.0525)
+    assert workspace_gap(legal_pose, 0.0, obstacle) == pytest.approx(0.015, abs=1e-15)
+
+
 def test_active_contact_witnesses_canonicalize_only_exact_shared_geometry() -> None:
     obstacle = d060.FROZEN_LAYOUT[0]
     selected = (1.7578254243912743, 2.4979607879517336)
