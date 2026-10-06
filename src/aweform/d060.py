@@ -541,6 +541,16 @@ def _h4_step_kind_displacement(displacement:float,bound:float)->dict[str,float|b
             "excess_m":excess,"tau_eval_m":allowance,"passes":excess<=allowance}
 
 
+def _restore_h2b_heading(control:D058Env,raw_heading:float)->tuple[float,float]:
+    """Restore only an exactly modulo-2π-equivalent reset heading for H.2(b)."""
+    if control.body is None: raise AssertionError("H.2(b) D-058 control was not reset")
+    reset_heading=control.body.heading; period=2*math.pi
+    if raw_heading%period!=reset_heading%period:
+        raise AssertionError(f"H.2(b) reset changed heading beyond its 2π representation: raw={raw_heading!r} reset={reset_heading!r}")
+    if raw_heading!=reset_heading: control.body.heading=raw_heading
+    return reset_heading,control.body.heading
+
+
 def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
     """Run ADR-0020 H.1-H.8 on the authorized deterministic evaluator matrix."""
     from collections import Counter
@@ -619,6 +629,14 @@ def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
         if len(obstacle_violations)+int(room_bad)>1: raise AssertionError(f"H.4 multi-constraint oracle case={case} obstacle={obstacle_violations} room={room_bad}")
         if _h2b_requires_fresh_control(lockstep,obstacle_violations):
             fresh=D058Env(D058PhysicalConfig(ROOM_SIDE_M)); fresh.reset(options=explicit_current(env))
+            _D060_LAST_CASE_CONTEXT.update({"h2b_raw_pre_heading":heading,
+                "h2b_reset_normalized_heading":fresh.body.heading,"h2b_restored_heading":None})
+            reset_heading,restored_heading=_restore_h2b_heading(fresh,heading)
+            _D060_LAST_CASE_CONTEXT["h2b_restored_heading"]=restored_heading
+            if heading!=reset_heading:
+                counters["H2b_heading_representation_restorations"]+=1
+                if "H2b_heading_restoration_example" not in attaining:
+                    attaining["H2b_heading_restoration_example"]={"case":_D060_LAST_CASE_CONTEXT.copy()}
             fresh_result=fresh.step(command)
         else: fresh_result=None
         result=env.step(command); observation=result[0]; step_total+=1; counters["all_steps"]+=1
@@ -886,7 +904,7 @@ def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
         "coverage":{"feature_rays":len(rays),"headings":len(headings),"ray_steps":233472,"pocket_steps":1728,
             "steps_executed":step_total,"ring_starts_accepted":counters["ring_starts_accepted"],
             "reset_rejection_starts_rejected":counters["reset_rejections"],"oracle_rays_per_obstacle_step":oracle.PHI_COUNT},
-        "checks":{"H.1_protected_byte_identity":"PASS","H.2_obstacle_free_identity":{"lockstep_steps":counters["H2a_lockstep_steps"],"re_reset_steps":counters["H2b_re_reset_steps"]},
+        "checks":{"H.1_protected_byte_identity":"PASS","H.2_obstacle_free_identity":{"lockstep_steps":counters["H2a_lockstep_steps"],"re_reset_steps":counters["H2b_re_reset_steps"],"heading_representation_restorations":counters["H2b_heading_representation_restorations"],"heading_restoration_example":attaining.get("H2b_heading_restoration_example")},
             "H.3_layout_and_reset":{"status":"PASS",**layout_metrics},"H.4_contact_conformance":"PASS","H.5_reset":"PASS",
             "H.6_intermediate_penetration":{"maxima_m":{"|".join(k):v for k,v in sorted(h6_max.items())},"nonzero_step_counts":{"|".join(k):v for k,v in sorted(h6_nonzero.items())},"attaining_cases":{"|".join(k):v for k,v in sorted(h6_case.items())}},
             "H.7_determinism":"REGENERATION_REQUIRED","H.8_residual_max_m":maxima.get("worst_accepted_candidate_residual_m",0.),

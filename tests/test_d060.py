@@ -189,6 +189,26 @@ def test_h4_step_kind_bound_uses_only_authorized_evaluator_allowance() -> None:
     assert not d060._h4_step_kind_displacement(d_max + 2 * allowance, d_max)["passes"]
 
 
+def test_h2b_heading_restore_changes_only_exact_equivalent_heading() -> None:
+    raw_heading = -0.052359877559829904
+    control = d060.D058Env(d060.D058PhysicalConfig(room_side_m=3.0))
+    control.reset(options={"body_position": (.75, .75), "station_center": (1.5, 1.5),
+                           "heading": raw_heading, "battery_j": 2000.,
+                           "body_temperature_c": 23., "charger_termination_latched": False})
+    reset_heading = control.body.heading
+    before = (control.body.position, control.battery_j, control.body_temperature_c,
+              control.station_center, control._previous_wheel_delta, control._step_count)
+
+    actual_reset, restored = d060._restore_h2b_heading(control, raw_heading)
+
+    assert actual_reset == reset_heading and restored == raw_heading
+    assert raw_heading % (2 * math.pi) == reset_heading % (2 * math.pi)
+    assert (control.body.position, control.battery_j, control.body_temperature_c,
+            control.station_center, control._previous_wheel_delta, control._step_count) == before
+    with pytest.raises(AssertionError, match="changed heading beyond its 2π representation"):
+        d060._restore_h2b_heading(control, raw_heading + 1e-6)
+
+
 def test_protected_sources_match_authorized_base() -> None:
     root = Path(__file__).resolve().parents[1]
     for path in (
