@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 import subprocess
 from pathlib import Path
@@ -29,6 +30,27 @@ def test_h4_projection_summary_persists_required_aggregates() -> None:
         "idempotence_within_tau_c_count": 9,
         "minimum_no_cross_margin_m": 0.02,
         "largest_arc_push_out_m": 0.03,
+    }
+    assert json.loads(json.dumps(summary, allow_nan=False)) == summary
+
+
+def test_h2c_summary_persists_transplanted_start_comparisons_and_rejections() -> None:
+    rejected = [{"label": "wall:x_min:flush", "heading_index": 0,
+                 "position": (0.1, 1.5), "oracle_gaps_m": (-0.001,)}]
+    summary = d060._h2c_summary(
+        {"H2c_accepted_starts": 799, "H2c_single_steps": 7990,
+         "H2c_lockstep_steps": 40000}, rejected,
+    )
+    assert summary == {
+        "accepted_starts": 799,
+        "single_steps_compared": 7990,
+        "lockstep_steps_compared": 40000,
+        "rejected_starts": rejected,
+    }
+    assert json.loads(json.dumps(summary, allow_nan=False)) == {
+        **summary,
+        "rejected_starts": [{**rejected[0], "position": [0.1, 1.5],
+                             "oracle_gaps_m": [-0.001]}],
     }
 
 

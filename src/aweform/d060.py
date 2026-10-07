@@ -116,6 +116,17 @@ def _h4_projection_summary(idempotence: dict[str, int],
     }
 
 
+def _h2c_summary(counters: dict[str, int],
+                 rejected_starts: list[dict[str, Any]]) -> dict[str, Any]:
+    """Persist the frozen transplanted-start comparisons and rejected starts."""
+    return {
+        "accepted_starts": counters["H2c_accepted_starts"],
+        "single_steps_compared": counters["H2c_single_steps"],
+        "lockstep_steps_compared": counters["H2c_lockstep_steps"],
+        "rejected_starts": rejected_starts,
+    }
+
+
 def _point_segment(p: Coordinate, a: Coordinate, b: Coordinate) -> float:
     dx, dy = b[0]-a[0], b[1]-a[1]
     den = dx*dx+dy*dy
@@ -1001,8 +1012,11 @@ def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
         "protocol_version":PROTOCOL_VERSION,"base_sha":BASE_SHA,"executed_commit_sha":executed_commit_sha,
         "coverage":{"feature_rays":len(rays),"headings":len(headings),"ray_steps":233472,"pocket_steps":1728,
             "steps_executed":step_total,"ring_starts_accepted":counters["ring_starts_accepted"],
-            "reset_rejection_starts_rejected":counters["reset_rejections"],"oracle_rays_per_obstacle_step":oracle.PHI_COUNT},
-        "checks":{"H.1_protected_byte_identity":"PASS","H.2_obstacle_free_identity":{"lockstep_steps":counters["H2a_lockstep_steps"],"re_reset_steps":counters["H2b_re_reset_steps"],"heading_representation_restorations":counters["H2b_heading_representation_restorations"],"heading_restoration_example":attaining.get("H2b_heading_restoration_example"),"boundary_sign_disagreement_count":counters["H2_boundary_sign_disagreements"],"boundary_sign_disagreement_cases":h2_boundary_sign_disagreement_cases},
+            "reset_rejection_starts_rejected":counters["reset_rejections"],
+            "obstacle_resolved_steps":oracle_counts["obstacle_resolved_steps"],
+            "room_resolved_steps":counters["room_steps"],"free_steps":counters["free_steps"],
+            "oracle_rays_per_obstacle_step":oracle.PHI_COUNT},
+        "checks":{"H.1_protected_byte_identity":"PASS","H.2_obstacle_free_identity":{"lockstep_steps":counters["H2a_lockstep_steps"],"re_reset_steps":counters["H2b_re_reset_steps"],"heading_representation_restorations":counters["H2b_heading_representation_restorations"],"heading_restoration_example":attaining.get("H2b_heading_restoration_example"),"boundary_sign_disagreement_count":counters["H2_boundary_sign_disagreements"],"boundary_sign_disagreement_cases":h2_boundary_sign_disagreement_cases,"transplanted_D058_probes":_h2c_summary(counters,transplanted_rejected)},
             "H.3_layout_and_reset":{"status":"PASS",**layout_metrics},"H.4_contact_conformance":"PASS","H.5_reset":"PASS",
             "H.6_intermediate_penetration":{"maxima_m":{"|".join(k):v for k,v in sorted(h6_max.items())},"nonzero_step_counts":{"|".join(k):v for k,v in sorted(h6_nonzero.items())},"attaining_cases":{"|".join(k):v for k,v in sorted(h6_case.items())}},
             "H.7_determinism":"REGENERATION_REQUIRED","H.8_residual_max_m":maxima.get("worst_accepted_candidate_residual_m",0.),
