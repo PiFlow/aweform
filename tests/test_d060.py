@@ -12,6 +12,11 @@ from aweform.d045 import D045_MAX_WHEEL_DELTA_RAD, integrate_differential_drive
 from aweform.d060_oracle import ORACLE_LAYOUT, _edge_curve_distance, workspace_gap
 
 
+def test_contact_count_serialization_accepts_numeric_command_index() -> None:
+    counts = {("A2", "arc-convex", "Q1", 5): 1}
+    assert d060._serialize_count_keys(counts) == {"A2|arc-convex|Q1|5": 1}
+
+
 def test_fixed_config_and_frozen_layout_are_independent() -> None:
     assert d060.D060PhysicalConfig().room_side_m == 3.0
     for invalid in (1.0, 2.0, True, float("nan")):

@@ -98,6 +98,11 @@ def _vertices(p: Coordinate, theta: float) -> tuple[Coordinate, ...]:
                  for sx, sy in ((-1.,-1.),(1.,-1.),(1.,1.),(-1.,1.)))
 
 
+def _serialize_count_keys(counts: dict[tuple[Any, ...], int]) -> dict[str, int]:
+    """Encode aggregate tuple keys as stable pipe-delimited JSON object keys."""
+    return {"|".join(map(str, key)): value for key, value in sorted(counts.items())}
+
+
 def _point_segment(p: Coordinate, a: Coordinate, b: Coordinate) -> float:
     dx, dy = b[0]-a[0], b[1]-a[1]
     den = dx*dx+dy*dy
@@ -990,7 +995,7 @@ def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
             "H.7_determinism":"REGENERATION_REQUIRED","H.8_residual_max_m":maxima.get("worst_accepted_candidate_residual_m",0.),
             "O1":"PASS","O2":{"epsilon_m":oracle.EPSILON,"worst_excess_m":maxima.get("oracle_excess_m",0.),"rays_without_free_point":oracle_counts["rays_without_free_point"]},
             "pocket_two_contact_counts":{"|".join(k):v for k,v in sorted(pocket_two.items())}},
-        "contact_counts":{"|".join(k):v for k,v in sorted(contact_counts.items())},
+        "contact_counts":_serialize_count_keys(contact_counts),
         "primitive_class_counts":{"|".join(k):v for k,v in sorted(class_counts.items())},
         "protected_sha256":protected_sha,"symbolic_penetration_bound_m":B,"room_corner_allowance_m":tau_room,
         "H.4_step_kind_displacement_bound":attaining.get("worst_h4_step_kind_bound",{
