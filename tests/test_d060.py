@@ -17,6 +17,21 @@ def test_contact_count_serialization_accepts_numeric_command_index() -> None:
     assert d060._serialize_count_keys(counts) == {"A2|arc-convex|Q1|5": 1}
 
 
+def test_h4_projection_summary_persists_required_aggregates() -> None:
+    summary = d060._h4_projection_summary(
+        {"exact": 7, "within_tau_c": 9},
+        {("A2", "arc-convex", "Q1", 5): 9},
+        {"minimum_no_cross_margin_m": 0.02, "largest_arc_push_out_m": 0.03},
+    )
+    assert summary == {
+        "obstacle_resolved_steps": 9,
+        "idempotence_exact_count": 7,
+        "idempotence_within_tau_c_count": 9,
+        "minimum_no_cross_margin_m": 0.02,
+        "largest_arc_push_out_m": 0.03,
+    }
+
+
 def test_fixed_config_and_frozen_layout_are_independent() -> None:
     assert d060.D060PhysicalConfig().room_side_m == 3.0
     for invalid in (1.0, 2.0, True, float("nan")):

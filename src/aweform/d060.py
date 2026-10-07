@@ -103,6 +103,19 @@ def _serialize_count_keys(counts: dict[tuple[Any, ...], int]) -> dict[str, int]:
     return {"|".join(map(str, key)): value for key, value in sorted(counts.items())}
 
 
+def _h4_projection_summary(idempotence: dict[str, int],
+                           contact_counts: dict[tuple[Any, ...], int],
+                           maxima: dict[str, float]) -> dict[str, Any]:
+    """Return the H.4 aggregates required to audit every obstacle projection."""
+    return {
+        "obstacle_resolved_steps": sum(contact_counts.values()),
+        "idempotence_exact_count": idempotence["exact"],
+        "idempotence_within_tau_c_count": idempotence["within_tau_c"],
+        "minimum_no_cross_margin_m": maxima["minimum_no_cross_margin_m"],
+        "largest_arc_push_out_m": maxima["largest_arc_push_out_m"],
+    }
+
+
 def _point_segment(p: Coordinate, a: Coordinate, b: Coordinate) -> float:
     dx, dy = b[0]-a[0], b[1]-a[1]
     den = dx*dx+dy*dy
@@ -997,6 +1010,7 @@ def run_d060_conformance(executed_commit_sha:str|None=None)->dict[str,Any]:
             "pocket_two_contact_counts":{"|".join(k):v for k,v in sorted(pocket_two.items())}},
         "contact_counts":_serialize_count_keys(contact_counts),
         "primitive_class_counts":{"|".join(k):v for k,v in sorted(class_counts.items())},
+        "H.4_projection_summary":_h4_projection_summary(idempotence,contact_counts,maxima),
         "protected_sha256":protected_sha,"symbolic_penetration_bound_m":B,"room_corner_allowance_m":tau_room,
         "H.4_step_kind_displacement_bound":attaining.get("worst_h4_step_kind_bound",{
             "measured_displacement_m":0.,"analytic_bound_m":0.,"excess_m":0.,
