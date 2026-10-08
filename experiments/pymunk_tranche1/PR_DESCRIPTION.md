@@ -7,7 +7,7 @@ Refs #217
 - Authorized base: `fd68c46d2cd75c46dd0eb824b8360f36f1de6cf8` (origin/main was this SHA at task start).
 - Protocol of record: `89de47de86aea43d30e7dc5147c51ed5d1263b1d` (`docs/pymunk-tranche1-protocol.md`). It was committed before implementation or gate evaluation. It had been initially committed as `96d0012fff375f9f653ad9f0664a0143a7963b97` and amended 80 seconds later; the sole amendment replaced an impossible self-referential in-JSON artifact hash with detached `SHA256SUMS` hashes. The earlier progress status reporting `96d0012f` is superseded by `89de47d`.
 - Result-producing executable SHA: `2ba46e1dd2ab3e812ab2afaa5791521b8c48ae24`.
-- Result artifacts: `experiments/pymunk_tranche1/results.json` — SHA-256 `4a0a0c5c1bef6602553971a9745274c649c56a70e394cde285e5cbf3d6f428e2`; `experiments/pymunk_tranche1/RESULTS.md` — SHA-256 `f8310ee8b7f1b26567d891b4bc7f2e0391d15030b4620209aa325ef105a9d715`; the original RESULTS.md (SHA-256 `f8310ee8…a9d715`) is preserved as `RESULTS.original.md`; all are listed in `experiments/pymunk_tranche1/SHA256SUMS`.
+- Result artifacts: `experiments/pymunk_tranche1/results.json` — SHA-256 `4a0a0c5c1bef6602553971a9745274c649c56a70e394cde285e5cbf3d6f428e2`; `experiments/pymunk_tranche1/RESULTS.md` (revised) — SHA-256 `3b74666271da3e4bcc3db1d8545b247eedecad951502ec02e8c573726a69f169`; the old/original RESULTS.md (SHA-256 `f8310ee8b7f1b26567d891b4bc7f2e0391d15030b4620209aa325ef105a9d715`) is preserved as `RESULTS.original.md`; all are listed in `experiments/pymunk_tranche1/SHA256SUMS`.
 - `experiments/pymunk_tranche1/ADDENDUM.md` is explicitly post-result analysis, not a protocol revision or part of the acceptance record.
 
 ## Frozen per-gate outcome
