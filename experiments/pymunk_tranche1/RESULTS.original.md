@@ -54,6 +54,4 @@ uv run --python 3.14.7 mypy src/aweform
 uv run --python 3.14.7 pytest -q tests
 ```
 
-## Post-result interpretation (added after the frozen results were inspected; not part of the acceptance record)
-
-Recommendation: **revise the candidate**. Tranche 1 did not pass under its frozen protocol; the evidence points to the frozen actuator/update order and an erroneous wheel-swap oracle rather than to the engine. Any revised actuator or oracle needs a new frozen protocol under separate authorization, and passing calibration alone is not grounds for migration. This is a recommendation only: it does not authorize any rerun, migration, merge, or successor tranche. The original RESULTS.md is preserved byte-identically in `RESULTS.original.md`.
+Stop after Tranche 1. The measured calibration and symmetry failures make the recommendation **stop / do not advance this candidate**. A passing calibration alone is not grounds for migration; any later tranche needs separate authorization.

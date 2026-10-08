@@ -39,3 +39,11 @@ All 24 case-level free-space failures are unequal-wheel `ARC_*` and `ONE_WHEEL_*
 ## Recommendation
 
 **Revise the candidate** is the recommendation, not advance or migrate it. Tranche 1 did **not** pass under its frozen protocol. A future candidate would need a corrected wheel-swap oracle and a separately frozen actuator/update-order choice before any new evaluation. Both require separate authorization; this addendum changes neither the failed acceptance outcome nor the task scope. No Tranche 2, organism execution, migration, or successor D-number is authorized here.
+
+### RESULTS.md supersession
+
+The original RESULTS.md closed with this line, the worker's pre-analysis recommendation, which is superseded:
+
+> Stop after Tranche 1. The measured calibration and symmetry failures make the recommendation **stop / do not advance this candidate**. A passing calibration alone is not grounds for migration; any later tranche needs separate authorization.
+
+The revised RESULTS.md replaces only that closing paragraph with a section labelled post-result interpretation; its recommendation is the same single one stated above, revise the candidate. Provenance: the original RESULTS.md lives at commit `b72c79a` (SHA-256 `f8310ee8b7f1b26567d891b4bc7f2e0391d15030b4620209aa325ef105a9d715`, preserved byte-identically as `RESULTS.original.md`); the revised RESULTS.md lives at the commit that introduces `RESULTS.original.md` (SHA-256 `3b74666271da3e4bcc3db1d8545b247eedecad951502ec02e8c573726a69f169`). `results.json` SHA-256 `4a0a0c5c1bef6602553971a9745274c649c56a70e394cde285e5cbf3d6f428e2` is unchanged, and all executed gate outcomes are unchanged.
