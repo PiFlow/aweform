@@ -18,7 +18,7 @@ Aweform currently combines accepted V0.3/V0.4 boundaries with accepted V0.5 boun
 
 These layers supplement rather than erase earlier work. Historical experiments, ADRs, records, source semantics, and artifacts remain part of the record.
 
-The committed development lane now extends through **D-058**. D-045 through D-057 remain bound to the D-045 substrate; D-058 is the first conformance record for the separate wall-contact substrate. The canonical ledger is [`development/INDEX.md`](development/INDEX.md); detailed records live under [`development/`](development/).
+The committed development lane now extends through **D-059**. D-059 is the S1 Level-1 floor re-baseline, with the initial official execution invalidated and corrected execution/regeneration preserved in its record. D-060 is **in progress, not a committed D-record**; see [issue #213](https://github.com/PiFlow/aweform/issues/213) and [program coordination #196](https://github.com/PiFlow/aweform/issues/196). D-045 through D-057 remain bound to the D-045 substrate; D-058 is the first conformance record for the separate wall-contact substrate. The canonical ledger is [`development/INDEX.md`](development/INDEX.md); detailed records live under [`development/`](development/).
 
 Important recent milestones include:
 
@@ -39,8 +39,9 @@ Important recent milestones include:
 - D-056 characterized that unchanged candidate over multi-cycle lifetimes; all 20 allocated fresh candidate lifetimes completed three yields, with no candidate failure observed. The first RETURN episode of the unchanged floor docked on 11/20 fresh seeds.
 - D-057 found that evaluator-only yaw-free boundary-rule counterfactuals resolved the observed U failures without harm on the frozen supports. Those rules are diagnostics, not adopted contact models.
 - D-058 passed its seven frozen substrate conformance checks, including deterministic regeneration and sampled intermediate-penetration characterization. It ran no seeded lifetimes or controller evaluations; its endpoint-only law is not continuous-contact or hardware validation.
+- D-059 committed the S1 Level-1 floor re-baseline. The first official execution was invalidated for incorrect D-045 wall-exposure classification; the corrected execution and byte-identical regeneration are documented with their provenance in [D-059](development/D-059-v05-s1-level1-floor-rebaseline.md). This is descriptive Development work, not a confirmatory EXP claim.
 
-ADR 0018 establishes the **Innate Autonomous Viability** architecture milestone and separates the near-term viability floor from later open-ended learning. D-049, D-050, and D-052 through D-056 exercise or compare programmed Level-1 behaviour; none of these results automatically authorizes a successor stage. D-058 is substrate conformance only.
+ADR 0018 establishes the **Innate Autonomous Viability** architecture milestone and separates the near-term viability floor from later open-ended learning. D-049, D-050, and D-052 through D-056 exercise or compare programmed Level-1 behaviour; none of these results automatically authorizes a successor stage. D-058 is substrate conformance only. The accepted ADR-0020 text defines a prospective round interior-obstacle boundary, but D-060 implementation/conformance has not been merged. A [separate isolated direct-Pymunk calibration task (#217)](https://github.com/PiFlow/aweform/issues/217) is also underway as a delegation; neither task authorizes a simulator migration or changes the active organism.
 
 ## Evidence lane
 
@@ -59,7 +60,7 @@ Aweform uses biology and evolution as inspiration for **problems and principles*
 
 The long-term direction includes homeostasis, coordinated subsystems, sensorimotor survival, learning, play and curiosity, social interaction, machine-native communication, richer cognition, and eventually physical embodiment.
 
-The V0.5 lineage contains a bounded shadow consequence learner through D-048 whose predictions still have **no causal behavioral role**, plus programmed Level-1 return/docking development through D-056 and conformance-only wall-contact substrate work in D-058. The D-049/D-050/D-052–D-056 viability behaviour is engineered, not learned; D-055 was not promoted. D-045–D-057 remain bound to D-045. The project does **not** thereby contain PPO, deep RL, JEPA-scale cognition, an LLM controller, camera vision, a mature learned world model, social behaviour, play, awe, networking, or physical robot control. Those remain separately governed future questions.
+The V0.5 lineage contains a bounded shadow consequence learner through D-048 whose predictions still have **no causal behavioral role**, plus programmed Level-1 return/docking development through D-056, conformance-only wall-contact substrate work in D-058, and the D-059 S1 Level-1 re-baseline. The D-049/D-050/D-052–D-056 viability behaviour is engineered, not learned; D-055 was not promoted. D-045–D-057 remain bound to D-045. The project does **not** thereby contain PPO, deep RL, JEPA-scale cognition, an LLM controller, camera vision, a mature learned world model, social behaviour, play, awe, networking, or physical robot control. Those remain separately governed future questions.
 
 Read:
 
