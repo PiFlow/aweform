@@ -10,9 +10,9 @@ This boundary was written for V0.1 and applies unchanged through V0.2, V0.3, V0.
 - ADR 0016 defines the historical D-042 fine-turn/front-contact V0.4 embodiment boundary.
 - ADR 0017 defines the accepted V0.5 differential-drive, centred-dock, proprioceptive-information, and actuator-bookkeeping boundary; D-045 is its first committed deterministic substrate implementation.
 - ADR 0019 defines the accepted V0.5 physical room-wall contact boundary (3 m room, rectangular hull); D-058 implements its substrate (PR #204).
-- ADR 0020 proposes the V0.5 Phase C frozen round interior-obstacle room; it is documentation-only under S2-A and does not authorize D-060.
+- ADR 0020 is the merged S2-A documentation for the proposed V0.5 Phase C frozen round interior-obstacle room. Its file still carries proposal/status-reconciliation wording, which is explicitly tracked separately as S2-A′; merging the document did not implement D-060, approve a D-060 result, or authorize an organism behavioral study. See [issue #213](https://github.com/PiFlow/aweform/issues/213) and [program #196](https://github.com/PiFlow/aweform/issues/196).
 
-None of those ADRs changes anything this document allows or forbids.
+None of those ADRs changes anything this document allows or forbids. D-059 is a committed S1 floor re-baseline, not a new information/safety boundary. [Issue #217](https://github.com/PiFlow/aweform/issues/217) authorizes only an isolated, headless direct-Pymunk free-space calibration probe; it does not authorize migration to Pymunk, organism integration, new collision semantics, or an EXP claim.
 
 In particular, V0.3 plasticity means bounded parameter/state adaptation inside the approved simulation, while V0.4 physicalization and V0.5 differential-drive embodiment remain simulator physics only. None authorizes code self-modification, code generation/execution by the simulated organism, persistence outside explicitly approved experiment artifacts, networking, external APIs, replication, or physical-device control. ADR 0010 also does not authorize checkpointing or learned-state serialization merely by opening V0.3.
 
