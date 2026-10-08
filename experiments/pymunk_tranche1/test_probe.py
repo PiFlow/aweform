@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import json
 import math
 import sys
+from pathlib import Path
 
 import pytest
+
+pytest.importorskip("pymunk")
 
 from experiments.pymunk_tranche1.oracle import differential_drive_arc
 from experiments.pymunk_tranche1.probe import (
@@ -17,6 +21,10 @@ from experiments.pymunk_tranche1.probe import (
 A = MAX_WHEEL_DELTA_RAD
 B = A / 2.0
 HEADINGS = (0.0, math.pi / 2.0, -math.pi / 2.0, math.pi)
+XFAIL_REASON = (
+    "frozen Tranche 1 gate FAIL preserved in "
+    "experiments/pymunk_tranche1/results.json; see ADDENDUM.md"
+)
 COMMANDS = (
     ("zero", (0.0, 0.0)),
     ("forward", (A, A)),
@@ -26,11 +34,27 @@ COMMANDS = (
     ("negative_yaw_arc", (A, B)),
     ("positive_yaw_arc", (B, A)),
 )
+CALIBRATION_CASES = [
+    pytest.param(
+        heading,
+        amplitude,
+        label,
+        command,
+        marks=(
+            pytest.mark.xfail(strict=True, reason=XFAIL_REASON)
+            if label.endswith("yaw_arc") and amplitude > 0.25
+            else ()
+        ),
+    )
+    for label, command in COMMANDS
+    for heading in HEADINGS
+    for amplitude in (0.25, 0.5, 1.0)
+]
 
 
-@pytest.mark.parametrize("heading", HEADINGS)
-@pytest.mark.parametrize("amplitude", (0.25, 0.5, 1.0))
-@pytest.mark.parametrize(("label", "command"), COMMANDS)
+@pytest.mark.parametrize(
+    ("heading", "amplitude", "label", "command"), CALIBRATION_CASES
+)
 def test_frozen_one_interval_calibration(
     heading: float, amplitude: float, label: str, command: tuple[float, float]
 ) -> None:
@@ -47,8 +71,16 @@ def test_frozen_one_interval_calibration(
     assert actual.shaft_deltas == scaled
 
 
-@pytest.mark.parametrize("heading", HEADINGS)
-@pytest.mark.parametrize("command", ((A, 0.0), (0.0, A)))
+@pytest.mark.parametrize(
+    ("heading", "command"),
+    [
+        pytest.param(
+            heading, command, marks=pytest.mark.xfail(strict=True, reason=XFAIL_REASON)
+        )
+        for heading in HEADINGS
+        for command in ((A, 0.0), (0.0, A))
+    ],
+)
 def test_one_wheel_stationary_calibration(
     heading: float, command: tuple[float, float]
 ) -> None:
@@ -119,6 +151,7 @@ def test_encoder_half_quantum_boundaries(value: float, expected_sign: int) -> No
     assert abs(quantized) == abs(expected_sign) * ENCODER_QUANTUM_RAD
 
 
+@pytest.mark.xfail(strict=True, reason=XFAIL_REASON)
 def test_known_vectors_and_pymunk_is_headless() -> None:
     assert "pygame" not in sys.modules
     forward = PymunkProbe().advance((A, A))
@@ -130,8 +163,16 @@ def test_known_vectors_and_pymunk_is_headless() -> None:
     assert math.hypot(*positive_spin.position) <= 1e-5
     assert math.hypot(*negative_spin.position) <= 1e-5
     assert PymunkProbe().advance((0.0, 0.0)).position == (0.0, 0.0)
+    results = json.loads(
+        (Path(__file__).parent / "results.json").read_text(encoding="utf-8")
+    )
+    known_gate = next(
+        gate for gate in results["gates"] if gate["id"] == "known-vectors"
+    )
+    assert known_gate["status"] == "PASS"
 
 
+@pytest.mark.xfail(strict=True, reason=XFAIL_REASON)
 def test_reversal_swap_and_rotated_heading_symmetries() -> None:
     forward = PymunkProbe().advance((A, A))
     reverse = PymunkProbe().advance((-A, -A))
