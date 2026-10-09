@@ -423,7 +423,7 @@ def _check_endpoint(
     return oracle_gaps, production_gaps
 
 
-def _record_checks() -> dict[str, Any]:
+def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
     """Execute the fixed inventory and return deterministic results."""
     counters: Counter[str] = Counter()
     h6: dict[str, Any] = {
@@ -531,7 +531,7 @@ def _record_checks() -> dict[str, Any]:
             continue
         geometry: Any = arc_obstacle[2]
         cx, cy, radius, a0, a1 = geometry
-        for j in range(9):
+        for j in range(1 if preflight else 9):
             alpha = a0 + j * (a1 - a0) / 8
             for sign, heading, commands in (
                 ("+", alpha, ((m, m),) * 16 + ((m, -m),) * 8 + ((-m, m),) * 8),
@@ -827,8 +827,8 @@ def _record_checks() -> dict[str, Any]:
     expected = {
         "ray_sequences": 19,
         "ray_transitions": 204,
-        "pocket_sequences": 54,
-        "pocket_transitions": 1728,
+        "pocket_sequences": 6 if preflight else 54,
+        "pocket_transitions": 192 if preflight else 1728,
         "reset_attempts": 54,
         "h2c_single_candidates": 800,
         "h2c_64_commands": 64,
@@ -837,7 +837,9 @@ def _record_checks() -> dict[str, Any]:
         "ray_sequences": len(ray_cases),
         "ray_transitions": sum(len(sequences[q]) for _, _, q in ray_cases),
         "pocket_sequences": sum(item["family"] == "pocket" for item in identities),
-        "pocket_transitions": 1728,
+        "pocket_transitions": sum(
+            item["commands"] for item in identities if item["family"] == "pocket"
+        ),
         "reset_attempts": counters["reset_attempts"],
         "h2c_single_candidates": len(starts) * 10,
         "h2c_64_commands": 64,
@@ -849,14 +851,21 @@ def _record_checks() -> dict[str, Any]:
         )
     for obstacle_id in ("A1", "A2", "A3"):
         for pocket_sign in ("+", "-"):
-            if counters[f"pocket_two_inner_{obstacle_id}_{pocket_sign}"] == 0:
+            if (
+                not preflight
+                and counters[f"pocket_two_inner_{obstacle_id}_{pocket_sign}"] == 0
+            ):
                 raise AssertionError(
                     f"pocket two-inner-contact missing {obstacle_id}/{pocket_sign}"
                 )
     result = {
         "schema_version": SCHEMA_VERSION,
         "protocol_id": PROTOCOL_ID,
-        "outcome": "D060_REDUCED_DIAGNOSTIC_COMPLETE",
+        "outcome": (
+            "D060_REDUCED_PREFLIGHT_ONLY"
+            if preflight
+            else "D060_REDUCED_DIAGNOSTIC_COMPLETE"
+        ),
         "base_sha": BASE_SHA,
         "selection": actual_selection,
         "omitted_ray_sequences": 26733,
@@ -885,9 +894,9 @@ def _record_checks() -> dict[str, Any]:
     return result
 
 
-def run(executed_sha: str, output: Path) -> None:
+def run(executed_sha: str, output: Path, *, preflight: bool = False) -> None:
     try:
-        result = _record_checks()
+        result = _record_checks(preflight=preflight)
     except Exception as error:
         result = {
             "schema_version": SCHEMA_VERSION,
@@ -899,6 +908,9 @@ def run(executed_sha: str, output: Path) -> None:
             "failure": str(error),
         }
     result["executed_sha"] = executed_sha
+    result["run_role"] = (
+        "resource_preflight_only" if preflight else "full_reduced_result"
+    )
     result["source_sha256"] = {
         "d060.py": hashlib.sha256(Path("src/aweform/d060.py").read_bytes()).hexdigest(),
         "d060_oracle.py": hashlib.sha256(
@@ -929,8 +941,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--executed-sha", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--preflight", action="store_true")
     args = parser.parse_args()
-    run(args.executed_sha, args.output)
+    run(args.executed_sha, args.output, preflight=args.preflight)
 
 
 if __name__ == "__main__":
