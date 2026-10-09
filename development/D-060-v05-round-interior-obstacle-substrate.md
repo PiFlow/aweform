@@ -40,4 +40,6 @@ No sensor, observation, controller, energy, thermal, or D-055 change was made. N
 
 **Lint exception.** `src/aweform/d060.py`, `src/aweform/d060_oracle.py` and `tests/test_d060.py` are byte-identical to the executed SHA `beb9012` and are covered by the H.7 regeneration check, so they were not reformatted. They fail `ruff check` on E701, E702, E501, F401, I001, E741 and E731 (548 errors). `pyproject.toml` therefore adds per-file ignores for exactly those rules on exactly those three files. All other rules, files and Ruff configuration are unchanged.
 
+**Type-check exception.** The same two source modules are untyped, so `mypy src --strict` reported 190 errors in them. `pyproject.toml` therefore adds a mypy override with `ignore_errors = true` for exactly `aweform.d060` and `aweform.d060_oracle`. All other modules remain strict and no frozen bytes changed.
+
 **disposition:** CONTINUING.

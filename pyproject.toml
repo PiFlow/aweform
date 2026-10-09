@@ -72,3 +72,9 @@ select = ["E", "F", "I"]
 [tool.mypy]
 python_version = "3.14"
 strict = true
+
+# D-060 frozen bytes (executed SHA beb9012): untyped, so strict mypy is skipped
+# for exactly these two modules; all other modules stay strict.
+[[tool.mypy.overrides]]
+module = ["aweform.d060", "aweform.d060_oracle"]
+ignore_errors = true
