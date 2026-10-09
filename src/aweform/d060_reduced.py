@@ -190,6 +190,8 @@ def _check_endpoint(
     case: dict[str, Any],
     counters: Counter[str],
     h6_stats: dict[str, Any] | None,
+    *,
+    lockstep: bool,
 ) -> tuple[tuple[float, ...], tuple[float, ...]]:
     """Selected-case analogue of D-060's nested check_one, without law duplication."""
     assert env.body is not None
@@ -211,6 +213,33 @@ def _check_endpoint(
     production_gaps = tuple(
         d060._gap(full, full_yaw, item) for item in d060.FROZEN_LAYOUT
     )
+    production_obstacle_violations = [
+        index for index, gap in enumerate(production_gaps) if gap < 0.0
+    ]
+    sign_disagreements = d060._h2_boundary_sign_disagreements(
+        production_gaps, oracle_gaps
+    )
+    fresh_control: D058Env | None = None
+    fresh_result: Any = None
+    if d060._h2b_requires_fresh_control(
+        lockstep, production_obstacle_violations, sign_disagreements
+    ):
+        fresh_control = D058Env(D058PhysicalConfig(3.0))
+        fresh_control.reset(
+            options={
+                "body_position": start,
+                "station_center": env.station_center,
+                "heading": heading,
+                "battery_j": env.battery_j,
+                "body_temperature_c": env.body_temperature_c,
+                "charger_termination_latched": env.charger_termination_latched,
+            }
+        )
+        reset_heading, _ = d060._restore_h2b_heading(fresh_control, heading)
+        if heading != reset_heading:
+            counters["h2b_heading_representation_restorations"] += 1
+        counters["h2b_fresh_control_eligible"] += 1
+        fresh_result = _step(fresh_control, command)
     room_bad = any(
         x < 0.0 or x > 3.0 or y < 0.0 or y > 3.0 for x, y in _corners(full, full_yaw)
     )
@@ -249,6 +278,10 @@ def _check_endpoint(
         ),
     )
     counters["actuator_bookkeeping_checks"] += 1
+    if fresh_control is not None:
+        assert fresh_result is not None
+        _compare(env, fresh_control, observation, fresh_result[0], True, case)
+        counters["h2b_fresh_control_compared"] += 1
 
     # Independent room-wall check: reconstruct all four rotated corners, never
     # using production _extent as the verifier.
@@ -382,7 +415,7 @@ def _check_endpoint(
         best, no_free = d060._oracle_best_for_obstacle_step(
             env, full_yaw, obstacle, oracle, {**case, "command": command, "p0": start}
         )
-        counters["oracle_rays"] += oracle.PHI_COUNT * len(oracle.ORACLE_LAYOUT)
+        counters["oracle_rays"] += oracle.PHI_COUNT
         counters["oracle_no_free_rays"] += no_free
         if (
             contact.push_out_magnitude_m > best + d060.TAU_C
@@ -480,7 +513,9 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
                 "command_index": ci,
                 "feature_class": feature_class,
             }
-            gaps_o, gaps_p = _check_endpoint(actual, command, case, counters, h6)
+            gaps_o, gaps_p = _check_endpoint(
+                actual, command, case, counters, h6, lockstep=lockstep
+            )
             for oi_gap, (pg, og) in enumerate(zip(gaps_p, gaps_o, strict=True)):
                 if (pg < 0.0) != (og < 0.0):
                     direction_name = (
@@ -570,7 +605,7 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
                         "command_index": ci,
                     }
                     gaps_o, gaps_p = _check_endpoint(
-                        actual, command, case, counters, h6
+                        actual, command, case, counters, h6, lockstep=lockstep
                     )
                     disagreements["production_penetrating_oracle_clear"] += sum(
                         pg < 0 <= og for pg, og in zip(gaps_p, gaps_o, strict=True)
@@ -785,7 +820,7 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
                     "heading": hi,
                     "command": ci,
                 }
-                _check_endpoint(actual, command, case, counters, h6)
+                _check_endpoint(actual, command, case, counters, h6, lockstep=True)
                 control_result = _step(control, command)
                 _compare(
                     actual,
@@ -853,7 +888,9 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
     for si in range(64):
         command = u10[si % 10]
         case = {"family": "h2c-64", "index": si}
-        gaps_o, gaps_p = _check_endpoint(actual, command, case, counters, h6)
+        gaps_o, gaps_p = _check_endpoint(
+            actual, command, case, counters, h6, lockstep=lockstep
+        )
         oracle_eligible = all(gap >= 0.0 for gap in gaps_o)
         sign_disagreement = bool(d060._h2_boundary_sign_disagreements(gaps_p, gaps_o))
         if oracle_eligible:
