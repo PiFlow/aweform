@@ -1,0 +1,4698 @@
+{
+  "H.4_projection_summary": {
+    "idempotence_exact_count": 35179,
+    "idempotence_within_tau_c_count": 43280,
+    "largest_arc_push_out_m": 0.030080813459345948,
+    "minimum_no_cross_margin_m": 0.19318101976520918,
+    "obstacle_resolved_steps": 43280
+  },
+  "H.4_step_kind_displacement_bound": {
+    "analytic_bound_m": 0.029059732045705586,
+    "case": {
+      "class": "pocket",
+      "command": [
+        0.6457718232379019,
+        0.6457718232379019
+      ],
+      "command_index": 0,
+      "family": "pocket",
+      "heading_index": 3,
+      "obstacle": "A2",
+      "p0": [
+        2.75,
+        1.5
+      ],
+      "p_full": [
+        2.7214986425571097,
+        1.5056692724824992
+      ],
+      "pocket_sign": "+",
+      "reset": {
+        "battery_j": 2664.0,
+        "body_position": [
+          2.75,
+          1.5
+        ],
+        "body_temperature_c": 23.0,
+        "charger_termination_latched": false,
+        "heading": 2.945243112740431,
+        "station_center": [
+          1.5,
+          1.5
+        ]
+      },
+      "sequence": "P+",
+      "theta_full": 2.945243112740431
+    },
+    "excess_m": 1.942890293094024e-16,
+    "measured_displacement_m": 0.02905973204570578,
+    "passes": true,
+    "tau_eval_m": 4.263256414560601e-14
+  },
+  "artifact_schema_version": "D060-1",
+  "base_sha": "e11ad91b3b7c649185bd1298ad5f3a791be571f8",
+  "checks": {
+    "H.1_protected_byte_identity": "PASS",
+    "H.2_obstacle_free_identity": {
+      "boundary_sign_disagreement_cases": [
+        {
+          "case": {
+            "class": "arc-convex",
+            "command_index": 5,
+            "family": "ray",
+            "heading_index": 15,
+            "obstacle": "A2",
+            "ray_index": 12,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                2.2232031986427216,
+                1.7182063797369498
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 3.926990816987241,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q1"
+          },
+          "command": [
+            -0.6457718232379019,
+            -0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              2.342167682618586,
+              1.8452364045822593
+            ],
+            "magnitude_m": 2.220446049250313e-16,
+            "obstacle_id": "A2",
+            "resolved_by": "obstacle",
+            "unconstrained_endpoint": [
+              2.342167682618586,
+              1.8452364045822591
+            ],
+            "vector": [
+              0.0,
+              2.220446049250313e-16
+            ]
+          },
+          "obstacle": "A2",
+          "oracle_classification": "clear",
+          "oracle_gap_m": 1.0755285551056204e-16,
+          "p0": [
+            2.3216193490296035,
+            1.8246880709932767
+          ],
+          "p_full": [
+            2.342167682618586,
+            1.8452364045822591
+          ],
+          "production_classification": "penetrating",
+          "production_gap_m": -5.204170427930421e-17,
+          "production_violations": [
+            "A2"
+          ],
+          "theta_full": 3.926990816987241
+        },
+        {
+          "case": {
+            "class": "arc-cap",
+            "command_index": 2,
+            "family": "ray",
+            "heading_index": 21,
+            "obstacle": "A2",
+            "ray_index": 22,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                2.467157287525381,
+                1.0469565385972817
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 5.497787143782138,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q1"
+          },
+          "command": [
+            -0.6457718232379019,
+            -0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              2.397774841757982,
+              1.0991564362783448
+            ],
+            "magnitude_m": 0.0,
+            "obstacle_id": "A2",
+            "resolved_by": "obstacle",
+            "unconstrained_endpoint": [
+              2.397774841757982,
+              1.0991564362783448
+            ],
+            "vector": [
+              0.0,
+              0.0
+            ]
+          },
+          "obstacle": "A2",
+          "oracle_classification": "clear",
+          "oracle_gap_m": 2.42861286636753e-16,
+          "p0": [
+            2.4183231753469645,
+            1.0786081026893624
+          ],
+          "p_full": [
+            2.397774841757982,
+            1.0991564362783448
+          ],
+          "production_classification": "penetrating",
+          "production_gap_m": -5.204170427930421e-17,
+          "production_violations": [
+            "A2"
+          ],
+          "theta_full": 5.497787143782138
+        },
+        {
+          "case": {
+            "class": "arc-cap",
+            "command_index": 3,
+            "family": "ray",
+            "heading_index": 21,
+            "obstacle": "A2",
+            "ray_index": 22,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                2.467157287525381,
+                1.0469565385972817
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 5.497787143782138,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q1"
+          },
+          "command": [
+            -0.6457718232379019,
+            -0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              2.3772265081689996,
+              1.1197047698673273
+            ],
+            "magnitude_m": 0.0,
+            "obstacle_id": "A2",
+            "resolved_by": "obstacle",
+            "unconstrained_endpoint": [
+              2.3772265081689996,
+              1.1197047698673273
+            ],
+            "vector": [
+              0.0,
+              0.0
+            ]
+          },
+          "obstacle": "A2",
+          "oracle_classification": "clear",
+          "oracle_gap_m": 2.42861286636753e-16,
+          "p0": [
+            2.397774841757982,
+            1.0991564362783448
+          ],
+          "p_full": [
+            2.3772265081689996,
+            1.1197047698673273
+          ],
+          "production_classification": "penetrating",
+          "production_gap_m": -5.204170427930421e-17,
+          "production_violations": [
+            "A2"
+          ],
+          "theta_full": 5.497787143782138
+        },
+        {
+          "case": {
+            "class": "arc-cap",
+            "command_index": 4,
+            "family": "ray",
+            "heading_index": 21,
+            "obstacle": "A2",
+            "ray_index": 22,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                2.467157287525381,
+                1.0469565385972817
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 5.497787143782138,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q1"
+          },
+          "command": [
+            -0.6457718232379019,
+            -0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              2.356678174580017,
+              1.1402531034563097
+            ],
+            "magnitude_m": 0.0,
+            "obstacle_id": "A2",
+            "resolved_by": "obstacle",
+            "unconstrained_endpoint": [
+              2.356678174580017,
+              1.1402531034563097
+            ],
+            "vector": [
+              0.0,
+              0.0
+            ]
+          },
+          "obstacle": "A2",
+          "oracle_classification": "clear",
+          "oracle_gap_m": 2.42861286636753e-16,
+          "p0": [
+            2.3772265081689996,
+            1.1197047698673273
+          ],
+          "p_full": [
+            2.356678174580017,
+            1.1402531034563097
+          ],
+          "production_classification": "penetrating",
+          "production_gap_m": -5.204170427930421e-17,
+          "production_violations": [
+            "A2"
+          ],
+          "theta_full": 5.497787143782138
+        },
+        {
+          "case": {
+            "class": "arc-cap",
+            "command_index": 5,
+            "family": "ray",
+            "heading_index": 21,
+            "obstacle": "A2",
+            "ray_index": 22,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                2.467157287525381,
+                1.0469565385972817
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 5.497787143782138,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q1"
+          },
+          "command": [
+            -0.6457718232379019,
+            -0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              2.3361298409910347,
+              1.1608014370452922
+            ],
+            "magnitude_m": 0.0,
+            "obstacle_id": null,
+            "resolved_by": "none",
+            "unconstrained_endpoint": [
+              2.3361298409910347,
+              1.1608014370452922
+            ],
+            "vector": [
+              0.0,
+              0.0
+            ]
+          },
+          "obstacle": "A2",
+          "oracle_classification": "penetrating",
+          "oracle_gap_m": -9.020562075079397e-17,
+          "p0": [
+            2.356678174580017,
+            1.1402531034563097
+          ],
+          "p_full": [
+            2.3361298409910347,
+            1.1608014370452922
+          ],
+          "production_classification": "clear",
+          "production_gap_m": 2.636779683484747e-16,
+          "production_violations": [],
+          "theta_full": 5.497787143782138
+        },
+        {
+          "case": {
+            "class": "arc-cap",
+            "command_index": 6,
+            "family": "ray",
+            "heading_index": 21,
+            "obstacle": "A2",
+            "ray_index": 22,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                2.467157287525381,
+                1.0469565385972817
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 5.497787143782138,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q1"
+          },
+          "command": [
+            -0.6457718232379019,
+            -0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              2.3155815074020523,
+              1.1813497706342746
+            ],
+            "magnitude_m": 0.0,
+            "obstacle_id": "A2",
+            "resolved_by": "obstacle",
+            "unconstrained_endpoint": [
+              2.3155815074020523,
+              1.1813497706342746
+            ],
+            "vector": [
+              0.0,
+              0.0
+            ]
+          },
+          "obstacle": "A2",
+          "oracle_classification": "clear",
+          "oracle_gap_m": 2.42861286636753e-16,
+          "p0": [
+            2.3361298409910347,
+            1.1608014370452922
+          ],
+          "p_full": [
+            2.3155815074020523,
+            1.1813497706342746
+          ],
+          "production_classification": "penetrating",
+          "production_gap_m": -5.204170427930421e-17,
+          "production_violations": [
+            "A2"
+          ],
+          "theta_full": 5.497787143782138
+        },
+        {
+          "case": {
+            "class": "arc-cap",
+            "command_index": 2,
+            "family": "ray",
+            "heading_index": 21,
+            "obstacle": "A2",
+            "ray_index": 22,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                2.467157287525381,
+                1.0469565385972817
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 5.497787143782138,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q11"
+          },
+          "command": [
+            -0.6457718232379019,
+            -0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              2.397774841757982,
+              1.0991564362783448
+            ],
+            "magnitude_m": 0.0,
+            "obstacle_id": "A2",
+            "resolved_by": "obstacle",
+            "unconstrained_endpoint": [
+              2.397774841757982,
+              1.0991564362783448
+            ],
+            "vector": [
+              0.0,
+              0.0
+            ]
+          },
+          "obstacle": "A2",
+          "oracle_classification": "clear",
+          "oracle_gap_m": 2.42861286636753e-16,
+          "p0": [
+            2.4183231753469645,
+            1.0786081026893624
+          ],
+          "p_full": [
+            2.397774841757982,
+            1.0991564362783448
+          ],
+          "production_classification": "penetrating",
+          "production_gap_m": -5.204170427930421e-17,
+          "production_violations": [
+            "A2"
+          ],
+          "theta_full": 5.497787143782138
+        },
+        {
+          "case": {
+            "class": "arc-cap",
+            "command_index": 3,
+            "family": "ray",
+            "heading_index": 21,
+            "obstacle": "A2",
+            "ray_index": 22,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                2.467157287525381,
+                1.0469565385972817
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 5.497787143782138,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q11"
+          },
+          "command": [
+            -0.6457718232379019,
+            -0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              2.3772265081689996,
+              1.1197047698673273
+            ],
+            "magnitude_m": 0.0,
+            "obstacle_id": "A2",
+            "resolved_by": "obstacle",
+            "unconstrained_endpoint": [
+              2.3772265081689996,
+              1.1197047698673273
+            ],
+            "vector": [
+              0.0,
+              0.0
+            ]
+          },
+          "obstacle": "A2",
+          "oracle_classification": "clear",
+          "oracle_gap_m": 2.42861286636753e-16,
+          "p0": [
+            2.397774841757982,
+            1.0991564362783448
+          ],
+          "p_full": [
+            2.3772265081689996,
+            1.1197047698673273
+          ],
+          "production_classification": "penetrating",
+          "production_gap_m": -5.204170427930421e-17,
+          "production_violations": [
+            "A2"
+          ],
+          "theta_full": 5.497787143782138
+        },
+        {
+          "case": {
+            "class": "arc-cap",
+            "command_index": 7,
+            "family": "ray",
+            "heading_index": 25,
+            "obstacle": "A2",
+            "ray_index": 22,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                2.467157287525381,
+                1.0469565385972817
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 2.267817704047496,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q8"
+          },
+          "command": [
+            0.6457718232379019,
+            0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              2.3084893463991896,
+              1.1978388495319348
+            ],
+            "magnitude_m": 0.0,
+            "obstacle_id": null,
+            "resolved_by": "none",
+            "unconstrained_endpoint": [
+              2.3084893463991896,
+              1.1978388495319348
+            ],
+            "vector": [
+              0.0,
+              0.0
+            ]
+          },
+          "obstacle": "A2",
+          "oracle_classification": "penetrating",
+          "oracle_gap_m": -3.677613769070831e-16,
+          "p0": [
+            2.327143853626214,
+            1.1755570770107664
+          ],
+          "p_full": [
+            2.3084893463991896,
+            1.1978388495319348
+          ],
+          "production_classification": "clear",
+          "production_gap_m": 2.0816681711721685e-17,
+          "production_violations": [],
+          "theta_full": 2.267817704047496
+        },
+        {
+          "case": {
+            "class": "arc-cap",
+            "command_index": 5,
+            "family": "ray",
+            "heading_index": 27,
+            "obstacle": "A2",
+            "ray_index": 22,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                2.467157287525381,
+                1.0469565385972817
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 5.409410357637289,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q1"
+          },
+          "command": [
+            -0.6457718232379019,
+            -0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              2.3457983608532387,
+              1.1532753044895983
+            ],
+            "magnitude_m": 0.0,
+            "obstacle_id": null,
+            "resolved_by": "none",
+            "unconstrained_endpoint": [
+              2.3457983608532387,
+              1.1532753044895983
+            ],
+            "vector": [
+              0.0,
+              0.0
+            ]
+          },
+          "obstacle": "A2",
+          "oracle_classification": "penetrating",
+          "oracle_gap_m": -3.677613769070831e-16,
+          "p0": [
+            2.3644528680802632,
+            1.1309935319684299
+          ],
+          "p_full": [
+            2.3457983608532387,
+            1.1532753044895983
+          ],
+          "production_classification": "clear",
+          "production_gap_m": 3.469446951953614e-17,
+          "production_violations": [],
+          "theta_full": 5.409410357637289
+        },
+        {
+          "case": {
+            "class": "arc-convex",
+            "command_index": 7,
+            "family": "ray",
+            "heading_index": 24,
+            "obstacle": "A3",
+            "ray_index": 24,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                0.61820637973695,
+                2.0732031986427217
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 0.8737749495422971,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q8"
+          },
+          "command": [
+            0.6457718232379019,
+            0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              0.7845338311523066,
+              2.2297832004962217
+            ],
+            "magnitude_m": 0.0,
+            "obstacle_id": null,
+            "resolved_by": "none",
+            "unconstrained_endpoint": [
+              0.7845338311523066,
+              2.2297832004962217
+            ],
+            "vector": [
+              0.0,
+              0.0
+            ]
+          },
+          "obstacle": "A3",
+          "oracle_classification": "penetrating",
+          "oracle_gap_m": -3.469446951953614e-17,
+          "p0": [
+            0.7658793239252819,
+            2.2075014279750533
+          ],
+          "p_full": [
+            0.7845338311523066,
+            2.2297832004962217
+          ],
+          "production_classification": "clear",
+          "production_gap_m": 4.5102810375396984e-17,
+          "production_violations": [],
+          "theta_full": 0.8737749495422971
+        },
+        {
+          "case": {
+            "class": "arc-convex",
+            "command_index": 5,
+            "family": "ray",
+            "heading_index": 15,
+            "obstacle": "A3",
+            "ray_index": 28,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                0.9267968013572782,
+                2.38179362026305
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 3.926990816987241,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q8"
+          },
+          "command": [
+            0.6457718232379019,
+            0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              0.8078323173814134,
+              2.2547635954177405
+            ],
+            "magnitude_m": 0.0,
+            "obstacle_id": null,
+            "resolved_by": "none",
+            "unconstrained_endpoint": [
+              0.8078323173814134,
+              2.2547635954177405
+            ],
+            "vector": [
+              0.0,
+              0.0
+            ]
+          },
+          "obstacle": "A3",
+          "oracle_classification": "penetrating",
+          "oracle_gap_m": -1.457167719820518e-16,
+          "p0": [
+            0.8283806509703958,
+            2.275311929006723
+          ],
+          "p_full": [
+            0.8078323173814134,
+            2.2547635954177405
+          ],
+          "production_classification": "clear",
+          "production_gap_m": 2.7755575615628914e-17,
+          "production_violations": [],
+          "theta_full": 3.926990816987241
+        },
+        {
+          "case": {
+            "class": "arc-convex",
+            "command_index": 6,
+            "family": "ray",
+            "heading_index": 15,
+            "obstacle": "A3",
+            "ray_index": 28,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                0.9267968013572782,
+                2.38179362026305
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 3.926990816987241,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q8"
+          },
+          "command": [
+            0.6457718232379019,
+            0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              0.7872839837924309,
+              2.234215261828758
+            ],
+            "magnitude_m": 0.0,
+            "obstacle_id": null,
+            "resolved_by": "none",
+            "unconstrained_endpoint": [
+              0.7872839837924309,
+              2.234215261828758
+            ],
+            "vector": [
+              0.0,
+              0.0
+            ]
+          },
+          "obstacle": "A3",
+          "oracle_classification": "penetrating",
+          "oracle_gap_m": -1.457167719820518e-16,
+          "p0": [
+            0.8078323173814134,
+            2.2547635954177405
+          ],
+          "p_full": [
+            0.7872839837924309,
+            2.234215261828758
+          ],
+          "production_classification": "clear",
+          "production_gap_m": 2.7755575615628914e-17,
+          "production_violations": [],
+          "theta_full": 3.926990816987241
+        },
+        {
+          "case": {
+            "class": "arc-convex",
+            "command_index": 7,
+            "family": "ray",
+            "heading_index": 15,
+            "obstacle": "A3",
+            "ray_index": 28,
+            "reset": {
+              "battery_j": 2664.0,
+              "body_position": [
+                0.9267968013572782,
+                2.38179362026305
+              ],
+              "body_temperature_c": 23.0,
+              "charger_termination_latched": false,
+              "heading": 3.926990816987241,
+              "station_center": [
+                1.5,
+                1.5
+              ]
+            },
+            "sequence": "Q8"
+          },
+          "command": [
+            0.6457718232379019,
+            0.6457718232379019
+          ],
+          "executed_push_out": {
+            "executed_endpoint": [
+              0.7667356502034485,
+              2.2136669282397756
+            ],
+            "magnitude_m": 0.0,
+            "obstacle_id": null,
+            "resolved_by": "none",
+            "unconstrained_endpoint": [
+              0.7667356502034485,
+              2.2136669282397756
+            ],
+            "vector": [
+              0.0,
+              0.0
+            ]
+          },
+          "obstacle": "A3",
+          "oracle_classification": "penetrating",
+          "oracle_gap_m": -1.457167719820518e-16,
+          "p0": [
+            0.7872839837924309,
+            2.234215261828758
+          ],
+          "p_full": [
+            0.7667356502034485,
+            2.2136669282397756
+          ],
+          "production_classification": "clear",
+          "production_gap_m": 2.7755575615628914e-17,
+          "production_violations": [],
+          "theta_full": 3.926990816987241
+        }
+      ],
+      "boundary_sign_disagreement_count": 14,
+      "heading_representation_restorations": 3465,
+      "heading_restoration_example": {
+        "case": {
+          "class": "arc-convex",
+          "command": [
+            0.0,
+            -0.6457718232379019
+          ],
+          "command_index": 2,
+          "family": "ray",
+          "h2b_raw_pre_heading": -0.052359877559829904,
+          "h2b_reset_normalized_heading": 6.230825429619756,
+          "h2b_restored_heading": -0.052359877559829904,
+          "heading_index": 1,
+          "obstacle": "A1",
+          "p0": [
+            1.7584515622724697,
+            2.495163383859457
+          ],
+          "p_full": [
+            1.7440608068242993,
+            2.497057962756378
+          ],
+          "ray_index": 0,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              1.7851003744640497,
+              2.4938083338286465
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 0.2617993877991494,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sequence": "Q4",
+          "theta_full": -0.20943951023931956
+        }
+      },
+      "lockstep_steps": 171503,
+      "re_reset_steps": 20410,
+      "transplanted_D058_probes": {
+        "accepted_starts": 706,
+        "lockstep_steps_compared": 423150,
+        "rejected_starts": [
+          {
+            "heading": 0.0,
+            "heading_index": 0,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.28858983848622444,
+              1.5901690375747641,
+              -0.025,
+              1.6023540641175786,
+              0.3826226809194994,
+              2.1085657854232753,
+              1.5626550313070682
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 0.2617993877991494,
+            "heading_index": 1,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.26544391102514364,
+              1.5755788649142475,
+              -0.025,
+              1.6195719988599873,
+              0.3735992960451639,
+              2.1108199670571546,
+              1.5598763651527137
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 0.5235987755982988,
+            "heading_index": 2,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.24690420645971198,
+              1.5708057290922284,
+              -0.025,
+              1.6002114964847798,
+              0.377345131146051,
+              2.1230205755393925,
+              1.5378103063038395
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 0.7853981633974483,
+            "heading_index": 3,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.24160463569803345,
+              1.5762446976460627,
+              -0.025,
+              1.5889829097803618,
+              0.393273126299028,
+              2.1405970388562796,
+              1.5247329278012636
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 1.0471975511965976,
+            "heading_index": 4,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.2506638433661471,
+              1.5914458226998294,
+              -0.025,
+              1.5879613774579846,
+              0.41801270189221934,
+              2.121096259076086,
+              1.5217655837880368
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 1.3089969389957472,
+            "heading_index": 5,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.2702788004768039,
+              1.5968428334964129,
+              -0.025,
+              1.597235423957865,
+              0.4197267221650383,
+              2.1100281535406236,
+              1.5291667492329544
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 1.5707963267948966,
+            "heading_index": 6,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.27108983848622437,
+              1.5792844733220885,
+              -0.025,
+              1.6160076934615513,
+              0.39530494881692757,
+              2.108971109116563,
+              1.5462945373583161
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 1.832595714594046,
+            "heading_index": 7,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.2516091648339062,
+              1.5712384308825813,
+              -0.025,
+              1.6370719988599878,
+              0.3783392534563477,
+              2.118011523633881,
+              1.5440689582000438
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 2.0943951023931953,
+            "heading_index": 8,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.24174350464683467,
+              1.5733685588153632,
+              -0.025,
+              1.6131118849800112,
+              0.3734029007131721,
+              2.1364146372941653,
+              1.5279102887848306
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 2.356194490192345,
+            "heading_index": 9,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.2462063891390355,
+              1.5854983078502638,
+              -0.02002525316941687,
+              1.595486735460486,
+              0.3812670467160129,
+              2.1580970388562792,
+              1.521586554716261
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 2.6179938779914944,
+            "heading_index": 10,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.26405266591375887,
+              1.6066332594732358,
+              -0.025,
+              1.5875090764170223,
+              0.40051270189221927,
+              2.1338082383115857,
+              1.5256469731761717
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 2.8797932657906435,
+            "heading_index": 11,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.28777880047680376,
+              1.613386379308905,
+              -0.025,
+              1.5898662474722491,
+              0.40222672216503863,
+              2.1164422263869676,
+              1.5397381109050114
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 3.141592653589793,
+            "heading_index": 12,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.28858983848622444,
+              1.5901690375747641,
+              -0.025,
+              1.6023540641175786,
+              0.3826226809194994,
+              2.1085657854232753,
+              1.5626550313070682
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 3.4033920413889427,
+            "heading_index": 13,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.2654439110251436,
+              1.575578864914248,
+              -0.025,
+              1.619571998859987,
+              0.37359929604516345,
+              2.1108199670571546,
+              1.5598763651527137
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 3.665191429188092,
+            "heading_index": 14,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.24690420645971198,
+              1.5708057290922284,
+              -0.025,
+              1.6002114964847798,
+              0.377345131146051,
+              2.1230205755393925,
+              1.5378103063038395
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 3.926990816987241,
+            "heading_index": 15,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.24160463569803345,
+              1.5762446976460627,
+              -0.025,
+              1.5889829097803618,
+              0.393273126299028,
+              2.1405970388562796,
+              1.5247329278012636
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 4.1887902047863905,
+            "heading_index": 16,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.2506638433661471,
+              1.5914458226998294,
+              -0.025,
+              1.5879613774579846,
+              0.41801270189221934,
+              2.121096259076086,
+              1.5217655837880368
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 4.4505895925855405,
+            "heading_index": 17,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.2702788004768039,
+              1.5968428334964129,
+              -0.025,
+              1.597235423957865,
+              0.4197267221650383,
+              2.1100281535406236,
+              1.5291667492329544
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 4.71238898038469,
+            "heading_index": 18,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.27108983848622437,
+              1.5792844733220885,
+              -0.025,
+              1.6160076934615513,
+              0.39530494881692757,
+              2.108971109116563,
+              1.5462945373583161
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 4.974188368183839,
+            "heading_index": 19,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.2516091648339062,
+              1.5712384308825813,
+              -0.025,
+              1.6370719988599878,
+              0.3783392534563477,
+              2.118011523633881,
+              1.5440689582000438
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 5.235987755982989,
+            "heading_index": 20,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.24174350464683456,
+              1.5733685588153632,
+              -0.025,
+              1.6131118849800112,
+              0.37340290071317217,
+              2.1364146372941653,
+              1.5279102887848306
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 5.497787143782138,
+            "heading_index": 21,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.24620638913903561,
+              1.5854983078502638,
+              -0.02002525316941687,
+              1.595486735460486,
+              0.38126704671601286,
+              2.1580970388562797,
+              1.5215865547162613
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 5.759586531581287,
+            "heading_index": 22,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.26405266591375887,
+              1.6066332594732358,
+              -0.025,
+              1.5875090764170223,
+              0.40051270189221916,
+              2.133808238311586,
+              1.5256469731761715
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 6.021385919380436,
+            "heading_index": 23,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.2877788004768039,
+              1.613386379308905,
+              -0.025,
+              1.5898662474722491,
+              0.4022267221650387,
+              2.1164422263869676,
+              1.5397381109050114
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 0.8737749495422971,
+            "heading_index": 24,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.24309291765777388,
+              1.5803312081268777,
+              -0.025,
+              1.5874736357465244,
+              0.4010290238556622,
+              2.133532759038151,
+              1.5225691411332167
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 2.267817704047496,
+            "heading_index": 25,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.24309291765777377,
+              1.5803312081268772,
+              -0.0219569846916439,
+              1.600416833393461,
+              0.3772176134321744,
+              2.1530691894332508,
+              1.5225691411332165
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 4.01536760313209,
+            "heading_index": 26,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.243092917657774,
+              1.5803312081268777,
+              -0.025,
+              1.587473635746525,
+              0.4010290238556626,
+              2.133532759038151,
+              1.5225691411332165
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 5.409410357637289,
+            "heading_index": 27,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.24309291765777377,
+              1.5803312081268772,
+              -0.0219569846916439,
+              1.600416833393461,
+              0.3772176134321744,
+              2.1530691894332508,
+              1.5225691411332165
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 0.6970213772525995,
+            "heading_index": 28,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.2417803866634601,
+              1.5732773829718534,
+              -0.025,
+              1.5916628293012929,
+              0.3866497310480117,
+              2.13612710811382,
+              1.5280562139652656
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 2.444571276337194,
+            "heading_index": 29,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.2508662807618736,
+              1.5916975359713943,
+              -0.02195698469164368,
+              1.5916628293012929,
+              0.3866497310480117,
+              2.1498849466590912,
+              1.5217950546499546
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 3.8386140308423924,
+            "heading_index": 30,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.2417803866634601,
+              1.5732773829718534,
+              -0.025,
+              1.5916628293012929,
+              0.3866497310480117,
+              2.13612710811382,
+              1.5280562139652656
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 5.586163929926987,
+            "heading_index": 31,
+            "label": "grid:0.75:2.25",
+            "oracle_gaps_m": [
+              0.2508662807618736,
+              1.5916975359713943,
+              -0.02195698469164368,
+              1.5916628293012929,
+              0.3866497310480117,
+              2.1498849466590912,
+              1.5217950546499546
+            ],
+            "position": [
+              0.75,
+              2.25
+            ]
+          },
+          {
+            "heading": 0.2617993877991494,
+            "heading_index": 1,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.006735013055720142,
+              0.8929341229034873,
+              0.5964264112706428,
+              1.5478692596146983,
+              0.9407722212206444,
+              1.683140931258819,
+              0.8293933439951191
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 0.5235987755982988,
+            "heading_index": 2,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.013851019612156325,
+              0.895332889004989,
+              0.5892804387426103,
+              1.5369022690931728,
+              0.9577241335952168,
+              1.6964419162443236,
+              0.8050906374856366
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 0.7853981633974483,
+            "heading_index": 3,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.014850028398320815,
+              0.9080269028729298,
+              0.592966745775573,
+              1.535346410715657,
+              0.9337433436694684,
+              1.6770677400210356,
+              0.7877136610012123
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 1.0471975511965976,
+            "heading_index": 4,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.009710791595842351,
+              0.9250317547305484,
+              0.6071220094753333,
+              1.5433077136594007,
+              0.9160516855818437,
+              1.6670630630627448,
+              0.780718753093241
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 2.0943951023931953,
+            "heading_index": 8,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.009710791595842351,
+              0.902826605104007,
+              0.5905819226269049,
+              1.5433077136594007,
+              0.9402241335952166,
+              1.7139419162443237,
+              0.7922870507215864
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 2.356194490192345,
+            "heading_index": 9,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.014850028398320815,
+              0.9218792929566066,
+              0.60144065178849,
+              1.535346410715657,
+              0.9207484135270773,
+              1.6892055174998633,
+              0.7817840362085837
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 2.6179938779914944,
+            "heading_index": 10,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.013851019612156325,
+              0.9425317547305481,
+              0.6219487244776893,
+              1.5369022690931728,
+              0.9097957932329572,
+              1.672732379456673,
+              0.7822870980557914
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 2.8797932657906435,
+            "heading_index": 11,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.006735013055720142,
+              0.9189436174476626,
+              0.6381050747038572,
+              1.5478692596146983,
+              0.9096527865873677,
+              1.6659945617043086,
+              0.7937427444639986
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 3.4033920413889427,
+            "heading_index": 13,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.006735013055720586,
+              0.8929341229034875,
+              0.5964264112706428,
+              1.547869259614698,
+              0.9407722212206443,
+              1.6831409312588195,
+              0.829393343995119
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 3.665191429188092,
+            "heading_index": 14,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.013851019612156325,
+              0.895332889004989,
+              0.5892804387426103,
+              1.5369022690931728,
+              0.9577241335952168,
+              1.6964419162443236,
+              0.8050906374856366
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 3.926990816987241,
+            "heading_index": 15,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.014850028398320815,
+              0.9080269028729298,
+              0.592966745775573,
+              1.535346410715657,
+              0.9337433436694684,
+              1.6770677400210356,
+              0.7877136610012123
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 4.1887902047863905,
+            "heading_index": 16,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.009710791595842351,
+              0.9250317547305484,
+              0.6071220094753333,
+              1.5433077136594007,
+              0.9160516855818437,
+              1.6670630630627448,
+              0.780718753093241
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 5.235987755982989,
+            "heading_index": 20,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.009710791595842351,
+              0.9028266051040073,
+              0.5905819226269051,
+              1.5433077136594007,
+              0.9402241335952167,
+              1.7139419162443237,
+              0.7922870507215867
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 5.497787143782138,
+            "heading_index": 21,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.014850028398320815,
+              0.9218792929566066,
+              0.60144065178849,
+              1.535346410715657,
+              0.9207484135270773,
+              1.6892055174998633,
+              0.7817840362085837
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 5.759586531581287,
+            "heading_index": 22,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.013851019612156325,
+              0.9425317547305481,
+              0.6219487244776893,
+              1.5369022690931728,
+              0.9097957932329572,
+              1.672732379456673,
+              0.7822870980557914
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 6.021385919380436,
+            "heading_index": 23,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.006735013055720142,
+              0.9189436174476626,
+              0.6381050747038572,
+              1.5478692596146983,
+              0.9096527865873677,
+              1.6659945617043086,
+              0.7937427444639986
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 0.8737749495422971,
+            "heading_index": 24,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.013798714721871642,
+              0.9144604800738805,
+              0.5966235130213973,
+              1.5369836188612414,
+              0.9267220324425675,
+              1.6725833901268425,
+              0.7841311809521399
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 2.267817704047496,
+            "heading_index": 25,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.013798714721871642,
+              0.9144604800738805,
+              0.5966235130213973,
+              1.5369836188612414,
+              0.9267220324425675,
+              1.6967429257172637,
+              0.7841311809521399
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 4.01536760313209,
+            "heading_index": 26,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.013798714721871198,
+              0.9144604800738809,
+              0.5966235130213973,
+              1.5369836188612418,
+              0.9267220324425672,
+              1.672583390126843,
+              0.7841311809521397
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 5.409410357637289,
+            "heading_index": 27,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.013798714721871642,
+              0.9144604800738805,
+              0.5966235130213973,
+              1.5369836188612414,
+              0.9267220324425675,
+              1.6967429257172637,
+              0.7841311809521399
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 0.6970213772525995,
+            "heading_index": 28,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.015200748928099618,
+              0.9026434276585622,
+              0.5905115489047568,
+              1.5347992510719004,
+              0.9417353705134495,
+              1.6826262662609242,
+              0.7924879738859932
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 2.444571276337194,
+            "heading_index": 29,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.015200748928099618,
+              0.9302097709584412,
+              0.607364624069676,
+              1.5347992510719004,
+              0.915889459538654,
+              1.6826262662609242,
+              0.7807010686945043
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 3.8386140308423924,
+            "heading_index": 30,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.015200748928099618,
+              0.9026434276585622,
+              0.5905115489047568,
+              1.5347992510719004,
+              0.9417353705134495,
+              1.6826262662609242,
+              0.7924879738859932
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 5.586163929926987,
+            "heading_index": 31,
+            "label": "grid:1.5:2.25",
+            "oracle_gaps_m": [
+              -0.015200748928099618,
+              0.9302097709584412,
+              0.607364624069676,
+              1.5347992510719004,
+              0.915889459538654,
+              1.6826262662609242,
+              0.7807010686945043
+            ],
+            "position": [
+              1.5,
+              2.25
+            ]
+          },
+          {
+            "heading": 0.0,
+            "heading_index": 0,
+            "label": "grid:2.25:0.75",
+            "oracle_gaps_m": [
+              1.353638762258561,
+              0.356473905058953,
+              2.051672414753312,
+              0.32253596936144624,
+              1.603160388291031,
+              -0.006339377008567515,
+              1.546294537358316
+            ],
+            "position": [
+              2.25,
+              0.75
+            ]
+          },
+          {
+            "heading": 1.3089969389957472,
+            "heading_index": 5,
+            "label": "grid:2.25:0.75",
+            "oracle_gaps_m": [
+              1.3487665758706366,
+              0.39244373075428624,
+              2.0533154398237676,
+              0.3045087401959097,
+              1.6002042722692496,
+              -0.009742379202575223,
+              1.5598763651527137
+            ],
+            "position": [
+              2.25,
+              0.75
+            ]
+          },
+          {
+            "heading": 2.8797932657906435,
+            "heading_index": 11,
+            "label": "grid:2.25:0.75",
+            "oracle_gaps_m": [
+              1.3419854594337237,
+              0.3749437307542864,
+              2.0600683060249376,
+              0.30744700199566316,
+              1.6176605704772986,
+              -0.003149466588837399,
+              1.5440689582000438
+            ],
+            "position": [
+              2.25,
+              0.75
+            ]
+          },
+          {
+            "heading": 3.141592653589793,
+            "heading_index": 12,
+            "label": "grid:2.25:0.75",
+            "oracle_gaps_m": [
+              1.353638762258561,
+              0.356473905058953,
+              2.051672414753312,
+              0.32253596936144624,
+              1.603160388291031,
+              -0.006339377008567515,
+              1.546294537358316
+            ],
+            "position": [
+              2.25,
+              0.75
+            ]
+          },
+          {
+            "heading": 4.4505895925855405,
+            "heading_index": 17,
+            "label": "grid:2.25:0.75",
+            "oracle_gaps_m": [
+              1.3487665758706366,
+              0.3924437307542862,
+              2.0533154398237676,
+              0.3045087401959096,
+              1.6002042722692496,
+              -0.009742379202575126,
+              1.5598763651527137
+            ],
+            "position": [
+              2.25,
+              0.75
+            ]
+          },
+          {
+            "heading": 6.021385919380436,
+            "heading_index": 23,
+            "label": "grid:2.25:0.75",
+            "oracle_gaps_m": [
+              1.3419854594337237,
+              0.37494373075428633,
+              2.060068306024938,
+              0.30744700199566277,
+              1.6176605704772984,
+              -0.003149466588837066,
+              1.5440689582000435
+            ],
+            "position": [
+              2.25,
+              0.75
+            ]
+          },
+          {
+            "heading": 0.0,
+            "heading_index": 0,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6453691794838249,
+              -0.014999999999999881,
+              1.5955584005417913,
+              0.8816593902894295,
+              1.5850000000000002,
+              0.7425630889714712,
+              0.7996506635082447
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 0.2617993877991494,
+            "heading_index": 1,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6584847178281893,
+              -0.025,
+              1.5875512136761016,
+              0.8755493366845905,
+              1.5602436282854633,
+              0.7390772919745923,
+              0.7848435377128633
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 0.5235987755982988,
+            "heading_index": 2,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6755127018922193,
+              -0.025,
+              1.5897158068930626,
+              0.8804458116792626,
+              1.5433077136594007,
+              0.7219577654482342,
+              0.7807187530932408
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 0.7853981633974483,
+            "heading_index": 3,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6584015245994487,
+              -0.025,
+              1.601873049446425,
+              0.8958461563854724,
+              1.535346410715657,
+              0.7153789359226118,
+              0.7877136610012123
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 1.0471975511965976,
+            "heading_index": 4,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6453344657378264,
+              -0.025,
+              1.6196469970012117,
+              0.9202241335952168,
+              1.5369022690931728,
+              0.7200588213932463,
+              0.8050906374856366
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 1.3089969389957472,
+            "heading_index": 5,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6434827316775947,
+              -0.025,
+              1.6002609651204658,
+              0.9143671243657895,
+              1.5478692596146983,
+              0.7354846392262954,
+              0.8293933439951192
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 1.5707963267948966,
+            "heading_index": 6,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6530628233834964,
+              -0.025,
+              1.5890521964437765,
+              0.8917367397459316,
+              1.5675000000000001,
+              0.7599999999999999,
+              0.814960259202699
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 1.832595714594046,
+            "heading_index": 7,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6729751212954281,
+              -0.025,
+              1.587890931256807,
+              0.8784834410854236,
+              1.5478692596146983,
+              0.7557316199375589,
+              0.7937427444639985
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 2.0943951023931953,
+            "heading_index": 8,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6930127018922195,
+              -0.025,
+              1.5968732936797552,
+              0.875934423075319,
+              1.5369022690931728,
+              0.7324510724436938,
+              0.7822870980557914
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 2.356194490192345,
+            "heading_index": 9,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.672864114020532,
+              -0.025,
+              1.615260174762918,
+              0.8843520863722688,
+              1.535346410715657,
+              0.7186056615861838,
+              0.7817840362085837
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 2.6179938779914944,
+            "heading_index": 10,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6529945889062455,
+              -0.025,
+              1.6371469970012122,
+              0.9028787661470317,
+              1.5433077136594007,
+              0.7156643370953039,
+              0.7922870507215864
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 2.8797932657906435,
+            "heading_index": 11,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6434649256925757,
+              -0.025,
+              1.6130776717749513,
+              0.8981500640392289,
+              1.5602436282854633,
+              0.7239501675837778,
+              0.8118933439951193
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 3.141592653589793,
+            "heading_index": 12,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6453691794838249,
+              -0.014999999999999881,
+              1.5955584005417913,
+              0.8816593902894295,
+              1.5850000000000002,
+              0.7425630889714712,
+              0.7996506635082447
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 3.4033920413889427,
+            "heading_index": 13,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6584847178281893,
+              -0.025,
+              1.5875512136761016,
+              0.8755493366845905,
+              1.5602436282854633,
+              0.7390772919745923,
+              0.7848435377128633
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 3.665191429188092,
+            "heading_index": 14,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6755127018922193,
+              -0.025,
+              1.5897158068930626,
+              0.8804458116792626,
+              1.5433077136594007,
+              0.7219577654482342,
+              0.7807187530932408
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 3.926990816987241,
+            "heading_index": 15,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6584015245994487,
+              -0.025,
+              1.601873049446425,
+              0.8958461563854724,
+              1.535346410715657,
+              0.7153789359226118,
+              0.7877136610012123
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 4.1887902047863905,
+            "heading_index": 16,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6453344657378264,
+              -0.025,
+              1.6196469970012117,
+              0.9202241335952168,
+              1.5369022690931728,
+              0.7200588213932463,
+              0.8050906374856366
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 4.4505895925855405,
+            "heading_index": 17,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6434827316775947,
+              -0.025,
+              1.6002609651204658,
+              0.9143671243657895,
+              1.5478692596146983,
+              0.7354846392262954,
+              0.8293933439951192
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 4.71238898038469,
+            "heading_index": 18,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6530628233834964,
+              -0.025,
+              1.5890521964437765,
+              0.8917367397459316,
+              1.5675000000000001,
+              0.7599999999999999,
+              0.814960259202699
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 4.974188368183839,
+            "heading_index": 19,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6729751212954281,
+              -0.025,
+              1.587890931256807,
+              0.8784834410854236,
+              1.5478692596146983,
+              0.7557316199375589,
+              0.7937427444639985
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 5.235987755982989,
+            "heading_index": 20,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6930127018922195,
+              -0.025,
+              1.5968732936797552,
+              0.875934423075319,
+              1.5369022690931728,
+              0.7324510724436938,
+              0.7822870980557914
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 5.497787143782138,
+            "heading_index": 21,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.672864114020532,
+              -0.025,
+              1.615260174762918,
+              0.8843520863722688,
+              1.535346410715657,
+              0.7186056615861838,
+              0.7817840362085837
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 5.759586531581287,
+            "heading_index": 22,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6529945889062456,
+              -0.025,
+              1.6371469970012118,
+              0.9028787661470318,
+              1.5433077136594007,
+              0.7156643370953041,
+              0.7922870507215867
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 6.021385919380436,
+            "heading_index": 23,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.643464925692576,
+              -0.025,
+              1.6130776717749513,
+              0.8981500640392287,
+              1.5602436282854628,
+              0.723950167583778,
+              0.8118933439951191
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 0.8737749495422971,
+            "heading_index": 24,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6528048089557704,
+              -0.025,
+              1.6080798014259137,
+              0.9031726423392168,
+              1.5347992510719004,
+              0.715699897999961,
+              0.7924879738859932
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 2.267817704047496,
+            "heading_index": 25,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.68155275049113,
+              -0.025,
+              1.6080798014259137,
+              0.8803153029115066,
+              1.5347992510719004,
+              0.7221121641985172,
+              0.7807010686945043
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 4.01536760313209,
+            "heading_index": 26,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6528048089557704,
+              -0.025,
+              1.6080798014259137,
+              0.9031726423392168,
+              1.5347992510719004,
+              0.715699897999961,
+              0.7924879738859932
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 5.409410357637289,
+            "heading_index": 27,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.68155275049113,
+              -0.025,
+              1.6080798014259137,
+              0.8803153029115066,
+              1.5347992510719004,
+              0.7221121641985172,
+              0.7807010686945043
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 0.6970213772525995,
+            "heading_index": 28,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6651159027511229,
+              -0.025,
+              1.5966975313094376,
+              0.8895489746517741,
+              1.5369836188612414,
+              0.716351682929855,
+              0.7841311809521399
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 2.444571276337194,
+            "heading_index": 29,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6651159027511232,
+              -0.025,
+              1.6233482056209367,
+              0.889548974651774,
+              1.536983618861241,
+              0.716351682929855,
+              0.7841311809521397
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 3.8386140308423924,
+            "heading_index": 30,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6651159027511234,
+              -0.025,
+              1.5966975313094376,
+              0.8895489746517737,
+              1.5369836188612414,
+              0.7163516829298551,
+              0.7841311809521396
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          },
+          {
+            "heading": 5.586163929926987,
+            "heading_index": 31,
+            "label": "grid:2.25:1.5",
+            "oracle_gaps_m": [
+              0.6651159027511234,
+              -0.025,
+              1.6233482056209372,
+              0.8895489746517737,
+              1.5369836188612414,
+              0.7163516829298551,
+              0.7841311809521396
+            ],
+            "position": [
+              2.25,
+              1.5
+            ]
+          }
+        ],
+        "single_steps_compared": 6987
+      }
+    },
+    "H.3_layout_and_reset": {
+      "arc_opening_m": {
+        "A1": 0.642820323027551,
+        "A2": 0.515685424949238,
+        "A3": 0.515685424949238
+      },
+      "default_centre_clearance_by_obstacle_m": {
+        "A1": 1.4801195160947642,
+        "A2": 1.711000936329383,
+        "A3": 1.4578170383762732,
+        "P1": 1.5570158679988197,
+        "P2": 2.354163056034262,
+        "S1": 0.4447073557013984,
+        "S2": 0.3781128874149275
+      },
+      "default_centre_clearance_m": 0.3781128874149275,
+      "default_hull_clearance_by_obstacle_m": {
+        "A1": 1.3536387622585608,
+        "A2": 1.5901690375747641,
+        "A3": 1.3367906373914016,
+        "P1": 1.460597977623431,
+        "P2": 2.2145432762479946,
+        "S1": 0.32253596936144613,
+        "S2": 0.24128227503910213
+      },
+      "default_hull_clearance_m": 0.24128227503910213,
+      "dock_clearance_by_obstacle_m": {
+        "A1": 0.7560249675906656,
+        "A2": 0.8250000000000001,
+        "A3": 1.1306349186104048,
+        "P1": 1.1879418403139947,
+        "P2": 1.2935028842544405,
+        "S1": 0.9249999999999999,
+        "S2": 0.9249999999999999
+      },
+      "dock_clearance_m": 0.7560249675906656,
+      "hull_diagonal_m": 0.28040149785619906,
+      "inner_surface_radius_m": 0.375,
+      "minimum_pairwise_obstacle_gap_m": 0.4031691770508904,
+      "minimum_room_wall_gap_m": 0.3749999999999999,
+      "pairwise_obstacle_gaps_m": {
+        "A1-A2": 0.6930111968898471,
+        "A1-A3": 0.4031691770508904,
+        "A1-P1": 1.6023797201071026,
+        "A1-P2": 0.5783151560493807,
+        "A1-S1": 1.600138901734047,
+        "A1-S2": 0.702874951850456,
+        "A2-A3": 1.7447061490658244,
+        "A2-P1": 0.5531790728494469,
+        "A2-P2": 0.5923778680878266,
+        "A2-S1": 0.8759939677018306,
+        "A2-S2": 1.7500000000000002,
+        "A3-P1": 2.3182955446926847,
+        "A3-P2": 1.580480479109447,
+        "A3-S1": 1.7416032943943118,
+        "A3-S2": 0.41313382508160357,
+        "P1-P2": 1.7527007313648906,
+        "S1-P1": 0.45237557774322473,
+        "S1-P2": 1.9251562438969614,
+        "S1-S2": 0.7825412902673357,
+        "S2-P1": 1.7931541692269406,
+        "S2-P2": 1.949845673131659
+      },
+      "status": "PASS"
+    },
+    "H.4_contact_conformance": "PASS",
+    "H.5_reset": "PASS",
+    "H.6_intermediate_penetration": {
+      "attaining_cases": {
+        "A1|arc-cap": {
+          "class": "arc-cap",
+          "command_index": 1,
+          "family": "ray",
+          "heading_index": 6,
+          "obstacle": "A1",
+          "penetration_m": 0.025,
+          "ray_index": 6,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              1.9315105359778253,
+              2.052601827685129
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 1.5707963267948966,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 63,
+          "sequence": "Q8"
+        },
+        "A1|arc-concave": {
+          "class": "arc-concave",
+          "command_index": 7,
+          "family": "ray",
+          "heading_index": 1,
+          "obstacle": "A1",
+          "penetration_m": 0.025,
+          "ray_index": 1,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              1.6148996255359502,
+              2.199011989198904
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 0.2617993877991494,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 63,
+          "sequence": "Q8"
+        },
+        "A1|arc-convex": {
+          "class": "arc-convex",
+          "command_index": 6,
+          "family": "ray",
+          "heading_index": 1,
+          "obstacle": "A1",
+          "penetration_m": 0.025,
+          "ray_index": 0,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              1.7851003744640497,
+              2.4938083338286465
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 0.2617993877991494,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 57,
+          "sequence": "Q2"
+        },
+        "A1|pocket": {
+          "class": "pocket",
+          "command_index": 10,
+          "family": "pocket",
+          "heading_index": 0,
+          "obstacle": "A1",
+          "penetration_m": 0.025,
+          "pocket_sign": "+",
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              1.5,
+              2.0
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 0.5235987755982988,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 58,
+          "sequence": "P+"
+        },
+        "A2|arc-cap": {
+          "class": "arc-cap",
+          "command_index": 1,
+          "family": "ray",
+          "heading_index": 1,
+          "obstacle": "A2",
+          "penetration_m": 0.025,
+          "ray_index": 18,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              2.5875073912554694,
+              1.9031928162047074
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 0.2617993877991494,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 63,
+          "sequence": "Q1"
+        },
+        "A2|arc-concave": {
+          "class": "arc-concave",
+          "command_index": 2,
+          "family": "ray",
+          "heading_index": 0,
+          "obstacle": "A2",
+          "penetration_m": 0.025,
+          "ray_index": 13,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              2.537693175348249,
+              1.587940366155122
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 0.0,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 63,
+          "sequence": "Q1"
+        },
+        "A2|arc-convex": {
+          "class": "arc-convex",
+          "command_index": 4,
+          "family": "ray",
+          "heading_index": 0,
+          "obstacle": "A2",
+          "penetration_m": 0.025,
+          "ray_index": 12,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              2.2232031986427216,
+              1.7182063797369498
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 0.0,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 54,
+          "sequence": "Q7"
+        },
+        "A2|pocket": {
+          "class": "pocket",
+          "command_index": 10,
+          "family": "pocket",
+          "heading_index": 0,
+          "obstacle": "A2",
+          "penetration_m": 0.025,
+          "pocket_sign": "+",
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              2.75,
+              1.5
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 2.356194490192345,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 58,
+          "sequence": "P+"
+        },
+        "A3|arc-cap": {
+          "class": "arc-cap",
+          "command_index": 7,
+          "family": "ray",
+          "heading_index": 11,
+          "obstacle": "A1",
+          "penetration_m": 0.025,
+          "ray_index": 10,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              0.9891885394428317,
+              2.1559488046866955
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 2.8797932657906435,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 62,
+          "sequence": "Q8"
+        },
+        "A3|arc-concave": {
+          "class": "arc-concave",
+          "command_index": 7,
+          "family": "ray",
+          "heading_index": 3,
+          "obstacle": "A3",
+          "penetration_m": 0.025,
+          "ray_index": 25,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              0.48794036615512193,
+              2.387693175348249
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 0.7853981633974483,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 55,
+          "sequence": "Q2"
+        },
+        "A3|arc-convex": {
+          "class": "arc-convex",
+          "command_index": 7,
+          "family": "ray",
+          "heading_index": 4,
+          "obstacle": "A3",
+          "penetration_m": 0.025,
+          "ray_index": 24,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              0.61820637973695,
+              2.0732031986427217
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 1.0471975511965976,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 57,
+          "sequence": "Q5"
+        },
+        "A3|pocket": {
+          "class": "pocket",
+          "command_index": 10,
+          "family": "pocket",
+          "heading_index": 0,
+          "obstacle": "A3",
+          "penetration_m": 0.025,
+          "pocket_sign": "+",
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              0.4,
+              2.6
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 4.71238898038469,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 58,
+          "sequence": "P+"
+        },
+        "A3|seg-cap": {
+          "class": "seg-cap",
+          "command_index": 6,
+          "family": "ray",
+          "heading_index": 6,
+          "obstacle": "S2",
+          "penetration_m": 0.025,
+          "ray_index": 57,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              0.55,
+              1.9202007489280994
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 1.5707963267948966,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 56,
+          "sequence": "Q8"
+        },
+        "P1|post": {
+          "class": "post",
+          "command_index": 6,
+          "family": "ray",
+          "heading_index": 8,
+          "obstacle": "P1",
+          "penetration_m": 0.0297023811281453,
+          "ray_index": 67,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              2.488027773259752,
+              0.46197222674024807
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 2.0943951023931953,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 63,
+          "sequence": "Q5"
+        },
+        "P1|seg-cap": {
+          "class": "seg-cap",
+          "command_index": 7,
+          "family": "ray",
+          "heading_index": 14,
+          "obstacle": "S1",
+          "penetration_m": 0.019048908647576333,
+          "ray_index": 45,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              1.9952007489280994,
+              0.55
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 3.665191429188092,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 63,
+          "sequence": "Q1"
+        },
+        "P2|post": {
+          "class": "post",
+          "command_index": 6,
+          "family": "ray",
+          "heading_index": 2,
+          "obstacle": "P2",
+          "penetration_m": 0.0297023811281453,
+          "ray_index": 69,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              2.588027773259752,
+              2.588027773259752
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 0.5235987755982988,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 63,
+          "sequence": "Q2"
+        },
+        "S1|post": {
+          "class": "post",
+          "command_index": 7,
+          "family": "ray",
+          "heading_index": 0,
+          "obstacle": "P1",
+          "penetration_m": 0.017224546980529533,
+          "ray_index": 64,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              2.1547992510719007,
+              0.6
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 0.0,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 63,
+          "sequence": "Q1"
+        },
+        "S1|seg-cap": {
+          "class": "seg-cap",
+          "command_index": 3,
+          "family": "ray",
+          "heading_index": 0,
+          "obstacle": "S1",
+          "penetration_m": 0.025,
+          "ray_index": 42,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              1.0047992510719006,
+              0.55
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 0.0,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 61,
+          "sequence": "Q5"
+        },
+        "S1|seg-face": {
+          "class": "seg-face",
+          "command_index": 7,
+          "family": "ray",
+          "heading_index": 2,
+          "obstacle": "S1",
+          "penetration_m": 0.025,
+          "ray_index": 36,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              1.3375,
+              0.7202007489280996
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 0.5235987755982988,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 55,
+          "sequence": "Q2"
+        },
+        "S2|arc-convex": {
+          "class": "arc-convex",
+          "command_index": 7,
+          "family": "ray",
+          "heading_index": 4,
+          "obstacle": "A3",
+          "penetration_m": 0.025,
+          "ray_index": 24,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              0.61820637973695,
+              2.0732031986427217
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 1.0471975511965976,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 56,
+          "sequence": "Q1"
+        },
+        "S2|seg-cap": {
+          "class": "seg-cap",
+          "command_index": 1,
+          "family": "ray",
+          "heading_index": 4,
+          "obstacle": "S2",
+          "penetration_m": 0.025,
+          "ray_index": 54,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              0.55,
+              0.9297992510719005
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 1.0471975511965976,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 63,
+          "sequence": "Q8"
+        },
+        "S2|seg-face": {
+          "class": "seg-face",
+          "command_index": 2,
+          "family": "ray",
+          "heading_index": 0,
+          "obstacle": "S2",
+          "penetration_m": 0.025,
+          "ray_index": 48,
+          "reset": {
+            "battery_j": 2664.0,
+            "body_position": [
+              0.3797992510719005,
+              1.2625000000000002
+            ],
+            "body_temperature_c": 23.0,
+            "charger_termination_latched": false,
+            "heading": 0.0,
+            "station_center": [
+              1.5,
+              1.5
+            ]
+          },
+          "sample_count": 64,
+          "sample_k": 56,
+          "sequence": "Q8"
+        }
+      },
+      "maxima_m": {
+        "A1|arc-cap": 0.025,
+        "A1|arc-concave": 0.025,
+        "A1|arc-convex": 0.025,
+        "A1|pocket": 0.025,
+        "A2|arc-cap": 0.025,
+        "A2|arc-concave": 0.025,
+        "A2|arc-convex": 0.025,
+        "A2|pocket": 0.025,
+        "A3|arc-cap": 0.025,
+        "A3|arc-concave": 0.025,
+        "A3|arc-convex": 0.025,
+        "A3|pocket": 0.025,
+        "A3|seg-cap": 0.025,
+        "P1|post": 0.0297023811281453,
+        "P1|seg-cap": 0.019048908647576333,
+        "P2|post": 0.0297023811281453,
+        "S1|post": 0.017224546980529533,
+        "S1|seg-cap": 0.025,
+        "S1|seg-face": 0.025,
+        "S2|arc-convex": 0.025,
+        "S2|seg-cap": 0.025,
+        "S2|seg-face": 0.025
+      },
+      "nonzero_step_counts": {
+        "A1|arc-cap": 2808,
+        "A1|arc-concave": 2770,
+        "A1|arc-convex": 2051,
+        "A1|pocket": 230,
+        "A2|arc-cap": 2959,
+        "A2|arc-concave": 2774,
+        "A2|arc-convex": 2004,
+        "A2|pocket": 230,
+        "A3|arc-cap": 2850,
+        "A3|arc-concave": 2793,
+        "A3|arc-convex": 1951,
+        "A3|pocket": 230,
+        "A3|seg-cap": 54,
+        "P1|post": 4176,
+        "P1|seg-cap": 12,
+        "P2|post": 4164,
+        "S1|post": 8,
+        "S1|seg-cap": 2775,
+        "S1|seg-face": 4508,
+        "S2|arc-convex": 8,
+        "S2|seg-cap": 2772,
+        "S2|seg-face": 4504
+      }
+    },
+    "H.7_determinism": "REGENERATION_REQUIRED",
+    "H.8_residual_max_m": 1.2906342661267445e-15,
+    "O1": "PASS",
+    "O2": {
+      "epsilon_m": 0.0001,
+      "rays_without_free_point": 66928355,
+      "worst_excess_m": 7.602195085280178e-06
+    },
+    "pocket_two_contact_counts": {
+      "A1|+": 41,
+      "A1|-": 41,
+      "A2|+": 37,
+      "A2|-": 35,
+      "A3|+": 37,
+      "A3|-": 39
+    }
+  },
+  "contact_counts": {
+    "A1|arc-cap|Q10|0": 16,
+    "A1|arc-cap|Q10|1": 54,
+    "A1|arc-cap|Q10|10": 10,
+    "A1|arc-cap|Q10|11": 19,
+    "A1|arc-cap|Q10|2": 51,
+    "A1|arc-cap|Q10|3": 51,
+    "A1|arc-cap|Q10|4": 44,
+    "A1|arc-cap|Q10|5": 40,
+    "A1|arc-cap|Q10|6": 30,
+    "A1|arc-cap|Q10|7": 14,
+    "A1|arc-cap|Q10|8": 23,
+    "A1|arc-cap|Q10|9": 9,
+    "A1|arc-cap|Q11|0": 16,
+    "A1|arc-cap|Q11|1": 54,
+    "A1|arc-cap|Q11|10": 10,
+    "A1|arc-cap|Q11|11": 19,
+    "A1|arc-cap|Q11|2": 52,
+    "A1|arc-cap|Q11|3": 51,
+    "A1|arc-cap|Q11|4": 44,
+    "A1|arc-cap|Q11|5": 40,
+    "A1|arc-cap|Q11|6": 30,
+    "A1|arc-cap|Q11|7": 14,
+    "A1|arc-cap|Q11|8": 23,
+    "A1|arc-cap|Q11|9": 9,
+    "A1|arc-cap|Q1|0": 16,
+    "A1|arc-cap|Q1|1": 54,
+    "A1|arc-cap|Q1|2": 52,
+    "A1|arc-cap|Q1|3": 51,
+    "A1|arc-cap|Q1|4": 51,
+    "A1|arc-cap|Q1|5": 52,
+    "A1|arc-cap|Q1|6": 53,
+    "A1|arc-cap|Q1|7": 46,
+    "A1|arc-cap|Q2|0": 4,
+    "A1|arc-cap|Q2|1": 25,
+    "A1|arc-cap|Q2|2": 23,
+    "A1|arc-cap|Q2|3": 40,
+    "A1|arc-cap|Q2|4": 42,
+    "A1|arc-cap|Q2|5": 47,
+    "A1|arc-cap|Q2|6": 56,
+    "A1|arc-cap|Q2|7": 55,
+    "A1|arc-cap|Q4|0": 4,
+    "A1|arc-cap|Q4|1": 25,
+    "A1|arc-cap|Q4|2": 23,
+    "A1|arc-cap|Q4|3": 40,
+    "A1|arc-cap|Q4|4": 42,
+    "A1|arc-cap|Q4|5": 47,
+    "A1|arc-cap|Q4|6": 56,
+    "A1|arc-cap|Q4|7": 55,
+    "A1|arc-cap|Q5|0": 4,
+    "A1|arc-cap|Q5|1": 25,
+    "A1|arc-cap|Q5|2": 23,
+    "A1|arc-cap|Q5|3": 40,
+    "A1|arc-cap|Q5|4": 42,
+    "A1|arc-cap|Q5|5": 47,
+    "A1|arc-cap|Q5|6": 56,
+    "A1|arc-cap|Q5|7": 55,
+    "A1|arc-cap|Q7|0": 4,
+    "A1|arc-cap|Q7|1": 25,
+    "A1|arc-cap|Q7|2": 23,
+    "A1|arc-cap|Q7|3": 40,
+    "A1|arc-cap|Q7|4": 42,
+    "A1|arc-cap|Q7|5": 47,
+    "A1|arc-cap|Q7|6": 56,
+    "A1|arc-cap|Q7|7": 55,
+    "A1|arc-cap|Q8|0": 16,
+    "A1|arc-cap|Q8|1": 54,
+    "A1|arc-cap|Q8|2": 51,
+    "A1|arc-cap|Q8|3": 51,
+    "A1|arc-cap|Q8|4": 51,
+    "A1|arc-cap|Q8|5": 52,
+    "A1|arc-cap|Q8|6": 53,
+    "A1|arc-cap|Q8|7": 46,
+    "A1|arc-cap|Q9|3": 1,
+    "A1|arc-cap|Q9|4": 2,
+    "A1|arc-cap|Q9|5": 2,
+    "A1|arc-cap|Q9|6": 3,
+    "A1|arc-cap|Q9|7": 2,
+    "A1|arc-concave|Q10|0": 34,
+    "A1|arc-concave|Q10|1": 45,
+    "A1|arc-concave|Q10|10": 5,
+    "A1|arc-concave|Q10|11": 4,
+    "A1|arc-concave|Q10|2": 51,
+    "A1|arc-concave|Q10|3": 51,
+    "A1|arc-concave|Q10|4": 27,
+    "A1|arc-concave|Q10|5": 19,
+    "A1|arc-concave|Q10|6": 17,
+    "A1|arc-concave|Q10|7": 12,
+    "A1|arc-concave|Q10|8": 7,
+    "A1|arc-concave|Q10|9": 3,
+    "A1|arc-concave|Q11|0": 34,
+    "A1|arc-concave|Q11|1": 45,
+    "A1|arc-concave|Q11|10": 5,
+    "A1|arc-concave|Q11|11": 4,
+    "A1|arc-concave|Q11|2": 51,
+    "A1|arc-concave|Q11|3": 51,
+    "A1|arc-concave|Q11|4": 27,
+    "A1|arc-concave|Q11|5": 19,
+    "A1|arc-concave|Q11|6": 17,
+    "A1|arc-concave|Q11|7": 12,
+    "A1|arc-concave|Q11|8": 7,
+    "A1|arc-concave|Q11|9": 3,
+    "A1|arc-concave|Q1|0": 34,
+    "A1|arc-concave|Q1|1": 45,
+    "A1|arc-concave|Q1|2": 51,
+    "A1|arc-concave|Q1|3": 51,
+    "A1|arc-concave|Q1|4": 51,
+    "A1|arc-concave|Q1|5": 54,
+    "A1|arc-concave|Q1|6": 54,
+    "A1|arc-concave|Q1|7": 54,
+    "A1|arc-concave|Q2|0": 18,
+    "A1|arc-concave|Q2|1": 32,
+    "A1|arc-concave|Q2|2": 43,
+    "A1|arc-concave|Q2|3": 44,
+    "A1|arc-concave|Q2|4": 44,
+    "A1|arc-concave|Q2|5": 44,
+    "A1|arc-concave|Q2|6": 44,
+    "A1|arc-concave|Q2|7": 47,
+    "A1|arc-concave|Q4|0": 18,
+    "A1|arc-concave|Q4|1": 32,
+    "A1|arc-concave|Q4|2": 43,
+    "A1|arc-concave|Q4|3": 44,
+    "A1|arc-concave|Q4|4": 44,
+    "A1|arc-concave|Q4|5": 44,
+    "A1|arc-concave|Q4|6": 44,
+    "A1|arc-concave|Q4|7": 47,
+    "A1|arc-concave|Q5|0": 18,
+    "A1|arc-concave|Q5|1": 32,
+    "A1|arc-concave|Q5|2": 43,
+    "A1|arc-concave|Q5|3": 44,
+    "A1|arc-concave|Q5|4": 44,
+    "A1|arc-concave|Q5|5": 44,
+    "A1|arc-concave|Q5|6": 44,
+    "A1|arc-concave|Q5|7": 47,
+    "A1|arc-concave|Q7|0": 18,
+    "A1|arc-concave|Q7|1": 32,
+    "A1|arc-concave|Q7|2": 43,
+    "A1|arc-concave|Q7|3": 44,
+    "A1|arc-concave|Q7|4": 44,
+    "A1|arc-concave|Q7|5": 44,
+    "A1|arc-concave|Q7|6": 44,
+    "A1|arc-concave|Q7|7": 47,
+    "A1|arc-concave|Q8|0": 34,
+    "A1|arc-concave|Q8|1": 45,
+    "A1|arc-concave|Q8|2": 51,
+    "A1|arc-concave|Q8|3": 51,
+    "A1|arc-concave|Q8|4": 50,
+    "A1|arc-concave|Q8|5": 53,
+    "A1|arc-concave|Q8|6": 53,
+    "A1|arc-concave|Q8|7": 52,
+    "A1|arc-concave|Q9|3": 5,
+    "A1|arc-concave|Q9|4": 7,
+    "A1|arc-concave|Q9|5": 7,
+    "A1|arc-concave|Q9|6": 8,
+    "A1|arc-concave|Q9|7": 8,
+    "A1|arc-convex|Q10|0": 22,
+    "A1|arc-convex|Q10|1": 35,
+    "A1|arc-convex|Q10|11": 9,
+    "A1|arc-convex|Q10|2": 35,
+    "A1|arc-convex|Q10|3": 35,
+    "A1|arc-convex|Q10|4": 19,
+    "A1|arc-convex|Q10|5": 21,
+    "A1|arc-convex|Q10|6": 12,
+    "A1|arc-convex|Q10|7": 11,
+    "A1|arc-convex|Q10|8": 3,
+    "A1|arc-convex|Q10|9": 5,
+    "A1|arc-convex|Q11|0": 22,
+    "A1|arc-convex|Q11|1": 35,
+    "A1|arc-convex|Q11|11": 9,
+    "A1|arc-convex|Q11|2": 35,
+    "A1|arc-convex|Q11|3": 35,
+    "A1|arc-convex|Q11|4": 19,
+    "A1|arc-convex|Q11|5": 21,
+    "A1|arc-convex|Q11|6": 12,
+    "A1|arc-convex|Q11|7": 11,
+    "A1|arc-convex|Q11|8": 3,
+    "A1|arc-convex|Q11|9": 5,
+    "A1|arc-convex|Q1|0": 22,
+    "A1|arc-convex|Q1|1": 35,
+    "A1|arc-convex|Q1|2": 35,
+    "A1|arc-convex|Q1|3": 35,
+    "A1|arc-convex|Q1|4": 35,
+    "A1|arc-convex|Q1|5": 42,
+    "A1|arc-convex|Q1|6": 42,
+    "A1|arc-convex|Q1|7": 44,
+    "A1|arc-convex|Q2|0": 15,
+    "A1|arc-convex|Q2|1": 24,
+    "A1|arc-convex|Q2|2": 25,
+    "A1|arc-convex|Q2|3": 29,
+    "A1|arc-convex|Q2|4": 31,
+    "A1|arc-convex|Q2|5": 28,
+    "A1|arc-convex|Q2|6": 31,
+    "A1|arc-convex|Q2|7": 26,
+    "A1|arc-convex|Q4|0": 15,
+    "A1|arc-convex|Q4|1": 24,
+    "A1|arc-convex|Q4|2": 25,
+    "A1|arc-convex|Q4|3": 29,
+    "A1|arc-convex|Q4|4": 31,
+    "A1|arc-convex|Q4|5": 28,
+    "A1|arc-convex|Q4|6": 31,
+    "A1|arc-convex|Q4|7": 26,
+    "A1|arc-convex|Q5|0": 15,
+    "A1|arc-convex|Q5|1": 24,
+    "A1|arc-convex|Q5|2": 25,
+    "A1|arc-convex|Q5|3": 29,
+    "A1|arc-convex|Q5|4": 31,
+    "A1|arc-convex|Q5|5": 28,
+    "A1|arc-convex|Q5|6": 31,
+    "A1|arc-convex|Q5|7": 26,
+    "A1|arc-convex|Q7|0": 15,
+    "A1|arc-convex|Q7|1": 24,
+    "A1|arc-convex|Q7|2": 25,
+    "A1|arc-convex|Q7|3": 29,
+    "A1|arc-convex|Q7|4": 31,
+    "A1|arc-convex|Q7|5": 28,
+    "A1|arc-convex|Q7|6": 31,
+    "A1|arc-convex|Q7|7": 26,
+    "A1|arc-convex|Q8|0": 22,
+    "A1|arc-convex|Q8|1": 35,
+    "A1|arc-convex|Q8|2": 35,
+    "A1|arc-convex|Q8|3": 35,
+    "A1|arc-convex|Q8|4": 35,
+    "A1|arc-convex|Q8|5": 42,
+    "A1|arc-convex|Q8|6": 42,
+    "A1|arc-convex|Q8|7": 43,
+    "A1|arc-convex|Q9|3": 4,
+    "A1|arc-convex|Q9|4": 7,
+    "A1|arc-convex|Q9|5": 7,
+    "A1|arc-convex|Q9|6": 8,
+    "A1|arc-convex|Q9|7": 5,
+    "A1|pocket|P+|10": 9,
+    "A1|pocket|P+|11": 9,
+    "A1|pocket|P+|12": 9,
+    "A1|pocket|P+|13": 9,
+    "A1|pocket|P+|14": 9,
+    "A1|pocket|P+|15": 9,
+    "A1|pocket|P+|16": 8,
+    "A1|pocket|P+|17": 8,
+    "A1|pocket|P+|18": 8,
+    "A1|pocket|P+|19": 1,
+    "A1|pocket|P+|21": 1,
+    "A1|pocket|P+|22": 1,
+    "A1|pocket|P+|23": 1,
+    "A1|pocket|P+|25": 1,
+    "A1|pocket|P+|9": 9,
+    "A1|pocket|P-|10": 9,
+    "A1|pocket|P-|11": 9,
+    "A1|pocket|P-|12": 9,
+    "A1|pocket|P-|13": 9,
+    "A1|pocket|P-|14": 9,
+    "A1|pocket|P-|15": 9,
+    "A1|pocket|P-|16": 8,
+    "A1|pocket|P-|17": 8,
+    "A1|pocket|P-|18": 8,
+    "A1|pocket|P-|19": 1,
+    "A1|pocket|P-|21": 1,
+    "A1|pocket|P-|22": 1,
+    "A1|pocket|P-|23": 1,
+    "A1|pocket|P-|25": 1,
+    "A1|pocket|P-|28": 4,
+    "A1|pocket|P-|9": 9,
+    "A2|arc-cap|Q10|0": 28,
+    "A2|arc-cap|Q10|1": 58,
+    "A2|arc-cap|Q10|10": 12,
+    "A2|arc-cap|Q10|11": 26,
+    "A2|arc-cap|Q10|2": 55,
+    "A2|arc-cap|Q10|3": 54,
+    "A2|arc-cap|Q10|4": 51,
+    "A2|arc-cap|Q10|5": 49,
+    "A2|arc-cap|Q10|6": 36,
+    "A2|arc-cap|Q10|7": 12,
+    "A2|arc-cap|Q10|8": 16,
+    "A2|arc-cap|Q10|9": 6,
+    "A2|arc-cap|Q11|0": 28,
+    "A2|arc-cap|Q11|1": 58,
+    "A2|arc-cap|Q11|10": 12,
+    "A2|arc-cap|Q11|11": 26,
+    "A2|arc-cap|Q11|2": 51,
+    "A2|arc-cap|Q11|3": 54,
+    "A2|arc-cap|Q11|4": 51,
+    "A2|arc-cap|Q11|5": 49,
+    "A2|arc-cap|Q11|6": 36,
+    "A2|arc-cap|Q11|7": 12,
+    "A2|arc-cap|Q11|8": 16,
+    "A2|arc-cap|Q11|9": 6,
+    "A2|arc-cap|Q1|0": 28,
+    "A2|arc-cap|Q1|1": 58,
+    "A2|arc-cap|Q1|2": 51,
+    "A2|arc-cap|Q1|3": 54,
+    "A2|arc-cap|Q1|4": 54,
+    "A2|arc-cap|Q1|5": 51,
+    "A2|arc-cap|Q1|6": 52,
+    "A2|arc-cap|Q1|7": 46,
+    "A2|arc-cap|Q2|0": 8,
+    "A2|arc-cap|Q2|1": 18,
+    "A2|arc-cap|Q2|2": 20,
+    "A2|arc-cap|Q2|3": 38,
+    "A2|arc-cap|Q2|4": 42,
+    "A2|arc-cap|Q2|5": 49,
+    "A2|arc-cap|Q2|6": 54,
+    "A2|arc-cap|Q2|7": 54,
+    "A2|arc-cap|Q4|0": 8,
+    "A2|arc-cap|Q4|1": 18,
+    "A2|arc-cap|Q4|2": 20,
+    "A2|arc-cap|Q4|3": 38,
+    "A2|arc-cap|Q4|4": 42,
+    "A2|arc-cap|Q4|5": 49,
+    "A2|arc-cap|Q4|6": 54,
+    "A2|arc-cap|Q4|7": 54,
+    "A2|arc-cap|Q5|0": 8,
+    "A2|arc-cap|Q5|1": 18,
+    "A2|arc-cap|Q5|2": 20,
+    "A2|arc-cap|Q5|3": 38,
+    "A2|arc-cap|Q5|4": 42,
+    "A2|arc-cap|Q5|5": 49,
+    "A2|arc-cap|Q5|6": 54,
+    "A2|arc-cap|Q5|7": 54,
+    "A2|arc-cap|Q7|0": 8,
+    "A2|arc-cap|Q7|1": 18,
+    "A2|arc-cap|Q7|2": 20,
+    "A2|arc-cap|Q7|3": 38,
+    "A2|arc-cap|Q7|4": 42,
+    "A2|arc-cap|Q7|5": 49,
+    "A2|arc-cap|Q7|6": 54,
+    "A2|arc-cap|Q7|7": 54,
+    "A2|arc-cap|Q8|0": 28,
+    "A2|arc-cap|Q8|1": 58,
+    "A2|arc-cap|Q8|2": 55,
+    "A2|arc-cap|Q8|3": 54,
+    "A2|arc-cap|Q8|4": 51,
+    "A2|arc-cap|Q8|5": 51,
+    "A2|arc-cap|Q8|6": 51,
+    "A2|arc-cap|Q8|7": 42,
+    "A2|arc-cap|Q9|5": 4,
+    "A2|arc-cap|Q9|7": 2,
+    "A2|arc-concave|Q10|0": 36,
+    "A2|arc-concave|Q10|1": 47,
+    "A2|arc-concave|Q10|10": 2,
+    "A2|arc-concave|Q10|11": 5,
+    "A2|arc-concave|Q10|2": 49,
+    "A2|arc-concave|Q10|3": 51,
+    "A2|arc-concave|Q10|4": 25,
+    "A2|arc-concave|Q10|5": 22,
+    "A2|arc-concave|Q10|6": 17,
+    "A2|arc-concave|Q10|7": 11,
+    "A2|arc-concave|Q10|8": 9,
+    "A2|arc-concave|Q10|9": 4,
+    "A2|arc-concave|Q11|0": 36,
+    "A2|arc-concave|Q11|1": 47,
+    "A2|arc-concave|Q11|10": 2,
+    "A2|arc-concave|Q11|11": 5,
+    "A2|arc-concave|Q11|2": 49,
+    "A2|arc-concave|Q11|3": 51,
+    "A2|arc-concave|Q11|4": 25,
+    "A2|arc-concave|Q11|5": 22,
+    "A2|arc-concave|Q11|6": 17,
+    "A2|arc-concave|Q11|7": 11,
+    "A2|arc-concave|Q11|8": 9,
+    "A2|arc-concave|Q11|9": 4,
+    "A2|arc-concave|Q1|0": 36,
+    "A2|arc-concave|Q1|1": 47,
+    "A2|arc-concave|Q1|2": 49,
+    "A2|arc-concave|Q1|3": 51,
+    "A2|arc-concave|Q1|4": 51,
+    "A2|arc-concave|Q1|5": 53,
+    "A2|arc-concave|Q1|6": 55,
+    "A2|arc-concave|Q1|7": 55,
+    "A2|arc-concave|Q2|0": 21,
+    "A2|arc-concave|Q2|1": 34,
+    "A2|arc-concave|Q2|2": 43,
+    "A2|arc-concave|Q2|3": 44,
+    "A2|arc-concave|Q2|4": 43,
+    "A2|arc-concave|Q2|5": 43,
+    "A2|arc-concave|Q2|6": 43,
+    "A2|arc-concave|Q2|7": 42,
+    "A2|arc-concave|Q4|0": 21,
+    "A2|arc-concave|Q4|1": 34,
+    "A2|arc-concave|Q4|2": 43,
+    "A2|arc-concave|Q4|3": 44,
+    "A2|arc-concave|Q4|4": 43,
+    "A2|arc-concave|Q4|5": 43,
+    "A2|arc-concave|Q4|6": 43,
+    "A2|arc-concave|Q4|7": 42,
+    "A2|arc-concave|Q5|0": 21,
+    "A2|arc-concave|Q5|1": 34,
+    "A2|arc-concave|Q5|2": 43,
+    "A2|arc-concave|Q5|3": 44,
+    "A2|arc-concave|Q5|4": 43,
+    "A2|arc-concave|Q5|5": 43,
+    "A2|arc-concave|Q5|6": 43,
+    "A2|arc-concave|Q5|7": 42,
+    "A2|arc-concave|Q7|0": 21,
+    "A2|arc-concave|Q7|1": 34,
+    "A2|arc-concave|Q7|2": 43,
+    "A2|arc-concave|Q7|3": 44,
+    "A2|arc-concave|Q7|4": 43,
+    "A2|arc-concave|Q7|5": 43,
+    "A2|arc-concave|Q7|6": 43,
+    "A2|arc-concave|Q7|7": 42,
+    "A2|arc-concave|Q8|0": 36,
+    "A2|arc-concave|Q8|1": 47,
+    "A2|arc-concave|Q8|2": 49,
+    "A2|arc-concave|Q8|3": 51,
+    "A2|arc-concave|Q8|4": 51,
+    "A2|arc-concave|Q8|5": 53,
+    "A2|arc-concave|Q8|6": 55,
+    "A2|arc-concave|Q8|7": 55,
+    "A2|arc-concave|Q9|3": 7,
+    "A2|arc-concave|Q9|4": 6,
+    "A2|arc-concave|Q9|5": 8,
+    "A2|arc-concave|Q9|6": 8,
+    "A2|arc-concave|Q9|7": 8,
+    "A2|arc-convex|Q10|0": 26,
+    "A2|arc-convex|Q10|1": 35,
+    "A2|arc-convex|Q10|10": 5,
+    "A2|arc-convex|Q10|11": 3,
+    "A2|arc-convex|Q10|2": 39,
+    "A2|arc-convex|Q10|3": 39,
+    "A2|arc-convex|Q10|4": 20,
+    "A2|arc-convex|Q10|5": 17,
+    "A2|arc-convex|Q10|6": 12,
+    "A2|arc-convex|Q10|7": 10,
+    "A2|arc-convex|Q10|8": 2,
+    "A2|arc-convex|Q10|9": 7,
+    "A2|arc-convex|Q11|0": 26,
+    "A2|arc-convex|Q11|1": 35,
+    "A2|arc-convex|Q11|10": 5,
+    "A2|arc-convex|Q11|11": 3,
+    "A2|arc-convex|Q11|2": 39,
+    "A2|arc-convex|Q11|3": 39,
+    "A2|arc-convex|Q11|4": 20,
+    "A2|arc-convex|Q11|5": 17,
+    "A2|arc-convex|Q11|6": 12,
+    "A2|arc-convex|Q11|7": 10,
+    "A2|arc-convex|Q11|8": 2,
+    "A2|arc-convex|Q11|9": 7,
+    "A2|arc-convex|Q1|0": 26,
+    "A2|arc-convex|Q1|1": 35,
+    "A2|arc-convex|Q1|2": 39,
+    "A2|arc-convex|Q1|3": 39,
+    "A2|arc-convex|Q1|4": 39,
+    "A2|arc-convex|Q1|5": 38,
+    "A2|arc-convex|Q1|6": 36,
+    "A2|arc-convex|Q1|7": 36,
+    "A2|arc-convex|Q2|0": 13,
+    "A2|arc-convex|Q2|1": 23,
+    "A2|arc-convex|Q2|2": 24,
+    "A2|arc-convex|Q2|3": 28,
+    "A2|arc-convex|Q2|4": 27,
+    "A2|arc-convex|Q2|5": 28,
+    "A2|arc-convex|Q2|6": 27,
+    "A2|arc-convex|Q2|7": 28,
+    "A2|arc-convex|Q4|0": 13,
+    "A2|arc-convex|Q4|1": 23,
+    "A2|arc-convex|Q4|2": 24,
+    "A2|arc-convex|Q4|3": 28,
+    "A2|arc-convex|Q4|4": 27,
+    "A2|arc-convex|Q4|5": 28,
+    "A2|arc-convex|Q4|6": 27,
+    "A2|arc-convex|Q4|7": 28,
+    "A2|arc-convex|Q5|0": 13,
+    "A2|arc-convex|Q5|1": 23,
+    "A2|arc-convex|Q5|2": 24,
+    "A2|arc-convex|Q5|3": 28,
+    "A2|arc-convex|Q5|4": 27,
+    "A2|arc-convex|Q5|5": 28,
+    "A2|arc-convex|Q5|6": 27,
+    "A2|arc-convex|Q5|7": 28,
+    "A2|arc-convex|Q7|0": 13,
+    "A2|arc-convex|Q7|1": 23,
+    "A2|arc-convex|Q7|2": 24,
+    "A2|arc-convex|Q7|3": 28,
+    "A2|arc-convex|Q7|4": 27,
+    "A2|arc-convex|Q7|5": 28,
+    "A2|arc-convex|Q7|6": 27,
+    "A2|arc-convex|Q7|7": 28,
+    "A2|arc-convex|Q8|0": 26,
+    "A2|arc-convex|Q8|1": 35,
+    "A2|arc-convex|Q8|2": 39,
+    "A2|arc-convex|Q8|3": 39,
+    "A2|arc-convex|Q8|4": 39,
+    "A2|arc-convex|Q8|5": 39,
+    "A2|arc-convex|Q8|6": 38,
+    "A2|arc-convex|Q8|7": 36,
+    "A2|arc-convex|Q9|3": 4,
+    "A2|arc-convex|Q9|4": 6,
+    "A2|arc-convex|Q9|5": 6,
+    "A2|arc-convex|Q9|6": 6,
+    "A2|arc-convex|Q9|7": 5,
+    "A2|pocket|P+|10": 9,
+    "A2|pocket|P+|11": 9,
+    "A2|pocket|P+|12": 9,
+    "A2|pocket|P+|13": 9,
+    "A2|pocket|P+|14": 9,
+    "A2|pocket|P+|15": 9,
+    "A2|pocket|P+|16": 8,
+    "A2|pocket|P+|17": 8,
+    "A2|pocket|P+|18": 7,
+    "A2|pocket|P+|19": 1,
+    "A2|pocket|P+|21": 1,
+    "A2|pocket|P+|22": 1,
+    "A2|pocket|P+|23": 1,
+    "A2|pocket|P+|24": 1,
+    "A2|pocket|P+|9": 9,
+    "A2|pocket|P-|10": 9,
+    "A2|pocket|P-|11": 9,
+    "A2|pocket|P-|12": 9,
+    "A2|pocket|P-|13": 9,
+    "A2|pocket|P-|14": 9,
+    "A2|pocket|P-|15": 9,
+    "A2|pocket|P-|16": 8,
+    "A2|pocket|P-|17": 8,
+    "A2|pocket|P-|18": 7,
+    "A2|pocket|P-|19": 1,
+    "A2|pocket|P-|21": 1,
+    "A2|pocket|P-|22": 1,
+    "A2|pocket|P-|23": 1,
+    "A2|pocket|P-|24": 1,
+    "A2|pocket|P-|25": 1,
+    "A2|pocket|P-|28": 1,
+    "A2|pocket|P-|9": 9,
+    "A3|arc-cap|Q10|0": 20,
+    "A3|arc-cap|Q10|1": 56,
+    "A3|arc-cap|Q10|10": 12,
+    "A3|arc-cap|Q10|11": 24,
+    "A3|arc-cap|Q10|2": 53,
+    "A3|arc-cap|Q10|3": 53,
+    "A3|arc-cap|Q10|4": 49,
+    "A3|arc-cap|Q10|5": 48,
+    "A3|arc-cap|Q10|6": 36,
+    "A3|arc-cap|Q10|7": 14,
+    "A3|arc-cap|Q10|8": 16,
+    "A3|arc-cap|Q10|9": 6,
+    "A3|arc-cap|Q11|0": 20,
+    "A3|arc-cap|Q11|1": 54,
+    "A3|arc-cap|Q11|10": 12,
+    "A3|arc-cap|Q11|11": 24,
+    "A3|arc-cap|Q11|2": 50,
+    "A3|arc-cap|Q11|3": 51,
+    "A3|arc-cap|Q11|4": 49,
+    "A3|arc-cap|Q11|5": 48,
+    "A3|arc-cap|Q11|6": 36,
+    "A3|arc-cap|Q11|7": 14,
+    "A3|arc-cap|Q11|8": 16,
+    "A3|arc-cap|Q11|9": 6,
+    "A3|arc-cap|Q1|0": 20,
+    "A3|arc-cap|Q1|1": 54,
+    "A3|arc-cap|Q1|2": 50,
+    "A3|arc-cap|Q1|3": 51,
+    "A3|arc-cap|Q1|4": 50,
+    "A3|arc-cap|Q1|5": 51,
+    "A3|arc-cap|Q1|6": 50,
+    "A3|arc-cap|Q1|7": 49,
+    "A3|arc-cap|Q2|0": 4,
+    "A3|arc-cap|Q2|1": 18,
+    "A3|arc-cap|Q2|2": 22,
+    "A3|arc-cap|Q2|3": 40,
+    "A3|arc-cap|Q2|4": 42,
+    "A3|arc-cap|Q2|5": 49,
+    "A3|arc-cap|Q2|6": 55,
+    "A3|arc-cap|Q2|7": 54,
+    "A3|arc-cap|Q4|0": 4,
+    "A3|arc-cap|Q4|1": 18,
+    "A3|arc-cap|Q4|2": 22,
+    "A3|arc-cap|Q4|3": 40,
+    "A3|arc-cap|Q4|4": 42,
+    "A3|arc-cap|Q4|5": 49,
+    "A3|arc-cap|Q4|6": 55,
+    "A3|arc-cap|Q4|7": 54,
+    "A3|arc-cap|Q5|0": 4,
+    "A3|arc-cap|Q5|1": 18,
+    "A3|arc-cap|Q5|2": 22,
+    "A3|arc-cap|Q5|3": 40,
+    "A3|arc-cap|Q5|4": 42,
+    "A3|arc-cap|Q5|5": 49,
+    "A3|arc-cap|Q5|6": 55,
+    "A3|arc-cap|Q5|7": 54,
+    "A3|arc-cap|Q7|0": 4,
+    "A3|arc-cap|Q7|1": 18,
+    "A3|arc-cap|Q7|2": 22,
+    "A3|arc-cap|Q7|3": 40,
+    "A3|arc-cap|Q7|4": 42,
+    "A3|arc-cap|Q7|5": 49,
+    "A3|arc-cap|Q7|6": 55,
+    "A3|arc-cap|Q7|7": 54,
+    "A3|arc-cap|Q8|0": 20,
+    "A3|arc-cap|Q8|1": 56,
+    "A3|arc-cap|Q8|2": 53,
+    "A3|arc-cap|Q8|3": 53,
+    "A3|arc-cap|Q8|4": 53,
+    "A3|arc-cap|Q8|5": 53,
+    "A3|arc-cap|Q8|6": 50,
+    "A3|arc-cap|Q8|7": 49,
+    "A3|arc-cap|Q9|5": 2,
+    "A3|arc-cap|Q9|7": 4,
+    "A3|arc-concave|Q10|0": 32,
+    "A3|arc-concave|Q10|1": 47,
+    "A3|arc-concave|Q10|10": 2,
+    "A3|arc-concave|Q10|11": 5,
+    "A3|arc-concave|Q10|2": 49,
+    "A3|arc-concave|Q10|3": 52,
+    "A3|arc-concave|Q10|4": 26,
+    "A3|arc-concave|Q10|5": 24,
+    "A3|arc-concave|Q10|6": 19,
+    "A3|arc-concave|Q10|7": 11,
+    "A3|arc-concave|Q10|8": 8,
+    "A3|arc-concave|Q10|9": 5,
+    "A3|arc-concave|Q11|0": 32,
+    "A3|arc-concave|Q11|1": 47,
+    "A3|arc-concave|Q11|10": 2,
+    "A3|arc-concave|Q11|11": 5,
+    "A3|arc-concave|Q11|2": 49,
+    "A3|arc-concave|Q11|3": 52,
+    "A3|arc-concave|Q11|4": 26,
+    "A3|arc-concave|Q11|5": 24,
+    "A3|arc-concave|Q11|6": 19,
+    "A3|arc-concave|Q11|7": 11,
+    "A3|arc-concave|Q11|8": 8,
+    "A3|arc-concave|Q11|9": 5,
+    "A3|arc-concave|Q1|0": 32,
+    "A3|arc-concave|Q1|1": 47,
+    "A3|arc-concave|Q1|2": 49,
+    "A3|arc-concave|Q1|3": 52,
+    "A3|arc-concave|Q1|4": 52,
+    "A3|arc-concave|Q1|5": 56,
+    "A3|arc-concave|Q1|6": 56,
+    "A3|arc-concave|Q1|7": 57,
+    "A3|arc-concave|Q2|0": 17,
+    "A3|arc-concave|Q2|1": 33,
+    "A3|arc-concave|Q2|2": 43,
+    "A3|arc-concave|Q2|3": 44,
+    "A3|arc-concave|Q2|4": 44,
+    "A3|arc-concave|Q2|5": 44,
+    "A3|arc-concave|Q2|6": 45,
+    "A3|arc-concave|Q2|7": 44,
+    "A3|arc-concave|Q4|0": 17,
+    "A3|arc-concave|Q4|1": 33,
+    "A3|arc-concave|Q4|2": 43,
+    "A3|arc-concave|Q4|3": 44,
+    "A3|arc-concave|Q4|4": 44,
+    "A3|arc-concave|Q4|5": 44,
+    "A3|arc-concave|Q4|6": 45,
+    "A3|arc-concave|Q4|7": 44,
+    "A3|arc-concave|Q5|0": 17,
+    "A3|arc-concave|Q5|1": 33,
+    "A3|arc-concave|Q5|2": 43,
+    "A3|arc-concave|Q5|3": 44,
+    "A3|arc-concave|Q5|4": 44,
+    "A3|arc-concave|Q5|5": 44,
+    "A3|arc-concave|Q5|6": 45,
+    "A3|arc-concave|Q5|7": 44,
+    "A3|arc-concave|Q7|0": 17,
+    "A3|arc-concave|Q7|1": 33,
+    "A3|arc-concave|Q7|2": 43,
+    "A3|arc-concave|Q7|3": 44,
+    "A3|arc-concave|Q7|4": 44,
+    "A3|arc-concave|Q7|5": 44,
+    "A3|arc-concave|Q7|6": 45,
+    "A3|arc-concave|Q7|7": 44,
+    "A3|arc-concave|Q8|0": 32,
+    "A3|arc-concave|Q8|1": 47,
+    "A3|arc-concave|Q8|2": 49,
+    "A3|arc-concave|Q8|3": 52,
+    "A3|arc-concave|Q8|4": 52,
+    "A3|arc-concave|Q8|5": 55,
+    "A3|arc-concave|Q8|6": 56,
+    "A3|arc-concave|Q8|7": 58,
+    "A3|arc-concave|Q9|3": 7,
+    "A3|arc-concave|Q9|4": 5,
+    "A3|arc-concave|Q9|5": 7,
+    "A3|arc-concave|Q9|6": 9,
+    "A3|arc-concave|Q9|7": 11,
+    "A3|arc-convex|Q10|0": 22,
+    "A3|arc-convex|Q10|1": 33,
+    "A3|arc-convex|Q10|10": 6,
+    "A3|arc-convex|Q10|11": 3,
+    "A3|arc-convex|Q10|2": 37,
+    "A3|arc-convex|Q10|3": 37,
+    "A3|arc-convex|Q10|4": 21,
+    "A3|arc-convex|Q10|5": 19,
+    "A3|arc-convex|Q10|6": 14,
+    "A3|arc-convex|Q10|7": 9,
+    "A3|arc-convex|Q10|8": 2,
+    "A3|arc-convex|Q10|9": 6,
+    "A3|arc-convex|Q11|0": 22,
+    "A3|arc-convex|Q11|1": 33,
+    "A3|arc-convex|Q11|10": 6,
+    "A3|arc-convex|Q11|11": 3,
+    "A3|arc-convex|Q11|2": 37,
+    "A3|arc-convex|Q11|3": 37,
+    "A3|arc-convex|Q11|4": 21,
+    "A3|arc-convex|Q11|5": 19,
+    "A3|arc-convex|Q11|6": 14,
+    "A3|arc-convex|Q11|7": 9,
+    "A3|arc-convex|Q11|8": 2,
+    "A3|arc-convex|Q11|9": 6,
+    "A3|arc-convex|Q1|0": 22,
+    "A3|arc-convex|Q1|1": 33,
+    "A3|arc-convex|Q1|2": 37,
+    "A3|arc-convex|Q1|3": 37,
+    "A3|arc-convex|Q1|4": 37,
+    "A3|arc-convex|Q1|5": 36,
+    "A3|arc-convex|Q1|6": 36,
+    "A3|arc-convex|Q1|7": 33,
+    "A3|arc-convex|Q2|0": 10,
+    "A3|arc-convex|Q2|1": 21,
+    "A3|arc-convex|Q2|2": 25,
+    "A3|arc-convex|Q2|3": 29,
+    "A3|arc-convex|Q2|4": 30,
+    "A3|arc-convex|Q2|5": 30,
+    "A3|arc-convex|Q2|6": 28,
+    "A3|arc-convex|Q2|7": 28,
+    "A3|arc-convex|Q4|0": 10,
+    "A3|arc-convex|Q4|1": 21,
+    "A3|arc-convex|Q4|2": 25,
+    "A3|arc-convex|Q4|3": 29,
+    "A3|arc-convex|Q4|4": 30,
+    "A3|arc-convex|Q4|5": 30,
+    "A3|arc-convex|Q4|6": 28,
+    "A3|arc-convex|Q4|7": 28,
+    "A3|arc-convex|Q5|0": 10,
+    "A3|arc-convex|Q5|1": 21,
+    "A3|arc-convex|Q5|2": 25,
+    "A3|arc-convex|Q5|3": 29,
+    "A3|arc-convex|Q5|4": 30,
+    "A3|arc-convex|Q5|5": 30,
+    "A3|arc-convex|Q5|6": 28,
+    "A3|arc-convex|Q5|7": 28,
+    "A3|arc-convex|Q7|0": 10,
+    "A3|arc-convex|Q7|1": 21,
+    "A3|arc-convex|Q7|2": 25,
+    "A3|arc-convex|Q7|3": 29,
+    "A3|arc-convex|Q7|4": 30,
+    "A3|arc-convex|Q7|5": 30,
+    "A3|arc-convex|Q7|6": 28,
+    "A3|arc-convex|Q7|7": 28,
+    "A3|arc-convex|Q8|0": 22,
+    "A3|arc-convex|Q8|1": 33,
+    "A3|arc-convex|Q8|2": 37,
+    "A3|arc-convex|Q8|3": 37,
+    "A3|arc-convex|Q8|4": 37,
+    "A3|arc-convex|Q8|5": 35,
+    "A3|arc-convex|Q8|6": 35,
+    "A3|arc-convex|Q8|7": 34,
+    "A3|arc-convex|Q9|3": 4,
+    "A3|arc-convex|Q9|4": 5,
+    "A3|arc-convex|Q9|5": 5,
+    "A3|arc-convex|Q9|6": 6,
+    "A3|arc-convex|Q9|7": 8,
+    "A3|pocket|P+|10": 9,
+    "A3|pocket|P+|11": 9,
+    "A3|pocket|P+|12": 9,
+    "A3|pocket|P+|13": 9,
+    "A3|pocket|P+|14": 9,
+    "A3|pocket|P+|15": 9,
+    "A3|pocket|P+|16": 8,
+    "A3|pocket|P+|17": 8,
+    "A3|pocket|P+|18": 7,
+    "A3|pocket|P+|19": 1,
+    "A3|pocket|P+|21": 1,
+    "A3|pocket|P+|22": 1,
+    "A3|pocket|P+|23": 1,
+    "A3|pocket|P+|28": 3,
+    "A3|pocket|P+|9": 9,
+    "A3|pocket|P-|10": 9,
+    "A3|pocket|P-|11": 9,
+    "A3|pocket|P-|12": 9,
+    "A3|pocket|P-|13": 9,
+    "A3|pocket|P-|14": 9,
+    "A3|pocket|P-|15": 9,
+    "A3|pocket|P-|16": 8,
+    "A3|pocket|P-|17": 8,
+    "A3|pocket|P-|18": 7,
+    "A3|pocket|P-|19": 1,
+    "A3|pocket|P-|21": 1,
+    "A3|pocket|P-|22": 1,
+    "A3|pocket|P-|23": 1,
+    "A3|pocket|P-|24": 1,
+    "A3|pocket|P-|28": 2,
+    "A3|pocket|P-|9": 9,
+    "A3|seg-cap|Q1|5": 5,
+    "A3|seg-cap|Q1|6": 10,
+    "A3|seg-cap|Q1|7": 12,
+    "A3|seg-cap|Q8|5": 5,
+    "A3|seg-cap|Q8|6": 10,
+    "A3|seg-cap|Q8|7": 12,
+    "P1|post|Q10|0": 48,
+    "P1|post|Q10|1": 80,
+    "P1|post|Q10|10": 4,
+    "P1|post|Q10|11": 16,
+    "P1|post|Q10|2": 65,
+    "P1|post|Q10|3": 64,
+    "P1|post|Q10|4": 60,
+    "P1|post|Q10|5": 64,
+    "P1|post|Q10|6": 48,
+    "P1|post|Q10|7": 20,
+    "P1|post|Q10|8": 16,
+    "P1|post|Q11|0": 48,
+    "P1|post|Q11|1": 80,
+    "P1|post|Q11|10": 4,
+    "P1|post|Q11|11": 16,
+    "P1|post|Q11|2": 69,
+    "P1|post|Q11|3": 69,
+    "P1|post|Q11|4": 60,
+    "P1|post|Q11|5": 64,
+    "P1|post|Q11|6": 48,
+    "P1|post|Q11|7": 20,
+    "P1|post|Q11|8": 16,
+    "P1|post|Q1|0": 48,
+    "P1|post|Q1|1": 80,
+    "P1|post|Q1|2": 69,
+    "P1|post|Q1|3": 69,
+    "P1|post|Q1|4": 70,
+    "P1|post|Q1|5": 69,
+    "P1|post|Q1|6": 68,
+    "P1|post|Q1|7": 64,
+    "P1|post|Q2|0": 24,
+    "P1|post|Q2|1": 28,
+    "P1|post|Q2|2": 40,
+    "P1|post|Q2|3": 60,
+    "P1|post|Q2|4": 60,
+    "P1|post|Q2|5": 80,
+    "P1|post|Q2|6": 68,
+    "P1|post|Q2|7": 56,
+    "P1|post|Q4|0": 24,
+    "P1|post|Q4|1": 28,
+    "P1|post|Q4|2": 40,
+    "P1|post|Q4|3": 60,
+    "P1|post|Q4|4": 60,
+    "P1|post|Q4|5": 80,
+    "P1|post|Q4|6": 68,
+    "P1|post|Q4|7": 56,
+    "P1|post|Q5|0": 24,
+    "P1|post|Q5|1": 28,
+    "P1|post|Q5|2": 40,
+    "P1|post|Q5|3": 60,
+    "P1|post|Q5|4": 60,
+    "P1|post|Q5|5": 80,
+    "P1|post|Q5|6": 68,
+    "P1|post|Q5|7": 56,
+    "P1|post|Q7|0": 24,
+    "P1|post|Q7|1": 28,
+    "P1|post|Q7|2": 40,
+    "P1|post|Q7|3": 60,
+    "P1|post|Q7|4": 60,
+    "P1|post|Q7|5": 80,
+    "P1|post|Q7|6": 68,
+    "P1|post|Q7|7": 56,
+    "P1|post|Q8|0": 48,
+    "P1|post|Q8|1": 80,
+    "P1|post|Q8|2": 65,
+    "P1|post|Q8|3": 64,
+    "P1|post|Q8|4": 66,
+    "P1|post|Q8|5": 64,
+    "P1|post|Q8|6": 64,
+    "P1|post|Q8|7": 62,
+    "P1|post|Q9|3": 8,
+    "P1|post|Q9|4": 12,
+    "P1|post|Q9|5": 12,
+    "P1|post|Q9|6": 16,
+    "P1|post|Q9|7": 12,
+    "P1|seg-cap|Q1|6": 2,
+    "P1|seg-cap|Q1|7": 4,
+    "P1|seg-cap|Q8|6": 2,
+    "P1|seg-cap|Q8|7": 4,
+    "P2|post|Q10|0": 48,
+    "P2|post|Q10|1": 80,
+    "P2|post|Q10|10": 4,
+    "P2|post|Q10|11": 16,
+    "P2|post|Q10|2": 74,
+    "P2|post|Q10|3": 73,
+    "P2|post|Q10|4": 60,
+    "P2|post|Q10|5": 64,
+    "P2|post|Q10|6": 48,
+    "P2|post|Q10|7": 20,
+    "P2|post|Q10|8": 16,
+    "P2|post|Q11|0": 48,
+    "P2|post|Q11|1": 80,
+    "P2|post|Q11|10": 4,
+    "P2|post|Q11|11": 16,
+    "P2|post|Q11|2": 73,
+    "P2|post|Q11|3": 73,
+    "P2|post|Q11|4": 60,
+    "P2|post|Q11|5": 64,
+    "P2|post|Q11|6": 48,
+    "P2|post|Q11|7": 20,
+    "P2|post|Q11|8": 16,
+    "P2|post|Q1|0": 48,
+    "P2|post|Q1|1": 80,
+    "P2|post|Q1|2": 73,
+    "P2|post|Q1|3": 73,
+    "P2|post|Q1|4": 69,
+    "P2|post|Q1|5": 69,
+    "P2|post|Q1|6": 66,
+    "P2|post|Q1|7": 63,
+    "P2|post|Q2|0": 24,
+    "P2|post|Q2|1": 28,
+    "P2|post|Q2|2": 40,
+    "P2|post|Q2|3": 60,
+    "P2|post|Q2|4": 60,
+    "P2|post|Q2|5": 80,
+    "P2|post|Q2|6": 68,
+    "P2|post|Q2|7": 56,
+    "P2|post|Q4|0": 24,
+    "P2|post|Q4|1": 28,
+    "P2|post|Q4|2": 40,
+    "P2|post|Q4|3": 60,
+    "P2|post|Q4|4": 60,
+    "P2|post|Q4|5": 80,
+    "P2|post|Q4|6": 68,
+    "P2|post|Q4|7": 56,
+    "P2|post|Q5|0": 24,
+    "P2|post|Q5|1": 28,
+    "P2|post|Q5|2": 40,
+    "P2|post|Q5|3": 60,
+    "P2|post|Q5|4": 60,
+    "P2|post|Q5|5": 80,
+    "P2|post|Q5|6": 68,
+    "P2|post|Q5|7": 56,
+    "P2|post|Q7|0": 24,
+    "P2|post|Q7|1": 28,
+    "P2|post|Q7|2": 40,
+    "P2|post|Q7|3": 60,
+    "P2|post|Q7|4": 60,
+    "P2|post|Q7|5": 80,
+    "P2|post|Q7|6": 68,
+    "P2|post|Q7|7": 56,
+    "P2|post|Q8|0": 48,
+    "P2|post|Q8|1": 80,
+    "P2|post|Q8|2": 74,
+    "P2|post|Q8|3": 73,
+    "P2|post|Q8|4": 70,
+    "P2|post|Q8|5": 69,
+    "P2|post|Q8|6": 67,
+    "P2|post|Q8|7": 63,
+    "P2|post|Q9|3": 8,
+    "P2|post|Q9|4": 12,
+    "P2|post|Q9|5": 12,
+    "P2|post|Q9|6": 16,
+    "P2|post|Q9|7": 12,
+    "S1|post|Q1|6": 1,
+    "S1|post|Q1|7": 3,
+    "S1|post|Q8|6": 1,
+    "S1|post|Q8|7": 3,
+    "S1|seg-cap|Q10|0": 20,
+    "S1|seg-cap|Q10|1": 54,
+    "S1|seg-cap|Q10|10": 12,
+    "S1|seg-cap|Q10|11": 24,
+    "S1|seg-cap|Q10|2": 51,
+    "S1|seg-cap|Q10|3": 50,
+    "S1|seg-cap|Q10|4": 50,
+    "S1|seg-cap|Q10|5": 48,
+    "S1|seg-cap|Q10|6": 36,
+    "S1|seg-cap|Q10|7": 14,
+    "S1|seg-cap|Q10|8": 16,
+    "S1|seg-cap|Q10|9": 6,
+    "S1|seg-cap|Q11|0": 20,
+    "S1|seg-cap|Q11|1": 55,
+    "S1|seg-cap|Q11|10": 12,
+    "S1|seg-cap|Q11|11": 24,
+    "S1|seg-cap|Q11|2": 48,
+    "S1|seg-cap|Q11|3": 48,
+    "S1|seg-cap|Q11|4": 50,
+    "S1|seg-cap|Q11|5": 48,
+    "S1|seg-cap|Q11|6": 36,
+    "S1|seg-cap|Q11|7": 14,
+    "S1|seg-cap|Q11|8": 16,
+    "S1|seg-cap|Q11|9": 6,
+    "S1|seg-cap|Q1|0": 20,
+    "S1|seg-cap|Q1|1": 55,
+    "S1|seg-cap|Q1|2": 48,
+    "S1|seg-cap|Q1|3": 48,
+    "S1|seg-cap|Q1|4": 47,
+    "S1|seg-cap|Q1|5": 47,
+    "S1|seg-cap|Q1|6": 47,
+    "S1|seg-cap|Q1|7": 43,
+    "S1|seg-cap|Q2|0": 4,
+    "S1|seg-cap|Q2|1": 18,
+    "S1|seg-cap|Q2|2": 22,
+    "S1|seg-cap|Q2|3": 40,
+    "S1|seg-cap|Q2|4": 42,
+    "S1|seg-cap|Q2|5": 48,
+    "S1|seg-cap|Q2|6": 54,
+    "S1|seg-cap|Q2|7": 54,
+    "S1|seg-cap|Q4|0": 4,
+    "S1|seg-cap|Q4|1": 18,
+    "S1|seg-cap|Q4|2": 22,
+    "S1|seg-cap|Q4|3": 40,
+    "S1|seg-cap|Q4|4": 42,
+    "S1|seg-cap|Q4|5": 48,
+    "S1|seg-cap|Q4|6": 54,
+    "S1|seg-cap|Q4|7": 54,
+    "S1|seg-cap|Q5|0": 4,
+    "S1|seg-cap|Q5|1": 18,
+    "S1|seg-cap|Q5|2": 22,
+    "S1|seg-cap|Q5|3": 40,
+    "S1|seg-cap|Q5|4": 42,
+    "S1|seg-cap|Q5|5": 48,
+    "S1|seg-cap|Q5|6": 54,
+    "S1|seg-cap|Q5|7": 54,
+    "S1|seg-cap|Q7|0": 4,
+    "S1|seg-cap|Q7|1": 18,
+    "S1|seg-cap|Q7|2": 22,
+    "S1|seg-cap|Q7|3": 40,
+    "S1|seg-cap|Q7|4": 42,
+    "S1|seg-cap|Q7|5": 48,
+    "S1|seg-cap|Q7|6": 54,
+    "S1|seg-cap|Q7|7": 54,
+    "S1|seg-cap|Q8|0": 20,
+    "S1|seg-cap|Q8|1": 54,
+    "S1|seg-cap|Q8|2": 51,
+    "S1|seg-cap|Q8|3": 50,
+    "S1|seg-cap|Q8|4": 50,
+    "S1|seg-cap|Q8|5": 49,
+    "S1|seg-cap|Q8|6": 50,
+    "S1|seg-cap|Q8|7": 43,
+    "S1|seg-cap|Q9|5": 2,
+    "S1|seg-cap|Q9|7": 4,
+    "S1|seg-face|Q10|0": 60,
+    "S1|seg-face|Q10|1": 78,
+    "S1|seg-face|Q10|10": 6,
+    "S1|seg-face|Q10|11": 6,
+    "S1|seg-face|Q10|2": 90,
+    "S1|seg-face|Q10|3": 90,
+    "S1|seg-face|Q10|4": 36,
+    "S1|seg-face|Q10|5": 24,
+    "S1|seg-face|Q10|6": 18,
+    "S1|seg-face|Q10|7": 18,
+    "S1|seg-face|Q10|8": 12,
+    "S1|seg-face|Q10|9": 6,
+    "S1|seg-face|Q11|0": 60,
+    "S1|seg-face|Q11|1": 78,
+    "S1|seg-face|Q11|10": 6,
+    "S1|seg-face|Q11|11": 6,
+    "S1|seg-face|Q11|2": 90,
+    "S1|seg-face|Q11|3": 90,
+    "S1|seg-face|Q11|4": 36,
+    "S1|seg-face|Q11|5": 24,
+    "S1|seg-face|Q11|6": 18,
+    "S1|seg-face|Q11|7": 18,
+    "S1|seg-face|Q11|8": 12,
+    "S1|seg-face|Q11|9": 6,
+    "S1|seg-face|Q1|0": 60,
+    "S1|seg-face|Q1|1": 78,
+    "S1|seg-face|Q1|2": 90,
+    "S1|seg-face|Q1|3": 90,
+    "S1|seg-face|Q1|4": 90,
+    "S1|seg-face|Q1|5": 88,
+    "S1|seg-face|Q1|6": 87,
+    "S1|seg-face|Q1|7": 86,
+    "S1|seg-face|Q2|0": 42,
+    "S1|seg-face|Q2|1": 66,
+    "S1|seg-face|Q2|2": 66,
+    "S1|seg-face|Q2|3": 60,
+    "S1|seg-face|Q2|4": 60,
+    "S1|seg-face|Q2|5": 66,
+    "S1|seg-face|Q2|6": 66,
+    "S1|seg-face|Q2|7": 54,
+    "S1|seg-face|Q4|0": 42,
+    "S1|seg-face|Q4|1": 66,
+    "S1|seg-face|Q4|2": 66,
+    "S1|seg-face|Q4|3": 60,
+    "S1|seg-face|Q4|4": 60,
+    "S1|seg-face|Q4|5": 66,
+    "S1|seg-face|Q4|6": 66,
+    "S1|seg-face|Q4|7": 54,
+    "S1|seg-face|Q5|0": 42,
+    "S1|seg-face|Q5|1": 66,
+    "S1|seg-face|Q5|2": 66,
+    "S1|seg-face|Q5|3": 60,
+    "S1|seg-face|Q5|4": 60,
+    "S1|seg-face|Q5|5": 66,
+    "S1|seg-face|Q5|6": 66,
+    "S1|seg-face|Q5|7": 54,
+    "S1|seg-face|Q7|0": 42,
+    "S1|seg-face|Q7|1": 66,
+    "S1|seg-face|Q7|2": 66,
+    "S1|seg-face|Q7|3": 60,
+    "S1|seg-face|Q7|4": 60,
+    "S1|seg-face|Q7|5": 66,
+    "S1|seg-face|Q7|6": 66,
+    "S1|seg-face|Q7|7": 54,
+    "S1|seg-face|Q8|0": 60,
+    "S1|seg-face|Q8|1": 78,
+    "S1|seg-face|Q8|2": 90,
+    "S1|seg-face|Q8|3": 90,
+    "S1|seg-face|Q8|4": 89,
+    "S1|seg-face|Q8|5": 89,
+    "S1|seg-face|Q8|6": 87,
+    "S1|seg-face|Q8|7": 87,
+    "S1|seg-face|Q9|3": 6,
+    "S1|seg-face|Q9|4": 18,
+    "S1|seg-face|Q9|5": 18,
+    "S1|seg-face|Q9|6": 12,
+    "S1|seg-face|Q9|7": 12,
+    "S2|arc-convex|Q1|6": 1,
+    "S2|arc-convex|Q1|7": 3,
+    "S2|arc-convex|Q8|6": 1,
+    "S2|arc-convex|Q8|7": 3,
+    "S2|seg-cap|Q10|0": 20,
+    "S2|seg-cap|Q10|1": 56,
+    "S2|seg-cap|Q10|10": 12,
+    "S2|seg-cap|Q10|11": 24,
+    "S2|seg-cap|Q10|2": 49,
+    "S2|seg-cap|Q10|3": 45,
+    "S2|seg-cap|Q10|4": 50,
+    "S2|seg-cap|Q10|5": 48,
+    "S2|seg-cap|Q10|6": 36,
+    "S2|seg-cap|Q10|7": 14,
+    "S2|seg-cap|Q10|8": 16,
+    "S2|seg-cap|Q10|9": 6,
+    "S2|seg-cap|Q11|0": 20,
+    "S2|seg-cap|Q11|1": 57,
+    "S2|seg-cap|Q11|10": 12,
+    "S2|seg-cap|Q11|11": 24,
+    "S2|seg-cap|Q11|2": 50,
+    "S2|seg-cap|Q11|3": 45,
+    "S2|seg-cap|Q11|4": 50,
+    "S2|seg-cap|Q11|5": 48,
+    "S2|seg-cap|Q11|6": 36,
+    "S2|seg-cap|Q11|7": 14,
+    "S2|seg-cap|Q11|8": 16,
+    "S2|seg-cap|Q11|9": 6,
+    "S2|seg-cap|Q1|0": 20,
+    "S2|seg-cap|Q1|1": 57,
+    "S2|seg-cap|Q1|2": 50,
+    "S2|seg-cap|Q1|3": 45,
+    "S2|seg-cap|Q1|4": 47,
+    "S2|seg-cap|Q1|5": 46,
+    "S2|seg-cap|Q1|6": 46,
+    "S2|seg-cap|Q1|7": 41,
+    "S2|seg-cap|Q2|0": 4,
+    "S2|seg-cap|Q2|1": 18,
+    "S2|seg-cap|Q2|2": 22,
+    "S2|seg-cap|Q2|3": 40,
+    "S2|seg-cap|Q2|4": 42,
+    "S2|seg-cap|Q2|5": 48,
+    "S2|seg-cap|Q2|6": 54,
+    "S2|seg-cap|Q2|7": 54,
+    "S2|seg-cap|Q4|0": 4,
+    "S2|seg-cap|Q4|1": 18,
+    "S2|seg-cap|Q4|2": 22,
+    "S2|seg-cap|Q4|3": 40,
+    "S2|seg-cap|Q4|4": 42,
+    "S2|seg-cap|Q4|5": 48,
+    "S2|seg-cap|Q4|6": 54,
+    "S2|seg-cap|Q4|7": 54,
+    "S2|seg-cap|Q5|0": 4,
+    "S2|seg-cap|Q5|1": 18,
+    "S2|seg-cap|Q5|2": 22,
+    "S2|seg-cap|Q5|3": 40,
+    "S2|seg-cap|Q5|4": 42,
+    "S2|seg-cap|Q5|5": 48,
+    "S2|seg-cap|Q5|6": 54,
+    "S2|seg-cap|Q5|7": 54,
+    "S2|seg-cap|Q7|0": 4,
+    "S2|seg-cap|Q7|1": 18,
+    "S2|seg-cap|Q7|2": 22,
+    "S2|seg-cap|Q7|3": 40,
+    "S2|seg-cap|Q7|4": 42,
+    "S2|seg-cap|Q7|5": 48,
+    "S2|seg-cap|Q7|6": 54,
+    "S2|seg-cap|Q7|7": 54,
+    "S2|seg-cap|Q8|0": 20,
+    "S2|seg-cap|Q8|1": 56,
+    "S2|seg-cap|Q8|2": 49,
+    "S2|seg-cap|Q8|3": 45,
+    "S2|seg-cap|Q8|4": 46,
+    "S2|seg-cap|Q8|5": 46,
+    "S2|seg-cap|Q8|6": 46,
+    "S2|seg-cap|Q8|7": 42,
+    "S2|seg-cap|Q9|5": 2,
+    "S2|seg-cap|Q9|7": 4,
+    "S2|seg-face|Q10|0": 60,
+    "S2|seg-face|Q10|1": 78,
+    "S2|seg-face|Q10|10": 6,
+    "S2|seg-face|Q10|11": 6,
+    "S2|seg-face|Q10|2": 90,
+    "S2|seg-face|Q10|3": 90,
+    "S2|seg-face|Q10|4": 36,
+    "S2|seg-face|Q10|5": 24,
+    "S2|seg-face|Q10|6": 18,
+    "S2|seg-face|Q10|7": 18,
+    "S2|seg-face|Q10|8": 12,
+    "S2|seg-face|Q10|9": 6,
+    "S2|seg-face|Q11|0": 60,
+    "S2|seg-face|Q11|1": 78,
+    "S2|seg-face|Q11|10": 6,
+    "S2|seg-face|Q11|11": 6,
+    "S2|seg-face|Q11|2": 90,
+    "S2|seg-face|Q11|3": 90,
+    "S2|seg-face|Q11|4": 36,
+    "S2|seg-face|Q11|5": 24,
+    "S2|seg-face|Q11|6": 18,
+    "S2|seg-face|Q11|7": 18,
+    "S2|seg-face|Q11|8": 12,
+    "S2|seg-face|Q11|9": 6,
+    "S2|seg-face|Q1|0": 60,
+    "S2|seg-face|Q1|1": 78,
+    "S2|seg-face|Q1|2": 90,
+    "S2|seg-face|Q1|3": 90,
+    "S2|seg-face|Q1|4": 88,
+    "S2|seg-face|Q1|5": 89,
+    "S2|seg-face|Q1|6": 84,
+    "S2|seg-face|Q1|7": 84,
+    "S2|seg-face|Q2|0": 42,
+    "S2|seg-face|Q2|1": 66,
+    "S2|seg-face|Q2|2": 66,
+    "S2|seg-face|Q2|3": 60,
+    "S2|seg-face|Q2|4": 60,
+    "S2|seg-face|Q2|5": 66,
+    "S2|seg-face|Q2|6": 66,
+    "S2|seg-face|Q2|7": 54,
+    "S2|seg-face|Q4|0": 42,
+    "S2|seg-face|Q4|1": 66,
+    "S2|seg-face|Q4|2": 66,
+    "S2|seg-face|Q4|3": 60,
+    "S2|seg-face|Q4|4": 60,
+    "S2|seg-face|Q4|5": 66,
+    "S2|seg-face|Q4|6": 66,
+    "S2|seg-face|Q4|7": 57,
+    "S2|seg-face|Q5|0": 42,
+    "S2|seg-face|Q5|1": 66,
+    "S2|seg-face|Q5|2": 66,
+    "S2|seg-face|Q5|3": 60,
+    "S2|seg-face|Q5|4": 60,
+    "S2|seg-face|Q5|5": 66,
+    "S2|seg-face|Q5|6": 66,
+    "S2|seg-face|Q5|7": 54,
+    "S2|seg-face|Q7|0": 42,
+    "S2|seg-face|Q7|1": 66,
+    "S2|seg-face|Q7|2": 66,
+    "S2|seg-face|Q7|3": 60,
+    "S2|seg-face|Q7|4": 60,
+    "S2|seg-face|Q7|5": 66,
+    "S2|seg-face|Q7|6": 66,
+    "S2|seg-face|Q7|7": 54,
+    "S2|seg-face|Q8|0": 60,
+    "S2|seg-face|Q8|1": 78,
+    "S2|seg-face|Q8|2": 90,
+    "S2|seg-face|Q8|3": 90,
+    "S2|seg-face|Q8|4": 87,
+    "S2|seg-face|Q8|5": 89,
+    "S2|seg-face|Q8|6": 85,
+    "S2|seg-face|Q8|7": 85,
+    "S2|seg-face|Q9|3": 6,
+    "S2|seg-face|Q9|4": 18,
+    "S2|seg-face|Q9|5": 18,
+    "S2|seg-face|Q9|6": 12,
+    "S2|seg-face|Q9|7": 12
+  },
+  "coverage": {
+    "feature_rays": 76,
+    "free_steps": 191428,
+    "headings": 32,
+    "obstacle_resolved_steps": 43280,
+    "oracle_rays_per_obstacle_step": 3600,
+    "pocket_steps": 1728,
+    "ray_steps": 233472,
+    "reset_rejection_starts_rejected": 4864,
+    "ring_starts_accepted": 2432,
+    "room_resolved_steps": 492,
+    "steps_executed": 235200
+  },
+  "environment": {
+    "numpy": "2.5.2",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "python": "3.14.7 (main, Aug 14 2026, 15:24:10) [Clang 22.1.3 ]"
+  },
+  "executed_commit_sha": "beb9012b0fa604fef4dc7b126a171f9a8baf8ee0",
+  "primitive_class_counts": {
+    "A1|arc-cap": 2650,
+    "A1|arc-concave": 2632,
+    "A1|arc-convex": 1860,
+    "A1|pocket": 188,
+    "A2|arc-cap": 2724,
+    "A2|arc-concave": 2639,
+    "A2|arc-convex": 1828,
+    "A2|pocket": 184,
+    "A3|arc-cap": 2671,
+    "A3|arc-concave": 2657,
+    "A3|arc-convex": 1791,
+    "A3|pocket": 186,
+    "A3|seg-cap": 54,
+    "P1|post": 3753,
+    "P1|seg-cap": 12,
+    "P2|post": 3814,
+    "S1|post": 8,
+    "S1|seg-cap": 2614,
+    "S1|seg-face": 4213,
+    "S2|arc-convex": 8,
+    "S2|seg-cap": 2590,
+    "S2|seg-face": 4204
+  },
+  "protected_sha256": {
+    "src/aweform/body.py": "3d5d1bfd6b231591bb1515dc495f5dbb743b0dda1e8a8adcbc1414ff93a94236",
+    "src/aweform/d045.py": "b137b80df53894d96684e6a2513d33f4b6bc39c23dfeeba0476d2949387ca774",
+    "src/aweform/d049.py": "85253a9277523f8ca689638b2720fd582f6b43650be2eb0cb4fcbb8af7d3921a",
+    "src/aweform/d050.py": "c9a031545a5a6dcbe732994f7d3c3534d4d1b22ec1b82c78e7d9f98e74666358",
+    "src/aweform/d052.py": "4c93a3dd8171380370e212547c8ed90dad5359477fb685489e33fbcaa00d09a4",
+    "src/aweform/d053.py": "45754c9e4536370f5e969cca6e4e3f59232d435ba289abf7efd82fa965b868e7",
+    "src/aweform/d054.py": "d3664b318a42a53b6f524449c12337096999bbd42eb1d27a6d3da4aeca6b7313",
+    "src/aweform/d055.py": "2ced64b2c524f542f8cb83f2c3dafeb526dd37d8533eba298ea15bb268703693",
+    "src/aweform/d056.py": "8bf7370f86cac5ed8a580d0456cd7111f90f1108994de1b64761e69cc95ca518",
+    "src/aweform/d057.py": "ceb93c5fb930d5fb8ee25448fbcd272408b327a532cc60317430d34662602ca8",
+    "src/aweform/d058.py": "8ee22b6185114ef200604671bfcaf61efc728b665d69ca2ded18ba948fb1d9ee",
+    "src/aweform/d059.py": "0ff23bb32520244740b54fee8caeb45ccffbb422fb0eb1a3370735e9c1804d9c",
+    "src/aweform/development_visualizer.py": "11073ae8f30a561b7760b8a4939e9cf7b68bd60b1cc86b29845178be42558ca5",
+    "src/aweform/env.py": "c61832671a3dd5e3d40435304153a521bf925d4be24c964984e157c429d2cb19",
+    "src/aweform/exp001.py": "f644cb14ae56446af5ad2ca8d8d61eef5c8a9d1d6c18fdaf4362ca7441c71be7",
+    "src/aweform/exp003.py": "72f3d67651b95df6d395dc9f57f49b20bf92dc8c28603941fe0b89121b9cb9f2",
+    "src/aweform/exp003_seed_policy.py": "b624a117ef947f41a3c494d017d398dd0212a0f7975698922f0f455a87ea0f8d",
+    "src/aweform/vis_d059.py": "83998ba38f13b84609c440897f581505c0021673c0456dac8fc6a2aa2be0fd46"
+  },
+  "protocol_version": "d060-v05-round-interior-obstacle-substrate-v1",
+  "room_corner_allowance_m": 4.263256414560601e-14,
+  "schema_version": "d060-v1",
+  "symbolic_penetration_bound_m": 0.07292419035931953
+}

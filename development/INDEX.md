@@ -12,7 +12,7 @@ This file is the canonical **committed D-record ledger**. Add one row when a mea
 
 Do not use roadmap prose or README text as a replacement for this ledger. Work that is authorized in GitHub but does not yet have a committed D-record belongs in the current authorization issue/PR, not as a premature row here.
 
-Committed Development records currently extend through **D-059**; D-051 was stopped before merge and has no committed D-record. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage; D-049, D-050, and D-052 through D-056 are the committed V0.5 Level-1 viability lineage and its candidate comparisons/characterizations; D-057 is an evaluator-only boundary-rule counterfactual for the RETURN wall wedge; D-058 is S1 physical wall-contact substrate conformance; D-059's first official execution is invalidated for final acceptance; its corrected execution and byte-identical regeneration are complete, with final exact-HEAD QA/reviews pending.
+Committed Development records currently extend through **D-060**; D-051 was stopped before merge and has no committed D-record. D-041 through D-044 are historical V0.4 records; D-045 is the first committed V0.5 substrate record; D-046 through D-048 are the committed V0.5 shadow-learning/diagnostic lineage; D-049, D-050, and D-052 through D-056 are the committed V0.5 Level-1 viability lineage and its candidate comparisons/characterizations; D-057 is an evaluator-only boundary-rule counterfactual for the RETURN wall wedge; D-058 is S1 physical wall-contact substrate conformance; D-059's first official execution is invalidated for final acceptance; its corrected execution and byte-identical regeneration are complete, with final exact-HEAD QA/reviews pending; D-060 records evaluator-only S2-B obstacle-substrate conformance.
 
 ## Disposition vocabulary
 
@@ -88,6 +88,7 @@ A future cleanup may add a separate execution-state column if it becomes useful,
 | D-057 | V0.5 evaluator-only boundary-rule counterfactual for the RETURN wall wedge | CONTINUING | [`D-057-v05-boundary-rule-counterfactual.md`](D-057-v05-boundary-rule-counterfactual.md) |
 | D-058 | V0.5 physical wall-contact substrate conformance | CONTINUING | [`D-058-v05-physical-wall-contact-substrate.md`](D-058-v05-physical-wall-contact-substrate.md) |
 | D-059 | V0.5 S1 Level-1 floor re-baseline (corrected rerun reproduced; final QA/reviews pending) | CONTINUING | [`D-059-v05-s1-level1-floor-rebaseline.md`](D-059-v05-s1-level1-floor-rebaseline.md) |
+| D-060 | V0.5 round interior-obstacle substrate conformance | CONTINUING | [`D-060-v05-round-interior-obstacle-substrate.md`](D-060-v05-round-interior-obstacle-substrate.md) |
 
 VIS-D059 is a curated, evaluator/presentation-only replay of ten digest-matched D-059 endurance lifetimes. It has zero evidential weight and does not alter or strengthen any D-059 conclusion; see [`VIS-D059-curated-replay.md`](VIS-D059-curated-replay.md).
 
