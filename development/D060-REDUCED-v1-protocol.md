@@ -1,9 +1,9 @@
 # D060-REDUCED-v1 frozen protocol
 
-**Status:** Frozen diagnostic protocol; exploratory/evaluator-only, not full D-060 conformance.  
-**Protocol ID:** `D060-REDUCED-v1`; artifact schema `d060-reduced-v1`.  
-**Authorization:** Issue https://github.com/PiFlow/aweform/issues/223, following Flow direction and Sol proposal PASS recorded on issue 197.  
-**Base:** `039d0a4810aaffb6671f968a82fb6850b1596659`, descending from main `ce4f4943f6d8fcd84c723a151b15178f3856e098`.  
+**Status:** Frozen diagnostic protocol; exploratory/evaluator-only, not full D-060 conformance.
+**Protocol ID:** `D060-REDUCED-v1`; artifact schema `d060-reduced-v1`.
+**Authorization:** Issue https://github.com/PiFlow/aweform/issues/223, following Flow direction and Sol proposal PASS recorded on issue 197.
+**Base:** `039d0a4810aaffb6671f968a82fb6850b1596659`, descending from main `ce4f4943f6d8fcd84c723a151b15178f3856e098`.
 **Pinned original blobs at base:** `src/aweform/d060.py` SHA-256 `6391de1f383968a6369870dc54665a79defacd374c8a418707ba768ea7e7cf98`; `src/aweform/d060_oracle.py` SHA-256 `ea50718f855e2e934177e2889dd5ef520020fee2953e6a956229dd1b7c0684c2`; `tests/test_d060.py` SHA-256 `12761052e15419eb9d27fb05404c35bac066798478d4c71569cdf986cc6f8773`. The dedicated adapter and this protocol must be committed and the exact executable SHA recorded before any benchmark or result run.
 
 ## Boundary and implementation
