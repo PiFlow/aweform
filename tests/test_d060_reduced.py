@@ -18,6 +18,15 @@ def test_protocol_identity_and_frozen_selection_cardinalities() -> None:
     assert len(d060_oracle._feature_rays()) == 76
     assert len(d060_reduced._headings()) == 32
     assert d060_reduced.H2C_HEADINGS == (0, 1, 24, 28)
+    m = d060.D045_MAX_WHEEL_DELTA_RAD
+    expected_u10 = tuple(
+        (left, right)
+        for left in (-m, 0.0, m)
+        for right in (-m, 0.0, m)
+        if (left, right) != (0.0, 0.0)
+    ) + ((-0.565040862351, 0.645771823238), (0.0, 0.0))
+    assert d060_reduced._u10_commands() == expected_u10
+    assert len(d060_reduced._u10_commands()) == 10
 
 
 def test_rotated_corner_reconstruction_is_four_corners_at_exact_yaw() -> None:

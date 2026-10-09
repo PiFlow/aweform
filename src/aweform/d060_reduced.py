@@ -92,6 +92,17 @@ def _commands() -> tuple[tuple[str, tuple[tuple[float, float], ...]], ...]:
     )
 
 
+def _u10_commands() -> tuple[tuple[float, float], ...]:
+    m = D045_MAX_WHEEL_DELTA_RAD
+    u9 = tuple(
+        (left, right)
+        for left in (-m, 0.0, m)
+        for right in (-m, 0.0, m)
+        if (left, right) != (0.0, 0.0)
+    ) + ((-0.565040862351, 0.645771823238),)
+    return u9 + ((0.0, 0.0),)
+
+
 def _options(
     position: tuple[float, float],
     heading: float,
@@ -293,6 +304,8 @@ def _check_endpoint(
                 "executed_yaw": full_yaw,
                 "corners": corners,
                 "room_violation_m": room_violation,
+                "oracle_obstacle_gaps_m": oracle_gaps,
+                "production_obstacle_gaps_m": production_gaps,
                 "wall_delta": wall_delta,
                 "obstacle_delta": obstacle_delta,
                 "direct_delta": direct,
@@ -698,7 +711,8 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
             starts.append(
                 (f"low-energy:{x}:{y}", hi, (x, y), headings[hi], H2C_LOW_BATTERY_J)
             )
-    counters["h2c_candidates_selected"] = len(starts) * 10
+    u10_commands = _u10_commands()
+    counters["h2c_candidates_selected"] = len(starts) * len(u10_commands)
     for label, hi, position, theta, battery in starts:
         options = _options(position, theta, battery)
         gaps = tuple(
@@ -713,23 +727,26 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
                     f"H.2(c) rejected oracle-legal reset {label} {hi} {gaps!r}"
                 )
             counters["h2c_rejected"] += 1
-            counters["h2c_candidates_excluded_reset"] += 10
+            counters["h2c_candidates_excluded_reset"] += len(u10_commands)
+            identities.append(
+                {
+                    "family": "h2c-start",
+                    "label": label,
+                    "heading_index": hi,
+                    "position": position,
+                    "battery_j": battery,
+                    "reset_accepted": False,
+                    "oracle_reset_gaps_m": gaps,
+                    "excluded_candidate_indices": list(range(len(u10_commands))),
+                }
+            )
             continue
         if oracle_penetrates:
             raise AssertionError(
                 f"H.2(c) accepted oracle-penetrating reset {label} {hi} {gaps!r}"
             )
         counters["h2c_eligible_starts"] += 1
-        for ci, command in enumerate(
-            tuple(
-                (left, right)
-                for left in (-m, 0.0, m)
-                for right in (-m, 0.0, m)
-                if (left, right) != (0.0, 0.0)
-            )
-            + ((-0.565040862351, 0.645771823238),)
-            + ((0.0, 0.0),)
-        ):
+        for ci, command in enumerate(u10_commands):
             actual, control = d060.D060Env(), D058Env(D058PhysicalConfig(3.0))
             actual.reset(options=options)
             control.reset(options=options)
@@ -751,8 +768,17 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
             disagreements_here = d060._h2_boundary_sign_disagreements(gaps_p, gaps_o)
             if oracle_eligible:
                 counters["h2c_candidate_oracle_eligible"] += 1
-            if oracle_eligible and not disagreements_here:
+            for _, production_gap, oracle_gap in disagreements_here:
+                direction_key = (
+                    "h2c_sign_production_penetrating_oracle_clear"
+                    if production_gap < 0.0
+                    else "h2c_sign_production_clear_oracle_penetrating"
+                )
+                counters[direction_key] += 1
+            compared = oracle_eligible and not disagreements_here
+            if compared:
                 counters["h2c_candidate_eligible"] += 1
+                candidate_status = "eligible_and_compared"
                 case = {
                     "family": "h2c-single",
                     "label": label,
@@ -773,9 +799,37 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
             else:
                 if not oracle_eligible:
                     counters["h2c_candidate_excluded_oracle"] += 1
+                    candidate_status = "excluded_oracle_penetration"
                 else:
                     counters["h2c_candidate_excluded_sign_disagreement"] += 1
+                    candidate_status = "excluded_sign_disagreement"
                 counters["h2c_single_ineligible"] += 1
+            identities.append(
+                {
+                    "family": "h2c-single-candidate",
+                    "label": label,
+                    "heading_index": hi,
+                    "command_index": ci,
+                    "command": command,
+                    "status": candidate_status,
+                    "oracle_gaps_m": gaps_o,
+                    "production_gaps_m": gaps_p,
+                    "sign_disagreements": [
+                        {
+                            "obstacle": d060.FROZEN_LAYOUT[index][0],
+                            "production_gap_m": production_gap,
+                            "oracle_gap_m": oracle_gap,
+                            "production_classification": "penetrating"
+                            if production_gap < 0.0
+                            else "clear",
+                            "oracle_classification": "penetrating"
+                            if oracle_gap < 0.0
+                            else "clear",
+                        }
+                        for index, production_gap, oracle_gap in disagreements_here
+                    ],
+                }
+            )
         identities.append(
             {
                 "family": "h2c-start",
@@ -783,6 +837,7 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
                 "heading_index": hi,
                 "position": position,
                 "battery_j": battery,
+                "reset_accepted": True,
                 "oracle_reset_gaps_m": gaps,
             }
         )
@@ -793,12 +848,7 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
     actual, control = d060.D060Env(), D058Env(D058PhysicalConfig(3.0))
     actual.reset(options=options)
     control.reset(options=options)
-    u10 = tuple(
-        (left, right)
-        for left in (-m, 0.0, m)
-        for right in (-m, 0.0, m)
-        if (left, right) != (0.0, 0.0)
-    ) + ((-0.565040862351, 0.645771823238), (0.0, 0.0))
+    u10 = u10_commands
     lockstep = True
     for si in range(64):
         command = u10[si % 10]
@@ -822,7 +872,14 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
             else:
                 counters["h2c_64_lockstep_excluded"] += 1
             lockstep = False
-    identities.append({"family": "h2c-64", "commands": 64, "schedule": "U10[i % 10]"})
+    identities.append(
+        {
+            "family": "h2c-64",
+            "commands": 64,
+            "schedule": "U10[i % 10]",
+            "u10": u10,
+        }
+    )
 
     expected = {
         "ray_sequences": 19,
