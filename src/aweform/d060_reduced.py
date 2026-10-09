@@ -131,6 +131,103 @@ def _corners(
     )
 
 
+def _comparison_state(env: Any) -> dict[str, Any]:
+    if env.body is None:
+        raise AssertionError("H.2 comparison context lacks a body")
+    return {
+        "position": env.body.position,
+        "heading": env.body.heading,
+        "battery_j": env.battery_j,
+        "body_temperature_c": env.body_temperature_c,
+        "charger_termination_latched": env.charger_termination_latched,
+        "energy": env.body.energy,
+        "last_transition": env.last_transition,
+        "last_room_stage": getattr(env, "last_room_stage", None),
+        "last_step_contact": getattr(env, "last_step_contact", None),
+        "last_contact": getattr(env, "last_contact", None),
+    }
+
+
+def _comparison_context(
+    case: dict[str, Any],
+    command: tuple[float, float],
+    reset_options: dict[str, Any],
+    actual: d060.D060Env,
+    control: D058Env,
+) -> dict[str, Any]:
+    return {
+        "case": case,
+        "command": command,
+        "reset_options": dict(reset_options),
+        "pre_step_states": {
+            "actual": _comparison_state(actual),
+            "control": _comparison_state(control),
+        },
+    }
+
+
+def _sign_case_record(
+    *,
+    env: d060.D060Env,
+    case: dict[str, Any],
+    command: tuple[float, float],
+    obstacle: str,
+    production_gap: float,
+    oracle_gap: float,
+) -> dict[str, Any]:
+    if env.body is None or env.last_transition is None or env.last_step_contact is None:
+        raise AssertionError(
+            f"sign disagreement lacks executed D-060 telemetry: {case!r}"
+        )
+    step = env.last_step_contact
+    contact = env.last_obstacle_stage
+    return {
+        "case": case,
+        "command": command,
+        "obstacle": obstacle,
+        "production_gap_m": production_gap,
+        "oracle_gap_m": oracle_gap,
+        "production_classification": "penetrating" if production_gap < 0.0 else "clear",
+        "oracle_classification": "penetrating" if oracle_gap < 0.0 else "clear",
+        "execution_witness": {
+            "case": case,
+            "command": command,
+            "resolved_by": step.resolved_by,
+            "obstacle_id": contact.obstacle_id if contact is not None else None,
+            "p0": env.last_transition.position_before,
+            "theta0": env.last_transition.heading_before,
+            "p_full": step.unconstrained_endpoint,
+            "theta_full": env.last_transition.heading_after,
+            "p_exec": step.executed_endpoint,
+            "theta_exec": env.body.heading,
+            "last_step_contact": {
+                "resolved_by": step.resolved_by,
+                "unconstrained_endpoint": step.unconstrained_endpoint,
+                "executed_endpoint": step.executed_endpoint,
+                "removed_displacement": step.removed_displacement,
+                "removed_displacement_magnitude_m": (
+                    step.removed_displacement_magnitude_m
+                ),
+            },
+            "removed_displacement": step.removed_displacement,
+            "removed_displacement_magnitude_m": step.removed_displacement_magnitude_m,
+            "obstacle_contact": (
+                None
+                if contact is None
+                else {
+                    "obstacle_id": contact.obstacle_id,
+                    "primitive": contact.primitive,
+                    "p_room": contact.p_room,
+                    "p_exec": contact.p_exec,
+                    "push_out_vector": contact.push_out_vector,
+                    "push_out_magnitude_m": contact.push_out_magnitude_m,
+                    "unconstrained_gap_m": contact.unconstrained_gap_m,
+                }
+            ),
+        },
+    }
+
+
 def _compare(
     actual: d060.D060Env,
     control: D058Env,
@@ -138,6 +235,8 @@ def _compare(
     obs_b: Any,
     ignore_index: bool,
     case: dict[str, Any],
+    comparison_context: dict[str, Any],
+    counters: Counter[str],
 ) -> None:
     if (
         actual.body is None
@@ -178,10 +277,49 @@ def _compare(
     mismatch = [
         {"field": key, "actual": a, "control": b} for key, a, b in pairs if a != b
     ]
+    failure_context = {
+        **comparison_context,
+        "compared_fields": tuple(name for name, _, _ in pairs),
+        "ignore_step_index": ignore_index,
+    }
     if mismatch:
         raise AssertionError(
-            f"reduced H.2 identity mismatch case={case!r} mismatches={mismatch!r}"
+            d060._h2_comparison_failure_context(
+                case,
+                failure_context,
+                actual,
+                control,
+                obs_a,
+                obs_b,
+                ignore_index,
+                mismatch,
+            )
         )
+    contact = control.last_contact
+    wall_delta = (
+        contact.executed_endpoint[0] - contact.unconstrained_endpoint[0],
+        contact.executed_endpoint[1] - contact.unconstrained_endpoint[1],
+    )
+    direct_delta = (
+        control.body.position[0] - contact.unconstrained_endpoint[0],
+        control.body.position[1] - contact.unconstrained_endpoint[1],
+    )
+    reconstructed_endpoint = (
+        contact.unconstrained_endpoint[0] + wall_delta[0],
+        contact.unconstrained_endpoint[1] + wall_delta[1],
+    )
+    if (
+        control.body.position != contact.executed_endpoint
+        or wall_delta != direct_delta
+        or reconstructed_endpoint != contact.executed_endpoint
+    ):
+        raise AssertionError(
+            "D-058 H.2 wall reconstruction mismatch "
+            f"case={case!r} reset_options={comparison_context['reset_options']!r} "
+            f"contact={contact!r} control_position={control.body.position!r} "
+            f"wall_delta={wall_delta!r} direct_delta={direct_delta!r}"
+        )
+    counters["d058_reconstruction_checks"] += 1
 
 
 def _check_endpoint(
@@ -221,24 +359,27 @@ def _check_endpoint(
     )
     fresh_control: D058Env | None = None
     fresh_result: Any = None
+    fresh_comparison_context: dict[str, Any] | None = None
     if d060._h2b_requires_fresh_control(
         lockstep, production_obstacle_violations, sign_disagreements
     ):
         fresh_control = D058Env(D058PhysicalConfig(3.0))
-        fresh_control.reset(
-            options={
-                "body_position": start,
-                "station_center": env.station_center,
-                "heading": heading,
-                "battery_j": env.battery_j,
-                "body_temperature_c": env.body_temperature_c,
-                "charger_termination_latched": env.charger_termination_latched,
-            }
-        )
+        fresh_options = {
+            "body_position": start,
+            "station_center": env.station_center,
+            "heading": heading,
+            "battery_j": env.battery_j,
+            "body_temperature_c": env.body_temperature_c,
+            "charger_termination_latched": env.charger_termination_latched,
+        }
+        fresh_control.reset(options=fresh_options)
         reset_heading, _ = d060._restore_h2b_heading(fresh_control, heading)
         if heading != reset_heading:
             counters["h2b_heading_representation_restorations"] += 1
         counters["h2b_fresh_control_eligible"] += 1
+        fresh_comparison_context = _comparison_context(
+            case, command, fresh_options, env, fresh_control
+        )
         fresh_result = _step(fresh_control, command)
     room_bad = any(
         x < 0.0 or x > 3.0 or y < 0.0 or y > 3.0 for x, y in _corners(full, full_yaw)
@@ -279,8 +420,17 @@ def _check_endpoint(
     )
     counters["actuator_bookkeeping_checks"] += 1
     if fresh_control is not None:
-        assert fresh_result is not None
-        _compare(env, fresh_control, observation, fresh_result[0], True, case)
+        assert fresh_result is not None and fresh_comparison_context is not None
+        _compare(
+            env,
+            fresh_control,
+            observation,
+            fresh_result[0],
+            True,
+            case,
+            fresh_comparison_context,
+            counters,
+        )
         counters["h2b_fresh_control_compared"] += 1
 
     # Independent room-wall check: reconstruct all four rotated corners, never
@@ -513,6 +663,9 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
                 "command_index": ci,
                 "feature_class": feature_class,
             }
+            comparison_context = _comparison_context(
+                case, command, reset, actual, control
+            )
             gaps_o, gaps_p = _check_endpoint(
                 actual, command, case, counters, h6, lockstep=lockstep
             )
@@ -525,19 +678,14 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
                     )
                     disagreements[direction_name] += 1
                     sign_cases.append(
-                        {
-                            "case": case,
-                            "command": command,
-                            "obstacle": d060.FROZEN_LAYOUT[oi_gap][0],
-                            "production_gap_m": pg,
-                            "oracle_gap_m": og,
-                            "production_classification": "penetrating"
-                            if pg < 0.0
-                            else "clear",
-                            "oracle_classification": "penetrating"
-                            if og < 0.0
-                            else "clear",
-                        }
+                        _sign_case_record(
+                            env=actual,
+                            case=case,
+                            command=command,
+                            obstacle=d060.FROZEN_LAYOUT[oi_gap][0],
+                            production_gap=pg,
+                            oracle_gap=og,
+                        )
                     )
             boundary_disagreements = d060._h2_boundary_sign_disagreements(
                 gaps_p, gaps_o
@@ -557,6 +705,8 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
                     control_result[0],
                     False,
                     case,
+                    comparison_context,
+                    counters,
                 )
                 counters["h2_lockstep_steps_compared"] += 1
             elif lockstep and any(g < 0.0 for g in gaps_p):
@@ -604,6 +754,9 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
                         "sign": sign,
                         "command_index": ci,
                     }
+                    comparison_context = _comparison_context(
+                        case, command, reset, actual, control
+                    )
                     gaps_o, gaps_p = _check_endpoint(
                         actual, command, case, counters, h6, lockstep=lockstep
                     )
@@ -618,19 +771,14 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
                     ):
                         if (pg < 0.0) != (og < 0.0):
                             sign_cases.append(
-                                {
-                                    "case": case,
-                                    "command": command,
-                                    "obstacle": d060.FROZEN_LAYOUT[gap_index][0],
-                                    "production_gap_m": pg,
-                                    "oracle_gap_m": og,
-                                    "production_classification": "penetrating"
-                                    if pg < 0.0
-                                    else "clear",
-                                    "oracle_classification": "penetrating"
-                                    if og < 0.0
-                                    else "clear",
-                                }
+                                _sign_case_record(
+                                    env=actual,
+                                    case=case,
+                                    command=command,
+                                    obstacle=d060.FROZEN_LAYOUT[gap_index][0],
+                                    production_gap=pg,
+                                    oracle_gap=og,
+                                )
                             )
                     boundary_disagreements = d060._h2_boundary_sign_disagreements(
                         gaps_p, gaps_o
@@ -663,6 +811,8 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
                             control_result[0],
                             False,
                             case,
+                            comparison_context,
+                            counters,
                         )
                         counters["h2_lockstep_steps_compared"] += 1
                     if actual.last_obstacle_stage is not None:
@@ -820,6 +970,9 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
                     "heading": hi,
                     "command": ci,
                 }
+                comparison_context = _comparison_context(
+                    case, command, options, actual, control
+                )
                 _check_endpoint(actual, command, case, counters, h6, lockstep=True)
                 control_result = _step(control, command)
                 _compare(
@@ -829,6 +982,8 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
                     control_result[0],
                     False,
                     case,
+                    comparison_context,
+                    counters,
                 )
                 counters["h2c_single_compared"] += 1
             else:
@@ -888,6 +1043,9 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
     for si in range(64):
         command = u10[si % 10]
         case = {"family": "h2c-64", "index": si}
+        comparison_context = _comparison_context(
+            case, command, options, actual, control
+        )
         gaps_o, gaps_p = _check_endpoint(
             actual, command, case, counters, h6, lockstep=lockstep
         )
@@ -898,7 +1056,14 @@ def _record_checks(*, preflight: bool = False) -> dict[str, Any]:
         if lockstep and oracle_eligible and not sign_disagreement:
             control_result = _step(control, command)
             _compare(
-                actual, control, _observation(actual), control_result[0], False, case
+                actual,
+                control,
+                _observation(actual),
+                control_result[0],
+                False,
+                case,
+                comparison_context,
+                counters,
             )
             counters["h2c_64_compared"] += 1
         else:
