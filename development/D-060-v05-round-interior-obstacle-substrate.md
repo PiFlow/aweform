@@ -38,4 +38,6 @@ The approved `τ_c = 1e-12 m` and the inherited room-corner verification allowan
 
 No sensor, observation, controller, energy, thermal, or D-055 change was made. No Level-1, D-055, lifetime, five-seed, or behavioural evidence was produced. The oracle is a dense-sample check rather than a proof. This conformance record characterizes an endpoint-only substrate and makes no claim of continuous collision fidelity or hardware-valid contact.
 
+**Lint exception.** `src/aweform/d060.py`, `src/aweform/d060_oracle.py` and `tests/test_d060.py` are byte-identical to the executed SHA `beb9012` and are covered by the H.7 regeneration check, so they were not reformatted. They fail `ruff check` on E701, E702, E501, F401, I001, E741 and E731 (548 errors). `pyproject.toml` therefore adds per-file ignores for exactly those rules on exactly those three files. All other rules, files and Ruff configuration are unchanged.
+
 **disposition:** CONTINUING.
