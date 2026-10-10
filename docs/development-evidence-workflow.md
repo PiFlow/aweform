@@ -41,11 +41,19 @@ Evidence execution requires exact-SHA reproducibility, matched controls appropri
 
 Historical EXP-000 through EXP-003 retain their existing identifiers and records. The D-series does not retroactively relabel earlier development work.
 
-## Review proportionality
+## Process proportionality and default Development path
 
-Ordinary D-lane work does not require dual exact-SHA review-of-record when it makes no evidence claim and does not alter a durable architecture, information, sensory/plasticity, safety, frozen-evidence, or reserved-seed boundary.
+For ordinary in-boundary D work, the default is:
 
-Formal independent review remains required for evidence-lane claims/executions and durable boundary changes under `AGENTS.md` and ADR 0013. Flow retains merge authorization.
+`concise exact-base authorization → implementation → tests/CI → one independent exact-current-HEAD review → Flow-controlled merge`.
+
+A separate proposal review or co-design round is optional unless the task, a program, or a governance trigger explicitly requires it. Do not automatically require result-free freezes, fresh holdout blocks, byte-identical artifact regeneration, multiple independent reviewers, long formal proof/checklist structures, or duplicated restatement of unchanged contracts. These controls remain available when the task-specific scientific or governance reason justifies them; prior use alone does not make them defaults.
+
+High-leverage D audits may require extra identity, replay, clone, order, or common-mode controls when the inference depends on them. Keep these validity controls proportional to the specific causal claim and its load-bearing risks.
+
+Formal independent review and reproducibility gates remain unchanged for evidence-lane claims/executions, durable-boundary changes, and changes to frozen evidence or reserved-seed contracts, as specified in `AGENTS.md`, ADR 0013, and [`docs/reproducibility.md`](reproducibility.md). Flow retains merge authorization.
+
+Once the authorized acceptance criteria pass, finish the task. Record non-blocking findings for follow-up rather than expanding current scope. Do not add opportunistic cleanup, future-stage preparation, or speculative hardening without authorization.
 
 ## Development evidence classes must stay distinct
 
@@ -76,14 +84,6 @@ A legitimate simple solution is evidence that learning has not yet earned additi
 A lifetime is one continuous causal trajectory. A harness/storage/logging/checkpoint segment is not an organism event and must be invisible to the organism.
 
 A deliberate developmental-stage reset is different. Under the current V0.3 convention it is explicitly recorded as a lifecycle/new-lifetime event; learned state resets there for now. Cross-stage inherited learned state is a later research question, not a side effect of infrastructure.
-
-## Current development state
-
-The original provisional D-001→D-008 sequence in this document has been superseded by executed development and is intentionally **not** maintained here.
-
-The canonical committed development ledger is [`development/INDEX.md`](../development/INDEX.md). Treat that ledger as authoritative for the current committed D-stage. Authorized-but-not-yet-committed work belongs in the exact GitHub authorization issue/PR.
-
-This workflow deliberately does **not** pin a moving “current D-number” or predicted successor. It defines **how** development and evidence are conducted; duplicating the live stage count here previously caused avoidable documentation drift.
 
 ## Durable cautions carried forward
 
