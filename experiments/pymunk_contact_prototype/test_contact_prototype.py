@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from typing import Sequence, cast
 
 import pytest
 
@@ -22,6 +23,9 @@ from experiments.pymunk_contact_prototype.fixture import (
 from experiments.pymunk_contact_prototype.organism_lifetime import (
     PymunkPhysiologyAdapter,
 )
+from experiments.pymunk_contact_prototype.run_diagnostics import (
+    validate_action_and_encoder_contract,
+)
 
 
 def test_action_validation_rejects_invalid_and_clips_each_shaft_independently() -> None:
@@ -35,6 +39,9 @@ def test_action_validation_rejects_invalid_and_clips_each_shaft_independently() 
         (1, 2, 3),
         "12",
         b"12",
+        True,
+        1,
+        1.0,
         (True, 0),
         ("1", 0),
         (float("nan"), 0),
@@ -42,7 +49,14 @@ def test_action_validation_rejects_invalid_and_clips_each_shaft_independently() 
         (-float("inf"), 0),
     ):
         with pytest.raises(ValueError):
-            parse_action(value)
+            parse_action(cast(Sequence[object], value))
+
+
+def test_scalar_action_preflight_rejects_without_physics_steps() -> None:
+    result = validate_action_and_encoder_contract()
+    assert result["rejected_count"] == result["invalid_count"]
+    assert result["invalid_no_step"] is True
+    assert result["pass"] is True
 
 
 def test_rectangle_geometry_and_circle_overlap_are_independent_calculations() -> None:

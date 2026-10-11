@@ -4,6 +4,25 @@ The protocol, source, cases and tests are frozen together in the result-free
 commit. Tests and software validation do **not** run fixed-command measurements
 or the single lifetime. Do not invoke the experiment commands as routine tests.
 
+## Premeasurement failure and bounded repair
+
+The initial result-free candidate `ba27168a8f2282ee5fe39556b47916c16b6c33ef`
+failed during invalid-action preflight: `parse_action(True)` called `len(True)`
+and raised `TypeError` before `run_suite`, any `Space.step`, or output creation.
+No diagnostic result or organism lifetime ran. The original traceback was not
+retained; this receipt records only the verified failure summary. The narrow
+repair converts unsized scalar inputs to the contract's `ValueError` and adds
+scalar/bool rejection coverage, including a check that preflight leaves physics
+step counters unchanged. It does not alter valid action handling or any frozen
+physics, actuator, corpus, threshold, controller, or lifetime contract. This
+candidate must be committed as a new result-free freeze before measurements.
+
+The authorized base advanced from `8188cbb2224906ccb01824f4fb75c85ac55b726e`
+to `fd03776869a984eab90137fd3a0c753992605562` before this freeze. The intervening
+main commit merges PR #228 and changes only
+`docs/research-notes/d060-incomplete-substrate-retrospective.md`; the branch was
+rebased onto that exact main, and the frozen base guard/provenance now name it.
+
 ## Optional runtime
 
 ```sh

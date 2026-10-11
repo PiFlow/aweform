@@ -35,7 +35,13 @@ def quantize_encoder(delta: float) -> float:
 
 
 def parse_action(action: Sequence[object]) -> tuple[float, float]:
-    if isinstance(action, (str, bytes)) or len(action) != 2:
+    try:
+        action_length = len(action)
+    except TypeError:
+        raise ValueError(
+            "action must contain exactly two finite wheel deltas"
+        ) from None
+    if isinstance(action, (str, bytes)) or action_length != 2:
         raise ValueError("action must contain exactly two finite wheel deltas")
     result: list[float] = []
     for value in action:

@@ -2,7 +2,7 @@
 
 - **Status:** result-free experimental contract; frozen before measured cases.
 - **Authorization:** [issue #226](https://github.com/PiFlow/aweform/issues/226), founder routing [#197 comment 6097534147](https://github.com/PiFlow/aweform/issues/197#issuecomment-6097534147).
-- **Base:** `8188cbb2224906ccb01824f4fb75c85ac55b726e`.
+- **Base:** `fd03776869a984eab90137fd3a0c753992605562` (main advanced from `8188cbb2224906ccb01824f4fb75c85ac55b726e` via documentation-only PR #228; the only added path is `docs/research-notes/d060-incomplete-substrate-retrospective.md`).
 - **Scope:** optional `experiments/pymunk_contact_prototype/` only. No production runtime, active/default environment, controller, learner, ADR, dependency policy, existing development/evidence, #219/#220 result, #222/#224 implementation, or accepted D-record changes.
 - **Scientific class:** engineering Development diagnostic; not EXP evidence and no hardware-fidelity claim.
 
