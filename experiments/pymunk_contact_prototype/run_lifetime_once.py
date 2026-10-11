@@ -11,6 +11,16 @@ from .organism_lifetime import run_once, run_reference_once
 from .run_diagnostics import _canonical, _check_clean_frozen_tree, sha256
 
 
+def validate_diagnostics_gate(results: dict[str, object], head: str) -> None:
+    if (
+        results.get("executable_sha") != head
+        or results.get("essential_B_pass") is not True
+    ):
+        raise SystemExit(
+            "exact frozen executable/B gate mismatch; STOP before organism lifetime"
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-organism-once", action="store_true")
@@ -26,13 +36,7 @@ def main() -> None:
     results = cast(
         dict[str, object], json.loads(result_path.read_text(encoding="utf-8"))
     )
-    if (
-        results.get("executable_sha") != head
-        or results.get("essential_B_pass") is not True
-    ):
-        raise SystemExit(
-            "exact frozen executable/B gate mismatch; STOP before organism lifetime"
-        )
+    validate_diagnostics_gate(results, head)
     if args.output.exists():
         raise SystemExit("one-shot lifetime output/marker already exists; never rerun")
     args.output.mkdir(parents=True)

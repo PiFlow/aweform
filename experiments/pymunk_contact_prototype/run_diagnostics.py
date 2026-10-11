@@ -22,10 +22,11 @@ from .fixture import (
     ENCODER_QUANTUM,
     MAX_DELTA,
     ContactWorld,
+    circle_clearance,
     circle_penetration,
-    corners,
     parse_action,
     quantize_encoder,
+    wall_clearance,
     wall_penetration,
 )
 
@@ -53,17 +54,43 @@ def independent_arc(
     return (x, y), heading + dyaw
 
 
+def _validate_reset(
+    world: ContactWorld,
+    position: tuple[float, float],
+    angle: float,
+) -> tuple[bool, str]:
+    expected = ContactWorld(microsteps=world.microsteps, posts=world.posts)
+    expected.reset(position, angle)
+    world.body.velocity = (3.0, -2.0)
+    world.body.angular_velocity = 1.0
+    world.elapsed = 4.0
+    world.logical_steps = 7
+    world.engine_steps = 70
+    world._contacts.append((1, 2.0, ("wall-0", "hull")))
+    world.reset(position, angle)
+    actual_digest = world.state_digest()
+    expected_digest = expected.state_digest()
+    return actual_digest == expected_digest, hashlib.sha256(
+        _canonical(actual_digest)
+    ).hexdigest()
+
+
 def _single_case(case: Case) -> dict[str, object]:
     world = ContactWorld(microsteps=case.microsteps, posts=case.posts)
     start_position = (float(case.start[0]), float(case.start[1]))
-    world.body.position = start_position
-    world.body.angle = case.start[2]
+    reset_valid, reset_digest = _validate_reset(
+        world, start_position, case.start[2]
+    )
     start_angle = case.start[2]
     rows: list[dict[str, object]] = []
     max_penetration = max(
         wall_penetration(start_position, start_angle),
         *(circle_penetration(start_position, start_angle, p, 0.05) for p in case.posts),
         0.0,
+    )
+    minimum_clearance = min(
+        wall_clearance(start_position, start_angle),
+        *(circle_clearance(start_position, start_angle, p, 0.05) for p in case.posts),
     )
     max_impulse = 0.0
     max_shaft_body_mismatch = 0.0
@@ -80,6 +107,7 @@ def _single_case(case: Case) -> dict[str, object]:
         max_shaft_body_mismatch = max(
             max_shaft_body_mismatch, record.body_shaft_mismatch
         )
+        minimum_clearance = min(minimum_clearance, record.minimum_clearance)
         any_cross |= record.crossed_wall_or_post
         any_contact |= record.arbiter_count > 0
         max_contacts = max(max_contacts, record.contact_count)
@@ -98,9 +126,10 @@ def _single_case(case: Case) -> dict[str, object]:
         if any(abs(record.shaft[i] - independent_clip[i]) > 1e-12 for i in range(2)):
             raise RuntimeError("shaft command differs from independent clipping")
         displacement = math.dist(record.start, record.end)
-        if displacement < 1e-5 and any_contact:
+        current_contact = record.arbiter_count > 0 or record.max_penetration > 0.0
+        if displacement < 1e-5 and current_contact:
             stuck_steps += 1
-        elif stuck_steps and displacement >= 0.001:
+        elif stuck_steps and not current_contact and displacement >= 0.001:
             released = True
         rows.append(
             {
@@ -114,6 +143,13 @@ def _single_case(case: Case) -> dict[str, object]:
                 "impulse_sum": record.total_impulse,
                 "contact_points": record.contact_count,
                 "arbiters": record.arbiter_count,
+                "contact_point_total": record.contact_point_total,
+                "arbiter_total": record.arbiter_total,
+                "contact_shape_pairs": [list(pair) for pair in record.contact_shape_pairs],
+                "simultaneous_shape_sets": [
+                    list(shape_set) for shape_set in record.simultaneous_shape_sets
+                ],
+                "contact_state": current_contact,
                 "substep_penetration_m": record.max_penetration,
                 "substep_crossing": record.crossed_wall_or_post,
                 "free_arc_difference_m": mismatch,
@@ -139,16 +175,14 @@ def _single_case(case: Case) -> dict[str, object]:
         "max_impulse": max_impulse,
         "max_contact_points": max_contacts,
         "any_contact": any_contact,
+        "contact_state": any_contact,
         "substep_crossing": any_cross,
         "shaft_body_displacement_difference_m": max_shaft_body_mismatch,
         "stuck_steps": stuck_steps,
         "released_after_stuck": released or stuck_steps == 0,
-        "start_wall_clearance_m": min(
-            min(x for x, _ in corners(start_position, start_angle)),
-            min(y for _, y in corners(start_position, start_angle)),
-            min(3.0 - x for x, _ in corners(start_position, start_angle)),
-            min(3.0 - y for _, y in corners(start_position, start_angle)),
-        ),
+        "minimum_clearance_m": minimum_clearance,
+        "reset_valid": reset_valid,
+        "reset_digest": reset_digest,
         "status": "PASS"
         if max_penetration <= 0.001 and not any_cross and (released or stuck_steps == 0)
         else "FAIL",
@@ -172,6 +206,27 @@ def run_suite(microsteps: int) -> list[dict[str, object]]:
     return [
         _single_case(replace(case, microsteps=microsteps)) for case in fixed_cases()
     ]
+
+
+def _fresh_process_replay() -> list[list[dict[str, object]]]:
+    raw = subprocess.check_output(
+        [
+            sys.executable,
+            "-m",
+            "experiments.pymunk_contact_prototype.run_diagnostics",
+            "--replay",
+        ],
+        cwd=Path(__file__).resolve().parents[2],
+        text=True,
+    )
+    replay = json.loads(raw)
+    if (
+        not isinstance(replay, list)
+        or len(replay) != 2
+        or not all(isinstance(cases, list) for cases in replay)
+    ):
+        raise RuntimeError("fresh-process replay returned an invalid trace")
+    return cast(list[list[dict[str, object]]], replay)
 
 
 def validate_action_and_encoder_contract() -> dict[str, object]:
@@ -304,16 +359,20 @@ def _canonical(value: object) -> bytes:
     ).encode("utf-8")
 
 
+def _ensure_output_absent(output: Path) -> None:
+    if output.exists():
+        raise RuntimeError("output directory already exists; refuse to rerun measurements")
+
+
 def measure(output: Path) -> dict[str, object]:
+    _ensure_output_absent(output)
     executable_sha = _check_clean_frozen_tree()
     runtime = _runtime_manifest()
     measurement_started = time.perf_counter()
     input_contract = validate_action_and_encoder_contract()
     cases10 = run_suite(10)
     cases20 = run_suite(20)
-    # Same-source fresh check is one immediate serial replay of the same corpus.
-    replay10 = run_suite(10)
-    replay20 = run_suite(20)
+    replay10, replay20 = _fresh_process_replay()
     first_bytes, replay_bytes = (
         _canonical([cases10, cases20]),
         _canonical([replay10, replay20]),
@@ -332,8 +391,21 @@ def measure(output: Path) -> dict[str, object]:
                 "case_id": c10["case_id"],
                 "position_difference_m": position_difference,
                 "yaw_difference_rad": yaw_difference,
-                "contact_state_same": c10["any_contact"] == c20["any_contact"],
+                "contact_state_same": c10["contact_state"] == c20["contact_state"],
+                "minimum_clearance_10_m": _number(c10["minimum_clearance_m"]),
+                "minimum_clearance_20_m": _number(c20["minimum_clearance_m"]),
             }
+        )
+        contact_state_same = bool(case_comparisons[-1]["contact_state_same"])
+        clearance_near_boundary = min(
+            abs(_number(c10["minimum_clearance_m"])),
+            abs(_number(c20["minimum_clearance_m"])),
+        ) <= 0.0005
+        case_comparisons[-1]["contact_state_exception_allowed"] = (
+            not contact_state_same and clearance_near_boundary
+        )
+        case_comparisons[-1]["contact_state_converged"] = (
+            contact_state_same or clearance_near_boundary
         )
     all_cases = cases10 + cases20
     calibration = [case for case in all_cases if case["family"] == "calibration"]
@@ -364,6 +436,7 @@ def measure(output: Path) -> dict[str, object]:
         and pymunk.version == "7.2.0",
         "finite_and_reset_replay": replay_equal
         and all(math.isfinite(_number(c["elapsed_s"])) for c in all_cases),
+        "reset_control": all(bool(c["reset_valid"]) for c in all_cases),
         "action_shaft_encoder": bool(input_contract["pass"]),
         "logical_time_and_shaft": all(
             c["logical_steps"] == c["commands"]
@@ -395,6 +468,9 @@ def measure(output: Path) -> dict[str, object]:
         ),
         "10_vs_20_yaw": all(
             _number(c["yaw_difference_rad"]) <= 0.001 for c in case_comparisons
+        ),
+        "10_vs_20_contact_state": all(
+            bool(c["contact_state_converged"]) for c in case_comparisons
         ),
         "reset_case_inventory": len(cases10) == len(fixed_cases())
         and len(cases20) == len(fixed_cases()),
@@ -445,6 +521,8 @@ def measure(output: Path) -> dict[str, object]:
             "free_space_error_m_rad": 1e-5,
             "10_vs_20_position_m": 0.0005,
             "10_vs_20_yaw_rad": 0.001,
+            "contact_state_exception_clearance_m": 0.0005,
+            "swept_crossing_clearance_m": 0.0,
             "shaft_error_rad": 1e-12,
         },
         "measurement_wall_seconds": measurement_seconds,
@@ -465,7 +543,7 @@ def measure(output: Path) -> dict[str, object]:
         "cases_10_substeps": cases10,
         "cases_20_substeps": cases20,
         "essential_B_pass": bool(gates["essential_B"]),
-        "lifetime_authorized_to_run": False,
+        "lifetime_authorized_to_run": bool(gates["essential_B"]),
     }
     output.mkdir(parents=True, exist_ok=False)
     json_path = output / "results.json"
@@ -502,12 +580,18 @@ def main() -> None:
     parser.add_argument(
         "--measure",
         action="store_true",
-        help="run the frozen cases once plus same-source replay",
+        help="run the frozen cases once plus a fresh same-source replay",
     )
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--replay", action="store_true")
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    if not args.measure:
-        parser.error("explicit --measure is required; tests never run measurements")
+    if args.replay:
+        if args.measure or args.output is not None:
+            parser.error("--replay cannot be combined with --measure or --output")
+        print(_canonical([run_suite(10), run_suite(20)]).decode("utf-8"))
+        return
+    if not args.measure or args.output is None:
+        parser.error("explicit --measure and --output are required")
     result = measure(args.output)
     print(
         json.dumps(

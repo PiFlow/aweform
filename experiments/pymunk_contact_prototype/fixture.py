@@ -87,7 +87,16 @@ def circle_penetration(
     center: tuple[float, float],
     radius: float,
 ) -> float:
-    """Independent closest-point rectangle/circle overlap depth."""
+    return max(0.0, -circle_clearance(position, angle, center, radius))
+
+
+def circle_clearance(
+    position: tuple[float, float],
+    angle: float,
+    center: tuple[float, float],
+    radius: float,
+) -> float:
+    """Independent signed closest-point rectangle/circle clearance."""
     dx, dy = center[0] - position[0], center[1] - position[1]
     c, s = math.cos(angle), math.sin(angle)
     local_x, local_y = dx * c + dy * s, -dx * s + dy * c
@@ -96,18 +105,21 @@ def circle_penetration(
     distance = math.hypot(local_x - nearest_x, local_y - nearest_y)
     if abs(local_x) <= LENGTH / 2 and abs(local_y) <= WIDTH / 2:
         distance = -min(LENGTH / 2 - abs(local_x), WIDTH / 2 - abs(local_y))
-    return max(0.0, radius - distance)
+    return distance - radius
+
+
+def wall_clearance(position: tuple[float, float], angle: float) -> float:
+    pts = corners(position, angle)
+    return min(
+        *(x for x, _ in pts),
+        *(ROOM - x for x, _ in pts),
+        *(y for _, y in pts),
+        *(ROOM - y for _, y in pts),
+    )
 
 
 def wall_penetration(position: tuple[float, float], angle: float) -> float:
-    pts = corners(position, angle)
-    return max(
-        0.0,
-        max(-x for x, _ in pts),
-        max(x - ROOM for x, _ in pts),
-        max(-y for _, y in pts),
-        max(y - ROOM for _, y in pts),
-    )
+    return max(0.0, -wall_clearance(position, angle))
 
 
 @dataclass(frozen=True)
@@ -123,8 +135,13 @@ class StepRecord:
     elapsed: float
     step_count: int
     max_penetration: float
+    minimum_clearance: float
     contact_count: int
     arbiter_count: int
+    contact_point_total: int
+    arbiter_total: int
+    contact_shape_pairs: tuple[tuple[str, ...], ...]
+    simultaneous_shape_sets: tuple[tuple[str, ...], ...]
     total_impulse: float
     crossed_wall_or_post: bool
     body_shaft_mismatch: float
@@ -151,6 +168,7 @@ class ContactWorld:
         self.space.idle_speed_threshold = 0.0
         self.body = pymunk.Body(MASS, MOMENT)
         self.hull = pymunk.Poly.create_box(self.body, (LENGTH, WIDTH))
+        self._shape_labels: dict[int, str] = {id(self.hull): "hull"}
         self.hull.friction = 0.0
         self.hull.elasticity = 0.0
         self.space.add(self.body, self.hull)
@@ -166,23 +184,42 @@ class ContactWorld:
             wall = pymunk.Segment(static, a, b, WALL_THICKNESS / 2)
             wall.friction = wall.elasticity = 0.0
             self._walls.append(wall)
+            self._shape_labels[id(wall)] = f"wall-{len(self._walls) - 1}"
         shapes: list[pymunk.Shape] = list(self._walls)
-        for center in posts:
+        for index, center in enumerate(posts):
             post = pymunk.Circle(static, POST_RADIUS, center)
             post.friction = post.elasticity = 0.0
             shapes.append(post)
+            self._shape_labels[id(post)] = f"post-{index}"
         self.space.add(*shapes)
         self.elapsed = 0.0
         self.logical_steps = 0
         self.engine_steps = 0
-        self._contacts: list[tuple[int, float]] = []
+        self._contacts: list[tuple[int, float, tuple[str, ...]]] = []
         self.space.on_collision(None, None, post_solve=self._post_solve)
 
     def _post_solve(
         self, arbiter: pymunk.Arbiter, _space: pymunk.Space, _data: object
     ) -> None:
         impulse = arbiter.total_impulse.length
-        self._contacts.append((len(arbiter.contact_point_set.points), float(impulse)))
+        labels = tuple(
+            sorted(self._shape_labels.get(id(shape), "unknown") for shape in arbiter.shapes)
+        )
+        self._contacts.append(
+            (len(arbiter.contact_point_set.points), float(impulse), labels)
+        )
+
+    def state_digest(self) -> dict[str, object]:
+        return {
+            "position_m": [float(self.body.position.x), float(self.body.position.y)],
+            "angle_rad": float(self.body.angle),
+            "velocity_m_s": [float(self.body.velocity.x), float(self.body.velocity.y)],
+            "angular_velocity_rad_s": float(self.body.angular_velocity),
+            "elapsed_s": self.elapsed,
+            "logical_steps": self.logical_steps,
+            "engine_steps": self.engine_steps,
+            "contact_cache_size": len(self._contacts),
+        }
 
     def reset(self, position: tuple[float, float], angle: float) -> None:
         if not all(math.isfinite(v) for v in (*position, angle)):
@@ -201,8 +238,17 @@ class ContactWorld:
         speed, omega = distance / DT, yaw / DT
         h = DT / self.microsteps
         max_pen = 0.0
+        minimum_clearance = math.inf
         crossed = False
+        max_contact_points = 0
+        max_arbiters = 0
+        contact_point_total = 0
+        arbiter_total = 0
+        total_impulse = 0.0
+        contact_shape_pairs: list[tuple[str, ...]] = []
+        simultaneous_shape_sets: list[tuple[str, ...]] = []
         for _ in range(self.microsteps):
+            self._contacts = []
             theta = float(self.body.angle)
             half_yaw = omega * h / 2.0
             speed_mid = speed * sinc(half_yaw)
@@ -217,20 +263,33 @@ class ContactWorld:
             p = (float(self.body.position.x), float(self.body.position.y))
             a = float(self.body.angle)
             wall_pen = wall_penetration(p, a)
+            wall_clear = wall_clearance(p, a)
             max_pen = max(max_pen, wall_pen)
-            crossed |= wall_pen > 0.001
+            minimum_clearance = min(minimum_clearance, wall_clear)
+            crossed |= wall_clear < 0.0
             for center in self.posts:
-                post_pen = circle_penetration(p, a, center, POST_RADIUS)
-                if post_pen > 0.001:
-                    crossed = True
-                max_pen = max(max_pen, post_pen)
+                post_clear = circle_clearance(p, a, center, POST_RADIUS)
+                minimum_clearance = min(minimum_clearance, post_clear)
+                max_pen = max(max_pen, -post_clear, 0.0)
+                crossed |= post_clear < 0.0
+            contacts = tuple(self._contacts)
+            step_contact_points = sum(n for n, _, _ in contacts)
+            max_contact_points = max(max_contact_points, step_contact_points)
+            max_arbiters = max(max_arbiters, len(contacts))
+            contact_point_total += step_contact_points
+            arbiter_total += len(contacts)
+            total_impulse += sum(impulse for _, impulse, _ in contacts)
+            contact_shape_pairs.extend(labels for _, _, labels in contacts)
+            if contacts:
+                simultaneous_shape_sets.append(
+                    tuple(sorted({label for _, _, labels in contacts for label in labels}))
+                )
         self.elapsed += DT
         self.logical_steps += 1
         end = (float(self.body.position.x), float(self.body.position.y))
         angle = float(self.body.angle)
         expected_distance = abs(distance)
         mismatch = abs(math.dist(start, end) - expected_distance)
-        contacts = tuple(self._contacts)
         self._contacts = []
         return StepRecord(
             request,
@@ -244,9 +303,14 @@ class ContactWorld:
             self.elapsed,
             self.engine_steps,
             max_pen,
-            sum(n for n, _ in contacts),
-            len(contacts),
-            sum(i for _, i in contacts),
+            minimum_clearance,
+            max_contact_points,
+            max_arbiters,
+            contact_point_total,
+            arbiter_total,
+            tuple(contact_shape_pairs),
+            tuple(simultaneous_shape_sets),
+            total_impulse,
             crossed,
             mismatch,
         )
