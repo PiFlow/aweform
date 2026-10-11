@@ -1,10 +1,16 @@
 # Pymunk contact prototype — result interpretation and STOP
 
-**Outcome: essential fixed-command gate B failed.** This report interprets the immutable result recorded by executable `bc8248c658397afd56dec307e4d344b16a86abb8` in `results.json`. The result JSON and its receipt in `SHA256SUMS` are unchanged. The measured source is unchanged. This is an engineering diagnostic, not an EXP result or a production-simulator decision.
+**Outcome: essential fixed-command gate B failed.** This report interprets the immutable result recorded by executable `bc8248c658397afd56dec307e4d344b16a86abb8` in `results.json`. The result JSON and its receipt in `SHA256SUMS` are unchanged, and the current result-affecting executable files are restored to that measured source. This is an engineering diagnostic, not an EXP result or a production-simulator decision.
+
+## Provenance correction and limitations
+
+Commit `04ab9e1` was an unmeasured fixer round after the recorded run. It changed result-affecting executable files but did not produce replacement measurements or provenance. This follow-up preserves `04ab9e1` in history while restoring its result-affecting executable files to the exact bytes of measured executable `bc8248c658397afd56dec307e4d344b16a86abb8`; the restored source, not the fixer round, is the executable provenance for these artifacts.
+
+The original measured implementation has important unsupported controls: its swept-crossing threshold was separate from endpoint penetration but classified only penetration greater than `0.001 m`; its contact callbacks were accumulated across microsteps without simultaneous shape identity; its replay equality was same-process repeatability, not fresh-process evidence; its reset digest/control and trajectory minimum-clearance recording were incomplete; and its contact-state convergence was not an enforced gate. These limitations mean the recorded implementation-level gate outputs are not validated scientific evidence or acceptance of a physical contact mechanism.
 
 ## Measured record
 
-The frozen runner recorded 255 cases at 10 substeps and 255 at 20 substeps. The fresh same-source serialization replay was byte-identical (`bef842a5867dab4d9c88fcc1d3482b22f38fdb63e0328f5d917fdec5a282563b`). Runtime/pin, input/shaft/encoder, logical-time, free-space calibration, finite/reset/replay, nonnegative impulse, stuck recovery, reset inventory, and yaw-sensitivity gates passed. The free-space residual maxima were `1.7763568394002505e-15 m` and `3.9968028886505635e-15 rad`.
+The frozen runner recorded 255 cases at 10 substeps and 255 at 20 substeps. The same-process same-source serialization replay was byte-identical (`bef842a5867dab4d9c88fcc1d3482b22f38fdb63e0328f5d917fdec5a282563b`); this does not establish fresh-process replay. Runtime/pin, input/shaft/encoder, logical-time, free-space calibration, finite/reset/replay, nonnegative impulse, stuck recovery, reset inventory, and yaw-sensitivity gates were reported as passed by the original implementation, but reset-control and clearance requirements were not thereby established. The free-space residual maxima were `1.7763568394002505e-15 m` and `3.9968028886505635e-15 rad`.
 
 Four essential gates failed:
 

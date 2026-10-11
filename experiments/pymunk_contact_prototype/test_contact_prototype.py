@@ -21,11 +21,7 @@ from experiments.pymunk_contact_prototype.fixture import (
     wall_penetration,
 )
 from experiments.pymunk_contact_prototype.organism_lifetime import (
-    HORIZON,
     PymunkPhysiologyAdapter,
-)
-from experiments.pymunk_contact_prototype.run_lifetime_once import (
-    validate_diagnostics_gate,
 )
 from experiments.pymunk_contact_prototype.run_diagnostics import (
     validate_action_and_encoder_contract,
@@ -122,13 +118,22 @@ def test_lifetime_adapter_reset_exposes_only_frozen_observation_contract() -> No
     assert adapter.proposals.decision_count == 0
 
 
-def test_lifetime_uses_the_d058_horizon_and_gate_is_behavioral() -> None:
-    adapter = PymunkPhysiologyAdapter()
-    assert adapter.physiology.config.episode_horizon == HORIZON
-    validate_diagnostics_gate(
-        {"executable_sha": "head", "essential_B_pass": True}, "head"
+def test_protocol_keeps_organism_lifetime_obstacle_free_and_gates_one_shot() -> None:
+    protocol = __import__("pathlib").Path(__file__).with_name("protocol.md").read_text()
+    assert "zero interior obstacles" in protocol
+    assert "no Pymunk collision shapes" not in protocol
+    assert (
+        "same_source_replay"
+        in __import__("pathlib")
+        .Path(__file__)
+        .with_name("run_diagnostics.py")
+        .read_text()
     )
-    with pytest.raises(SystemExit, match="exact frozen executable/B gate mismatch"):
-        validate_diagnostics_gate(
-            {"executable_sha": "head", "essential_B_pass": False}, "head"
-        )
+    one_shot = (
+        __import__("pathlib")
+        .Path(__file__)
+        .with_name("run_lifetime_once.py")
+        .read_text()
+    )
+    assert "essential_B_pass" in one_shot
+    assert "already exists; never rerun" in one_shot

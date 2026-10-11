@@ -21,7 +21,7 @@ START_OPTIONS: dict[str, object] = {
     "charger_termination_latched": False,
 }
 SEED = 22571
-HORIZON = 30_000
+HORIZON = 100_000
 
 
 class PymunkPhysiologyAdapter:
@@ -35,8 +35,6 @@ class PymunkPhysiologyAdapter:
 
     def __init__(self) -> None:
         self.physiology = D058Env(D058PhysicalConfig(room_side_m=3.0))
-        if self.physiology.config.episode_horizon != HORIZON:
-            raise RuntimeError("lifetime horizon differs from D-058 truncation contract")
         self.world = ContactWorld(microsteps=10)
         self.controller = D052Controller()
         self.proposals = D053RoamingFixture(SEED)
@@ -49,13 +47,8 @@ class PymunkPhysiologyAdapter:
         if info != {}:
             raise RuntimeError("D-058 reset info contract changed")
         assert self.physiology.body is not None
-        self.world.reset(
-            tuple(self.physiology.body.position), self.physiology.body.heading
-        )
-        self.controller = D052Controller()
-        self.proposals = D053RoamingFixture(SEED)
-        self._steps = 0
-        self._done = False
+        self.world.body.position = self.physiology.body.position
+        self.world.body.angle = self.physiology.body.heading
         self.observation = obs
         return obs.copy()
 
@@ -132,8 +125,7 @@ class PymunkPhysiologyAdapter:
         emergency = temperature_after >= cfg.hard_temperature_c
         reason = _termination_reason(emergency, protective, energy_nonviable)
         terminated = reason is not None
-        truncated = not terminated and self._steps >= HORIZON
-        self._done = terminated or truncated
+        self._done = terminated
         obs = env._observation().as_array()
         self.observation = obs
         if obs.shape != (8,) or obs.dtype != np.float32:
@@ -146,8 +138,6 @@ class PymunkPhysiologyAdapter:
             "reward": reward,
             "info": info,
             "terminated": terminated,
-            "truncated": truncated,
-            "termination_reason": reason.value if reason is not None else None,
             "decision_mode": decision.active_mode.value,
             "decision_source": decision.command_source.value,
             "contact": contact_after,
@@ -172,7 +162,7 @@ def run_once() -> dict[str, object]:
     for _ in range(HORIZON):
         row = adapter.step()
         trace.append(row)
-        if row["terminated"] or row["truncated"]:
+        if row["terminated"]:
             break
     # This is the single allowed lifetime call. The harness horizon is not
     # surfaced as an observation or passed into the controller.
@@ -183,8 +173,9 @@ def run_once() -> dict[str, object]:
         "configured_horizon": HORIZON,
         "transitions": len(trace),
         "terminated": bool(trace[-1]["terminated"]),
-        "truncated": bool(trace[-1]["truncated"]),
-        "termination_reason": trace[-1]["termination_reason"],
+        "termination_reason": "energy_or_thermal"
+        if trace[-1]["terminated"]
+        else "harness_horizon",
         "charging_steps": sum(bool(row["contact"]) for row in trace),
         "contact_steps": sum(int(row["contact_points"]) > 0 for row in trace),
         "max_impulse": max((float(row["impulse"]) for row in trace), default=0.0),
@@ -201,8 +192,6 @@ def run_reference_once() -> dict[str, object]:
     import hashlib
 
     env = D058Env(D058PhysicalConfig(room_side_m=3.0))
-    if env.config.episode_horizon != HORIZON:
-        raise RuntimeError("reference horizon differs from D-058 truncation contract")
     observation, info = env.reset(seed=SEED, options=START_OPTIONS)
     if info != {}:
         raise RuntimeError("D-058 reset info contract changed")
@@ -222,9 +211,6 @@ def run_reference_once() -> dict[str, object]:
         ):
             raise RuntimeError("D-058 reference violated the organism API contract")
         assert env.body is not None and env.body_temperature_c is not None
-        transition = env.last_transition
-        if transition is None:
-            raise RuntimeError("D-058 transition telemetry was not recorded")
         trace.append(
             {
                 "index": index + 1,
@@ -233,11 +219,6 @@ def run_reference_once() -> dict[str, object]:
                 "info": step_info,
                 "terminated": terminated,
                 "truncated": truncated,
-                "termination_reason": (
-                    transition.termination_reason.value
-                    if transition.termination_reason is not None
-                    else None
-                ),
                 "mode": decision.active_mode.value,
                 "source": decision.command_source.value,
                 "contact": env.charging_contact,
@@ -256,8 +237,9 @@ def run_reference_once() -> dict[str, object]:
         "configured_horizon": HORIZON,
         "transitions": len(trace),
         "terminated": bool(trace[-1]["terminated"]),
-        "truncated": bool(trace[-1]["truncated"]),
-        "termination_reason": trace[-1]["termination_reason"],
+        "termination_reason": "D058_termination"
+        if trace[-1]["terminated"]
+        else "D058_truncation_or_horizon",
         "charging_steps": sum(bool(row["contact"]) for row in trace),
         "final_energy_j": trace[-1]["energy_j"],
         "final_temperature_c": trace[-1]["temperature_c"],
