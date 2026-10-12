@@ -48,6 +48,16 @@ from experiments.pymunk_contact_prototype.run_diagnostics import (
 from experiments.pymunk_contact_prototype.run_lifetime_once import (
     validate_lifetime_gate,
 )
+from experiments.pymunk_contact_prototype.run_lifetime_v3 import (
+    MAX_PYMUNK_ENGINE_STEPS,
+    MAX_TRANSITIONS,
+    PRIMARY_MICROSTEPS,
+    summarize_charging,
+    validate_pymunk_transition,
+    validate_reference_transition,
+    validate_supervisor_approval,
+    validate_v3_b_result,
+)
 
 
 def test_action_validation_rejects_invalid_and_clips_each_shaft_independently() -> None:
@@ -284,8 +294,11 @@ def test_v3_replay_and_full_stage_require_valid_stage1_result(tmp_path: Path) ->
 
 
 def test_lifetime_adapter_reset_exposes_only_frozen_observation_contract() -> None:
-    adapter = PymunkPhysiologyAdapter()
+    default_adapter = PymunkPhysiologyAdapter()
+    assert default_adapter.world.microsteps == 10
+    adapter = PymunkPhysiologyAdapter(microsteps=PRIMARY_MICROSTEPS)
     observation = adapter.reset()
+    assert adapter.world.microsteps == 400
     assert observation.shape == (8,)
     assert observation.dtype == __import__("numpy").float32
     assert adapter.world.posts == ()
@@ -424,3 +437,129 @@ def test_failed_contact_gate_refuses_lifetime_before_execution() -> None:
             {"executable_sha": "candidate", "essential_B_pass": False},
             "candidate",
         )
+
+
+def test_lifetime_plan_has_exact_one_pair_ceiling() -> None:
+    assert MAX_TRANSITIONS == 100_000
+    assert PRIMARY_MICROSTEPS == 400
+    assert MAX_PYMUNK_ENGINE_STEPS == 40_000_000
+
+
+def test_lifetime_preflight_consumes_committed_v3_pass_without_running_it() -> None:
+    from experiments.pymunk_contact_prototype import run_lifetime_v3 as runner
+
+    result_path = runner.V3_B_RESULTS
+    payload = json.loads(result_path.read_text(encoding="utf-8"))
+    validate_v3_b_result(
+        payload, result_sha256=hashlib.sha256(result_path.read_bytes()).hexdigest()
+    )
+
+
+def test_lifetime_output_refusal_precedes_candidate_or_world_work(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from experiments.pymunk_contact_prototype import run_lifetime_v3 as runner
+
+    output = tmp_path / "already-used"
+    output.mkdir()
+
+    def unexpected_work() -> str:
+        raise AssertionError("candidate/runtime/world preflight must not begin")
+
+    monkeypatch.setattr(runner, "EXPECTED_OUTPUT", output)
+    monkeypatch.setattr(runner, "_assert_frozen_candidate", unexpected_work)
+    with pytest.raises(FileExistsError, match="refuse before constructing a world"):
+        runner.preflight(output)
+
+
+def test_lifetime_approval_is_bound_to_exact_candidate_and_protocol() -> None:
+    receipt = "a" * 64
+    assert validate_supervisor_approval(
+        candidate_head="candidate",
+        protocol_sha256="protocol",
+        approved_head="candidate",
+        approved_protocol_sha256="protocol",
+        approval_receipt_sha256=receipt,
+    ) == receipt
+    with pytest.raises(RuntimeError, match="does not bind"):
+        validate_supervisor_approval(
+            candidate_head="candidate",
+            protocol_sha256="protocol",
+            approved_head="other",
+            approved_protocol_sha256="protocol",
+            approval_receipt_sha256=receipt,
+        )
+
+
+def _synthetic_lifetime_row() -> dict[str, object]:
+    return {
+        "transition": 1,
+        "engine_steps": 400,
+        "observation": [0.5, 0.2, 0.3, 0.4, 0.3, 0.0, 0.0, 0.0],
+        "reward": 0.0,
+        "info": {},
+        "max_penetration_m": 0.0,
+        "end_penetration_m": 0.0,
+        "crossed_wall_or_post": False,
+        "clearance_sampling_bound_m": 0.000001,
+        "impulse": 0.0,
+        "contact_events": [],
+        "paired_dock_contact_before": False,
+        "paired_dock_contact_after": False,
+        "dock_plus_error_m": 0.5,
+        "dock_minus_error_m": 0.5,
+        "contact": False,
+        "charge_phase": "OFF",
+        "charge_requested_stored_power_w": 0.0,
+        "charge_stored_energy_j": 0.0,
+        "charge_actual_stored_power_w": 0.0,
+        "battery_before_j": 2664.0,
+        "battery_after_j": 2663.985,
+        "load_energy_j": 0.015,
+        "charger_latch_before": False,
+        "charger_latch_after": False,
+    }
+
+
+def test_lifetime_transition_safety_and_frozen_charge_accounting() -> None:
+    row = _synthetic_lifetime_row()
+    validate_pymunk_transition(row)
+    reference = {**row, "engine_steps": 0, "truncated": False}
+    validate_reference_transition(reference)
+    unsafe = {**row, "max_penetration_m": 0.0011}
+    with pytest.raises(RuntimeError, match="safety gate"):
+        validate_pymunk_transition(unsafe)
+
+
+def test_charging_summary_separates_proximity_contact_and_energy_transfer() -> None:
+    no_contact = {
+        **_synthetic_lifetime_row(),
+        "station_distance_after_m": 0.25,
+    }
+    summary = summarize_charging([no_contact])
+    assert summary["classification"] == "charging_not_exercised_no_paired_dock_contact"
+    assert summary["paired_dock_contact_transition_count"] == 0
+    assert summary["closest_station_center_distance_m"] == 0.25
+
+    contacted = {
+        **no_contact,
+        "transition": 2,
+        "paired_dock_contact_after": True,
+        "contact": True,
+        "dock_plus_error_m": 0.005,
+        "dock_minus_error_m": 0.005,
+        "charge_phase": "BULK",
+        "charge_requested_stored_power_w": 20.0,
+        "charge_actual_stored_power_w": 20.0,
+        "charge_stored_energy_j": 2.0,
+        "charger_latch_after": True,
+        "battery_before_j": 2664.0,
+        "battery_after_j": 2665.985,
+        "load_energy_j": 0.015,
+    }
+    summary = summarize_charging([no_contact, contacted])
+    assert summary["classification"] == "energy_transfer_observed"
+    assert summary["paired_dock_contact_transition_count"] == 1
+    assert summary["energy_transfer_transition_count"] == 1
+    assert summary["charge_stored_energy_total_j"] == 2.0
+    assert summary["charger_latch_transition_count"] == 1
