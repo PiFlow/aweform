@@ -29,7 +29,7 @@ from .fixture import (
     wall_penetration,
 )
 
-BASE_SHA = "fd03776869a984eab90137fd3a0c753992605562"
+BASE_SHA = "48b18209a69d18841166bc8a00b56d00815e3b5b"
 EXPECTED_BRANCH = "fm/pymunk226-contact-prototype"
 PROTOCOL = Path(__file__).with_name("protocol.md")
 

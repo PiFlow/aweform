@@ -128,24 +128,38 @@ class StepRecord:
     total_impulse: float
     crossed_wall_or_post: bool
     body_shaft_mismatch: float
+    end_penetration: float
+    contact_seen: bool
 
 
 class ContactWorld:
     """One deterministic room/post fixture advanced by Pymunk's Space.step."""
 
     def __init__(
-        self, *, microsteps: int = 10, posts: tuple[tuple[float, float], ...] = ()
+        self,
+        *,
+        microsteps: int = 10,
+        posts: tuple[tuple[float, float], ...] = (),
+        collision_bias: float = 0.001797010299914434,
+        suppress_velocity_refresh_after_contact: bool = False,
     ) -> None:
         if microsteps not in (10, 20):
             raise ValueError("microsteps must be 10 or 20")
+        if not math.isfinite(collision_bias) or collision_bias <= 0.0:
+            raise ValueError("collision_bias must be finite and positive")
         self.microsteps = microsteps
         self.posts = posts
+        self.collision_bias = collision_bias
+        self.suppress_velocity_refresh_after_contact = (
+            suppress_velocity_refresh_after_contact
+        )
+        self._contact_seen_this_command = False
         self.space = pymunk.Space(threaded=False)
         self.space.gravity = (0.0, 0.0)
         self.space.damping = 1.0
         self.space.iterations = 10
         self.space.collision_slop = SLOP
-        self.space.collision_bias = 0.001797010299914434
+        self.space.collision_bias = collision_bias
         self.space.collision_persistence = 3
         self.space.sleep_time_threshold = math.inf
         self.space.idle_speed_threshold = 0.0
@@ -182,12 +196,18 @@ class ContactWorld:
         self, arbiter: pymunk.Arbiter, _space: pymunk.Space, _data: object
     ) -> None:
         impulse = arbiter.total_impulse.length
+        self._contact_seen_this_command = True
         self._contacts.append((len(arbiter.contact_point_set.points), float(impulse)))
 
     def reset(self, position: tuple[float, float], angle: float) -> None:
         if not all(math.isfinite(v) for v in (*position, angle)):
             raise ValueError("reset pose must be finite")
-        fresh = ContactWorld(microsteps=self.microsteps, posts=self.posts)
+        fresh = ContactWorld(
+            microsteps=self.microsteps,
+            posts=self.posts,
+            collision_bias=self.collision_bias,
+            suppress_velocity_refresh_after_contact=self.suppress_velocity_refresh_after_contact,
+        )
         fresh.body.position = position
         fresh.body.angle = angle
         self.__dict__.update(fresh.__dict__)
@@ -202,16 +222,21 @@ class ContactWorld:
         h = DT / self.microsteps
         max_pen = 0.0
         crossed = False
+        self._contact_seen_this_command = False
         for _ in range(self.microsteps):
-            theta = float(self.body.angle)
-            half_yaw = omega * h / 2.0
-            speed_mid = speed * sinc(half_yaw)
-            theta_mid = theta + half_yaw
-            self.body.velocity = (
-                speed_mid * math.cos(theta_mid),
-                speed_mid * math.sin(theta_mid),
-            )
-            self.body.angular_velocity = omega
+            if not (
+                self.suppress_velocity_refresh_after_contact
+                and self._contact_seen_this_command
+            ):
+                theta = float(self.body.angle)
+                half_yaw = omega * h / 2.0
+                speed_mid = speed * sinc(half_yaw)
+                theta_mid = theta + half_yaw
+                self.body.velocity = (
+                    speed_mid * math.cos(theta_mid),
+                    speed_mid * math.sin(theta_mid),
+                )
+                self.body.angular_velocity = omega
             self.space.step(h)
             self.engine_steps += 1
             p = (float(self.body.position.x), float(self.body.position.y))
@@ -249,4 +274,6 @@ class ContactWorld:
             sum(i for _, i in contacts),
             crossed,
             mismatch,
+            wall_penetration(end, angle),
+            self._contact_seen_this_command or bool(contacts),
         )
