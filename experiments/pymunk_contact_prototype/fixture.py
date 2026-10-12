@@ -221,8 +221,8 @@ class ContactWorld:
         collision_bias: float = COLLISION_BIAS_10MS,
         suppress_velocity_refresh_after_contact: bool = True,
     ) -> None:
-        if microsteps not in (10, 20):
-            raise ValueError("microsteps must be 10 or 20")
+        if microsteps not in (10, 20, 400, 800):
+            raise ValueError("microsteps must be 10, 20, 400, or 800")
         if not math.isfinite(collision_bias) or collision_bias <= 0.0:
             raise ValueError("collision_bias must be finite and positive")
         self.microsteps = microsteps

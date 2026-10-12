@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -26,6 +27,13 @@ from experiments.pymunk_contact_prototype.fixture import (
 )
 from experiments.pymunk_contact_prototype.organism_lifetime import (
     PymunkPhysiologyAdapter,
+)
+from experiments.pymunk_contact_prototype.run_contact_check_v3 import (
+    EXPECTED_NO_CONTACT,
+    compare_resolutions,
+    expected_contacts_pass,
+    planned_engine_steps,
+    validate_stage1_result,
 )
 from experiments.pymunk_contact_prototype.run_corrected_contact_check import (
     _contact_state_comparisons,
@@ -130,6 +138,149 @@ def test_reset_constructs_fresh_empty_or_posted_space() -> None:
     assert len(posted.space.shapes) == 6  # plus one fixed circular post
     assert not math.isnan(empty.body.moment)
     assert empty.space.iterations == 10
+
+
+def test_v3_fixture_accepts_frozen_resolutions_and_rejects_other_values() -> None:
+    assert ContactWorld(microsteps=400).microsteps == 400
+    assert ContactWorld(microsteps=800).microsteps == 800
+    with pytest.raises(ValueError, match="400, or 800"):
+        ContactWorld(microsteps=401)
+
+
+def test_v3_fixture_contact_interface_at_400_substeps() -> None:
+    world = ContactWorld(microsteps=400)
+    world.body.position = (0.11, 1.5)
+    world.body.angle = math.pi
+    record = world.advance((MAX_DELTA, MAX_DELTA))
+    assert record.step_count == 400
+    assert world.engine_steps == 400
+    assert record.contact_seen
+    assert any(
+        event.shape_pair == ("hull", "wall_west")
+        for event in record.contact_events
+    )
+
+
+def test_v3_step_budget_is_frozen_without_running_cases() -> None:
+    cases = fixed_cases()
+    assert planned_engine_steps(cases, (400, 800)) == 956_400
+    assert planned_engine_steps(cases, (400, 800)) * 2 == 1_912_800
+    selected = tuple(
+        next(case for case in cases if case.case_id == case_id)
+        for case_id in (
+            "wall-west-head-on",
+            "wall-west-turn-0",
+            "wall-south-turn-0",
+            "wall-south-glance",
+            "corner-se",
+            "post-wall-adjacent",
+            "post-tangent",
+        )
+    )
+    assert planned_engine_steps(selected, (400, 800)) == 132_000
+
+
+def test_v3_expected_contact_repair_classifies_no_contact_controls() -> None:
+    controls = [
+        {
+            "case_id": case_id,
+            "family": "wall-turn",
+            "any_contact": False,
+            "minimum_trajectory_clearance_m": 0.005,
+        }
+        for case_id in EXPECTED_NO_CONTACT
+    ]
+    assert expected_contacts_pass(controls, require_no_contact_controls=True)
+    controls[0]["any_contact"] = True
+    assert not expected_contacts_pass(controls, require_no_contact_controls=True)
+    assert not expected_contacts_pass(
+        [
+            {
+                "case_id": "wall-west-turn-0",
+                "family": "wall-turn",
+                "any_contact": False,
+                "minimum_trajectory_clearance_m": 0.005,
+            }
+        ],
+        require_no_contact_controls=False,
+    )
+
+
+def test_v3_contact_state_convergence_is_independent_of_clearance() -> None:
+    case400 = {
+        "case_id": "wall-case",
+        "final_position_m": [1.0, 1.0],
+        "final_yaw_rad": 0.0,
+        "minimum_trajectory_clearance_by_shape_m": {"wall_west": 0.001},
+        "steps": [
+            {
+                "contact_identities": ["hull|wall_west"],
+                "minimum_trajectory_clearance_by_shape_m": {"wall_west": 0.001},
+            }
+        ],
+    }
+    case800 = {
+        **case400,
+        "minimum_trajectory_clearance_by_shape_m": {"wall_west": 0.002},
+        "steps": [
+            {
+                **cast(list[dict[str, object]], case400["steps"])[0],
+                "minimum_trajectory_clearance_by_shape_m": {"wall_west": 0.002},
+            }
+        ],
+    }
+    comparisons, contact_pass, clearance_pass = compare_resolutions(
+        [case400], [case800]
+    )
+    assert contact_pass is True
+    assert comparisons[0]["contact_state_pass"] is True
+    assert clearance_pass is False
+    assert comparisons[0]["per_shape_clearance_pass"] is False
+
+
+def test_v3_existing_focused_output_refuses_before_runner_work(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import experiments.pymunk_contact_prototype.run_contact_check_v3 as runner
+
+    output = tmp_path / "focused-probe"
+    output.mkdir()
+    monkeypatch.setattr(runner, "FOCUSED_OUTPUT", output)
+
+    def unexpected_execution() -> str:
+        raise AssertionError("source/physics work must not begin")
+
+    monkeypatch.setattr(runner, "check_frozen_tree", unexpected_execution)
+    with pytest.raises(FileExistsError):
+        runner.run_focused(output)
+
+
+def test_v3_replay_and_full_stage_require_valid_stage1_result(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError, match="completed saved Stage 1"):
+        validate_stage1_result(tmp_path, "candidate")
+
+    import experiments.pymunk_contact_prototype.run_contact_check_v3 as runner
+
+    result_dir = tmp_path / "saved-stage1"
+    result_dir.mkdir()
+    (result_dir / "MEASUREMENT_STARTED").write_text(
+        "head=candidate\ncompleted=1\n", encoding="ascii"
+    )
+    saved = {
+        "executable_sha": "candidate",
+        "protocol_sha256": hashlib.sha256(
+            runner.PROTOCOL.read_bytes()
+        ).hexdigest(),
+        "actual_engine_steps": 132_000,
+        "full_stage2_authorized_by_probe": True,
+        "gates": {"essential_stage1": "PASS"},
+    }
+    (result_dir / "focused-results.json").write_text(json.dumps(saved))
+    assert validate_stage1_result(result_dir, "candidate") == saved
+    saved["gates"] = {"essential_stage1": "FAIL"}
+    (result_dir / "focused-results.json").write_text(json.dumps(saved))
+    with pytest.raises(RuntimeError, match="do not authorize Stage 2"):
+        validate_stage1_result(result_dir, "candidate")
 
 
 def test_lifetime_adapter_reset_exposes_only_frozen_observation_contract() -> None:
