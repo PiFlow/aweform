@@ -1,78 +1,53 @@
-# Frozen software and experiment commands
+# Pymunk contact prototype — v2 validation and execution boundary
 
-The protocol, source, cases and tests are frozen together in the result-free
-commit. Tests and software validation do **not** run fixed-command measurements
-or the single lifetime. Do not invoke the experiment commands as routine tests.
+## Historical v1 record
 
-## Premeasurement failure and bounded repair
+The original v1 fixed-command experiment is complete and failed essential B. Its executable `bc8248c658397afd56dec307e4d344b16a86abb8`, protocol, `results/results.json`, receipt, and interpretations remain historical. **Do not rerun or replace v1 outputs.** The previous v1 measured CLI is retired; it now raises before constructing or stepping a world. V1 same-process replay labels are not fresh-process evidence.
 
-The initial result-free candidate `ba27168a8f2282ee5fe39556b47916c16b6c33ef`
-failed during invalid-action preflight: `parse_action(True)` called `len(True)`
-and raised `TypeError` before `run_suite`, any `Space.step`, or output creation.
-No diagnostic result or organism lifetime ran. The original traceback was not
-retained; this receipt records only the verified failure summary. The narrow
-repair converts unsized scalar inputs to the contract's `ValueError` and adds
-scalar/bool rejection coverage, including a check that preflight leaves physics
-step counters unchanged. It does not alter valid action handling or any frozen
-physics, actuator, corpus, threshold, controller, or lifetime contract. This
-candidate must be committed as a new result-free freeze before measurements.
+## Runtime
 
-The authorized base advanced from `8188cbb2224906ccb01824f4fb75c85ac55b726e`
-to `fd03776869a984eab90137fd3a0c753992605562` before this freeze. The intervening
-main commit merges PR #228 and changes only
-`docs/research-notes/d060-incomplete-substrate-retrospective.md`; the branch was
-rebased onto that exact main, and the frozen base guard/provenance now name it.
-
-## Optional runtime
+The optional experimental group remains unchanged. Use Python 3.14.7, Pymunk 7.2.0, and the pinned native wheel:
 
 ```sh
 uv sync --frozen --python 3.14.7 --group dev --group pymunk-probe
 export PYMUNK_WHEEL_PATH=/private/tmp/pymunk220-wheelhouse/pymunk-7.2.0-cp314-cp314-macosx_11_0_arm64.whl
 ```
 
-The runner verifies Python/Pymunk and the wheel SHA against the frozen #220
-native arm64 artifact, and checks `origin/main`, branch, clean tree and exact
-experiment-only diff before measurement.
+The corrected runner verifies the exact wheel SHA from the inherited #220 calibration and refuses an incorrect runtime/base/branch/dirty source. It writes only to the new path `experiments/pymunk_contact_prototype/results-v2/contact-check/`; v1 `results/` and bounded diagnosis artifacts are never overwritten.
 
 ## Software-only validation
+
+These checks never run the frozen 255-case-per-resolution acceptance corpus, fresh-process replay worker, or either lifetime. The unit tests exercise parsing, pure geometry, one isolated fixture action/contact-reset interface, and early output/gate refusal behavior; that one logical action is not the measurement corpus and produces no science artifact.
 
 ```sh
 uv run --frozen --group pymunk-probe pytest -q experiments/pymunk_contact_prototype/test_contact_prototype.py
 uv run --frozen --group pymunk-probe ruff check experiments/pymunk_contact_prototype
 MYPYPATH=src uv run --frozen --group dev --group pymunk-probe mypy --strict experiments/pymunk_contact_prototype
-uv run --frozen --group pymunk-probe python -m compileall -q experiments/pymunk_contact_prototype
+uv run --frozen --python 3.14.7 --group dev --group pymunk-probe python -m compileall -q experiments/pymunk_contact_prototype
 ```
 
-The tests inspect the fixed-case inventory, validation/geometry helpers, reset
-construction, initial 8-channel wrapper boundary and one-shot gate structure.
-They do not call `Space.step`, `run_suite`, `measure`, `run_once`, or
-`run_reference_once`.
+Routine tests/CI/no-mistakes validation must not call `run_suite`, `measure`, the fresh-process replay worker, `run_once`, or `run_reference_once`.
 
-## Explicit measured commands — not part of routine validation
+## One bounded corrected contact check — explicit measurement only
 
-Only from the exact clean result-free freeze SHA, after independent resource
-availability review, invoke the fixed diagnostics **once**:
+Before this command, commit the complete corrected source, `protocol-v2.md`, tests and validation plan as one clean result-free freeze. Independently check CPU/memory/process availability, make sure no competing required scientific workload is active, and report the frozen case count/serial runtime budget. Do not run in parallel. The command refuses an existing output path before constructing a Pymunk Space; any started output path is one-shot. It runs the corrected 10/20 suites serially, then one identical replay in a separate fresh process. All failures remain in the artifact. Any essential B failure means STOP, preserve the new result, and do not run a lifetime or tune/repeat.
 
 ```sh
-uv run --frozen --group pymunk-probe python -m experiments.pymunk_contact_prototype.run_diagnostics \
-  --measure --output experiments/pymunk_contact_prototype/results
+PYMUNK_WHEEL_PATH="$PYMUNK_WHEEL_PATH" uv run --frozen --python 3.14.7 --group pymunk-probe \
+  python -m experiments.pymunk_contact_prototype.run_corrected_contact_check \
+  --measure --output experiments/pymunk_contact_prototype/results-v2/contact-check
 ```
 
-The command executes the frozen 10/20-substep corpus and one fresh same-source
-replay serially. It stores every outcome, including failures; it exits nonzero
-on an essential B failure. Never rerun to rescue or replace a result.
+## Conditional one-time organism/reference lifetime
 
-Only if the committed B result says `essential_B_pass: true`, and after another
-resource check, invoke the one-shot Pymunk lifetime plus its matched unchanged
-D-058 reference:
+Only if the committed v2 `results.json` has `essential_B_pass: true`, the exact measured executable SHA still matches the clean frozen HEAD, and an independent resource review authorizes the declared one-time budget, run the previously unexecuted unchanged Level-1 lifetime and prescribed D-058 reference once. The wrapper preserves the frozen v1 seed/state/horizon and the lifetime room has 3 m walls/dock and zero interior obstacles. The output marker prevents any second attempt; if B fails, do not invoke it.
 
 ```sh
-uv run --frozen --group dev --group pymunk-probe python -m experiments.pymunk_contact_prototype.run_lifetime_once \
+uv run --frozen --group dev --group pymunk-probe \
+  python -m experiments.pymunk_contact_prototype.run_lifetime_once \
   --run-organism-once \
-  --results experiments/pymunk_contact_prototype/results \
-  --output experiments/pymunk_contact_prototype/lifetime
+  --results experiments/pymunk_contact_prototype/results-v2/contact-check \
+  --output experiments/pymunk_contact_prototype/results-v2/lifetime
 ```
 
-The marker refuses a second lifetime attempt, including after an incomplete
-first attempt. A B failure means do not invoke this command. Software tests,
-CI and no-mistakes validation never invoke either measured command.
+No routine validation command executes the contact acceptance check, its fresh-process replay, or the single lifetime.

@@ -19,19 +19,22 @@ import pymunk
 
 from .cases import Case, fixed_cases
 from .fixture import (
+    COLLISION_BIAS_10MS,
     ENCODER_QUANTUM,
     MAX_DELTA,
+    WALL_GEOMETRY,
     ContactWorld,
-    circle_penetration,
-    corners,
+    clearances_by_shape,
     parse_action,
     quantize_encoder,
-    wall_penetration,
 )
 
 BASE_SHA = "48b18209a69d18841166bc8a00b56d00815e3b5b"
 EXPECTED_BRANCH = "fm/pymunk226-contact-prototype"
-PROTOCOL = Path(__file__).with_name("protocol.md")
+PROTOCOL = Path(__file__).with_name("protocol-v2.md")
+EXPECTED_OUTPUT = Path(
+    "experiments/pymunk_contact_prototype/results-v2/contact-check"
+)
 
 
 def sha256(path: Path) -> str:
@@ -56,33 +59,47 @@ def independent_arc(
 def _single_case(case: Case) -> dict[str, object]:
     world = ContactWorld(microsteps=case.microsteps, posts=case.posts)
     start_position = (float(case.start[0]), float(case.start[1]))
-    world.body.position = start_position
-    world.body.angle = case.start[2]
     start_angle = case.start[2]
+    world.body.position = start_position
+    world.body.angle = start_angle
     rows: list[dict[str, object]] = []
-    max_penetration = max(
-        wall_penetration(start_position, start_angle),
-        *(circle_penetration(start_position, start_angle, p, 0.05) for p in case.posts),
-        0.0,
-    )
+    initial_clearance = clearances_by_shape(start_position, start_angle, case.posts)
+    max_sampled_penetration = max(0.0, -min(initial_clearance.values()))
+    max_penetration_bound = max_sampled_penetration
+    min_clearance: dict[str, float] = dict(initial_clearance)
+    max_sampling_bound = 0.0
     max_impulse = 0.0
     max_shaft_body_mismatch = 0.0
     any_cross = False
     any_contact = False
-    max_contacts = 0
+    max_simultaneous_pairs = 0
     previous = start_position
     stuck_steps = 0
     released = False
     for index, command in enumerate(case.commands):
         record = world.advance(command)
-        max_penetration = max(max_penetration, record.max_penetration)
+        max_sampled_penetration = max(
+            max_sampled_penetration, record.max_penetration
+        )
+        max_penetration_bound = max(
+            max_penetration_bound,
+            record.max_penetration + record.clearance_sampling_bound_m,
+        )
+        max_sampling_bound = max(
+            max_sampling_bound, record.clearance_sampling_bound_m
+        )
         max_impulse = max(max_impulse, record.total_impulse)
         max_shaft_body_mismatch = max(
             max_shaft_body_mismatch, record.body_shaft_mismatch
         )
         any_cross |= record.crossed_wall_or_post
-        any_contact |= record.arbiter_count > 0
-        max_contacts = max(max_contacts, record.contact_count)
+        any_contact |= record.contact_seen
+        for shape_name, clearance in record.minimum_clearance_by_shape:
+            min_clearance[shape_name] = min(
+                min_clearance.get(shape_name, math.inf), clearance
+            )
+        for pairs in record.simultaneous_contact_identities:
+            max_simultaneous_pairs = max(max_simultaneous_pairs, len(pairs))
         expected_position, _expected_heading = independent_arc(
             previous, record.start_angle, *record.shaft
         )
@@ -98,10 +115,23 @@ def _single_case(case: Case) -> dict[str, object]:
         if any(abs(record.shaft[i] - independent_clip[i]) > 1e-12 for i in range(2)):
             raise RuntimeError("shaft command differs from independent clipping")
         displacement = math.dist(record.start, record.end)
-        if displacement < 1e-5 and any_contact:
+        if displacement < 1e-5 and record.contact_seen:
             stuck_steps += 1
         elif stuck_steps and displacement >= 0.001:
             released = True
+        events = [
+            {
+                "substep_index": event.substep_index,
+                "shape_pair": list(event.shape_pair),
+                "contact_points": event.contact_points,
+                "impulse": event.impulse,
+                "maximum_contact_penetration_m": event.maximum_contact_penetration,
+            }
+            for event in record.contact_events
+        ]
+        shape_pairs = sorted(
+            {"|".join(event.shape_pair) for event in record.contact_events}
+        )
         rows.append(
             {
                 "index": index,
@@ -112,16 +142,113 @@ def _single_case(case: Case) -> dict[str, object]:
                 "velocity_m_s": list(record.velocity),
                 "omega_rad_s": record.angular_velocity,
                 "impulse_sum": record.total_impulse,
-                "contact_points": record.contact_count,
-                "arbiters": record.arbiter_count,
-                "substep_penetration_m": record.max_penetration,
+                "post_solve_event_count": len(events),
+                "contact_point_total_across_time": record.contact_count,
+                "contact_identities": shape_pairs,
+                "simultaneous_contact_identities_by_substep": [
+                    list(pairs) for pairs in record.simultaneous_contact_identities
+                ],
+                "contact_events": events,
+                "end_clearance_by_shape_m": dict(record.end_clearance_by_shape),
+                "minimum_trajectory_clearance_by_shape_m": dict(
+                    record.minimum_clearance_by_shape
+                ),
+                "minimum_trajectory_clearance_m": record.minimum_clearance_m,
+                "clearance_sampling_bound_m": record.clearance_sampling_bound_m,
+                "sampled_trajectory_penetration_m": record.max_penetration,
+                "penetration_upper_bound_m": (
+                    record.max_penetration + record.clearance_sampling_bound_m
+                ),
                 "substep_crossing": record.crossed_wall_or_post,
                 "free_arc_difference_m": mismatch,
                 "free_arc_yaw_difference_rad": yaw_mismatch,
             }
         )
         previous = record.end
+
+    old_space, old_body = world.space, world.body
+    world.reset(start_position, start_angle)
+    reset_state: dict[str, object] = {
+        "position": [float(world.body.position.x), float(world.body.position.y)],
+        "angle": float(world.body.angle),
+        "body_mass_kg": world.body.mass,
+        "body_moment_kg_m2": world.body.moment,
+        "velocity": [float(world.body.velocity.x), float(world.body.velocity.y)],
+        "angular_velocity": float(world.body.angular_velocity),
+        "elapsed": world.elapsed,
+        "logical_steps": world.logical_steps,
+        "engine_steps": world.engine_steps,
+        "contact_events_empty": len(world._contact_events) == 0,
+        "contacts_empty": len(world._contacts) == 0,
+        "shape_count": len(world.space.shapes),
+        "shape_names": sorted(world._shape_names.values()),
+        "shape_materials": sorted(
+            (
+                world._shape_names[id(shape)],
+                float(shape.friction),
+                float(shape.elasticity),
+            )
+            for shape in world.space.shapes
+        ),
+        "wall_geometry": world.wall_geometry,
+        "gravity": [float(value) for value in world.space.gravity],
+        "damping": world.space.damping,
+        "iterations": world.space.iterations,
+        "collision_bias": world.space.collision_bias,
+        "collision_slop": world.space.collision_slop,
+        "collision_persistence": world.space.collision_persistence,
+        "sleep_time_threshold": "infinity"
+        if math.isinf(world.space.sleep_time_threshold)
+        else world.space.sleep_time_threshold,
+        "idle_speed_threshold": world.space.idle_speed_threshold,
+        "microsteps": world.microsteps,
+        "posts": [list(post) for post in world.posts],
+    }
+    reset_pass = (
+        world.space is not old_space
+        and world.body is not old_body
+        and reset_state["position"] == list(start_position)
+        and reset_state["angle"] == start_angle
+        and reset_state["body_mass_kg"] == 1.0
+        and reset_state["body_moment_kg_m2"]
+        == (0.180**2 + 0.215**2) / 12.0
+        and reset_state["velocity"] == [0.0, 0.0]
+        and reset_state["angular_velocity"] == 0.0
+        and reset_state["elapsed"] == 0.0
+        and reset_state["logical_steps"] == 0
+        and reset_state["engine_steps"] == 0
+        and reset_state["contact_events_empty"] is True
+        and reset_state["contacts_empty"] is True
+        and reset_state["shape_count"] == 5 + len(case.posts)
+        and reset_state["shape_names"]
+        == sorted(
+            ["hull", "wall_east", "wall_north", "wall_south", "wall_west"]
+            + [f"post_{index}" for index in range(len(case.posts))]
+        )
+        and reset_state["shape_materials"]
+        == sorted(
+            (name, 0.0, 0.0)
+            for name in cast(list[str], reset_state["shape_names"])
+        )
+        and reset_state["wall_geometry"] == WALL_GEOMETRY
+        and reset_state["gravity"] == [0.0, 0.0]
+        and reset_state["damping"] == 1.0
+        and reset_state["iterations"] == 10
+        and reset_state["collision_bias"] == COLLISION_BIAS_10MS
+        and reset_state["collision_slop"] == 0.0001
+        and reset_state["collision_persistence"] == 3
+        and reset_state["sleep_time_threshold"] == "infinity"
+        and reset_state["idle_speed_threshold"] == 0.0
+    )
+    reset_digest = hashlib.sha256(_canonical(reset_state)).hexdigest()
     final = rows[-1] if rows else {}
+    case_status = (
+        max_penetration_bound <= 0.001
+        and max_sampling_bound <= 0.0002
+        and not any_cross
+        and (released or stuck_steps == 0)
+        and reset_pass
+    )
     return {
         "case_id": case.case_id,
         "family": case.family,
@@ -132,26 +259,25 @@ def _single_case(case: Case) -> dict[str, object]:
         "steps": rows,
         "final_position_m": final.get("position_m"),
         "final_yaw_rad": final.get("yaw_unwrapped_rad"),
-        "elapsed_s": world.elapsed,
-        "logical_steps": world.logical_steps,
-        "engine_steps": world.engine_steps,
-        "max_penetration_m": max_penetration,
+        "elapsed_s": world.elapsed + len(case.commands) * 0.1,
+        "logical_steps": len(case.commands),
+        "engine_steps": len(case.commands) * case.microsteps,
+        "max_penetration_m": max_penetration_bound,
+        "max_sampled_penetration_m": max_sampled_penetration,
+        "max_clearance_sampling_bound_m": max_sampling_bound,
+        "minimum_trajectory_clearance_by_shape_m": min_clearance,
+        "minimum_trajectory_clearance_m": min(min_clearance.values()),
         "max_impulse": max_impulse,
-        "max_contact_points": max_contacts,
+        "max_simultaneous_contact_pairs": max_simultaneous_pairs,
         "any_contact": any_contact,
         "substep_crossing": any_cross,
         "shaft_body_displacement_difference_m": max_shaft_body_mismatch,
         "stuck_steps": stuck_steps,
         "released_after_stuck": released or stuck_steps == 0,
-        "start_wall_clearance_m": min(
-            min(x for x, _ in corners(start_position, start_angle)),
-            min(y for _, y in corners(start_position, start_angle)),
-            min(3.0 - x for x, _ in corners(start_position, start_angle)),
-            min(3.0 - y for _, y in corners(start_position, start_angle)),
-        ),
-        "status": "PASS"
-        if max_penetration <= 0.001 and not any_cross and (released or stuck_steps == 0)
-        else "FAIL",
+        "reset_pass": reset_pass,
+        "reset_digest": reset_digest,
+        "reset_state": reset_state,
+        "status": "PASS" if case_status else "FAIL",
     }
 
 
@@ -234,7 +360,14 @@ def validate_action_and_encoder_contract() -> dict[str, object]:
     }
 
 
-def _check_clean_frozen_tree() -> str:
+def preflight_output(output: Path) -> None:
+    if output.resolve() != EXPECTED_OUTPUT.resolve():
+        raise RuntimeError(f"measurement output must be the new path {EXPECTED_OUTPUT}")
+    if output.exists():
+        raise FileExistsError(f"measurement output already exists: {output}")
+
+
+def _check_clean_frozen_tree(*, allow_output: bool = False) -> str:
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     live_main = subprocess.check_output(
         ["git", "rev-parse", "origin/main"], text=True
@@ -245,7 +378,9 @@ def _check_clean_frozen_tree() -> str:
     branch = subprocess.check_output(
         ["git", "branch", "--show-current"], text=True
     ).strip()
-    dirty = subprocess.check_output(["git", "status", "--porcelain"], text=True).strip()
+    dirty_lines = subprocess.check_output(
+        ["git", "status", "--porcelain", "--untracked-files=all"], text=True
+    ).splitlines()
     if live_main != BASE_SHA:
         raise RuntimeError("origin/main differs from the authorized base; STOP")
     if not changed_paths or any(
@@ -257,7 +392,17 @@ def _check_clean_frozen_tree() -> str:
         raise RuntimeError(
             "measurements require the committed result-free executable SHA, not base"
         )
-    if branch != EXPECTED_BRANCH or dirty:
+    output_prefix = EXPECTED_OUTPUT.as_posix() + "/"
+    unexpected_dirty = [
+        line
+        for line in dirty_lines
+        if not (
+            allow_output
+            and line[3:].startswith(output_prefix)
+            and line.startswith("?? ")
+        )
+    ]
+    if branch != EXPECTED_BRANCH or unexpected_dirty:
         raise RuntimeError(
             "measurements require the authorized clean branch and committed source"
         )
@@ -304,7 +449,8 @@ def _canonical(value: object) -> bytes:
     ).encode("utf-8")
 
 
-def measure(output: Path) -> dict[str, object]:
+def _legacy_v1_measure(output: Path) -> dict[str, object]:
+    raise RuntimeError("v1 measurement runner is retired and cannot be re-executed")
     executable_sha = _check_clean_frozen_tree()
     runtime = _runtime_manifest()
     measurement_started = time.perf_counter()
@@ -495,6 +641,12 @@ def measure(output: Path) -> dict[str, object]:
     sums = f"{sha256(json_path)}  results.json\n{sha256(md_path)}  RESULTS.md\n"
     (output / "SHA256SUMS").write_text(sums, encoding="ascii")
     return result
+
+
+def measure(output: Path) -> dict[str, object]:
+    raise RuntimeError(
+        "v1 measurements are immutable and complete; use the corrected v2 runner"
+    )
 
 
 def main() -> None:
