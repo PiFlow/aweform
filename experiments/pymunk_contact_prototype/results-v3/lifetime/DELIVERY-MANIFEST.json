@@ -16,6 +16,14 @@
     "v3_result_commit": "6ee02fd0e5b43143ec8ae944c071f089ecbfc980",
     "lifetime_result_commit": "ad4514ee01021b06ef02b47a62939e63be15502c"
   },
+  "custody_provenance": {
+    "visibility": "PRIVATE_LOCAL_REFERENCE; the original result branch, result commit, and primary raw blob are intentionally absent from the GitHub delivery ancestry.",
+    "attributed_local_check": "A prior completed local custody check resolved fm/pymunk226-contact-prototype to result commit ad4514ee01021b06ef02b47a62939e63be15502c, resolved raw blob a69d7ce13add97d67caa0617216094daa34a13b8, and matched the Git/file size to 3658110995 bytes.",
+    "raw_sha256": "The recorded primary-trace SHA-256 8ef0c6e18d144451cc62ec5873bebe4bbb94be03bca8f4fd38a86826e5e24e40 is reused from that prior completed verification; it was not recomputed in this review phase.",
+    "review_clone_limit": "A review clone may contain stale same-named refs; its fm/pymunk226-contact-prototype ref at 4fec12effc5e5f0de2f1a9d2cd1bbc6959bb11db is not authoritative for original local custody.",
+    "public_verification_limit": "The public package verifies only included payload checksums, original execution/protocol/result identifiers, and disclosures; it does not independently verify raw custody or full-lifetime reproduction.",
+    "preservation_boundary": "The original data and history remain untouched; no raw upload, backup, compression, deletion, or new hash recomputation was performed for this delivery."
+  },
   "frozen_protocols": {
     "v3_sha256": "6db905f6e6cd1501829ddb7e2f7f72bb9fc35ed1ea037ba9e12231ef1b455162",
     "lifetime_sha256": "7821521cd508811890cdc335ec42d8ad5154f82d9db73356bdd5d86dfcac3a5f",
@@ -103,8 +111,8 @@
     {"path": "experiments/pymunk_contact_prototype/results-v3/lifetime/SHA256SUMS", "bytes": 356, "sha256": "d0603686d8a642a0528c247b159a30629a33e42b6a59295a47835965c55c037b", "note": "Original run manifest copied verbatim; its primary-trace entry is intentionally absent from this GitHub package."},
     {"path": "experiments/pymunk_contact_prototype/results-v3/lifetime/lifetime-results.json", "bytes": 5445, "sha256": "bc2167cbf1830cbe3a23fb1e003a33e53335177fb978b7cd54eda598261f79db"},
     {"path": "experiments/pymunk_contact_prototype/results-v3/lifetime/reference-transitions.jsonl", "bytes": 34798820, "sha256": "da9ee65c688cf25f0285e58881e468f26834cfec62c2e27f4edabe320444d431"},
-    {"path": "experiments/pymunk_contact_prototype/replay/lifetime-replay.html", "bytes": 2032903, "sha256": "eac1579d3c251fd49c427612105f955cc7f224ca794f5f30065148525c6f91c5"},
-    {"path": "experiments/pymunk_contact_prototype/replay/lifetime-replay.provenance.md", "bytes": 2781, "sha256": "24ab276dded42cf20f92f884ad606d0e3ed3763b1f76eabb251ca512cacf096e"},
+    {"path": "experiments/pymunk_contact_prototype/replay/lifetime-replay.html", "bytes": 2033210, "sha256": "500bfdbbcecdab04509ed162dd81bf78af9dbe99c54e9fef51faa9e9ea7320f7"},
+    {"path": "experiments/pymunk_contact_prototype/replay/lifetime-replay.provenance.md", "bytes": 3530, "sha256": "20726447c804b74245905194849f6c463080e1469d6b6586f20956113c2d03a3"},
     {"path": "experiments/pymunk_contact_prototype/replay/lifetime-replay.png", "bytes": 261871, "sha256": "07ff2124bf10b004150d473eada941accf3be617785d44021699b1b442375558"}
   ],
   "omitted_primary_raw": {
@@ -113,7 +121,7 @@
     "sha256": "8ef0c6e18d144451cc62ec5873bebe4bbb94be03bca8f4fd38a86826e5e24e40",
     "git_blob": "a69d7ce13add97d67caa0617216094daa34a13b8",
     "trace_array_sha256": "cc4b7a8e99c6c312c403f10a53ec5f51386664b72b0224022488c28cfdfeef87",
-    "custody": "Preserved untouched in the original local result branch/commit ad4514ee01021b06ef02b47a62939e63be15502c; deliberately excluded from this review branch and every pushed ref."
+    "custody": "Private local custody is attributed to result commit ad4514ee01021b06ef02b47a62939e63be15502c and raw blob a69d7ce13add97d67caa0617216094daa34a13b8; both are deliberately excluded from this review branch and every pushed ref, and this public package does not independently verify that custody."
   },
   "audit_limitations": [
     "Without the primary JSONL the package cannot independently inspect every one of the 100000 primary transition rows, including row-level observations, proposed/commanded wheel values, shaft state, energy/temperature values, charge phases, paired-contact/latch state, contacts and simultaneous contact identities, clearances, penetration/crossing checks, and termination fields. The summary JSON and its hashes remain available.",
@@ -132,7 +140,7 @@
   },
   "checksum_policy": {
     "original_manifest": "SHA256SUMS is preserved verbatim and retains the original checksum entry for the excluded primary raw trace; its complete original-run check is not claimed possible from this package alone.",
-    "package_manifest": "PACKAGE-SHA256SUMS is separate and verifies the delivered payload files, including DELIVERY-MANIFEST.json, without editing the original run manifest; it does not checksum itself.",
+    "package_manifest": "PACKAGE-SHA256SUMS is separate and verifies the delivered payload files, including DELIVERY-MANIFEST.json, without editing the original run manifest; it does not checksum itself. Public verification is limited to included payloads and disclosures, not private raw custody or full-lifetime reproduction.",
     "delivery_inventory": "The private data/pymunk226-contact-prototype/delivery-inventory.md records the allowlist, preservation proof, retention recommendation, and validation/publishing state."
   },
   "replay": {
