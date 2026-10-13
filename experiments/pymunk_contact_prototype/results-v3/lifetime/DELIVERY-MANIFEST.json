@@ -122,6 +122,14 @@
     "The D-058 reference ended at 30000 transitions, so no equal-horizon or causal trajectory comparison is claimed.",
     "No byte-identical full-lifetime rerun has been established."
   ],
+  "reset_boundary": {
+    "frozen_source_review": "ContactWorld.reset() reconstructs a fresh Space and clears metadata, but its registered bound collision callback retains the temporary world's list targets after self.__dict__.update(...); a later self.advance() can therefore record callbacks outside self.",
+    "v2_v3_reset_pass_scope": "The V2/V3 reset PASS covers only end-of-case reconstruction and cleared metadata. It does not establish callback-safe post-reset advance or reusable reset correctness.",
+    "contact_rows": "Measured V2/V3 contact rows were produced before each case reset; they are not post-reset callback observations.",
+    "lifetime_path": "The lifetime used one initially constructed world and did not call ContactWorld.reset().",
+    "evidence_classification": "This limitation is source-path reasoning from the frozen implementation and call paths, not runtime proof.",
+    "claim_limit": "No reusable-reset correctness or expanded numerical PASS claim is made."
+  },
   "checksum_policy": {
     "original_manifest": "SHA256SUMS is preserved verbatim and retains the original checksum entry for the excluded primary raw trace; its complete original-run check is not claimed possible from this package alone.",
     "package_manifest": "PACKAGE-SHA256SUMS is separate and verifies the delivered payload files, including DELIVERY-MANIFEST.json, without editing the original run manifest; it does not checksum itself.",
