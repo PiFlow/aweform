@@ -1,0 +1,140 @@
+{
+  "schema": "aweform-pymunk226-review-delivery.v1",
+  "purpose": "Non-destructive review packaging of the already completed Pymunk 2.26 contact/lifetime experiment. No result or measured source was changed to package this record.",
+  "repository": {
+    "pr_base": "origin/main",
+    "delivery_branch": "fm/pymunk226-delivery",
+    "delivery_parent": "2f87632138cffef96b8c16d0ea8cf1dd5ad0b06f",
+    "executed_lifetime_source_head": "2f87632138cffef96b8c16d0ea8cf1dd5ad0b06f",
+    "original_local_result_branch": "fm/pymunk226-contact-prototype",
+    "original_local_result_head": "ad4514ee01021b06ef02b47a62939e63be15502c",
+    "v1_frozen_source": "bc8248c658397afd56dec307e4d344b16a86abb8",
+    "v1_result_commit": "84d561b42cbaa79d7710ed3556debcd17b6194dd",
+    "v2_frozen_source": "832d095142f2b2e116d2848afdd32bd011d07ad2",
+    "v2_result_commit": "dbd6cd056a056435b8d9038378951dd00b29370a",
+    "v3_frozen_source": "a0f3b3f4fac58d88a9ea0b1b706583ce3865639d",
+    "v3_result_commit": "6ee02fd0e5b43143ec8ae944c071f089ecbfc980",
+    "lifetime_result_commit": "ad4514ee01021b06ef02b47a62939e63be15502c"
+  },
+  "frozen_protocols": {
+    "v3_sha256": "6db905f6e6cd1501829ddb7e2f7f72bb9fc35ed1ea037ba9e12231ef1b455162",
+    "lifetime_sha256": "7821521cd508811890cdc335ec42d8ad5154f82d9db73356bdd5d86dfcac3a5f",
+    "supervisor_acceptance_receipt_sha256": "3db37bf8ab5ea01f08f9d5e006ff3d64c6fe3e4e4edb8cd0e63b2186d7292d52"
+  },
+  "historical_results": {
+    "v1": {
+      "status": "FAILED; immutable historical record",
+      "results_json_sha256": "8937854444fb02f1e19597741db42528f7bdc476f684ed6daa4489e44bb4a522"
+    },
+    "v2_contact_check": {
+      "status": "FAILED; immutable historical record",
+      "results_json_sha256": "baacf581f37806e5a81b091fe8cef7ba57ca4b5643e47b2482edae8ac40d168a",
+      "fresh_process_replay_sha256": "f678ebc298beab96925b52b8a5998af9623f06d44a0dd8a56b24790481478746"
+    },
+    "v2_diagnosis": {
+      "status": "bounded descriptive diagnosis; not acceptance",
+      "diagnosis_json_sha256": "0e36e974735cf73c4543d6df6890b5935bc49686408bf8acf90c8f4762fb3115"
+    },
+    "v3_contact_check": {
+      "status": "PASS; all 21 gates",
+      "results_json_sha256": "ab70abcb5c5906fa1285ab526148a9c5c199e874c13346e217378d18c24b7513",
+      "primary_and_fresh_process_replay_sha256": "ea40109ad9b6e130aeba0296c586ba72f1914564edce17e9998324ceeff42c53",
+      "byte_identical_fresh_process_replay": true
+    },
+    "v3_focused_probe": {
+      "focused_results_sha256": "6e0e4c0b7a1d99262d472eda4ee8897b7fc3943f3a46ed81f089fb3fd4945afb"
+    }
+  },
+  "lifetime": {
+    "seed": 22571,
+    "initial_state": {
+      "position_m": [0.75, 0.75],
+      "heading_rad": 0.0,
+      "battery_j": 2664.0,
+      "temperature_c": 23.0,
+      "charger_latch": false
+    },
+    "environment": "3 m x 3 m room with fixed walls and centered dock; zero interior obstacles",
+    "primary": {
+      "transitions": 100000,
+      "engine_steps": 40000000,
+      "substeps_per_transition": 400,
+      "stored_energy_j": 6975.795000000001,
+      "energy_transfer_intervals_inclusive": [[13971, 32822], [60697, 79551]],
+      "latch_transitions": 0,
+      "final_battery_j": 1910.891728165422,
+      "termination": "harness_horizon"
+    },
+    "matched_d058_reference": {
+      "transitions": 30000,
+      "pymunk_engine_steps": 0,
+      "stored_energy_j": 2962.2200000000003,
+      "termination": "D058_truncation_or_horizon",
+      "comparison_limit": "Reference ended at 30000; this is not an equal-horizon causal comparison or a trajectory-matched estimate."
+    },
+    "elapsed_seconds_pair": 7619.3513228748925,
+    "full_lifetime_byte_identical_regeneration": "not established; documented byte-identical fresh-process replay applies to the v3 contact acceptance only",
+    "resource_estimate_discrepancy": "Primary JSONL was estimated below 500 MB before execution; actual size is 3658110995 bytes. Run completed without disk failure; preserve and disclose this discrepancy."
+  },
+  "runtime": {
+    "python": "3.14.7",
+    "uv": "0.12.5",
+    "pymunk": "7.2.0",
+    "chipmunk": "2.0.1-ade7ed72849e60289eefb7a41e79ae6322fefaf3",
+    "platform": "macOS 26.6.2 arm64",
+    "wheel_filename": "pymunk-7.2.0-cp314-cp314-macosx_11_0_arm64.whl",
+    "wheel_bytes": 350532,
+    "wheel_sha256": "497c4a919fc7f03882cb9796b132ab3b5fcc4c4af9ead08e9631b6a9fb2da29c",
+    "uv_lock_sha256": "512f300c3850f348f0690c0f4c3164a403c72c54f7fd97fb8fd43d8b9fdaf148"
+  },
+  "executed_command": {
+    "record": "One foreground serial run, PID 33566; caffeinate -i and nice -n 10; command template and approved binding from VALIDATION-lifetime-v3.md, LIFETIME_STARTED and saved launch-preflight. The task record did not preserve a byte-for-byte shell transcript.",
+    "executable": "uv run --frozen --python 3.14.7 --group pymunk-probe python -m experiments.pymunk_contact_prototype.run_lifetime_v3 --run-once",
+    "approval_arguments": {
+      "--approval-head": "2f87632138cffef96b8c16d0ea8cf1dd5ad0b06f",
+      "--approval-protocol-sha256": "7821521cd508811890cdc335ec42d8ad5154f82d9db73356bdd5d86dfcac3a5f",
+      "--approval-receipt-sha256": "3db37bf8ab5ea01f08f9d5e006ff3d64c6fe3e4e4edb8cd0e63b2186d7292d52",
+      "--output": "experiments/pymunk_contact_prototype/results-v3/lifetime"
+    },
+    "pymunk_wheel_path_at_execution": "/private/tmp/pymunk220-wheelhouse/pymunk-7.2.0-cp314-cp314-macosx_11_0_arm64.whl"
+  },
+  "package_payload": [
+    {"path": "experiments/pymunk_contact_prototype/results-v3/lifetime/LIFETIME_STARTED", "bytes": 353, "sha256": "3d406c5887ffa5ac776172fb25752704bd2512ea59ddb82db81c26e3924c68c3"},
+    {"path": "experiments/pymunk_contact_prototype/results-v3/lifetime/SHA256SUMS", "bytes": 356, "sha256": "d0603686d8a642a0528c247b159a30629a33e42b6a59295a47835965c55c037b", "note": "Original run manifest copied verbatim; its primary-trace entry is intentionally absent from this GitHub package."},
+    {"path": "experiments/pymunk_contact_prototype/results-v3/lifetime/lifetime-results.json", "bytes": 5445, "sha256": "bc2167cbf1830cbe3a23fb1e003a33e53335177fb978b7cd54eda598261f79db"},
+    {"path": "experiments/pymunk_contact_prototype/results-v3/lifetime/reference-transitions.jsonl", "bytes": 34798820, "sha256": "da9ee65c688cf25f0285e58881e468f26834cfec62c2e27f4edabe320444d431"},
+    {"path": "experiments/pymunk_contact_prototype/replay/lifetime-replay.html", "bytes": 2032903, "sha256": "eac1579d3c251fd49c427612105f955cc7f224ca794f5f30065148525c6f91c5"},
+    {"path": "experiments/pymunk_contact_prototype/replay/lifetime-replay.provenance.md", "bytes": 2781, "sha256": "24ab276dded42cf20f92f884ad606d0e3ed3763b1f76eabb251ca512cacf096e"},
+    {"path": "experiments/pymunk_contact_prototype/replay/lifetime-replay.png", "bytes": 261871, "sha256": "07ff2124bf10b004150d473eada941accf3be617785d44021699b1b442375558"}
+  ],
+  "omitted_primary_raw": {
+    "path": "experiments/pymunk_contact_prototype/results-v3/lifetime/pymunk-transitions.jsonl",
+    "bytes": 3658110995,
+    "sha256": "8ef0c6e18d144451cc62ec5873bebe4bbb94be03bca8f4fd38a86826e5e24e40",
+    "git_blob": "a69d7ce13add97d67caa0617216094daa34a13b8",
+    "trace_array_sha256": "cc4b7a8e99c6c312c403f10a53ec5f51386664b72b0224022488c28cfdfeef87",
+    "custody": "Preserved untouched in the original local result branch/commit ad4514ee01021b06ef02b47a62939e63be15502c; deliberately excluded from this review branch and every pushed ref."
+  },
+  "audit_limitations": [
+    "Without the primary JSONL the package cannot independently inspect every one of the 100000 primary transition rows, including row-level observations, proposed/commanded wheel values, shaft state, energy/temperature values, charge phases, paired-contact/latch state, contacts and simultaneous contact identities, clearances, penetration/crossing checks, and termination fields. The summary JSON and its hashes remain available.",
+    "The replay uses 8338 recorded samples, not the complete stream; it is a visualization, not a replacement trace or new physics result.",
+    "The lifetime latch did not transition; charger cutoff behavior was not exercised.",
+    "The D-058 reference ended at 30000 transitions, so no equal-horizon or causal trajectory comparison is claimed.",
+    "No byte-identical full-lifetime rerun has been established."
+  ],
+  "checksum_policy": {
+    "original_manifest": "SHA256SUMS is preserved verbatim and retains the original checksum entry for the excluded primary raw trace; its complete original-run check is not claimed possible from this package alone.",
+    "package_manifest": "PACKAGE-SHA256SUMS is separate and verifies the delivered payload files, including DELIVERY-MANIFEST.json, without editing the original run manifest; it does not checksum itself.",
+    "delivery_inventory": "The private data/pymunk226-contact-prototype/delivery-inventory.md records the allowlist, preservation proof, retention recommendation, and validation/publishing state."
+  },
+  "replay": {
+    "recorded_frames": 8338,
+    "frames_are_sampled_actual_states": true,
+    "external_resources": 0,
+    "limitations": "No interpolation is represented as physics evidence; trail connects recorded samples. Browser provenance also records the file:// console message."
+  },
+  "retention": {
+    "current_decision": "Preserve the original trace untouched; no deletion, backup, compression or cleanup is authorized or performed.",
+    "future_condition": "Only consider deletion after source/protocol/results and audit summaries are inspectable, software QA/exact-HEAD Sol review/current-HEAD CI gates pass, any chosen backup is checksum/restore verified, and Flo explicitly accepts the residual audit/reproduction trade-off and authorizes deletion."
+  }
+}

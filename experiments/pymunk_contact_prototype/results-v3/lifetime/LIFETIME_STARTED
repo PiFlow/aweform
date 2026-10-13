@@ -1,0 +1,9 @@
+head=2f87632138cffef96b8c16d0ea8cf1dd5ad0b06f
+protocol_sha256=7821521cd508811890cdc335ec42d8ad5154f82d9db73356bdd5d86dfcac3a5f
+approval_receipt_sha256=3db37bf8ab5ea01f08f9d5e006ff3d64c6fe3e4e4edb8cd0e63b2186d7292d52
+phase=complete
+completed=1
+primary_transitions=100000
+primary_engine_steps=40000000
+reference_transitions=30000
+reference_engine_steps=0
