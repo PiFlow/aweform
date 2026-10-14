@@ -1,0 +1,51 @@
+# Pymunk contact prototype — corrected iteration-2 acceptance freeze
+
+## Authority, scope, and preservation
+
+This result-free protocol is for the single bounded corrected contact check authorized by Flow and issue #226. The exact authorized base is `48b18209a69d18841166bc8a00b56d00815e3b5b`. The v2 runner refuses other `origin/main` tips, dirty trees, or branches. The previous `protocol.md`, original executable/result relationship, v1 source (`bc8248c658397afd56dec307e4d344b16a86abb8`), v1 result receipt and JSON bytes remain historical. Original result SHA-256 remains `8937854444fb02f1e19597741db42528f7bdc476f684ed6daa4489e44bb4a522`. The v1 same-process replay labels are not promoted to fresh-process evidence. The unmeasured fixer and restoration commits remain reachable in history.
+
+This is isolated in `experiments/pymunk_contact_prototype/` only. It does not change production source, the active/default environment, controller, learner, dependencies, ADRs, accepted D-records, EXP evidence, protected seeds, or the historical D-058/D-060 substrate. The dynamic Pymunk fixture is a test-only engineering diagnostic. No hardware-fidelity, production-adoption, or scientific acceptance claim is made.
+
+This v2 protocol inherits the fixed body/action/encoder/C2 definitions, exact case inventory, calibration controls, initial states, and immutable #219/#220 reference constraints from the committed v1 protocol `protocol.md` at exact SHA-256 `2c12fe86807205f080c7eb6e9bdefa61b30f4ddd3362694bce113561b1c74901`, also recorded by v1 results. V2 changes only the candidate contact response, wall-shape placement, measurement/reset/replay controls, and fresh output path specified below. The accepted maximum penetration remains **0.001 m**; no threshold is relaxed.
+
+## Diagnostic basis and prospective design choices
+
+The committed bounded diagnostic (`diagnosis_protocol.md`, executable `4c215d50e8cc2e5958d5623e14474fc2267144f1`) found that suppressing later velocity refreshes after the first contact callback in a logical command reduced the west-wall room-line penetration metric from the v1 41.507 mm to 1.231 mm, still above 1 mm. The passive and free-space controls disconfirmed passive geometry and contact-free C2 integration as causes of that growth. A separately changed collision-bias probe also altered penetration but did not by itself meet the limit. The diagnostic further exposed a wall-measurement mismatch: v1 placed 10 mm wall capsules on the room boundary, allowing the collision shape to extend 5 mm inside the room while the evaluator measured against the zero-thickness room line.
+
+The corrected candidate therefore freezes, without claiming physical motor fidelity:
+
+1. **Contact response:** C2 still maps the signed wheel command to the same ideal shaft-derived twist. At each microstep, set the C2 velocity while no contact has yet been reported in the current 0.1 s logical command. After the first Pymunk post-solve contact callback, do not overwrite solver-modified linear/angular velocity for the remaining microsteps in that command. The next logical action begins a new command and reapplies its declared twist. In contact-free paths the C2 update remains unchanged. This is a bounded actuator/contact coupling assumption, not a motor-force, traction, or hardware model.
+2. **Timestep-scaled bias:** use `collision_bias = 0.9**100`, preserving 10% residual positional-bias correction per 0.01 s at the 10-substep primary setting. Apply the same continuous-time parameter at 20 substeps; do not tune it after seeing v2 results. All other frozen solver values remain: 1 kg body, uniform-rectangle moment, zero friction/restitution, 0.0001 m slop, 10 iterations, zero gravity, damping 1, persistence 3, no sleeping, no RNG, C2 midpoint arc-average, 0.1 s logical action.
+3. **Wall geometry:** retain 0.01 m-thick static walls, but put their inside faces exactly on x/y = 0 and 3 m; thickness extends outward from the 3 m room. Four static rectangles meet at the corners. Posts remain fixed radius-0.05 m circles at the unchanged frozen coordinates and exist only in fixed-command diagnostics.
+
+No hull, mass, friction, slop, time step, command, case, contact threshold, or corpus is changed after results. Any v2 essential-gate failure is preserved and is a STOP; no tuning, rerun, or lifetime follows.
+
+## Frozen case inventory, count, runtime, and comparisons
+
+Use the unchanged `fixed_cases()` inventory: **255 case rows at each resolution**, 797 logical commands per complete resolution suite. Run fresh 10-substep and 20-substep suites serially. Then execute exactly one byte-comparison replay of both suites in a separate fresh Python process. Total: 1,020 case-resolution executions, 3,188 logical commands, and 47,820 Pymunk `Space.step` calls. Each case owns a new `Space`; reset is also exercised after each case and must clear state. The replay is not a second worker and must not run concurrently.
+
+Before the measured run, check host CPU/memory/process availability and that no competing required scientific workload is active. Planned budget: one primary suite plus one fresh-process replay, <5 minutes total, hard stop/report at 10 minutes; run serially. Do not kill, pause, or interfere with other work. The one optional organism/reference lifetime has a separate authorization gate and separate resource/budget review.
+
+## Measurement and control contract
+
+For every case and logical step preserve requests, clipped shaft deltas, start/end pose and yaw, velocities, impulses, per-microstep contact identities/point counts, maximum actual contact penetration, reset digest, elapsed time and step counts. Independently calculate signed hull clearance to each zero-thickness room boundary and each fixed circular post. Sample 64 equally spaced poses between consecutive engine-substep endpoints; record minimum per-shape and overall clearance plus the conservative per-sample path-length bound `(centre displacement + hull circumradius * abs(yaw change)) / 64`. Record a crossing when a shape's clearance is positive at both endpoints but negative at an interior sample. Report sampled-clearance limitations; do not describe sampling as hardware validation or an exact continuous collision proof. The maximum per-sample path-length bound must be `<=0.0002 m` for every microstep; any larger bound makes the trajectory-clearance control incomplete and is an essential STOP.
+
+The 0.001 m penetration gate applies to the maximum of independent 64-sample trajectory penetration plus its per-sample path-length uncertainty bound, and actual Pymunk contact-point penetration plus that same conservative bound. The emitted `max_penetration_m` is the conservative upper bound; raw sampled penetration is separately retained. Contact callback records preserve sorted shape identities and are grouped by engine substep so simultaneous contacts are distinct from accumulated events across time. Report all cases with multiple simultaneous shape pairs; never discard them. `minimum_trajectory_clearance` and its attaining shape/case are explicit outputs.
+
+Each case explicitly exercises `ContactWorld.reset()` after its steps. Reset reconstructs a fresh `Space` at the frozen start and must replace the previous Space/body, restore zero velocities, empty callback/contact history, zero elapsed/step counters, fixed geometry/settings, and a byte-identical canonical reset digest. A reset failure is essential and STOPs.
+
+Compare the 10- and 20-substep cases by end pose/yaw, every per-shape minimum trajectory clearance, and contact identity/state. Each same-shape per-case minimum-clearance difference must be <=0.0005 m. A contact-state disagreement is allowable only when the independent clearance is within 0.0005 m of zero; enumerate every allowance. Retain the independent free-space analytic arc and shaft/encoder contracts. Record every gate separately and do not derive a PASS from an aggregate alone.
+
+## Fresh-process result integrity and early refusal
+
+Before constructing a Pymunk `Space` or stepping, refuse an existing output path; use only `experiments/pymunk_contact_prototype/results-v2/contact-check/`. Claim/create the output marker before any case starts. Never touch `results/` or `results-v2/diagnosis/`.
+
+The measured runner executes the primary suites once. Only after they finish, it invokes itself in one new process to regenerate the same frozen suites and canonical trace. Compare canonical bytes and SHA-256 exactly. Record the two distinct process IDs, candidate SHA, protocol SHA, runtime/wheel manifest, primary/replay digest, every case, reset/clearance/contact metrics, and all gate thresholds/statuses. A same-process repeat is not accepted as replay.
+
+Routine tests, lint, mypy, compile, CI, and no-mistakes validation must not call the measurement suite, replay worker, or lifetime runner. Tests exercise executable interfaces and assert behavior; no source-content-only checks. A one-step deterministic fixture test is permitted for contact/reset interface semantics, but it is not the frozen corpus and produces no science artifact.
+
+## Essential B STOP and conditional C gate
+
+B passes only if all previously frozen essential runtime, input/shaft, time, free-space, numerical, contact, penetration, crossing, reset, stuck/release, and 10-vs-20 gates pass, plus the v2 per-shape clearance/contact-identity/fresh-process replay controls above. The penetration maximum remains 0.001 m. Any non-finite output, unexplained contact identity, solver/reset issue, swept crossing, boundary leak, or essential gate failure means preserve the result and STOP.
+
+Only if every essential B gate passes may the single previously unexecuted unchanged Level-1 organism lifetime and prescribed D-058 reference run, using the already frozen v1 seed `22571`, fixed initial state `(0.75,0.75,0)`, initial battery `2664 J`, temperature `23 C`, false charger latch, 100,000-transition maximum, centered dock, 3 m walls, and zero interior obstacles. The lifetime source/runner and new output path must be frozen with v2 before B measurement. It runs exactly once; do not resume/retry. No organism lifetime runs if B fails. No controller, observation, reward, info, constitutive energy/thermal/charging rule, seed, horizon, or threshold changes are permitted.
