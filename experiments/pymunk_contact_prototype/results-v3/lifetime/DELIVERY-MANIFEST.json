@@ -1,6 +1,6 @@
 {
   "schema": "aweform-pymunk226-review-delivery.v1",
-  "purpose": "Non-destructive review packaging of the already completed Pymunk 2.26 contact/lifetime experiment. No result or measured source was changed to package this record.",
+  "purpose": "Non-destructive review packaging of the already completed #226 contact/lifetime experiment. No result or measured source was changed to package this record.",
   "repository": {
     "pr_base": "origin/main",
     "delivery_branch": "fm/pymunk226-delivery",
@@ -20,7 +20,7 @@
     "visibility": "PRIVATE_LOCAL_REFERENCE; the original result branch, result commit, and primary raw blob are intentionally absent from the GitHub delivery ancestry.",
     "attributed_local_check": "A prior completed local custody check resolved fm/pymunk226-contact-prototype to result commit ad4514ee01021b06ef02b47a62939e63be15502c, resolved raw blob a69d7ce13add97d67caa0617216094daa34a13b8, and matched the Git/file size to 3658110995 bytes.",
     "raw_sha256": "The recorded primary-trace SHA-256 8ef0c6e18d144451cc62ec5873bebe4bbb94be03bca8f4fd38a86826e5e24e40 is reused from that prior completed verification; it was not recomputed in this review phase.",
-    "review_clone_limit": "A review clone may contain stale same-named refs; its fm/pymunk226-contact-prototype ref at 4fec12effc5e5f0de2f1a9d2cd1bbc6959bb11db is not authoritative for original local custody.",
+    "review_clone_limit": "A review clone may contain stale same-named refs; such refs are not authoritative for original local custody.",
     "public_verification_limit": "The public package verifies only included payload checksums, original execution/protocol/result identifiers, and disclosures; it does not independently verify raw custody or full-lifetime reproduction.",
     "preservation_boundary": "The original data and history remain untouched; no raw upload, backup, compression, deletion, or new hash recomputation was performed for this delivery."
   },
@@ -77,8 +77,16 @@
       "transitions": 30000,
       "pymunk_engine_steps": 0,
       "stored_energy_j": 2962.2200000000003,
-      "termination": "D058_truncation_or_horizon",
-      "comparison_limit": "Reference ended at 30000; this is not an equal-horizon causal comparison or a trajectory-matched estimate."
+      "termination": "D058_episode_horizon_truncation",
+      "comparison_limit": "The Pymunk primary ran to 100000 because its adapter omitted D-058's 30000-transition truncation; the reference stopped under that episode contract. Comparison is descriptive only over shared transitions 1-30000, not equal-horizon, causal, or trajectory-matched."
+    },
+    "horizon_asymmetry": {
+      "d058_reference": "The reference loop honors D-058 episode_horizon=30000; its final saved transition has truncated=true.",
+      "pymunk_primary": "The Pymunk adapter re-implements D058Env.step without a truncation path and therefore continued to the 100000-transition harness horizon, 70000 transitions beyond the D-058 episode horizon.",
+      "pre_run_history": "Commit 04ab9e1 added a 30000-transition guard and adapter truncation; commit d80269b reverted that correction before the measured run.",
+      "charge_scope": "The primary's second energy-transfer interval [60697,79551] lies wholly beyond 30000. Within shared transitions 1-30000, each arm has one charge onset: primary 13971, reference 13989.",
+      "comparison_limit": "Only a descriptive comparison over shared transitions 1-30000 is supported; no equal-horizon causal, trajectory-matched, or D-058-contract-equivalence inference is supported.",
+      "evidence_basis": "Static source and saved-artifact analysis; no simulation was run for this disclosure."
     },
     "elapsed_seconds_pair": 7619.3513228748925,
     "full_lifetime_byte_identical_regeneration": "not established; documented byte-identical fresh-process replay applies to the v3 contact acceptance only",
@@ -112,7 +120,7 @@
     {"path": "experiments/pymunk_contact_prototype/results-v3/lifetime/lifetime-results.json", "bytes": 5445, "sha256": "bc2167cbf1830cbe3a23fb1e003a33e53335177fb978b7cd54eda598261f79db"},
     {"path": "experiments/pymunk_contact_prototype/results-v3/lifetime/reference-transitions.jsonl", "bytes": 34798820, "sha256": "da9ee65c688cf25f0285e58881e468f26834cfec62c2e27f4edabe320444d431"},
     {"path": "experiments/pymunk_contact_prototype/replay/lifetime-replay.html", "bytes": 2033210, "sha256": "500bfdbbcecdab04509ed162dd81bf78af9dbe99c54e9fef51faa9e9ea7320f7"},
-    {"path": "experiments/pymunk_contact_prototype/replay/lifetime-replay.provenance.md", "bytes": 3530, "sha256": "20726447c804b74245905194849f6c463080e1469d6b6586f20956113c2d03a3"},
+    {"path": "experiments/pymunk_contact_prototype/replay/lifetime-replay.provenance.md", "bytes": 4549, "sha256": "74e317b227fd56b598e6dd11379d6c0b4d2b20a59061c72bd7413cf14b665d0c"},
     {"path": "experiments/pymunk_contact_prototype/replay/lifetime-replay.png", "bytes": 261871, "sha256": "07ff2124bf10b004150d473eada941accf3be617785d44021699b1b442375558"}
   ],
   "omitted_primary_raw": {
@@ -127,16 +135,16 @@
     "Without the primary JSONL the package cannot independently inspect every one of the 100000 primary transition rows, including row-level observations, proposed/commanded wheel values, shaft state, energy/temperature values, charge phases, paired-contact/latch state, contacts and simultaneous contact identities, clearances, penetration/crossing checks, and termination fields. The summary JSON and its hashes remain available.",
     "The replay uses 8338 recorded samples, not the complete stream; it is a visualization, not a replacement trace or new physics result.",
     "The lifetime latch did not transition; charger cutoff behavior was not exercised.",
-    "The D-058 reference ended at 30000 transitions, so no equal-horizon or causal trajectory comparison is claimed.",
+    "The D-058 reference stopped at its 30000-transition truncation while the Pymunk primary continued to 100000 because its adapter omitted that truncation; comparison is descriptive only over shared transitions 1-30000, not equal-horizon or causal.",
     "No byte-identical full-lifetime rerun has been established."
   ],
   "reset_boundary": {
-    "frozen_source_review": "ContactWorld.reset() reconstructs a fresh Space and clears metadata, but its registered bound collision callback retains the temporary world's list targets after self.__dict__.update(...); a later self.advance() can therefore record callbacks outside self.",
+    "frozen_source_review": "ContactWorld.reset() reconstructs a fresh Space and clears metadata, but its registered bound collision callback retains the temporary world's list targets after self.__dict__.update(...), so later callbacks can be recorded outside self. The callback also sets the temporary world's _contact_seen_this_command flag, while advance() checks self's flag to gate velocity-refresh suppression; post-reset dynamics may therefore also differ. This is static source-path inference only, not runtime proof.",
     "v2_v3_reset_pass_scope": "The V2/V3 reset PASS covers only end-of-case reconstruction and cleared metadata. It does not establish callback-safe post-reset advance or reusable reset correctness.",
     "contact_rows": "Measured V2/V3 contact rows were produced before each case reset; they are not post-reset callback observations.",
     "lifetime_path": "The lifetime used one initially constructed world and did not call ContactWorld.reset().",
     "evidence_classification": "This limitation is source-path reasoning from the frozen implementation and call paths, not runtime proof.",
-    "claim_limit": "No reusable-reset correctness or expanded numerical PASS claim is made."
+    "claim_limit": "No reusable-reset correctness, post-reset callback behavior, post-reset dynamics, or expanded numerical PASS claim is established."
   },
   "checksum_policy": {
     "original_manifest": "SHA256SUMS is preserved verbatim and retains the original checksum entry for the excluded primary raw trace; its complete original-run check is not claimed possible from this package alone.",
