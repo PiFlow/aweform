@@ -6,6 +6,7 @@ import hashlib
 import json
 import sys
 import time
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -25,8 +26,11 @@ def test_frozen_plan_accounts_for_exact_substeps_without_execution() -> None:
         "empty_free_n800_primary",
         "empty_free_n800_replay",
     ]
-    assert all(case.fixture == "frozen_a2_convex" for case in plan[:4])
-    assert all(case.fixture == "empty-free" for case in plan[4:])
+    assert all(case.fixture_id == "A2-convex-face" for case in plan[:4])
+    assert all(case.fixture_id == "empty-free" for case in plan[4:])
+    assert [case.command_id for case in plan[:4]] == ["cmd1", "cmd2", "cmd1", "cmd2"]
+    assert [case.start for case in plan[:4]] == [instrument.A2_START] * 4
+    assert [case.action for case in plan[:4]] == [instrument.A2_ACTION] * 4
     assert [case.start for case in plan[4:]] == [(1.0, 1.0, 0.0)] * 4
     assert [case.role for case in plan[4:]] == [
         "primary",
@@ -52,8 +56,42 @@ def test_frozen_plan_accounts_for_exact_substeps_without_execution() -> None:
     )
     assert instrument.DETAIL_WINDOW == (0.85, 0.98)
     assert instrument.EMPTY_FREE_START == (1.0, 1.0, 0.0)
-    assert instrument.EMPTY_FREE_ACTION == "F×1"
+    assert instrument.EMPTY_FREE_ACTION == (0.6457718232379019, 0.6457718232379019)
+    assert all(case.control_requires_no_contact for case in plan[4:])
+    assert all(case.full_fixture_expected_objects == ("A2",) for case in plan[:4])
+    instrument.validate_plan(plan, instrument.FROZEN_IDENTITY)
     assert instrument.main(["--preflight"]) == 0
+
+
+def test_preflight_refuses_identity_command_and_accounting_mismatch() -> None:
+    plan = instrument.schedule()
+    with pytest.raises(instrument.ReceiptError, match="identity mismatch"):
+        instrument.validate_plan(
+            plan,
+            replace(instrument.FROZEN_IDENTITY, cases_source_sha256="0" * 64),
+        )
+    with pytest.raises(instrument.ReceiptError, match="accounting mismatch"):
+        instrument.validate_plan(
+            (replace(plan[0], substeps=plan[0].substeps + 1), *plan[1:]),
+            instrument.FROZEN_IDENTITY,
+        )
+    with pytest.raises(instrument.ReceiptError, match="fixture/commands"):
+        instrument.validate_plan(
+            (replace(plan[0], action=(0.0, 0.0)), *plan[1:]),
+            instrument.FROZEN_IDENTITY,
+        )
+
+
+def test_cli_supervised_preflight_binds_plan_without_physics(tmp_path: Path) -> None:
+    output = tmp_path / "preflight"
+    assert instrument.main(["--supervise-preflight", "--output", str(output)]) == 0
+    receipt = json.loads((output / "STOP.json").read_text("utf-8"))
+    rows = [
+        json.loads(line) for line in (output / "events.jsonl").read_text().splitlines()
+    ]
+    assert receipt["reason"] == "worker_completed"
+    assert rows[0]["event"]["kind"] == "frozen_plan_preflight"
+    assert rows[0]["event"]["total_substeps"] == 4_800
 
 
 def test_stop_receipt_exposes_durable_watermark_and_hash(tmp_path: Path) -> None:
@@ -68,6 +106,7 @@ def test_stop_receipt_exposes_durable_watermark_and_hash(tmp_path: Path) -> None
     )
     receipt = json.loads(path.read_text("utf-8"))
     assert receipt["last_durable"] == durable
+    assert receipt["identity"]["cases_source_sha256"] == instrument.FROZEN_CASES_SHA256
     assert "payload" not in receipt
     checksum = (output / "STOP.sha256").read_text("ascii")
     assert checksum == f"{hashlib.sha256(path.read_bytes()).hexdigest()}  STOP.json\n"
@@ -228,6 +267,8 @@ def test_empty_free_control_requires_replay_identity_and_zero_contacts() -> None
             b'{"contact_events":[{"shape":"wall"}]}\n',
             b'{"contact_events":[{"shape":"wall"}]}\n',
         )
+    with pytest.raises(instrument.ReceiptError, match="missing contact-event"):
+        instrument.validate_empty_free_control(b'{"progress":1}\n', b'{"progress":1}\n')
 
 
 def test_output_directory_is_one_shot(tmp_path: Path) -> None:

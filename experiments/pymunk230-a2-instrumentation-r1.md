@@ -1,6 +1,6 @@
 # Pymunk #230 A2-R1 instrumentation-only candidate
 
-This source-only candidate repairs the receipt contract, parent wall watchdog, and fixed runner boundary. It does **not** execute Pymunk or any simulator transition. `--preflight` only prints the fixed run plan; the CLI refuses physical execution pending the separately required fresh decision after exact-source review.
+This source-only candidate repairs the receipt contract, parent wall watchdog, and fixed runner boundary. It does **not** execute Pymunk or any simulator transition. `--preflight` validates and prints the fixed run plan; `--supervise-preflight --output PATH` supervises the fixed model-free plan-identity worker and writes a bounded STOP receipt. The CLI refuses physical execution pending the separately required fresh decision after exact-source review.
 
 ## Preserved identities and scope
 
@@ -9,7 +9,7 @@ This source-only candidate repairs the receipt contract, parent wall watchdog, a
 - Frozen full protocol SHA-256: `9f749b39d37da4541b8dae84c732a9e24ae271e3767906ed862c5f88a1e0fe18`.
 - Frozen physics digest: `7f2492e326a57d7ca12b65bbdb1202cb7538d5a0c4ae25dea8c7a6f809f93fd4`.
 - Frozen cmd1 prefix digest: `e8c0aec8d82c6e79143ee70ea50519f3cf2c369e07df73795db6038a387e63c7`.
-- Total proposed accounting remains 4,800 substeps. The A2-convex target uses frozen cmd1+cmd2 prefixes at N400 (400+400) and N800 (800+800), totaling 2,400. The exact `empty-free` control starts at `(1,1,0)`, runs `F×1`, and uses primary plus fresh replay at N400 (400+400) and N800 (800+800), totaling the remaining 2,400. The source fixture identity for A2 remains bound to its frozen digest; no A2 start/action value is redefined here. The model-free negative-control validator requires byte-identical primary/replay JSONL and zero contact-event rows.
+- Total proposed accounting remains 4,800 substeps. The A2-convex target uses frozen cmd1+cmd2 prefixes at N400 (400+400) and N800 (800+800), totaling 2,400. The exact `empty-free` control starts at `(1,1,0)`, runs `F×1`, and uses primary plus fresh replay at N400 (400+400) and N800 (800+800), totaling the remaining 2,400. The read-only frozen attempt-3 fixture at `experiments/pymunk230_obstacles/cases.py` has SHA-256 `0007e4400511ed956f9ec1642e9c4029990afa2b95061be4ffc631e984ecbe05`. Its `A2-convex-face` row freezes start `(2.18,1.5,0)`, forward wheel action `(0.6457718232379019,0.6457718232379019)` repeated four times, expected object `A2`; this plan uses only commands 1 and 2 at 400/800 microsteps. The `empty-free` fixture freezes `(1,1,0)`, one forward action, no contacts, primary+fresh replay at each resolution. Preflight rejects source-identity, fixture/command, or total-step mismatch. The model-free negative-control validator requires byte-identical primary/replay JSONL and zero contact-event rows.
 - Checkpoints are cmd1 `{0,.25,.50,.75,1}` and cmd2 `{0,.25,.50,.75,.85,.90,.98,1}`; detailed cmd2 logging is inclusive `[.85,.98]`. N400/N800 observations align by normalized physical time.
 - The original frozen geometry, commands, thresholds, failure disposition, and STOP semantics are not changed.
 

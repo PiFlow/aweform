@@ -42,7 +42,12 @@ MAX_EVENTS = 10_000
 MAX_RSS_BYTES = 256 * 1024 * 1024
 DETAIL_WINDOW = (0.85, 0.98)
 EMPTY_FREE_START = (1.0, 1.0, 0.0)
-EMPTY_FREE_ACTION = "F×1"
+EMPTY_FREE_ACTION = (0.6457718232379019, 0.6457718232379019)
+FROZEN_CASES_SHA256 = "0007e4400511ed956f9ec1642e9c4029990afa2b95061be4ffc631e984ecbe05"
+A2_CASE_ID = "A2-convex-face"
+A2_START = (2.18, 1.5, 0.0)
+A2_ACTION = (0.6457718232379019, 0.6457718232379019)
+A2_SOURCE_COMMAND_COUNT = 4
 
 # Normalized command progress; cmd2 N800 samples share physical time with N400.
 CHECKPOINTS = (
@@ -65,29 +70,115 @@ CHECKPOINTS = (
 @dataclass(frozen=True)
 class RunCase:
     case_id: str
-    fixture: str
+    fixture_id: str
+    fixture_sha256: str
     role: str
-    command: str
-    start: tuple[float, float, float] | None
-    action: str | None
+    command_id: str
+    start: tuple[float, float, float]
+    action: tuple[float, float]
     microsteps: int
     substeps: int
+    control_requires_no_contact: bool
+    full_fixture_expected_objects: tuple[str, ...]
 
 
-A2_CASES = (
-    RunCase(
-        "a2_n400_cmd1", "frozen_a2_convex", "primary", "cmd1", None, None, 400, 400
+@dataclass(frozen=True)
+class SourceIdentity:
+    base_sha: str
+    attempt3_head: str
+    full_protocol_sha256: str
+    physics_source_sha256: str
+    protocol_prefix_sha256: str
+    cases_source_sha256: str
+
+
+FROZEN_IDENTITY = SourceIdentity(
+    BASE_SHA,
+    FROZEN_ATTEMPT3_HEAD,
+    FROZEN_PROTOCOL_SHA256,
+    FROZEN_PHYSICS_SHA256,
+    FROZEN_PREFIX_SHA256,
+    FROZEN_CASES_SHA256,
+)
+
+
+def _case(
+    case_id: str,
+    fixture_id: str,
+    role: str,
+    command_id: str,
+    start: tuple[float, float, float],
+    action: tuple[float, float],
+    microsteps: int,
+    substeps: int,
+    no_contact: bool,
+    fixture_objects: tuple[str, ...],
+) -> RunCase:
+    return RunCase(
+        case_id,
+        fixture_id,
+        FROZEN_CASES_SHA256,
+        role,
+        command_id,
+        start,
+        action,
+        microsteps,
+        substeps,
+        no_contact,
+        fixture_objects,
+    )
+
+
+FROZEN_PLAN = (
+    _case(
+        "a2_n400_cmd1",
+        A2_CASE_ID,
+        "primary",
+        "cmd1",
+        A2_START,
+        A2_ACTION,
+        400,
+        400,
+        False,
+        ("A2",),
     ),
-    RunCase(
-        "a2_n400_cmd2", "frozen_a2_convex", "primary", "cmd2", None, None, 400, 400
+    _case(
+        "a2_n400_cmd2",
+        A2_CASE_ID,
+        "primary",
+        "cmd2",
+        A2_START,
+        A2_ACTION,
+        400,
+        400,
+        False,
+        ("A2",),
     ),
-    RunCase(
-        "a2_n800_cmd1", "frozen_a2_convex", "primary", "cmd1", None, None, 800, 800
+    _case(
+        "a2_n800_cmd1",
+        A2_CASE_ID,
+        "primary",
+        "cmd1",
+        A2_START,
+        A2_ACTION,
+        800,
+        800,
+        False,
+        ("A2",),
     ),
-    RunCase(
-        "a2_n800_cmd2", "frozen_a2_convex", "primary", "cmd2", None, None, 800, 800
+    _case(
+        "a2_n800_cmd2",
+        A2_CASE_ID,
+        "primary",
+        "cmd2",
+        A2_START,
+        A2_ACTION,
+        800,
+        800,
+        False,
+        ("A2",),
     ),
-    RunCase(
+    _case(
         "empty_free_n400_primary",
         "empty-free",
         "primary",
@@ -96,8 +187,10 @@ A2_CASES = (
         EMPTY_FREE_ACTION,
         400,
         400,
+        True,
+        (),
     ),
-    RunCase(
+    _case(
         "empty_free_n400_replay",
         "empty-free",
         "fresh_replay",
@@ -106,8 +199,10 @@ A2_CASES = (
         EMPTY_FREE_ACTION,
         400,
         400,
+        True,
+        (),
     ),
-    RunCase(
+    _case(
         "empty_free_n800_primary",
         "empty-free",
         "primary",
@@ -116,8 +211,10 @@ A2_CASES = (
         EMPTY_FREE_ACTION,
         800,
         800,
+        True,
+        (),
     ),
-    RunCase(
+    _case(
         "empty_free_n800_replay",
         "empty-free",
         "fresh_replay",
@@ -126,17 +223,34 @@ A2_CASES = (
         EMPTY_FREE_ACTION,
         800,
         800,
+        True,
+        (),
     ),
 )
 
 
+def validate_plan(plan: tuple[RunCase, ...], identity: SourceIdentity) -> None:
+    """Fail closed unless source custody, exact cases, and accounting match."""
+    if identity != FROZEN_IDENTITY:
+        raise ReceiptError("frozen source/protocol identity mismatch")
+    if any(not case.start or not case.action for case in plan):
+        raise ReceiptError("frozen case is missing start pose or action")
+    if sum(case.substeps for case in plan) != MAX_SUBSTEPS:
+        raise ReceiptError("frozen total substep accounting mismatch")
+    if len({case.case_id for case in plan}) != len(plan):
+        raise ReceiptError("duplicate frozen case")
+    if sum(case.substeps for case in plan if case.fixture_id == A2_CASE_ID) != 2_400:
+        raise ReceiptError("A2 target substep accounting mismatch")
+    if sum(case.substeps for case in plan if case.fixture_id == "empty-free") != 2_400:
+        raise ReceiptError("empty-free control substep accounting mismatch")
+    if plan != FROZEN_PLAN:
+        raise ReceiptError("run plan differs from the frozen fixture/commands")
+
+
 def schedule() -> tuple[RunCase, ...]:
-    """Return the immutable three-case schedule; never executes a transition."""
-    if sum(c.substeps for c in A2_CASES) != MAX_SUBSTEPS:
-        raise RuntimeError("frozen total substep accounting mismatch")
-    if len({c.case_id for c in A2_CASES}) != len(A2_CASES):
-        raise RuntimeError("duplicate frozen case")
-    return A2_CASES
+    """Return and validate the immutable model-free plan, never step physics."""
+    validate_plan(FROZEN_PLAN, FROZEN_IDENTITY)
+    return FROZEN_PLAN
 
 
 def validate_empty_free_control(primary: bytes, replay: bytes) -> None:
@@ -151,7 +265,9 @@ def validate_empty_free_control(primary: bytes, replay: bytes) -> None:
         raise ReceiptError("empty-free control has no records")
     if any(not isinstance(row, dict) for row in rows):
         raise ReceiptError("empty-free control rows must be JSON objects")
-    if any(row.get("contact_events") for row in rows):
+    if any(not isinstance(row.get("contact_events"), list) for row in rows):
+        raise ReceiptError("empty-free control is missing contact-event records")
+    if any(row["contact_events"] for row in rows):
         raise ReceiptError("empty-free negative control contains contact events")
 
 
@@ -217,7 +333,9 @@ def write_stop_receipt(
         "schema": "pymunk230-a2-stop-v1",
         "protocol": INSTRUMENTATION_PROTOCOL,
         "identity": {
+            "base_sha": BASE_SHA,
             "attempt3_head": FROZEN_ATTEMPT3_HEAD,
+            "cases_source_sha256": FROZEN_CASES_SHA256,
             "full_protocol_sha256": FROZEN_PROTOCOL_SHA256,
             "physics_sha256": FROZEN_PHYSICS_SHA256,
             "prefix_sha256": FROZEN_PREFIX_SHA256,
@@ -407,15 +525,44 @@ def _process_metrics(pid: int) -> dict[str, float | int] | None:
         return None
 
 
+def _plan_event() -> dict[str, object]:
+    plan = schedule()
+    digest = hashlib.sha256(
+        canonical_json([case.__dict__ for case in plan])
+    ).hexdigest()
+    return {
+        "kind": "frozen_plan_preflight",
+        "plan_sha256": digest,
+        "case_count": len(plan),
+        "total_substeps": sum(case.substeps for case in plan),
+    }
+
+
+def supervise_frozen_plan(output: Path) -> dict[str, object]:
+    """Supervise only the model-free frozen-plan worker; never step physics."""
+    expected = _plan_event()
+    receipt = supervise(output)
+    records = [
+        json.loads(line)
+        for line in (output / "events.jsonl").read_text("utf-8").splitlines()
+        if line
+    ]
+    expected_row = {"sequence": 1, "event": expected}
+    if receipt.get("reason") != "worker_completed" or records != [expected_row]:
+        raise ReceiptError("model-free supervised plan validation failed")
+    return receipt
+
+
 def _model_free_worker() -> int:
-    """Emit a model-free marker only; deliberately contains no simulator calls."""
-    print(json.dumps({"kind": "model_free_worker_ready"}), flush=True)
+    """Emit the frozen-plan identity only; deliberately no simulator calls."""
+    print(canonical_json(_plan_event()).decode("utf-8"), flush=True)
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--preflight", action="store_true")
+    parser.add_argument("--supervise-preflight", action="store_true")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--model-free-worker", action="store_true")
     parser.add_argument(
@@ -427,15 +574,33 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.model_free_worker:
         return _model_free_worker()
+    if args.supervise_preflight:
+        if args.output is None:
+            parser.error("--supervise-preflight requires --output")
+        print(canonical_json(supervise_frozen_plan(args.output)).decode("utf-8"))
+        return 0
     if args.preflight:
         data = {
             "protocol": INSTRUMENTATION_PROTOCOL,
+            "source_identity": FROZEN_IDENTITY.__dict__,
             "base_sha": BASE_SHA,
             "frozen_attempt3_head": FROZEN_ATTEMPT3_HEAD,
             "protocol_sha256": FROZEN_PROTOCOL_SHA256,
             "physics_sha256": FROZEN_PHYSICS_SHA256,
             "prefix_sha256": FROZEN_PREFIX_SHA256,
             "cases": [c.__dict__ for c in schedule()],
+            "a2_frozen_fixture": {
+                "case_id": A2_CASE_ID,
+                "source_commit": FROZEN_ATTEMPT3_HEAD,
+                "cases_source_sha256": FROZEN_CASES_SHA256,
+                "start": A2_START,
+                "source_commands": A2_SOURCE_COMMAND_COUNT,
+                "instrumented_prefix": [
+                    {"command_id": "cmd1", "action": A2_ACTION},
+                    {"command_id": "cmd2", "action": A2_ACTION},
+                ],
+                "full_fixture_expected_objects": ("A2",),
+            },
             "checkpoints": CHECKPOINTS,
             "detail_window": DETAIL_WINDOW,
             "prospective_total_substeps": MAX_SUBSTEPS,
