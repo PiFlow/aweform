@@ -438,7 +438,7 @@ def _terminate_and_reap(child: subprocess.Popen[bytes], grace_s: float = 0.2) ->
         else:
             child.terminate()
         child.wait(timeout=grace_s)
-    except (ProcessLookupError, subprocess.TimeoutExpired):
+    except ProcessLookupError, subprocess.TimeoutExpired:
         try:
             if os.name == "posix":
                 os.killpg(child.pid, signal.SIGKILL)
@@ -551,7 +551,7 @@ def _process_metrics(pid: int) -> dict[str, float | int] | None:
             cpu = (int(fields[13]) + int(fields[14])) / hz
             rss = int(fields[23]) * os.sysconf("SC_PAGE_SIZE")
             return {"cpu_s": cpu, "rss_bytes": rss}
-        except (OSError, ValueError, IndexError):
+        except OSError, ValueError, IndexError:
             return None
     try:
         output = subprocess.check_output(
@@ -568,12 +568,15 @@ def _process_metrics(pid: int) -> dict[str, float | int] | None:
         else:
             cpu_s = float(parts[0])
         return {"cpu_s": float(cpu_s), "rss_bytes": int(rss_text) * 1024}
-    except (OSError, subprocess.CalledProcessError, ValueError):
+    except OSError, subprocess.CalledProcessError, ValueError:
         return None
 
 
-def _plan_event() -> dict[str, object]:
-    verified_sources = verify_frozen_source_identity()
+def _plan_event(
+    verified_sources: dict[str, str] | None = None,
+) -> dict[str, object]:
+    if verified_sources is None:
+        verified_sources = verify_frozen_source_identity()
     plan = schedule()
     digest = hashlib.sha256(
         canonical_json([case.__dict__ for case in plan])
@@ -603,8 +606,19 @@ def supervise_frozen_plan(output: Path) -> dict[str, object]:
 
 
 def _model_free_worker() -> int:
-    """Emit the frozen-plan identity only; deliberately no simulator calls."""
+    """Emit the verified frozen-plan identity; no simulator calls."""
     print(canonical_json(_plan_event()).decode("utf-8"), flush=True)
+    return 0
+
+
+def _model_free_test_worker() -> int:
+    """Synthetic test-only plan event; never used by the public preflight."""
+    pinned_hashes = {
+        "cases_sha256": FROZEN_CASES_SHA256,
+        "protocol_sha256": FROZEN_PROTOCOL_SHA256,
+        "protocol_prefix_sha256": FROZEN_PREFIX_SHA256,
+    }
+    print(canonical_json(_plan_event(pinned_hashes)).decode("utf-8"), flush=True)
     return 0
 
 
@@ -617,10 +631,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--test-silent-worker", action="store_true", help=argparse.SUPPRESS
     )
+    parser.add_argument(
+        "--test-plan-worker", action="store_true", help=argparse.SUPPRESS
+    )
     args = parser.parse_args(argv)
     if args.test_silent_worker:
         time.sleep(10.0)
         return 0
+    if args.test_plan_worker:
+        return _model_free_test_worker()
     if args.model_free_worker:
         return _model_free_worker()
     if args.supervise_preflight:

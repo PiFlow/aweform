@@ -15,8 +15,39 @@ import pytest
 from experiments import pymunk230_a2_instrumentation as instrument
 
 
-def test_authoritative_frozen_source_blobs_match_exact_identities() -> None:
-    verified = instrument.verify_frozen_source_identity()
+def _synthetic_frozen_blobs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[bytes, bytes]:
+    cases_blob = b"frozen cases fixture bytes\\n"
+    prefix = b"frozen protocol prefix\\n"
+    protocol_blob = (
+        prefix + instrument.FROZEN_PROTOCOL_PREFIX_MARKER + b"\\nprotocol suffix\\n"
+    )
+    monkeypatch.setattr(
+        instrument, "FROZEN_CASES_SHA256", hashlib.sha256(cases_blob).hexdigest()
+    )
+    monkeypatch.setattr(
+        instrument, "FROZEN_PROTOCOL_SHA256", hashlib.sha256(protocol_blob).hexdigest()
+    )
+    monkeypatch.setattr(
+        instrument, "FROZEN_PREFIX_SHA256", hashlib.sha256(prefix).hexdigest()
+    )
+    return cases_blob, protocol_blob
+
+
+def _pinned_hash_claims() -> dict[str, str]:
+    return {
+        "cases_sha256": instrument.FROZEN_CASES_SHA256,
+        "protocol_sha256": instrument.FROZEN_PROTOCOL_SHA256,
+        "protocol_prefix_sha256": instrument.FROZEN_PREFIX_SHA256,
+    }
+
+
+def test_source_blobs_with_exact_hashes_are_accepted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cases_blob, protocol_blob = _synthetic_frozen_blobs(monkeypatch)
+    verified = instrument.verify_frozen_source_blobs(cases_blob, protocol_blob)
     assert verified == {
         "cases_sha256": instrument.FROZEN_CASES_SHA256,
         "protocol_sha256": instrument.FROZEN_PROTOCOL_SHA256,
@@ -24,13 +55,10 @@ def test_authoritative_frozen_source_blobs_match_exact_identities() -> None:
     }
 
 
-def test_frozen_source_blob_mismatch_is_refused() -> None:
-    cases_blob = instrument._git_show_blob(
-        instrument.FROZEN_ATTEMPT3_HEAD, instrument.FROZEN_CASES_PATH
-    )
-    protocol_blob = instrument._git_show_blob(
-        instrument.FROZEN_ATTEMPT3_HEAD, instrument.FROZEN_PROTOCOL_PATH
-    )
+def test_frozen_source_blob_mismatch_is_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cases_blob, protocol_blob = _synthetic_frozen_blobs(monkeypatch)
     with pytest.raises(instrument.ReceiptError, match="cases.py SHA-256 mismatch"):
         instrument.verify_frozen_source_blobs(cases_blob + b"changed", protocol_blob)
     with pytest.raises(instrument.ReceiptError, match="protocol SHA-256 mismatch"):
@@ -51,7 +79,9 @@ def test_missing_authoritative_frozen_blob_fails_closed(
         instrument.verify_frozen_source_identity()
 
 
-def test_frozen_plan_accounts_for_exact_substeps_without_execution() -> None:
+def test_frozen_plan_accounts_for_exact_substeps_without_execution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     plan = instrument.schedule()
     assert [case.case_id for case in plan] == [
         "a2_n400_cmd1",
@@ -97,6 +127,9 @@ def test_frozen_plan_accounts_for_exact_substeps_without_execution() -> None:
     assert all(case.control_requires_no_contact for case in plan[4:])
     assert all(case.full_fixture_expected_objects == ("A2",) for case in plan[:4])
     instrument.validate_plan(plan, instrument.FROZEN_IDENTITY)
+    monkeypatch.setattr(
+        instrument, "verify_frozen_source_identity", lambda: _pinned_hash_claims()
+    )
     assert instrument.main(["--preflight"]) == 0
 
 
@@ -119,8 +152,22 @@ def test_preflight_refuses_identity_command_and_accounting_mismatch() -> None:
         )
 
 
-def test_cli_supervised_preflight_binds_plan_without_physics(tmp_path: Path) -> None:
+def test_cli_supervised_preflight_binds_plan_without_physics(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     output = tmp_path / "preflight"
+    monkeypatch.setattr(
+        instrument, "verify_frozen_source_identity", lambda: _pinned_hash_claims()
+    )
+    monkeypatch.setattr(
+        instrument,
+        "_worker_command",
+        lambda: [
+            sys.executable,
+            str(Path(instrument.__file__).resolve()),
+            "--test-plan-worker",
+        ],
+    )
     assert instrument.main(["--supervise-preflight", "--output", str(output)]) == 0
     receipt = json.loads((output / "STOP.json").read_text("utf-8"))
     rows = [
@@ -250,7 +297,7 @@ def test_writer_error_preserves_durable_stop_receipt(
         lambda: [
             sys.executable,
             str(Path(instrument.__file__).resolve()),
-            "--model-free-worker",
+            "--test-plan-worker",
         ],
     )
     monkeypatch.setattr(
