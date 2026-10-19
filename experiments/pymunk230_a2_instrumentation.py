@@ -273,7 +273,7 @@ def _terminate_and_reap(child: subprocess.Popen[bytes], grace_s: float = 0.2) ->
         else:
             child.terminate()
         child.wait(timeout=grace_s)
-    except ProcessLookupError, subprocess.TimeoutExpired:
+    except (ProcessLookupError, subprocess.TimeoutExpired):
         try:
             if os.name == "posix":
                 os.killpg(child.pid, signal.SIGKILL)
@@ -386,7 +386,7 @@ def _process_metrics(pid: int) -> dict[str, float | int] | None:
             cpu = (int(fields[13]) + int(fields[14])) / hz
             rss = int(fields[23]) * os.sysconf("SC_PAGE_SIZE")
             return {"cpu_s": cpu, "rss_bytes": rss}
-        except OSError, ValueError, IndexError:
+        except (OSError, ValueError, IndexError):
             return None
     try:
         output = subprocess.check_output(
@@ -403,7 +403,7 @@ def _process_metrics(pid: int) -> dict[str, float | int] | None:
         else:
             cpu_s = float(parts[0])
         return {"cpu_s": float(cpu_s), "rss_bytes": int(rss_text) * 1024}
-    except OSError, subprocess.CalledProcessError, ValueError:
+    except (OSError, subprocess.CalledProcessError, ValueError):
         return None
 
 
