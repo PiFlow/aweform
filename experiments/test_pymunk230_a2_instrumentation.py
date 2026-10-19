@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import sys
 import time
 from dataclasses import replace
@@ -12,6 +13,42 @@ from pathlib import Path
 import pytest
 
 from experiments import pymunk230_a2_instrumentation as instrument
+
+
+def test_authoritative_frozen_source_blobs_match_exact_identities() -> None:
+    verified = instrument.verify_frozen_source_identity()
+    assert verified == {
+        "cases_sha256": instrument.FROZEN_CASES_SHA256,
+        "protocol_sha256": instrument.FROZEN_PROTOCOL_SHA256,
+        "protocol_prefix_sha256": instrument.FROZEN_PREFIX_SHA256,
+    }
+
+
+def test_frozen_source_blob_mismatch_is_refused() -> None:
+    cases_blob = instrument._git_show_blob(
+        instrument.FROZEN_ATTEMPT3_HEAD, instrument.FROZEN_CASES_PATH
+    )
+    protocol_blob = instrument._git_show_blob(
+        instrument.FROZEN_ATTEMPT3_HEAD, instrument.FROZEN_PROTOCOL_PATH
+    )
+    with pytest.raises(instrument.ReceiptError, match="cases.py SHA-256 mismatch"):
+        instrument.verify_frozen_source_blobs(cases_blob + b"changed", protocol_blob)
+    with pytest.raises(instrument.ReceiptError, match="protocol SHA-256 mismatch"):
+        instrument.verify_frozen_source_blobs(cases_blob, protocol_blob + b"changed")
+
+
+def test_missing_authoritative_frozen_blob_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        subprocess,
+        "check_output",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            subprocess.CalledProcessError(128, "git show")
+        ),
+    )
+    with pytest.raises(instrument.ReceiptError, match="missing frozen source blob"):
+        instrument.verify_frozen_source_identity()
 
 
 def test_frozen_plan_accounts_for_exact_substeps_without_execution() -> None:

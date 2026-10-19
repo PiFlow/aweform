@@ -19,7 +19,7 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Callable, cast
 
 BASE_SHA = "c9280554268a789949b73babdd40d5f363649761"
 FROZEN_ATTEMPT3_HEAD = "1ab7cf43220ee9348e8d966745c93abfa346e190"
@@ -43,6 +43,9 @@ MAX_RSS_BYTES = 256 * 1024 * 1024
 DETAIL_WINDOW = (0.85, 0.98)
 EMPTY_FREE_START = (1.0, 1.0, 0.0)
 EMPTY_FREE_ACTION = (0.6457718232379019, 0.6457718232379019)
+FROZEN_CASES_PATH = "experiments/pymunk230_obstacles/cases.py"
+FROZEN_PROTOCOL_PATH = "experiments/pymunk230_obstacles/protocol.md"
+FROZEN_PROTOCOL_PREFIX_MARKER = b"## Sole conditional Level-1 lifetime"
 FROZEN_CASES_SHA256 = "0007e4400511ed956f9ec1642e9c4029990afa2b95061be4ffc631e984ecbe05"
 A2_CASE_ID = "A2-convex-face"
 A2_START = (2.18, 1.5, 0.0)
@@ -100,6 +103,50 @@ FROZEN_IDENTITY = SourceIdentity(
     FROZEN_PREFIX_SHA256,
     FROZEN_CASES_SHA256,
 )
+
+
+FrozenBlobReader = Callable[[str, str], bytes]
+
+
+def _git_show_blob(commit: str, path: str) -> bytes:
+    try:
+        return subprocess.check_output(
+            ["git", "show", f"{commit}:{path}"], stderr=subprocess.PIPE
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ReceiptError(f"missing frozen source blob: {path}") from exc
+
+
+def verify_frozen_source_blobs(
+    cases_blob: bytes, protocol_blob: bytes
+) -> dict[str, str]:
+    """Verify frozen authoritative fixture/protocol bytes; no simulator imports."""
+    cases_digest = hashlib.sha256(cases_blob).hexdigest()
+    protocol_digest = hashlib.sha256(protocol_blob).hexdigest()
+    if cases_digest != FROZEN_CASES_SHA256:
+        raise ReceiptError("frozen cases.py SHA-256 mismatch")
+    if protocol_digest != FROZEN_PROTOCOL_SHA256:
+        raise ReceiptError("frozen protocol SHA-256 mismatch")
+    if FROZEN_PROTOCOL_PREFIX_MARKER not in protocol_blob:
+        raise ReceiptError("frozen protocol prefix boundary is missing")
+    prefix = protocol_blob.split(FROZEN_PROTOCOL_PREFIX_MARKER, 1)[0]
+    prefix_digest = hashlib.sha256(prefix).hexdigest()
+    if prefix_digest != FROZEN_PREFIX_SHA256:
+        raise ReceiptError("frozen protocol-prefix SHA-256 mismatch")
+    return {
+        "cases_sha256": cases_digest,
+        "protocol_sha256": protocol_digest,
+        "protocol_prefix_sha256": prefix_digest,
+    }
+
+
+def verify_frozen_source_identity(
+    reader: FrozenBlobReader = _git_show_blob,
+) -> dict[str, str]:
+    """Read the two immutable blobs from the pinned commit and verify custody."""
+    cases_blob = reader(FROZEN_ATTEMPT3_HEAD, FROZEN_CASES_PATH)
+    protocol_blob = reader(FROZEN_ATTEMPT3_HEAD, FROZEN_PROTOCOL_PATH)
+    return verify_frozen_source_blobs(cases_blob, protocol_blob)
 
 
 def _case(
@@ -526,6 +573,7 @@ def _process_metrics(pid: int) -> dict[str, float | int] | None:
 
 
 def _plan_event() -> dict[str, object]:
+    verified_sources = verify_frozen_source_identity()
     plan = schedule()
     digest = hashlib.sha256(
         canonical_json([case.__dict__ for case in plan])
@@ -535,6 +583,7 @@ def _plan_event() -> dict[str, object]:
         "plan_sha256": digest,
         "case_count": len(plan),
         "total_substeps": sum(case.substeps for case in plan),
+        "source_blobs": verified_sources,
     }
 
 
@@ -580,9 +629,11 @@ def main(argv: list[str] | None = None) -> int:
         print(canonical_json(supervise_frozen_plan(args.output)).decode("utf-8"))
         return 0
     if args.preflight:
+        verified_sources = verify_frozen_source_identity()
         data = {
             "protocol": INSTRUMENTATION_PROTOCOL,
             "source_identity": FROZEN_IDENTITY.__dict__,
+            "verified_source_blobs": verified_sources,
             "base_sha": BASE_SHA,
             "frozen_attempt3_head": FROZEN_ATTEMPT3_HEAD,
             "protocol_sha256": FROZEN_PROTOCOL_SHA256,
