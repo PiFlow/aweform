@@ -152,6 +152,36 @@ def test_preflight_refuses_identity_command_and_accounting_mismatch() -> None:
         )
 
 
+def test_missing_frozen_blob_preflight_writes_durable_stop_receipt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "missing-source"
+    monkeypatch.setattr(
+        instrument,
+        "verify_frozen_source_identity",
+        lambda: (_ for _ in ()).throw(
+            instrument.ReceiptError("missing frozen source blob: protocol.md")
+        ),
+    )
+
+    receipt = instrument.supervise_frozen_plan(output)
+
+    assert receipt["status"] == "STOP"
+    assert receipt["reason"] == "preflight_error:ReceiptError"
+    assert receipt["last_durable"] == {
+        "sequence": 0,
+        "bytes": 0,
+        "sha256": hashlib.sha256(b"").hexdigest(),
+    }
+    path = output / "STOP.json"
+    checksum = (output / "STOP.sha256").read_text("ascii")
+    assert checksum == f"{hashlib.sha256(path.read_bytes()).hexdigest()}  STOP.json\n"
+    assert (
+        sum(item.stat().st_size for item in output.iterdir())
+        <= instrument.MAX_OUTPUT_BYTES
+    )
+
+
 def test_cli_supervised_preflight_binds_plan_without_physics(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

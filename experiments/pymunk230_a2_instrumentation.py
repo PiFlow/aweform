@@ -592,7 +592,20 @@ def _plan_event(
 
 def supervise_frozen_plan(output: Path) -> dict[str, object]:
     """Supervise only the model-free frozen-plan worker; never step physics."""
-    expected = _plan_event()
+    started = time.monotonic()
+    try:
+        expected = _plan_event()
+    except ReceiptError as exc:
+        # Source custody can fail before a child exists (for example, a shallow
+        # or otherwise incomplete checkout). Still leave a hashed STOP receipt.
+        journal = BoundedJournal(output)
+        journal.close()
+        receipt_path = write_stop_receipt(
+            output, reason=f"preflight_error:{type(exc).__name__}",
+            journal=journal, started=started,
+        )
+        return cast(dict[str, object], json.loads(receipt_path.read_text("utf-8")))
+
     receipt = supervise(output)
     records = [
         json.loads(line)
@@ -645,8 +658,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.supervise_preflight:
         if args.output is None:
             parser.error("--supervise-preflight requires --output")
-        print(canonical_json(supervise_frozen_plan(args.output)).decode("utf-8"))
-        return 0
+        receipt = supervise_frozen_plan(args.output)
+        print(canonical_json(receipt).decode("utf-8"))
+        return 0 if receipt.get("reason") == "worker_completed" else 1
     if args.preflight:
         verified_sources = verify_frozen_source_identity()
         data = {
