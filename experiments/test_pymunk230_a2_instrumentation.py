@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
+import queue
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import replace
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -206,6 +210,142 @@ def test_cli_supervised_preflight_binds_plan_without_physics(
     assert receipt["reason"] == "worker_completed"
     assert rows[0]["event"]["kind"] == "frozen_plan_preflight"
     assert rows[0]["event"]["total_substeps"] == 4_800
+
+
+def test_preflight_waits_for_reader_eof_and_drains_trailing_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        instrument, "verify_frozen_source_identity", lambda: _pinned_hash_claims()
+    )
+    monkeypatch.setattr(
+        instrument,
+        "_worker_command",
+        lambda: [
+            sys.executable,
+            str(Path(instrument.__file__).resolve()),
+            "--test-plan-worker",
+        ],
+    )
+    read_lines = instrument._read_lines
+
+    def delayed_reader(
+        stream: object, target: queue.Queue[bytes], status: object
+    ) -> None:
+        time.sleep(0.05)
+        read_lines(stream, target, status)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(instrument, "_read_lines", delayed_reader)
+
+    receipt = instrument.supervise_frozen_plan(tmp_path / "eof-race")
+
+    assert receipt["reason"] == "worker_completed"
+    durable = cast(dict[str, int | str], receipt["last_durable"])
+    assert durable["sequence"] == 1
+
+
+def test_post_validation_failure_is_receipted_as_stop(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "invalid-plan"
+    monkeypatch.setattr(
+        instrument, "verify_frozen_source_identity", lambda: _pinned_hash_claims()
+    )
+    monkeypatch.setattr(
+        instrument,
+        "_worker_command",
+        lambda: [
+            sys.executable,
+            str(Path(instrument.__file__).resolve()),
+            "--test-bad-plan-worker",
+        ],
+    )
+
+    receipt = instrument.supervise_frozen_plan(output)
+
+    assert receipt["status"] == "STOP"
+    assert receipt["reason"] == "post_validation_error:ReceiptError"
+    durable = cast(dict[str, int | str], receipt["last_durable"])
+    assert durable["sequence"] == 1
+    assert durable["sha256"] == hashlib.sha256(
+        (output / "events.jsonl").read_bytes()
+    ).hexdigest()
+    checksum = (output / "STOP.sha256").read_text("ascii")
+    receipt_hash = hashlib.sha256((output / "STOP.json").read_bytes()).hexdigest()
+    assert checksum == f"{receipt_hash}  STOP.json\n"
+
+
+def test_reader_queue_overflow_is_bounded_and_reported() -> None:
+    target: queue.Queue[bytes] = queue.Queue(maxsize=1)
+    status = instrument._ReaderStatus(done=threading.Event())
+
+    instrument._read_lines(io.BytesIO(b'{"n":1}\n{"n":2}\n'), target, status)
+
+    assert status.done.is_set()
+    assert status.error == "stdout_queue_overflow"
+    assert target.qsize() == 1
+
+
+def test_supervisor_receipts_stdout_queue_overflow(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(instrument, "STDOUT_QUEUE_RECORDS", 1)
+    monkeypatch.setattr(
+        instrument,
+        "_worker_command",
+        lambda: [
+            sys.executable,
+            str(Path(instrument.__file__).resolve()),
+            "--test-flood-worker",
+        ],
+    )
+    append = instrument.BoundedJournal.append
+
+    def slow_append(self: instrument.BoundedJournal, event: dict[str, object]) -> None:
+        time.sleep(0.05)
+        append(self, event)
+
+    monkeypatch.setattr(instrument.BoundedJournal, "append", slow_append)
+    receipt = instrument.supervise(tmp_path / "queue-overflow", wall_cap_s=2.0)
+
+    assert receipt["reason"] == "stdout_queue_overflow"
+    usage = cast(dict[str, float | int], receipt["resource_usage"])
+    assert usage["rss_high_water_bytes"] <= instrument.MAX_RSS_BYTES
+
+
+def test_aggregate_cpu_cap_includes_parent_and_child(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        instrument,
+        "_worker_command",
+        lambda: [
+            sys.executable,
+            str(Path(instrument.__file__).resolve()),
+            "--test-silent-worker",
+        ],
+    )
+    monkeypatch.setattr(
+        instrument, "_process_metrics", lambda _pid: {"cpu_s": 0.2, "rss_bytes": 1}
+    )
+    monkeypatch.setattr(instrument, "_reaped_children_cpu_seconds", lambda: 0.0)
+    calls = 0
+
+    def parent_cpu() -> float:
+        nonlocal calls
+        calls += 1
+        return 10.0 if calls == 1 else 11.2
+
+    monkeypatch.setattr(time, "process_time", parent_cpu)
+    receipt = instrument.supervise(
+        tmp_path / "aggregate-cpu", wall_cap_s=2.0, cpu_cap_s=1.0
+    )
+
+    assert receipt["reason"] == "cpu_cap"
+    usage = cast(dict[str, float | int], receipt["resource_usage"])
+    assert usage["parent_cpu_s"] > 1.0
+    assert usage["child_cpu_s"] == 0.2
+    assert usage["aggregate_cpu_s"] > 1.0
 
 
 def test_stop_receipt_exposes_durable_watermark_and_hash(tmp_path: Path) -> None:

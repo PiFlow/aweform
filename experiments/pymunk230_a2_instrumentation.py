@@ -40,6 +40,8 @@ MAX_OUTPUT_BYTES = 2 * 1024 * 1024
 STOP_RECEIPT_RESERVE_BYTES = 4_096
 MAX_EVENTS = 10_000
 MAX_RSS_BYTES = 256 * 1024 * 1024
+MAX_STDOUT_LINE_BYTES = 64 * 1024
+STDOUT_QUEUE_RECORDS = 8
 DETAIL_WINDOW = (0.85, 0.98)
 EMPTY_FREE_START = (1.0, 1.0, 0.0)
 EMPTY_FREE_ACTION = (0.6457718232379019, 0.6457718232379019)
@@ -332,6 +334,12 @@ class ReceiptError(RuntimeError):
     pass
 
 
+@dataclass
+class _ReaderStatus:
+    done: threading.Event
+    error: str | None = None
+
+
 class BoundedJournal:
     """Append-only event journal; `last_durable` describes flushed bytes only."""
 
@@ -373,7 +381,12 @@ class BoundedJournal:
 
 
 def write_stop_receipt(
-    directory: Path, *, reason: str, journal: BoundedJournal, started: float
+    directory: Path,
+    *,
+    reason: str,
+    journal: BoundedJournal,
+    started: float,
+    resource_usage: dict[str, float | int] | None = None,
 ) -> Path:
     """Atomically write and fsync a receipt with top-level durable watermark."""
     receipt = {
@@ -391,6 +404,7 @@ def write_stop_receipt(
         "reason": reason,
         "last_durable": journal.last_durable,
         "elapsed_wall_s": max(0.0, time.monotonic() - started),
+        "resource_usage": resource_usage or {},
         "event_file": journal.path.name,
     }
     encoded = canonical_json(receipt) + b"\n"
@@ -449,20 +463,64 @@ def _terminate_and_reap(child: subprocess.Popen[bytes], grace_s: float = 0.2) ->
         child.wait()
 
 
+def _read_lines(
+    stream: Any, target: queue.Queue[bytes], status: _ReaderStatus
+) -> None:
+    """Read bounded lines without allowing a child to grow parent memory."""
+    try:
+        while True:
+            line = stream.readline(MAX_STDOUT_LINE_BYTES + 1)
+            if not line:
+                break
+            if len(line) > MAX_STDOUT_LINE_BYTES:
+                status.error = "stdout_line_limit"
+                break
+            try:
+                target.put_nowait(line)
+            except queue.Full:
+                status.error = "stdout_queue_overflow"
+                break
+    except OSError:
+        status.error = "stdout_reader_error"
+    finally:
+        status.done.set()
+        stream.close()
+
+
+def _reaped_children_cpu_seconds() -> float:
+    """CPU used by completed direct children, including metric helper processes."""
+    import resource
+
+    usage = resource.getrusage(resource.RUSAGE_CHILDREN)
+    return usage.ru_utime + usage.ru_stime
+
+
 def supervise(
     output: Path,
     *,
     wall_cap_s: float = MAX_WALL_SECONDS,
     cpu_cap_s: float = MAX_CPU_SECONDS,
+    validator: Callable[[Path], None] | None = None,
 ) -> dict[str, object]:
     """Run only the fixed model-free worker and always leave a durable receipt."""
     if wall_cap_s <= 0 or cpu_cap_s <= 0:
         raise ValueError("caps must be positive")
     journal = BoundedJournal(output)
     started = time.monotonic()
+    parent_cpu_started = time.process_time()
+    children_cpu_started = _reaped_children_cpu_seconds()
     child: subprocess.Popen[bytes] | None = None
     failure = "worker_not_started"
-    lines: queue.Queue[bytes | None] = queue.Queue()
+    usage: dict[str, float | int] = {
+        "aggregate_cpu_s": 0.0,
+        "parent_cpu_s": 0.0,
+        "child_cpu_s": 0.0,
+        "rss_high_water_bytes": 0,
+    }
+    lines: queue.Queue[bytes] = queue.Queue(maxsize=STDOUT_QUEUE_RECORDS)
+    reader_status = _ReaderStatus(done=threading.Event())
+    reader: threading.Thread | None = None
+    live_child_cpu = 0.0
     try:
         child = subprocess.Popen(
             _worker_command(),
@@ -472,74 +530,118 @@ def supervise(
             bufsize=0,
         )
         assert child.stdout is not None
-        threading.Thread(
-            target=lambda: _read_lines(child.stdout, lines), daemon=True
-        ).start()
+        reader = threading.Thread(
+            target=_read_lines, args=(child.stdout, lines, reader_status), daemon=True
+        )
+        reader.start()
         deadline = started + wall_cap_s
         while True:
-            remaining = deadline - time.monotonic()
+            now = time.monotonic()
+            remaining = deadline - now
             if remaining <= 0:
                 failure = "wall_cap"
+                break
+            if reader_status.error is not None:
+                failure = reader_status.error
                 break
             try:
                 line = lines.get(timeout=min(0.05, remaining))
             except queue.Empty:
-                line = b""
-            if line:
+                line = None
+            if line is not None:
                 journal.append(json.loads(line.decode("utf-8")))
-            elif line is None:
-                code = child.poll()
-                if code is not None:
-                    failure = "worker_exit" if code else "worker_completed"
-                    break
+
             code = child.poll()
-            if code is not None and lines.empty():
+            if reader_status.error is not None:
+                failure = reader_status.error
+                break
+            if code is not None and reader_status.done.is_set() and lines.empty():
                 failure = "worker_exit" if code else "worker_completed"
                 break
-            # CPU/RSS enforcement is based on observed process metrics. The worker
-            # is a single fixed process; limits are checked at each polling interval.
-            metrics = _process_metrics(child.pid)
-            if metrics is None:
+
+            metrics = _process_metrics(child.pid) if code is None else None
+            parent_cpu = max(0.0, time.process_time() - parent_cpu_started)
+            reaped_cpu = max(
+                0.0, _reaped_children_cpu_seconds() - children_cpu_started
+            )
+            if metrics is None and code is None:
                 failure = "resource_metrics_unavailable"
                 break
-            if metrics["cpu_s"] > cpu_cap_s:
+            if metrics is not None:
+                live_child_cpu = float(metrics["cpu_s"])
+                usage["rss_high_water_bytes"] = max(
+                    int(usage["rss_high_water_bytes"]), int(metrics["rss_bytes"])
+                )
+            child_cpu = reaped_cpu + (live_child_cpu if code is None else 0.0)
+            aggregate_cpu = parent_cpu + child_cpu
+            usage.update(
+                {
+                    "aggregate_cpu_s": aggregate_cpu,
+                    "parent_cpu_s": parent_cpu,
+                    "child_cpu_s": child_cpu,
+                }
+            )
+            if aggregate_cpu > cpu_cap_s:
                 failure = "cpu_cap"
                 break
-            if metrics["rss_bytes"] > MAX_RSS_BYTES:
+            if int(usage["rss_high_water_bytes"]) > MAX_RSS_BYTES:
                 failure = "rss_cap"
                 break
+
         if child.poll() is None:
             _terminate_and_reap(child)
         else:
             child.wait()
+        if reader is not None:
+            reader.join(timeout=max(0.2, min(1.0, wall_cap_s)))
+            if reader.is_alive():
+                failure = "stdout_reader_reap_timeout"
         journal.close()
-        receipt_path = write_stop_receipt(
-            output, reason=failure, journal=journal, started=started
+
+        if failure == "worker_completed" and validator is not None:
+            try:
+                validator(output)
+            except Exception as exc:
+                failure = f"post_validation_error:{type(exc).__name__}"
+
+        parent_cpu = max(0.0, time.process_time() - parent_cpu_started)
+        reaped_cpu = max(0.0, _reaped_children_cpu_seconds() - children_cpu_started)
+        child_cpu = max(reaped_cpu, live_child_cpu)
+        aggregate_cpu = parent_cpu + child_cpu
+        usage.update(
+            {
+                "aggregate_cpu_s": aggregate_cpu,
+                "parent_cpu_s": parent_cpu,
+                "child_cpu_s": child_cpu,
+            }
         )
-        return cast(dict[str, object], json.loads(receipt_path.read_text("utf-8")))
+        if aggregate_cpu > cpu_cap_s and failure in {"worker_completed", "worker_exit"}:
+            failure = "cpu_cap"
     except BaseException as exc:
+        failure = f"supervisor_error:{type(exc).__name__}"
         if child is not None:
             _terminate_and_reap(child)
+        if reader is not None:
+            reader.join(timeout=1.0)
         journal.close()
-        try:
-            receipt_path = write_stop_receipt(
-                output,
-                reason=f"supervisor_error:{type(exc).__name__}",
-                journal=journal,
-                started=started,
-            )
-            return cast(dict[str, object], json.loads(receipt_path.read_text("utf-8")))
-        except BaseException:
-            raise
+        parent_cpu = max(0.0, time.process_time() - parent_cpu_started)
+        reaped_cpu = max(0.0, _reaped_children_cpu_seconds() - children_cpu_started)
+        usage.update(
+            {
+                "aggregate_cpu_s": parent_cpu + max(reaped_cpu, live_child_cpu),
+                "parent_cpu_s": parent_cpu,
+                "child_cpu_s": max(reaped_cpu, live_child_cpu),
+            }
+        )
 
-
-def _read_lines(stream: Any, target: queue.Queue[bytes | None]) -> None:
-    try:
-        for line in iter(stream.readline, b""):
-            target.put(line)
-    finally:
-        target.put(None)
-        stream.close()
+    receipt_path = write_stop_receipt(
+        output,
+        reason=failure,
+        journal=journal,
+        started=started,
+        resource_usage=usage,
+    )
+    return cast(dict[str, object], json.loads(receipt_path.read_text("utf-8")))
 
 
 def _process_metrics(pid: int) -> dict[str, float | int] | None:
@@ -606,16 +708,18 @@ def supervise_frozen_plan(output: Path) -> dict[str, object]:
         )
         return cast(dict[str, object], json.loads(receipt_path.read_text("utf-8")))
 
-    receipt = supervise(output)
-    records = [
-        json.loads(line)
-        for line in (output / "events.jsonl").read_text("utf-8").splitlines()
-        if line
-    ]
     expected_row = {"sequence": 1, "event": expected}
-    if receipt.get("reason") != "worker_completed" or records != [expected_row]:
-        raise ReceiptError("model-free supervised plan validation failed")
-    return receipt
+
+    def validate_plan_output(directory: Path) -> None:
+        records = [
+            json.loads(line)
+            for line in (directory / "events.jsonl").read_text("utf-8").splitlines()
+            if line
+        ]
+        if records != [expected_row]:
+            raise ReceiptError("model-free supervised plan validation failed")
+
+    return supervise(output, validator=validate_plan_output)
 
 
 def _model_free_worker() -> int:
@@ -647,12 +751,25 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--test-plan-worker", action="store_true", help=argparse.SUPPRESS
     )
+    parser.add_argument(
+        "--test-bad-plan-worker", action="store_true", help=argparse.SUPPRESS
+    )
+    parser.add_argument(
+        "--test-flood-worker", action="store_true", help=argparse.SUPPRESS
+    )
     args = parser.parse_args(argv)
     if args.test_silent_worker:
         time.sleep(10.0)
         return 0
     if args.test_plan_worker:
         return _model_free_test_worker()
+    if args.test_bad_plan_worker:
+        print(canonical_json({"kind": "wrong_plan"}).decode(), flush=True)
+        return 0
+    if args.test_flood_worker:
+        sys.stdout.write("".join(f'{{"n":{index}}}\n' for index in range(100)))
+        sys.stdout.flush()
+        return 0
     if args.model_free_worker:
         return _model_free_worker()
     if args.supervise_preflight:
