@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import queue
+import shutil
 import subprocess
 import sys
 import threading
@@ -67,6 +68,80 @@ def test_frozen_source_blob_mismatch_is_refused(
         instrument.verify_frozen_source_blobs(cases_blob + b"changed", protocol_blob)
     with pytest.raises(instrument.ReceiptError, match="protocol SHA-256 mismatch"):
         instrument.verify_frozen_source_blobs(cases_blob, protocol_blob + b"changed")
+
+
+def _copy_disclosed_sources(root: Path) -> None:
+    for relative in (instrument.FROZEN_CASES_PATH, instrument.FROZEN_PROTOCOL_PATH):
+        target = root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(Path.cwd() / relative, target)
+
+
+def test_detached_clean_copy_preflight_receipts_content_provenance(
+    tmp_path: Path,
+) -> None:
+    public_copy = tmp_path / "public-only-copy"
+    _copy_disclosed_sources(public_copy)
+    assert not (public_copy / ".git").exists()
+
+    receipt = instrument.supervise_frozen_plan(
+        tmp_path / "detached-preflight",
+        instrument.DETACHED_PROVENANCE,
+        public_copy,
+    )
+
+    assert receipt["reason"] == "worker_completed"
+    assert receipt["status"] == "STOP"
+    assert receipt["provenance_mode"] == instrument.DETACHED_PROVENANCE
+    rows = [
+        json.loads(line)
+        for line in (tmp_path / "detached-preflight" / "events.jsonl")
+        .read_text("utf-8")
+        .splitlines()
+    ]
+    event = rows[0]["event"]
+    assert event["provenance_mode"] == instrument.DETACHED_PROVENANCE
+    assert event["total_substeps"] == 4_800
+    sources = event["source_blobs"]
+    assert sources["cases_blob_oid"] == instrument.FROZEN_CASES_BLOB_OID
+    assert sources["protocol_blob_oid"] == instrument.FROZEN_PROTOCOL_BLOB_OID
+    assert sources["cases_bytes"] == str(instrument.FROZEN_CASES_BYTES)
+    assert sources["protocol_bytes"] == str(instrument.FROZEN_PROTOCOL_BYTES)
+    assert sources["cases_sha256"] == instrument.FROZEN_CASES_SHA256
+    assert sources["protocol_sha256"] == instrument.FROZEN_PROTOCOL_SHA256
+    assert sources["protocol_prefix_sha256"] == instrument.FROZEN_PREFIX_SHA256
+    assert sources["historical_ancestry_proven"] == "false"
+    durable = cast(dict[str, int | str], receipt["last_durable"])
+    assert durable["sequence"] == 1
+    assert durable["sha256"] == hashlib.sha256(
+        (tmp_path / "detached-preflight" / "events.jsonl").read_bytes()
+    ).hexdigest()
+
+
+def test_detached_source_rejects_substitution_and_missing_file(
+    tmp_path: Path,
+) -> None:
+    public_copy = tmp_path / "public-only-copy"
+    _copy_disclosed_sources(public_copy)
+    cases = public_copy / instrument.FROZEN_CASES_PATH
+    original = cases.read_bytes()
+    cases.write_bytes(b"X" + original[1:])
+    with pytest.raises(instrument.ReceiptError, match="SHA-256 mismatch"):
+        instrument.verify_detached_source_identity(public_copy)
+
+    cases.unlink()
+    with pytest.raises(instrument.ReceiptError, match="missing detached source file"):
+        instrument.verify_detached_source_identity(public_copy)
+    receipt = instrument.supervise_frozen_plan(
+        tmp_path / "missing-detached-source",
+        instrument.DETACHED_PROVENANCE,
+        public_copy,
+    )
+    assert receipt["status"] == "STOP"
+    assert receipt["reason"] == "preflight_error:ReceiptError"
+    assert receipt["provenance_mode"] == instrument.DETACHED_PROVENANCE
+    durable = cast(dict[str, object], receipt["last_durable"])
+    assert durable["sequence"] == 0
 
 
 def test_missing_authoritative_frozen_blob_fails_closed(

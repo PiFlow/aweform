@@ -49,6 +49,12 @@ FROZEN_CASES_PATH = "experiments/pymunk230_obstacles/cases.py"
 FROZEN_PROTOCOL_PATH = "experiments/pymunk230_obstacles/protocol.md"
 FROZEN_PROTOCOL_PREFIX_MARKER = b"## Sole conditional Level-1 lifetime"
 FROZEN_CASES_SHA256 = "0007e4400511ed956f9ec1642e9c4029990afa2b95061be4ffc631e984ecbe05"
+FROZEN_CASES_BLOB_OID = "550b9fc56949f0ccdc4bf08924591bf92b666f15"
+FROZEN_PROTOCOL_BLOB_OID = "326551fb49259c42d26a911b2df8208f80255631"
+FROZEN_CASES_BYTES = 7_947
+FROZEN_PROTOCOL_BYTES = 24_592
+HISTORICAL_PROVENANCE = "historical_commit"
+DETACHED_PROVENANCE = "detached_content"
 A2_CASE_ID = "A2-convex-face"
 A2_START = (2.18, 1.5, 0.0)
 A2_ACTION = (0.6457718232379019, 0.6457718232379019)
@@ -142,13 +148,61 @@ def verify_frozen_source_blobs(
     }
 
 
+def _git_blob_oid(data: bytes) -> str:
+    header = f"blob {len(data)}\0".encode("ascii")
+    return hashlib.sha1(header + data).hexdigest()
+
+
+def verify_detached_source_identity(root: Path = Path.cwd()) -> dict[str, str]:
+    """Verify disclosed source bytes without asserting historical ancestry."""
+    paths = (FROZEN_CASES_PATH, FROZEN_PROTOCOL_PATH)
+    expected = (
+        (FROZEN_CASES_BYTES, FROZEN_CASES_SHA256, FROZEN_CASES_BLOB_OID),
+        (FROZEN_PROTOCOL_BYTES, FROZEN_PROTOCOL_SHA256, FROZEN_PROTOCOL_BLOB_OID),
+    )
+    contents: list[bytes] = []
+    identities: dict[str, str] = {}
+    for path, (size, sha256, blob_oid) in zip(paths, expected, strict=True):
+        try:
+            data = (root / path).read_bytes()
+        except OSError as exc:
+            raise ReceiptError(f"missing detached source file: {path}") from exc
+        if len(data) != size:
+            raise ReceiptError(f"detached source size mismatch: {path}")
+        if hashlib.sha256(data).hexdigest() != sha256:
+            raise ReceiptError(f"detached source SHA-256 mismatch: {path}")
+        if _git_blob_oid(data) != blob_oid:
+            raise ReceiptError(f"detached source Git blob OID mismatch: {path}")
+        contents.append(data)
+        key = "cases" if path == FROZEN_CASES_PATH else "protocol"
+        identities[f"{key}_blob_oid"] = blob_oid
+        identities[f"{key}_bytes"] = str(size)
+    identities.update(verify_frozen_source_blobs(*contents))
+    identities["provenance_mode"] = DETACHED_PROVENANCE
+    identities["historical_ancestry_proven"] = "false"
+    return identities
+
+
 def verify_frozen_source_identity(
     reader: FrozenBlobReader = _git_show_blob,
 ) -> dict[str, str]:
-    """Read the two immutable blobs from the pinned commit and verify custody."""
+    """Read the two immutable blobs from the pinned historical commit."""
     cases_blob = reader(FROZEN_ATTEMPT3_HEAD, FROZEN_CASES_PATH)
     protocol_blob = reader(FROZEN_ATTEMPT3_HEAD, FROZEN_PROTOCOL_PATH)
-    return verify_frozen_source_blobs(cases_blob, protocol_blob)
+    verified = verify_frozen_source_blobs(cases_blob, protocol_blob)
+    verified["provenance_mode"] = HISTORICAL_PROVENANCE
+    verified["historical_commit_content_verified"] = "true"
+    return verified
+
+
+def verify_source_identity(
+    provenance_mode: str = HISTORICAL_PROVENANCE, root: Path = Path.cwd()
+) -> dict[str, str]:
+    if provenance_mode == HISTORICAL_PROVENANCE:
+        return verify_frozen_source_identity()
+    if provenance_mode == DETACHED_PROVENANCE:
+        return verify_detached_source_identity(root)
+    raise ReceiptError(f"unknown source provenance mode: {provenance_mode}")
 
 
 def _case(
@@ -387,11 +441,13 @@ def write_stop_receipt(
     journal: BoundedJournal,
     started: float,
     resource_usage: dict[str, float | int] | None = None,
+    provenance_mode: str = HISTORICAL_PROVENANCE,
 ) -> Path:
     """Atomically write and fsync a receipt with top-level durable watermark."""
     receipt = {
         "schema": "pymunk230-a2-stop-v1",
         "protocol": INSTRUMENTATION_PROTOCOL,
+        "provenance_mode": provenance_mode,
         "identity": {
             "base_sha": BASE_SHA,
             "attempt3_head": FROZEN_ATTEMPT3_HEAD,
@@ -437,9 +493,20 @@ def _write_fsynced_atomic(final: Path, data: bytes) -> None:
     os.replace(tmp, final)
 
 
-def _worker_command() -> list[str]:
+def _worker_command(
+    provenance_mode: str = HISTORICAL_PROVENANCE,
+    source_root: Path = Path.cwd(),
+) -> list[str]:
     """Fixed module entry point; caller-supplied child commands are impossible."""
-    return [sys.executable, str(Path(__file__).resolve()), "--model-free-worker"]
+    return [
+        sys.executable,
+        str(Path(__file__).resolve()),
+        "--model-free-worker",
+        "--source-provenance",
+        provenance_mode,
+        "--source-root",
+        str(source_root.resolve()),
+    ]
 
 
 def _terminate_and_reap(child: subprocess.Popen[bytes], grace_s: float = 0.2) -> None:
@@ -501,6 +568,8 @@ def supervise(
     wall_cap_s: float = MAX_WALL_SECONDS,
     cpu_cap_s: float = MAX_CPU_SECONDS,
     validator: Callable[[Path], None] | None = None,
+    provenance_mode: str = HISTORICAL_PROVENANCE,
+    source_root: Path = Path.cwd(),
 ) -> dict[str, object]:
     """Run only the fixed model-free worker and always leave a durable receipt."""
     if wall_cap_s <= 0 or cpu_cap_s <= 0:
@@ -522,10 +591,16 @@ def supervise(
     reader: threading.Thread | None = None
     live_child_cpu = 0.0
     try:
+        command = (
+            _worker_command()
+            if provenance_mode == HISTORICAL_PROVENANCE and source_root == Path.cwd()
+            else _worker_command(provenance_mode, source_root)
+        )
         child = subprocess.Popen(
-            _worker_command(),
+            command,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            cwd=source_root,
             start_new_session=(os.name == "posix"),
             bufsize=0,
         )
@@ -640,6 +715,7 @@ def supervise(
         journal=journal,
         started=started,
         resource_usage=usage,
+        provenance_mode=provenance_mode,
     )
     return cast(dict[str, object], json.loads(receipt_path.read_text("utf-8")))
 
@@ -676,15 +752,18 @@ def _process_metrics(pid: int) -> dict[str, float | int] | None:
 
 def _plan_event(
     verified_sources: dict[str, str] | None = None,
+    provenance_mode: str = HISTORICAL_PROVENANCE,
+    source_root: Path = Path.cwd(),
 ) -> dict[str, object]:
     if verified_sources is None:
-        verified_sources = verify_frozen_source_identity()
+        verified_sources = verify_source_identity(provenance_mode, source_root)
     plan = schedule()
     digest = hashlib.sha256(
         canonical_json([case.__dict__ for case in plan])
     ).hexdigest()
     return {
         "kind": "frozen_plan_preflight",
+        "provenance_mode": provenance_mode,
         "plan_sha256": digest,
         "case_count": len(plan),
         "total_substeps": sum(case.substeps for case in plan),
@@ -692,19 +771,28 @@ def _plan_event(
     }
 
 
-def supervise_frozen_plan(output: Path) -> dict[str, object]:
+def supervise_frozen_plan(
+    output: Path,
+    provenance_mode: str = HISTORICAL_PROVENANCE,
+    source_root: Path = Path.cwd(),
+) -> dict[str, object]:
     """Supervise only the model-free frozen-plan worker; never step physics."""
     started = time.monotonic()
     try:
-        expected = _plan_event()
+        expected = _plan_event(
+            provenance_mode=provenance_mode, source_root=source_root
+        )
     except ReceiptError as exc:
         # Source custody can fail before a child exists (for example, a shallow
         # or otherwise incomplete checkout). Still leave a hashed STOP receipt.
         journal = BoundedJournal(output)
         journal.close()
         receipt_path = write_stop_receipt(
-            output, reason=f"preflight_error:{type(exc).__name__}",
-            journal=journal, started=started,
+            output,
+            reason=f"preflight_error:{type(exc).__name__}",
+            journal=journal,
+            started=started,
+            provenance_mode=provenance_mode,
         )
         return cast(dict[str, object], json.loads(receipt_path.read_text("utf-8")))
 
@@ -719,12 +807,21 @@ def supervise_frozen_plan(output: Path) -> dict[str, object]:
         if records != [expected_row]:
             raise ReceiptError("model-free supervised plan validation failed")
 
-    return supervise(output, validator=validate_plan_output)
+    return supervise(
+        output,
+        validator=validate_plan_output,
+        provenance_mode=provenance_mode,
+        source_root=source_root,
+    )
 
 
-def _model_free_worker() -> int:
+def _model_free_worker(
+    provenance_mode: str = HISTORICAL_PROVENANCE,
+    source_root: Path = Path.cwd(),
+) -> int:
     """Emit the verified frozen-plan identity; no simulator calls."""
-    print(canonical_json(_plan_event()).decode("utf-8"), flush=True)
+    event = _plan_event(provenance_mode=provenance_mode, source_root=source_root)
+    print(canonical_json(event).decode("utf-8"), flush=True)
     return 0
 
 
@@ -745,6 +842,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--supervise-preflight", action="store_true")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--model-free-worker", action="store_true")
+    parser.add_argument(
+        "--source-provenance",
+        choices=(HISTORICAL_PROVENANCE, DETACHED_PROVENANCE),
+        default=HISTORICAL_PROVENANCE,
+    )
+    parser.add_argument("--source-root", type=Path, default=Path.cwd())
     parser.add_argument(
         "--test-silent-worker", action="store_true", help=argparse.SUPPRESS
     )
@@ -771,17 +874,22 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.flush()
         return 0
     if args.model_free_worker:
-        return _model_free_worker()
+        return _model_free_worker(args.source_provenance, args.source_root)
     if args.supervise_preflight:
         if args.output is None:
             parser.error("--supervise-preflight requires --output")
-        receipt = supervise_frozen_plan(args.output)
+        receipt = supervise_frozen_plan(
+            args.output, args.source_provenance, args.source_root
+        )
         print(canonical_json(receipt).decode("utf-8"))
         return 0 if receipt.get("reason") == "worker_completed" else 1
     if args.preflight:
-        verified_sources = verify_frozen_source_identity()
+        verified_sources = verify_source_identity(
+            args.source_provenance, args.source_root
+        )
         data = {
             "protocol": INSTRUMENTATION_PROTOCOL,
+            "provenance_mode": args.source_provenance,
             "source_identity": FROZEN_IDENTITY.__dict__,
             "verified_source_blobs": verified_sources,
             "base_sha": BASE_SHA,
