@@ -1,8 +1,8 @@
-"""Source-only A2 instrumentation contract and bounded supervisor.
+"""A2 instrumentation contract and bounded supervisor.
 
-The worker protocol is intentionally non-physical: this module can validate a
-frozen schedule and exercise custody/watchdog plumbing, but cannot step Pymunk.
-A future physics run requires a separate decision and reviewed frozen runner.
+Normal plan/preflight paths are model-free. A separate A2 physics child is
+available only through the exact-HEAD/environment-gated supervisor API; this
+preparation task never invoked that path.
 """
 
 from __future__ import annotations
@@ -53,6 +53,44 @@ FROZEN_CASES_BLOB_OID = "550b9fc56949f0ccdc4bf08924591bf92b666f15"
 FROZEN_PROTOCOL_BLOB_OID = "326551fb49259c42d26a911b2df8208f80255631"
 FROZEN_CASES_BYTES = 7_947
 FROZEN_PROTOCOL_BYTES = 24_592
+FROZEN_EXECUTABLE_SOURCES = (
+    (
+        "experiments/pymunk_contact_prototype/fixture.py",
+        16_275,
+        "36522c9b528bd8e94fcc8da69c78a92d2a3840a2",
+        "63127723dae68ebf9a2113cd1d9827925871e8d595557522f5cc9b4ee47f72f0",
+    ),
+    (
+        "experiments/pymunk230_obstacles/audit.py",
+        9_983,
+        "29e91624817e99d07e2341c43af616dcb95724e3",
+        "5fb6d7110013cfcbfd88d74f08660aaef9977031931fe0cd3d1445cc87395318",
+    ),
+    (
+        FROZEN_CASES_PATH,
+        FROZEN_CASES_BYTES,
+        FROZEN_CASES_BLOB_OID,
+        FROZEN_CASES_SHA256,
+    ),
+    (
+        "experiments/pymunk230_obstacles/geometry.py",
+        5_411,
+        "fc68d338b79c115743983c6bccabf06a77c10674",
+        "be9f9816762f86b156d96c36501f1ab02c2bb044a1468f2f9bb9b776dff2f7a7",
+    ),
+    (
+        "experiments/pymunk230_obstacles/run_physics.py",
+        61_121,
+        "6d354ea6a333471c2c55a994ecc05a53a5290034",
+        "3721a813138a78e29775e2654c03b1b448a02df6e980ba0b93b7f5af069e6b26",
+    ),
+    (
+        "experiments/pymunk230_obstacles/world.py",
+        7_857,
+        "fc038967b3e3b41b4759071b7981911a90756127",
+        "ce9918ba9b6acf531a72150e3cb3f07beed8c60b2f1812b653897b97a88bb34c",
+    ),
+)
 HISTORICAL_PROVENANCE = "historical_commit"
 DETACHED_PROVENANCE = "detached_content"
 A2_CASE_ID = "A2-convex-face"
@@ -193,6 +231,79 @@ def verify_frozen_source_identity(
     verified["provenance_mode"] = HISTORICAL_PROVENANCE
     verified["historical_commit_content_verified"] = "true"
     return verified
+
+
+def verify_candidate_source_identity(root: Path = Path.cwd()) -> dict[str, object]:
+    """Bind authored child/supervisor bytes to one clean exact Git HEAD."""
+    try:
+        head = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=root, text=True, stderr=subprocess.PIPE
+        ).strip()
+        dirty = subprocess.check_output(
+            ["git", "status", "--porcelain", "--untracked-files=all"],
+            cwd=root,
+            text=True,
+            stderr=subprocess.PIPE,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ReceiptError("cannot verify candidate source HEAD") from exc
+    if len(head) != 40 or dirty.strip():
+        raise ReceiptError("candidate source is not a clean exact HEAD")
+    files = (
+        "experiments/pymunk230_a2_instrumentation.py",
+        "experiments/pymunk230_a2_diagnostic.py",
+    )
+    contents: list[dict[str, object]] = []
+    for relative in files:
+        try:
+            data = (root / relative).read_bytes()
+        except OSError as exc:
+            raise ReceiptError(f"missing candidate source file: {relative}") from exc
+        contents.append(
+            {
+                "path": relative,
+                "bytes": len(data),
+                "sha256": hashlib.sha256(data).hexdigest(),
+            }
+        )
+    return {"candidate_head": head, "authored_sources": contents}
+
+
+def verify_a2_executable_identity(root: Path = Path.cwd()) -> dict[str, object]:
+    """Verify exact six-file content custody without importing physics code."""
+    detached = verify_detached_source_identity(root)
+    digest = hashlib.sha256()
+    sources: list[dict[str, object]] = []
+    for relative, size, blob_oid, sha256 in FROZEN_EXECUTABLE_SOURCES:
+        try:
+            data = (root / relative).read_bytes()
+        except OSError as exc:
+            raise ReceiptError(f"missing frozen executable source: {relative}") from exc
+        actual_oid = _git_blob_oid(data)
+        actual_sha = hashlib.sha256(data).hexdigest()
+        if len(data) != size or actual_oid != blob_oid or actual_sha != sha256:
+            raise ReceiptError(
+                f"frozen executable source identity mismatch: {relative}"
+            )
+        digest.update(relative.encode("utf-8") + b"\0" + bytes.fromhex(actual_sha))
+        sources.append(
+            {
+                "path": relative,
+                "bytes": size,
+                "blob_oid": blob_oid,
+                "sha256": sha256,
+            }
+        )
+    physics_sha256 = digest.hexdigest()
+    if physics_sha256 != FROZEN_PHYSICS_SHA256:
+        raise ReceiptError("frozen physics content digest mismatch")
+    return {
+        "provenance_mode": DETACHED_PROVENANCE,
+        "historical_ancestry_proven": False,
+        "detached_inputs": detached,
+        "physics_sha256": physics_sha256,
+        "sources": sources,
+    }
 
 
 def verify_source_identity(
@@ -422,8 +533,21 @@ class BoundedJournal:
         encoded = canonical_json(row) + b"\n"
         if self._bytes + len(encoded) + STOP_RECEIPT_RESERVE_BYTES > MAX_OUTPUT_BYTES:
             raise ReceiptError("inclusive output byte limit exceeded")
-        self._file.write(encoded)
-        os.fsync(self._file.fileno())
+        start = self._bytes
+        try:
+            view = memoryview(encoded)
+            written = 0
+            while written < len(encoded):
+                count = self._file.write(view[written:])
+                if count is None or count <= 0:
+                    raise OSError("journal write made no progress")
+                written += count
+            os.fsync(self._file.fileno())
+        except BaseException:
+            self._file.seek(start)
+            self._file.truncate(start)
+            os.fsync(self._file.fileno())
+            raise
         self._sequence += 1
         self._bytes += len(encoded)
         self._hasher.update(encoded)
@@ -440,7 +564,7 @@ def write_stop_receipt(
     reason: str,
     journal: BoundedJournal,
     started: float,
-    resource_usage: dict[str, float | int] | None = None,
+    resource_usage: dict[str, object] | None = None,
     provenance_mode: str = HISTORICAL_PROVENANCE,
 ) -> Path:
     """Atomically write and fsync a receipt with top-level durable watermark."""
@@ -471,7 +595,17 @@ def write_stop_receipt(
     digest_bytes = (
         hashlib.sha256(encoded).hexdigest().encode("ascii") + b"  STOP.json\n"
     )
-    if journal._bytes + len(encoded) + len(digest_bytes) > MAX_OUTPUT_BYTES:
+    if len(encoded) + len(digest_bytes) > STOP_RECEIPT_RESERVE_BYTES:
+        receipt["reason"] = str(receipt["reason"])[:96]
+        receipt["resource_usage"] = {}
+        encoded = canonical_json(receipt) + b"\n"
+        digest_bytes = (
+            hashlib.sha256(encoded).hexdigest().encode("ascii") + b"  STOP.json\n"
+        )
+    if (
+        len(encoded) + len(digest_bytes) > STOP_RECEIPT_RESERVE_BYTES
+        or journal._bytes + len(encoded) + len(digest_bytes) > MAX_OUTPUT_BYTES
+    ):
         raise ReceiptError("cannot fit hashed STOP receipt within inclusive byte cap")
     final = directory / "STOP.json"
     _write_fsynced_atomic(final, encoded)
@@ -493,6 +627,15 @@ def _write_fsynced_atomic(final: Path, data: bytes) -> None:
     os.replace(tmp, final)
 
 
+def _a2_worker_command() -> list[str]:
+    """Fixed child entry point; callable only after the external GO guard."""
+    return [
+        sys.executable,
+        str(Path(__file__).with_name("pymunk230_a2_diagnostic.py").resolve()),
+        "--diagnostic-child",
+    ]
+
+
 def _worker_command(
     provenance_mode: str = HISTORICAL_PROVENANCE,
     source_root: Path = Path.cwd(),
@@ -509,30 +652,52 @@ def _worker_command(
     ]
 
 
-def _terminate_and_reap(child: subprocess.Popen[bytes], grace_s: float = 0.2) -> None:
-    if child.poll() is not None:
-        child.wait()
-        return
+def _terminate_and_reap(child: subprocess.Popen[bytes], grace_s: float = 0.2) -> bool:
+    """Stop the isolated process group even if its direct child already exited."""
     try:
         if os.name == "posix":
             os.killpg(child.pid, signal.SIGTERM)
-        else:
+        elif child.poll() is None:
             child.terminate()
-        child.wait(timeout=grace_s)
-    except ProcessLookupError, subprocess.TimeoutExpired:
-        try:
-            if os.name == "posix":
-                os.killpg(child.pid, signal.SIGKILL)
-            else:
-                child.kill()
-        except ProcessLookupError:
-            pass
-        child.wait()
+    except ProcessLookupError:
+        pass
+    deadline = time.monotonic() + grace_s
+    while time.monotonic() < deadline:
+        if child.poll() is None:
+            try:
+                child.wait(timeout=min(0.02, max(0.0, deadline - time.monotonic())))
+            except subprocess.TimeoutExpired:
+                pass
+        if os.name != "posix" or not _process_group_alive(child.pid):
+            break
+        time.sleep(0.01)
+    try:
+        if os.name == "posix":
+            os.killpg(child.pid, signal.SIGKILL)
+        elif child.poll() is None:
+            child.kill()
+    except ProcessLookupError:
+        pass
+    try:
+        child.wait(timeout=0.5)
+    except subprocess.TimeoutExpired:
+        return False
+    return True
 
 
-def _read_lines(
-    stream: Any, target: queue.Queue[bytes], status: _ReaderStatus
-) -> None:
+def _process_group_alive(pgid: int) -> bool:
+    if os.name != "posix":
+        return False
+    try:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def _read_lines(stream: Any, target: queue.Queue[bytes], status: _ReaderStatus) -> None:
     """Read bounded lines without allowing a child to grow parent memory."""
     try:
         while True:
@@ -554,6 +719,14 @@ def _read_lines(
         stream.close()
 
 
+def _parent_rss_bytes() -> int:
+    """Return process high-water RSS in bytes (not current resident pages)."""
+    import resource
+
+    maximum = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    return maximum if sys.platform == "darwin" else maximum * 1024
+
+
 def _reaped_children_cpu_seconds() -> float:
     """CPU used by completed direct children, including metric helper processes."""
     import resource
@@ -570,6 +743,7 @@ def supervise(
     validator: Callable[[Path], None] | None = None,
     provenance_mode: str = HISTORICAL_PROVENANCE,
     source_root: Path = Path.cwd(),
+    _diagnostic_worker: bool = False,
 ) -> dict[str, object]:
     """Run only the fixed model-free worker and always leave a durable receipt."""
     if wall_cap_s <= 0 or cpu_cap_s <= 0:
@@ -580,11 +754,19 @@ def supervise(
     children_cpu_started = _reaped_children_cpu_seconds()
     child: subprocess.Popen[bytes] | None = None
     failure = "worker_not_started"
-    usage: dict[str, float | int] = {
+    usage: dict[str, object] = {
         "aggregate_cpu_s": 0.0,
         "parent_cpu_s": 0.0,
         "child_cpu_s": 0.0,
         "rss_high_water_bytes": 0,
+        "rss_measurement": (
+            "sampled parent high-water plus live process group; platform-dependent; "
+            "not hard aggregate enforcement"
+        ),
+        "cpu_measurement": (
+            "parent plus sampled live process group and reaped direct-child usage; "
+            "sampling may miss short-lived descendants"
+        ),
     }
     lines: queue.Queue[bytes] = queue.Queue(maxsize=STDOUT_QUEUE_RECORDS)
     reader_status = _ReaderStatus(done=threading.Event())
@@ -592,9 +774,14 @@ def supervise(
     live_child_cpu = 0.0
     try:
         command = (
-            _worker_command()
-            if provenance_mode == HISTORICAL_PROVENANCE and source_root == Path.cwd()
-            else _worker_command(provenance_mode, source_root)
+            _a2_worker_command()
+            if _diagnostic_worker
+            else (
+                _worker_command()
+                if provenance_mode == HISTORICAL_PROVENANCE
+                and source_root == Path.cwd()
+                else _worker_command(provenance_mode, source_root)
+            )
         )
         child = subprocess.Popen(
             command,
@@ -634,20 +821,19 @@ def supervise(
                 failure = "worker_exit" if code else "worker_completed"
                 break
 
-            metrics = _process_metrics(child.pid) if code is None else None
+            metrics = _process_metrics(child.pid)
             parent_cpu = max(0.0, time.process_time() - parent_cpu_started)
-            reaped_cpu = max(
-                0.0, _reaped_children_cpu_seconds() - children_cpu_started
-            )
+            reaped_cpu = max(0.0, _reaped_children_cpu_seconds() - children_cpu_started)
             if metrics is None and code is None:
                 failure = "resource_metrics_unavailable"
                 break
             if metrics is not None:
                 live_child_cpu = float(metrics["cpu_s"])
+                observed_rss = int(metrics["rss_bytes"]) + _parent_rss_bytes()
                 usage["rss_high_water_bytes"] = max(
-                    int(usage["rss_high_water_bytes"]), int(metrics["rss_bytes"])
+                    cast(int, usage["rss_high_water_bytes"]), observed_rss
                 )
-            child_cpu = reaped_cpu + (live_child_cpu if code is None else 0.0)
+            child_cpu = reaped_cpu + live_child_cpu
             aggregate_cpu = parent_cpu + child_cpu
             usage.update(
                 {
@@ -659,14 +845,12 @@ def supervise(
             if aggregate_cpu > cpu_cap_s:
                 failure = "cpu_cap"
                 break
-            if int(usage["rss_high_water_bytes"]) > MAX_RSS_BYTES:
+            if cast(int, usage["rss_high_water_bytes"]) > MAX_RSS_BYTES:
                 failure = "rss_cap"
                 break
 
-        if child.poll() is None:
-            _terminate_and_reap(child)
-        else:
-            child.wait()
+        if not _terminate_and_reap(child):
+            failure = "child_reap_timeout"
         if reader is not None:
             reader.join(timeout=max(0.2, min(1.0, wall_cap_s)))
             if reader.is_alive():
@@ -694,8 +878,8 @@ def supervise(
             failure = "cpu_cap"
     except BaseException as exc:
         failure = f"supervisor_error:{type(exc).__name__}"
-        if child is not None:
-            _terminate_and_reap(child)
+        if child is not None and not _terminate_and_reap(child):
+            failure = "child_reap_timeout"
         if reader is not None:
             reader.join(timeout=1.0)
         journal.close()
@@ -721,33 +905,86 @@ def supervise(
 
 
 def _process_metrics(pid: int) -> dict[str, float | int] | None:
-    """Read child CPU/RSS, returning None rather than claiming unknown is safe."""
+    """Sample CPU/RSS for the live child tree; this is not hard enforcement."""
     if sys.platform.startswith("linux"):
         try:
-            fields = Path(f"/proc/{pid}/stat").read_text().split()
-            hz = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
-            cpu = (int(fields[13]) + int(fields[14])) / hz
-            rss = int(fields[23]) * os.sysconf("SC_PAGE_SIZE")
-            return {"cpu_s": cpu, "rss_bytes": rss}
+            rows: dict[int, tuple[int, float, int]] = {}
+            for stat_path in Path("/proc").glob("[0-9]*/stat"):
+                try:
+                    raw = stat_path.read_text()
+                    process_id = int(raw[: raw.find(" ")])
+                    fields = raw[raw.rfind(")") + 2 :].split()
+                    process_group = int(fields[2])
+                    hz = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
+                    cpu = (int(fields[11]) + int(fields[12])) / hz
+                    rss = int(fields[21]) * os.sysconf("SC_PAGE_SIZE")
+                    rows[process_id] = (process_group, cpu, rss)
+                except OSError, ValueError, IndexError:
+                    continue
+            selected = [
+                row
+                for process_id, row in rows.items()
+                if process_id == pid or row[0] == pid
+            ]
+            if not selected:
+                return None
+            return {
+                "cpu_s": sum(row[1] for row in selected),
+                "rss_bytes": sum(row[2] for row in selected),
+            }
         except OSError, ValueError, IndexError:
             return None
     try:
-        output = subprocess.check_output(
-            ["ps", "-p", str(pid), "-o", "cputime=", "-o", "rss="],
+        completed = subprocess.run(
+            ["ps", "-axo", "pid=,ppid=,pgid=,rss=,cputime="],
             text=True,
+            stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
-        ).strip()
-        cpu_text, rss_text = output.split()
-        parts = [float(part) for part in cpu_text.split(":")]
-        if len(parts) == 3:
-            cpu_s = parts[0] * 3600 + parts[1] * 60 + parts[2]
-        elif len(parts) == 2:
-            cpu_s = parts[0] * 60 + parts[1]
-        else:
-            cpu_s = float(parts[0])
-        return {"cpu_s": float(cpu_s), "rss_bytes": int(rss_text) * 1024}
-    except OSError, subprocess.CalledProcessError, ValueError:
+            timeout=0.5,
+            check=True,
+        )
+        rows: dict[int, tuple[int, int, float]] = {}
+        for line in completed.stdout.splitlines():
+            fields = line.split()
+            if len(fields) != 5:
+                continue
+            process_id, _parent_id, process_group, rss_kib = map(int, fields[:4])
+            if process_id == pid or process_group == pid:
+                rows[process_id] = (
+                    process_group,
+                    rss_kib * 1024,
+                    _parse_cpu_text(fields[4]),
+                )
+        selected = list(rows.values())
+        if not selected:
+            return None
+        return {
+            "rss_bytes": sum(row[1] for row in selected),
+            "cpu_s": sum(row[2] for row in selected),
+        }
+    except (
+        OSError,
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+        ValueError,
+    ):
         return None
+
+
+def _parse_cpu_text(value: str) -> float:
+    """Parse ps cputime with the frozen runner's day/hour/minute formats."""
+    days = 0
+    if "-" in value:
+        day_text, value = value.split("-", 1)
+        days = int(day_text)
+    parts = [float(part) for part in value.split(":")]
+    if len(parts) == 3:
+        return days * 86400 + parts[0] * 3600 + parts[1] * 60 + parts[2]
+    if len(parts) == 2:
+        return days * 86400 + parts[0] * 60 + parts[1]
+    if len(parts) == 1:
+        return days * 86400 + parts[0]
+    raise ValueError("unrecognized ps cputime")
 
 
 def _plan_event(
@@ -771,6 +1008,166 @@ def _plan_event(
     }
 
 
+def validate_a2_diagnostic_output(
+    directory: Path,
+    expected_candidate_identity: dict[str, object] | None = None,
+) -> None:
+    """Fail closed on incomplete identities, controls, schema, or event stream."""
+    path = directory / "events.jsonl"
+    data = path.read_bytes()
+    if len(data) + STOP_RECEIPT_RESERVE_BYTES > MAX_OUTPUT_BYTES:
+        raise ReceiptError("diagnostic inclusive output cap exceeded")
+    lines = data.splitlines()
+    if not lines or len(lines) > MAX_EVENTS:
+        raise ReceiptError("diagnostic record count is empty or over cap")
+    try:
+        rows = [json.loads(line) for line in lines]
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ReceiptError("diagnostic JSONL is malformed") from exc
+    if any(
+        not isinstance(row, dict) or not isinstance(row.get("event"), dict)
+        for row in rows
+    ):
+        raise ReceiptError("diagnostic event record is missing")
+    events = [cast(dict[str, object], row["event"]) for row in rows]
+    if [row.get("sequence") for row in rows] != list(range(1, len(rows) + 1)):
+        raise ReceiptError("diagnostic sequence is incomplete")
+    if any(event.get("schema") != "pymunk230-a2-first-event-v1" for event in events):
+        raise ReceiptError("diagnostic schema identity mismatch")
+    if events[0].get("kind") != "diagnostic_manifest":
+        raise ReceiptError("diagnostic manifest is missing")
+    manifest = events[0]
+    if (
+        manifest.get("fixture_id") != A2_CASE_ID
+        or manifest.get("start") != list(A2_START)
+        or manifest.get("action") != list(A2_ACTION)
+        or manifest.get("resolutions") != [400, 800]
+        or manifest.get("detail_window_inclusive") != list(DETAIL_WINDOW)
+        or manifest.get("planned_substeps") != MAX_SUBSTEPS
+        or manifest.get("cases_source_sha256") != FROZEN_CASES_SHA256
+        or manifest.get("physics_source_sha256") != FROZEN_PHYSICS_SHA256
+        or manifest.get("retry_policy") != "none"
+    ):
+        raise ReceiptError("diagnostic manifest identity mismatch")
+    candidate_identity = manifest.get("candidate_source_identity")
+    if (
+        not isinstance(candidate_identity, dict)
+        or not isinstance(candidate_identity.get("candidate_head"), str)
+        or len(cast(str, candidate_identity.get("candidate_head"))) != 40
+        or not isinstance(candidate_identity.get("authored_sources"), list)
+        or (
+            expected_candidate_identity is not None
+            and candidate_identity != expected_candidate_identity
+        )
+    ):
+        raise ReceiptError("diagnostic candidate identity mismatch")
+    source_identity = manifest.get("source_content_identity")
+    expected_sources = [
+        {"path": path, "bytes": size, "blob_oid": oid, "sha256": sha256}
+        for path, size, oid, sha256 in FROZEN_EXECUTABLE_SOURCES
+    ]
+    if (
+        not isinstance(source_identity, dict)
+        or source_identity.get("physics_sha256") != FROZEN_PHYSICS_SHA256
+        or source_identity.get("historical_ancestry_proven") is not False
+        or source_identity.get("sources") != expected_sources
+        or not isinstance(source_identity.get("detached_inputs"), dict)
+    ):
+        raise ReceiptError("diagnostic manifest identity mismatch")
+    if any(event.get("kind") == "diagnostic_child_error" for event in events):
+        raise ReceiptError("diagnostic child reported an error")
+    complete = [event for event in events if event.get("kind") == "diagnostic_complete"]
+    if len(complete) != 1 or events[-1] is not complete[0]:
+        raise ReceiptError("diagnostic completion record is missing or duplicated")
+    if complete[0].get("total_substeps") != MAX_SUBSTEPS:
+        raise ReceiptError("diagnostic completion accounting mismatch")
+    summaries = [event for event in events if event.get("kind") == "command_summary"]
+    if len(summaries) != 4:
+        raise ReceiptError("A2 command summaries are incomplete")
+    expected = {"a2_n400_cmd1", "a2_n400_cmd2", "a2_n800_cmd1", "a2_n800_cmd2"}
+    if {event.get("case_id") for event in summaries} != expected:
+        raise ReceiptError("A2 command identity mismatch")
+    matched = [
+        event
+        for event in events
+        if event.get("kind") == "matched_checkpoint_comparison"
+    ]
+    if len(matched) != len(CHECKPOINTS) * 2:
+        raise ReceiptError("equal-time coarse checkpoint comparisons are incomplete")
+    detailed_matches = [
+        event for event in events if event.get("kind") == "matched_detail_comparison"
+    ]
+    expected_detail_matches = sum(
+        1 for index in range(400) if DETAIL_WINDOW[0] <= index / 400 < DETAIL_WINDOW[1]
+    )
+    if len(detailed_matches) != expected_detail_matches:
+        raise ReceiptError("equal-time detailed cmd2 comparisons are incomplete")
+    if not any(event.get("kind") == "first_divergences" for event in events):
+        raise ReceiptError("first divergence attribution is missing")
+    controls = [event for event in events if event.get("kind") == "control_summary"]
+    if len(controls) != 4 or any(
+        event.get("contact_events") != [] for event in controls
+    ):
+        raise ReceiptError("empty-free controls are incomplete or contacted")
+    for resolution in (400, 800):
+        pair = [
+            {
+                key: value
+                for key, value in event.items()
+                if key not in {"case_id", "role"}
+            }
+            for event in controls
+            if event.get("resolution") == resolution
+        ]
+        if len(pair) != 2 or pair[0] != pair[1]:
+            raise ReceiptError("empty-free primary/fresh replay mismatch")
+
+
+def supervise_a2_diagnostic(output: Path, *, approved_head: str) -> dict[str, object]:
+    """Supervise the physics child only with an externally installed exact-SHA GO.
+
+    This preparation task never sets the environment gate or calls this method.
+    A later explicit Flow GO must be archived first and bound to the exact HEAD.
+    """
+    try:
+        head = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True, stderr=subprocess.PIPE
+        ).strip()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ReceiptError("cannot verify exact execution candidate HEAD") from exc
+    if (
+        approved_head != head
+        or os.environ.get("AWEFORM_A2_EXECUTION_GO_SHA") != head
+        or len(head) != 40
+    ):
+        raise ReceiptError("fresh exact-HEAD A2 execution GO is absent")
+    try:
+        candidate_identity = verify_candidate_source_identity()
+        if candidate_identity.get("candidate_head") != head:
+            raise ReceiptError("candidate identity HEAD differs from approved HEAD")
+        verify_a2_executable_identity()
+    except ReceiptError as exc:
+        started = time.monotonic()
+        journal = BoundedJournal(output)
+        journal.close()
+        receipt_path = write_stop_receipt(
+            output,
+            reason=f"source_identity_error:{type(exc).__name__}",
+            journal=journal,
+            started=started,
+            provenance_mode=DETACHED_PROVENANCE,
+        )
+        return cast(dict[str, object], json.loads(receipt_path.read_text("utf-8")))
+    return supervise(
+        output,
+        validator=lambda directory: validate_a2_diagnostic_output(
+            directory, candidate_identity
+        ),
+        provenance_mode=DETACHED_PROVENANCE,
+        _diagnostic_worker=True,
+    )
+
+
 def supervise_frozen_plan(
     output: Path,
     provenance_mode: str = HISTORICAL_PROVENANCE,
@@ -779,9 +1176,7 @@ def supervise_frozen_plan(
     """Supervise only the model-free frozen-plan worker; never step physics."""
     started = time.monotonic()
     try:
-        expected = _plan_event(
-            provenance_mode=provenance_mode, source_root=source_root
-        )
+        expected = _plan_event(provenance_mode=provenance_mode, source_root=source_root)
     except ReceiptError as exc:
         # Source custody can fail before a child exists (for example, a shallow
         # or otherwise incomplete checkout). Still leave a hashed STOP receipt.

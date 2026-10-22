@@ -17,6 +17,7 @@ from typing import cast
 
 import pytest
 
+from experiments import pymunk230_a2_diagnostic as diagnostic
 from experiments import pymunk230_a2_instrumentation as instrument
 
 
@@ -113,9 +114,12 @@ def test_detached_clean_copy_preflight_receipts_content_provenance(
     assert sources["historical_ancestry_proven"] == "false"
     durable = cast(dict[str, int | str], receipt["last_durable"])
     assert durable["sequence"] == 1
-    assert durable["sha256"] == hashlib.sha256(
-        (tmp_path / "detached-preflight" / "events.jsonl").read_bytes()
-    ).hexdigest()
+    assert (
+        durable["sha256"]
+        == hashlib.sha256(
+            (tmp_path / "detached-preflight" / "events.jsonl").read_bytes()
+        ).hexdigest()
+    )
 
 
 def test_detached_source_rejects_substitution_and_missing_file(
@@ -342,9 +346,10 @@ def test_post_validation_failure_is_receipted_as_stop(
     assert receipt["reason"] == "post_validation_error:ReceiptError"
     durable = cast(dict[str, int | str], receipt["last_durable"])
     assert durable["sequence"] == 1
-    assert durable["sha256"] == hashlib.sha256(
-        (output / "events.jsonl").read_bytes()
-    ).hexdigest()
+    assert (
+        durable["sha256"]
+        == hashlib.sha256((output / "events.jsonl").read_bytes()).hexdigest()
+    )
     checksum = (output / "STOP.sha256").read_text("ascii")
     receipt_hash = hashlib.sha256((output / "STOP.json").read_bytes()).hexdigest()
     assert checksum == f"{receipt_hash}  STOP.json\n"
@@ -401,7 +406,7 @@ def test_aggregate_cpu_cap_includes_parent_and_child(
         ],
     )
     monkeypatch.setattr(
-        instrument, "_process_metrics", lambda _pid: {"cpu_s": 0.2, "rss_bytes": 1}
+        instrument, "_process_metrics", lambda _pid: {"cpu_s": 0.4, "rss_bytes": 1}
     )
     monkeypatch.setattr(instrument, "_reaped_children_cpu_seconds", lambda: 0.0)
     calls = 0
@@ -409,7 +414,7 @@ def test_aggregate_cpu_cap_includes_parent_and_child(
     def parent_cpu() -> float:
         nonlocal calls
         calls += 1
-        return 10.0 if calls == 1 else 11.2
+        return 10.0 if calls == 1 else 10.8
 
     monkeypatch.setattr(time, "process_time", parent_cpu)
     receipt = instrument.supervise(
@@ -418,9 +423,9 @@ def test_aggregate_cpu_cap_includes_parent_and_child(
 
     assert receipt["reason"] == "cpu_cap"
     usage = cast(dict[str, float | int], receipt["resource_usage"])
-    assert usage["parent_cpu_s"] > 1.0
-    assert usage["child_cpu_s"] == 0.2
-    assert usage["aggregate_cpu_s"] > 1.0
+    assert usage["parent_cpu_s"] == pytest.approx(0.8)
+    assert usage["child_cpu_s"] == 0.4
+    assert usage["aggregate_cpu_s"] == pytest.approx(1.2)
 
 
 def test_stop_receipt_exposes_durable_watermark_and_hash(tmp_path: Path) -> None:
@@ -470,7 +475,12 @@ def test_silent_child_wall_cap_kills_reaps_and_writes_receipt(
     assert receipt["status"] == "STOP"
     assert receipt["reason"] == "wall_cap"
     assert elapsed < 2.0
-    assert (tmp_path / "result" / "STOP.json").is_file()
+    receipt_path = tmp_path / "result" / "STOP.json"
+    checksum = (tmp_path / "result" / "STOP.sha256").read_text("ascii")
+    assert (
+        checksum
+        == f"{hashlib.sha256(receipt_path.read_bytes()).hexdigest()}  STOP.json\n"
+    )
     assert isinstance(receipt["last_durable"], dict)
     assert receipt["last_durable"]["sequence"] == 0
 
@@ -558,6 +568,39 @@ def test_writer_error_preserves_durable_stop_receipt(
     assert (tmp_path / "result" / "STOP.sha256").is_file()
 
 
+def test_partial_journal_write_is_truncated_before_stop_receipt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "partial-write"
+    journal = instrument.BoundedJournal(output)
+    import os
+
+    real_fsync = os.fsync
+    calls = 0
+
+    def fail_once(fd: int) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise OSError("synthetic fsync failure")
+        real_fsync(fd)
+
+    monkeypatch.setattr(os, "fsync", fail_once)
+    with pytest.raises(OSError, match="synthetic fsync failure"):
+        journal.append({"payload": "complete-or-truncate"})
+    assert journal.last_durable["sequence"] == 0
+    assert (output / "events.jsonl").read_bytes() == b""
+    journal.close()
+    receipt = instrument.write_stop_receipt(
+        output, reason="writer_failure", journal=journal, started=0.0
+    )
+    assert json.loads(receipt.read_text())["last_durable"]["sequence"] == 0
+    checksum = (output / "STOP.sha256").read_text("ascii")
+    assert (
+        checksum == f"{hashlib.sha256(receipt.read_bytes()).hexdigest()}  STOP.json\n"
+    )
+
+
 def test_event_record_and_inclusive_byte_caps_fail_closed(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -584,6 +627,10 @@ def test_event_record_and_inclusive_byte_caps_fail_closed(
         output2, reason="output_limit", journal=journal2, started=0.0
     )
     assert json.loads(receipt_path2.read_text())["status"] == "STOP"
+    assert (
+        sum(path.stat().st_size for path in output2.iterdir())
+        <= instrument.MAX_OUTPUT_BYTES
+    )
 
 
 def test_empty_free_control_requires_replay_identity_and_zero_contacts() -> None:
@@ -598,6 +645,325 @@ def test_empty_free_control_requires_replay_identity_and_zero_contacts() -> None
         )
     with pytest.raises(instrument.ReceiptError, match="missing contact-event"):
         instrument.validate_empty_free_control(b'{"progress":1}\n', b'{"progress":1}\n')
+
+
+def test_a2_frozen_six_file_content_identity_is_recomputed_model_free() -> None:
+    identity = instrument.verify_a2_executable_identity()
+    assert identity["physics_sha256"] == instrument.FROZEN_PHYSICS_SHA256
+    assert identity["historical_ancestry_proven"] is False
+    assert len(identity["sources"]) == 6  # type: ignore[arg-type]
+
+
+def test_diagnostic_module_import_is_model_free() -> None:
+    assert "pymunk" not in sys.modules
+    assert diagnostic.SCHEMA == "pymunk230-a2-first-event-v1"
+
+
+def test_step_observer_captures_numeric_state_and_restores_wrapper() -> None:
+    class Vector:
+        x = 1.0
+        y = 2.0
+
+    class Body:
+        position = Vector()
+        angle = 0.25
+        velocity = Vector()
+        angular_velocity = 0.5
+
+    class Space:
+        def __init__(self, body: object) -> None:
+            self.body = body
+
+        def step(self, _dt: float) -> None:
+            self.body.position.x += 0.1  # type: ignore[attr-defined]
+            self.body.angle += 0.2  # type: ignore[attr-defined]
+
+    class World:
+        body = Body()
+        space = Space(body)
+        suppress_velocity_refresh_after_contact = True
+        _contact_seen_this_command = False
+        _contact_events: list[object] = []
+
+    world = World()
+    original = world.space.step
+    samples = diagnostic._step_observer(world, "cmd2", 1)
+    world.space.step(0.01)
+    diagnostic._restore_step_observer(world)
+    assert world.space.step == original
+    assert samples[0]["command_id"] == "cmd2"
+    assert samples[0]["before"]["position_m"] == [1.0, 2.0]  # type: ignore[index]
+    assert samples[0]["after"]["position_m"] == [1.1, 2.0]  # type: ignore[index]
+    assert samples[0]["motor_refresh_applied"] is True
+
+
+def _write_synthetic_diagnostic_stream(
+    path: Path, *, bad_control: bool = False
+) -> None:
+    events: list[dict[str, object]] = [
+        {
+            "kind": "diagnostic_manifest",
+            "schema": diagnostic.SCHEMA,
+            "fixture_id": instrument.A2_CASE_ID,
+            "start": list(instrument.A2_START),
+            "action": list(instrument.A2_ACTION),
+            "resolutions": [400, 800],
+            "detail_window_inclusive": list(instrument.DETAIL_WINDOW),
+            "planned_substeps": instrument.MAX_SUBSTEPS,
+            "cases_source_sha256": instrument.FROZEN_CASES_SHA256,
+            "physics_source_sha256": instrument.FROZEN_PHYSICS_SHA256,
+            "source_content_identity": instrument.verify_a2_executable_identity(),
+            "candidate_source_identity": {
+                "candidate_head": "a" * 40,
+                "authored_sources": [],
+            },
+            "retry_policy": "none",
+        }
+    ]
+    for resolution in (400, 800):
+        for command in ("cmd1", "cmd2"):
+            events.append(
+                {
+                    "kind": "command_summary",
+                    "schema": diagnostic.SCHEMA,
+                    "case_id": f"a2_n{resolution}_{command}",
+                }
+            )
+    events.extend(
+        {"kind": "matched_checkpoint_comparison", "schema": diagnostic.SCHEMA}
+        for _ in range(len(instrument.CHECKPOINTS) * 2)
+    )
+    detail_count = sum(
+        1
+        for index in range(400)
+        if instrument.DETAIL_WINDOW[0] <= index / 400 < instrument.DETAIL_WINDOW[1]
+    )
+    events.extend(
+        {"kind": "matched_detail_comparison", "schema": diagnostic.SCHEMA}
+        for _ in range(detail_count)
+    )
+    events.append({"kind": "first_divergences", "schema": diagnostic.SCHEMA})
+    for resolution in (400, 800):
+        for role in ("primary", "fresh_replay"):
+            events.append(
+                {
+                    "kind": "control_summary",
+                    "schema": diagnostic.SCHEMA,
+                    "case_id": f"empty_free_n{resolution}_{role}",
+                    "role": role,
+                    "resolution": resolution,
+                    "fixture_id": "empty-free",
+                    "start": list(instrument.EMPTY_FREE_START),
+                    "action": list(instrument.EMPTY_FREE_ACTION),
+                    "end_m": [1.1, 1.0],
+                    "end_heading_rad": 0.0,
+                    "velocity_mps": [1.0, 0.0],
+                    "angular_velocity_rps": 0.0,
+                    "contact_events": [{"bad": True}]
+                    if bad_control and role == "fresh_replay"
+                    else [],
+                    "step_count": resolution,
+                }
+            )
+    events.append(
+        {
+            "kind": "diagnostic_complete",
+            "schema": diagnostic.SCHEMA,
+            "total_substeps": instrument.MAX_SUBSTEPS,
+        }
+    )
+    path.mkdir()
+    with (path / "events.jsonl").open("wb") as output:
+        for sequence, event in enumerate(events, 1):
+            output.write(
+                instrument.canonical_json({"sequence": sequence, "event": event})
+                + b"\n"
+            )
+
+
+def test_checkpoint_schedule_and_equal_time_numeric_attribution() -> None:
+    assert diagnostic._checkpoint_indices(400, "cmd1")[100] == ("cmd1", 0.25)
+    left = {
+        "state": {
+            "position_m": [1.0, 2.0],
+            "heading_rad": 0.1,
+            "velocity_mps": [3.0, 4.0],
+            "angular_velocity_rps": 0.5,
+        },
+        "contact_set": ["hull|A2_03"],
+        "callbacks": [{"impulse": 1.0}],
+        "motor_refresh_applied": True,
+        "motor_velocity_before_step_mps": [1.0, 0.0],
+        "motor_angular_velocity_before_step_rps": 0.5,
+    }
+    right = {
+        "state": {
+            "position_m": [1.3, 2.4],
+            "heading_rad": 0.2,
+            "velocity_mps": [3.0, 4.5],
+            "angular_velocity_rps": 0.25,
+        },
+        "contact_set": ["hull|A2_04"],
+        "callbacks": [{"impulse": 2.0}],
+        "motor_refresh_applied": False,
+        "motor_velocity_before_step_mps": [0.0, 1.0],
+        "motor_angular_velocity_before_step_rps": 0.25,
+    }
+    comparison = diagnostic._compare_states(left, right)
+    assert comparison["categories"] == [
+        "contact_or_chord_set",
+        "callback_values",
+        "motor_refresh_decision",
+        "motor_state",
+        "pose_heading_or_velocity",
+    ]
+    assert comparison["position_delta_m"] == pytest.approx(0.5)
+    assert comparison["velocity_delta_mps"] == pytest.approx(0.5)
+    assert cast(str, comparison["threshold_interpretation"]).startswith("descriptive")
+
+
+def test_a2_output_validator_accepts_complete_synthetic_stream(tmp_path: Path) -> None:
+    output = tmp_path / "valid"
+    _write_synthetic_diagnostic_stream(output)
+    instrument.validate_a2_diagnostic_output(output)
+
+
+def test_candidate_source_identity_requires_clean_exact_head(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source_paths = (
+        "experiments/pymunk230_a2_instrumentation.py",
+        "experiments/pymunk230_a2_diagnostic.py",
+    )
+    payloads = (b"instrumentation\n", b"diagnostic\n")
+    for relative, payload in zip(source_paths, payloads, strict=True):
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(payload)
+
+    def git_output(command: list[str], **kwargs: object) -> str:
+        assert kwargs["cwd"] == tmp_path
+        return "a" * 40 if command[1:3] == ["rev-parse", "HEAD"] else ""
+
+    monkeypatch.setattr(subprocess, "check_output", git_output)
+    identity = instrument.verify_candidate_source_identity(tmp_path)
+    assert identity["candidate_head"] == "a" * 40
+    authored = cast(list[dict[str, object]], identity["authored_sources"])
+    assert [row["path"] for row in authored] == list(source_paths)
+    assert [row["sha256"] for row in authored] == [
+        hashlib.sha256(payload).hexdigest() for payload in payloads
+    ]
+
+    monkeypatch.setattr(
+        subprocess,
+        "check_output",
+        lambda command, **_kwargs: (
+            "a" * 40 if command[1:3] == ["rev-parse", "HEAD"] else " M dirty.py\n"
+        ),
+    )
+    with pytest.raises(instrument.ReceiptError, match="clean exact HEAD"):
+        instrument.verify_candidate_source_identity(tmp_path)
+
+
+def test_a2_output_validator_requires_expected_candidate_identity(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "candidate-mismatch"
+    _write_synthetic_diagnostic_stream(output)
+    expected: dict[str, object] = {
+        "candidate_head": "b" * 40,
+        "authored_sources": [],
+    }
+    with pytest.raises(instrument.ReceiptError, match="candidate identity mismatch"):
+        instrument.validate_a2_diagnostic_output(output, expected)
+
+
+def test_a2_output_validator_rejects_missing_manifest_identity(tmp_path: Path) -> None:
+    output = tmp_path / "missing-identity"
+    _write_synthetic_diagnostic_stream(output)
+    event_path = output / "events.jsonl"
+    rows = [json.loads(line) for line in event_path.read_text().splitlines()]
+    rows[0]["event"].pop("cases_source_sha256")
+    event_path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    with pytest.raises(instrument.ReceiptError, match="manifest identity mismatch"):
+        instrument.validate_a2_diagnostic_output(output)
+
+
+def test_a2_output_validator_rejects_contacting_control(tmp_path: Path) -> None:
+    output = tmp_path / "invalid"
+    _write_synthetic_diagnostic_stream(output, bad_control=True)
+    with pytest.raises(instrument.ReceiptError, match="controls.*contacted"):
+        instrument.validate_a2_diagnostic_output(output)
+
+
+def test_a2_supervisor_requires_external_exact_head_go(tmp_path: Path) -> None:
+    with pytest.raises(instrument.ReceiptError, match="execution GO is absent"):
+        instrument.supervise_a2_diagnostic(
+            tmp_path / "must-not-start", approved_head="0" * 40
+        )
+    assert not (tmp_path / "must-not-start").exists()
+
+
+def test_reader_rejects_oversized_no_newline_record() -> None:
+    status = instrument._ReaderStatus(done=threading.Event())
+    target: queue.Queue[bytes] = queue.Queue(maxsize=1)
+    instrument._read_lines(
+        io.BytesIO(b"x" * (instrument.MAX_STDOUT_LINE_BYTES + 1)), target, status
+    )
+    assert status.done.is_set()
+    assert status.error == "stdout_line_limit"
+    assert target.empty()
+
+
+def test_reader_descendant_holding_pipe_is_killed_after_direct_child_exit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    grandchild = (
+        "import subprocess,sys; "
+        "subprocess.Popen([sys.executable,'-c','import time; time.sleep(20)'])"
+    )
+    monkeypatch.setattr(
+        instrument,
+        "_worker_command",
+        lambda: [sys.executable, "-c", grandchild],
+    )
+    monkeypatch.setattr(
+        instrument, "_process_metrics", lambda _pid: {"cpu_s": 0.0, "rss_bytes": 0}
+    )
+    started = time.monotonic()
+    receipt = instrument.supervise(tmp_path / "descendant-eof", wall_cap_s=0.15)
+    elapsed = time.monotonic() - started
+    assert receipt["reason"] == "wall_cap"
+    assert elapsed < 2.0
+    receipt_path = tmp_path / "descendant-eof" / "STOP.json"
+    checksum = (tmp_path / "descendant-eof" / "STOP.sha256").read_text("ascii")
+    assert (
+        checksum
+        == f"{hashlib.sha256(receipt_path.read_bytes()).hexdigest()}  STOP.json\n"
+    )
+
+
+def test_macos_process_metrics_sum_live_descendant_tree_with_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Result:
+        stdout = (
+            "10 1 10 100 00:01:00\n"
+            "11 10 10 50 00:00:10\n"
+            "12 11 10 25 00:00:05\n"
+            "20 1 20 999 00:30:00\n"
+        )
+
+    monkeypatch.setattr(sys, "platform", "darwin")
+    monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: Result())
+    metrics = instrument._process_metrics(10)
+    assert metrics == {"rss_bytes": 175 * 1024, "cpu_s": 75.0}
+
+    def timed_out(*_args: object, **_kwargs: object) -> object:
+        raise subprocess.TimeoutExpired("ps", 0.5)
+
+    monkeypatch.setattr(subprocess, "run", timed_out)
+    assert instrument._process_metrics(10) is None
 
 
 def test_output_directory_is_one_shot(tmp_path: Path) -> None:
