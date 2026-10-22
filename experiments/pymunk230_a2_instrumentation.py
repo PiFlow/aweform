@@ -1567,6 +1567,93 @@ def validate_a2_diagnostic_output(
         ):
             raise ReceiptError("first divergence attribution content is invalid")
 
+    ordered_candidates: list[
+        tuple[tuple[int, float, int, float], dict[str, object], list[str]]
+    ] = []
+    coarse_metadata = {
+        "kind",
+        "schema",
+        "command_id",
+        "command_progress",
+        "n400_endpoint_substep",
+        "n800_endpoint_substep",
+        "n800_interval_substeps",
+        "equal_physical_endpoint",
+    }
+    for event in matched:
+        command = cast(str, event["command_id"])
+        progress = cast(float, event["command_progress"])
+        comparison = {
+            key: value for key, value in event.items() if key not in coarse_metadata
+        }
+        categories = comparison.get("categories")
+        if not isinstance(categories, list) or any(
+            not isinstance(value, str) for value in categories
+        ):
+            raise ReceiptError("coarse comparison categories are malformed")
+        ordered_candidates.append(
+            (
+                (0 if command == "cmd1" else 1, progress, 1, progress),
+                {
+                    "command_id": command,
+                    "command_progress": progress,
+                    "comparison": comparison,
+                },
+                cast(list[str], categories),
+            )
+        )
+
+    detail_metadata = {
+        "kind",
+        "schema",
+        "command_id",
+        "interval_start_progress",
+        "interval_end_progress",
+        "n800_interval_substeps",
+        "equal_physical_endpoint",
+    }
+    for event in details_matched:
+        if event.get("command_id") != "cmd2":
+            raise ReceiptError("matched detail comparison command is invalid")
+        start = cast(float, event["interval_start_progress"])
+        end = cast(float, event["interval_end_progress"])
+        comparison = {
+            key: value for key, value in event.items() if key not in detail_metadata
+        }
+        categories = comparison.get("categories")
+        if not isinstance(categories, list) or any(
+            not isinstance(value, str) for value in categories
+        ):
+            raise ReceiptError("detail comparison categories are malformed")
+        ordered_candidates.append(
+            (
+                (1, end, 0, start),
+                {
+                    "command_id": "cmd2",
+                    "interval_start_progress": start,
+                    "interval_end_progress": end,
+                    "comparison": comparison,
+                },
+                cast(list[str], categories),
+            )
+        )
+
+    expected_first: dict[str, dict[str, object] | None] = {
+        category: None for category in required_divergence_categories
+    }
+    for _, candidate, categories in sorted(
+        ordered_candidates, key=lambda item: item[0]
+    ):
+        for category in categories:
+            if category not in expected_first:
+                raise ReceiptError("comparison has an unknown divergence category")
+            if expected_first[category] is None:
+                expected_first[category] = candidate
+    if by_category != expected_first:
+        raise ReceiptError(
+            "first divergence attribution is not chronologically earliest"
+        )
+
 
 def _validate_a2_output_location(output: Path, source_root: Path = Path.cwd()) -> None:
     """Require output outside the clean tree so candidate identity stays stable."""

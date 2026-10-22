@@ -985,6 +985,7 @@ def _write_synthetic_diagnostic_stream(
                 if low_index == 0
                 else [2 * low_index - 2, 2 * low_index - 1],
                 "equal_physical_endpoint": True,
+                "categories": [],
                 "n400": low,
                 "n800": high,
             }
@@ -1004,10 +1005,12 @@ def _write_synthetic_diagnostic_stream(
                 {
                     "kind": "matched_detail_comparison",
                     "schema": diagnostic.SCHEMA,
+                    "command_id": "cmd2",
                     "interval_start_progress": start,
                     "interval_end_progress": (index + 1) / 400,
                     "n800_interval_substeps": [index * 2, index * 2 + 1],
                     "equal_physical_endpoint": True,
+                    "categories": [],
                     "n400": {"state": low["after"], "interval_samples": [low]},
                     "n800": {
                         "state": high_second["after"],
@@ -1256,8 +1259,11 @@ def test_interval_alignment_uses_both_high_halves_and_keeps_real_differences() -
     )
 
 
+@pytest.mark.parametrize("divergence_scenario", ["none", "cmd2_detail", "cmd1_coarse"])
 def test_actual_diagnostic_producer_stream_passes_validator_model_free(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    divergence_scenario: str,
 ) -> None:
     class Vector:
         def __init__(self, x: float, y: float) -> None:
@@ -1285,8 +1291,12 @@ def test_actual_diagnostic_producer_stream_passes_validator_model_free(
             self._position = value if isinstance(value, Vector) else Vector(*value)
 
     class FakeWorld:
-        def __init__(self, microsteps: int) -> None:
+        def __init__(
+            self, microsteps: int, *, divergence_scenario: str = "none"
+        ) -> None:
             self.microsteps = microsteps
+            self.divergence_scenario = divergence_scenario
+            self.command_number = 0
             self.body = Body()
             self.space = FakeSpace(self)
             self.suppress_velocity_refresh_after_contact = False
@@ -1295,6 +1305,7 @@ def test_actual_diagnostic_producer_stream_passes_validator_model_free(
             self.command_origin = 0.0
 
         def advance(self, action: tuple[float, float]) -> SimpleNamespace:
+            self.command_number += 1
             self.command_origin = self.body.position.x
             self.body.command_steps = 0
             self._contact_events = []
@@ -1313,9 +1324,16 @@ def test_actual_diagnostic_producer_stream_passes_validator_model_free(
                 end_angle=self.body.angle,
                 velocity=tuple(self.body.velocity),
                 angular_velocity=self.body.angular_velocity,
-                contact_seen=False,
-                contact_events=[],
+                contact_seen=bool(self._contact_seen_this_command),
+                contact_events=list(self._contact_events),
             )
+
+    class FakeTargetWorld(FakeWorld):
+        def __init__(self, microsteps: int) -> None:
+            super().__init__(microsteps, divergence_scenario=divergence_scenario)
+
+    class FakeControlWorld(FakeWorld):
+        pass
 
     class FakeSpace:
         def __init__(self, world: FakeWorld) -> None:
@@ -1323,11 +1341,44 @@ def test_actual_diagnostic_producer_stream_passes_validator_model_free(
 
         def step(self, _dt: float) -> None:
             self.world.body.command_steps += 1
+            cmd2_detail_divergence = (
+                self.world.divergence_scenario == "cmd2_detail"
+                and self.world.command_number == 2
+                and self.world.body.command_steps >= 700
+            )
+            cmd1_coarse_divergence = (
+                self.world.divergence_scenario == "cmd1_coarse"
+                and self.world.command_number == 1
+                and self.world.body.command_steps >= 600
+            )
+            offset = (
+                0.01
+                if self.world.microsteps == 800
+                and (cmd2_detail_divergence or cmd1_coarse_divergence)
+                else 0.0
+            )
             self.world.body.position = (
                 self.world.command_origin
-                + self.world.body.command_steps / self.world.microsteps,
+                + self.world.body.command_steps / self.world.microsteps
+                + offset,
                 self.world.body.position.y,
             )
+            if (
+                self.world.divergence_scenario == "cmd2_detail"
+                and self.world.microsteps == 800
+                and self.world.command_number == 2
+                and self.world.body.command_steps == 720
+            ):
+                self.world._contact_seen_this_command = True
+                self.world._contact_events.append(
+                    SimpleNamespace(
+                        substep_index=self.world.body.command_steps - 1,
+                        shape_pair=("left", "right"),
+                        contact_points=1,
+                        impulse=0.5,
+                        maximum_contact_penetration=0.001,
+                    )
+                )
 
     cases_module = ModuleType("experiments.pymunk230_obstacles.cases")
     setattr(
@@ -1342,9 +1393,9 @@ def test_actual_diagnostic_producer_stream_passes_validator_model_free(
         ],
     )
     world_module = ModuleType("experiments.pymunk230_obstacles.world")
-    setattr(world_module, "ObstacleContactWorld", FakeWorld)
+    setattr(world_module, "ObstacleContactWorld", FakeTargetWorld)
     fixture_module = ModuleType("experiments.pymunk_contact_prototype.fixture")
-    setattr(fixture_module, "ContactWorld", FakeWorld)
+    setattr(fixture_module, "ContactWorld", FakeControlWorld)
     for package_name in (
         "experiments.pymunk230_obstacles",
         "experiments.pymunk_contact_prototype",
@@ -1412,14 +1463,94 @@ def test_actual_diagnostic_producer_stream_passes_validator_model_free(
         event for event in events if event.get("kind") == "matched_detail_comparison"
     ]
     assert len(comparisons) == 52
-    assert all(event["position_delta_m"] == 0.0 for event in comparisons)
     divergence = next(
         event for event in events if event.get("kind") == "first_divergences"
     )
-    assert all(
-        value is None
-        for value in cast(dict[str, object], divergence["by_category"]).values()
-    )
+    by_category = cast(dict[str, object], divergence["by_category"])
+    if divergence_scenario == "none":
+        assert all(event["position_delta_m"] == 0.0 for event in comparisons)
+        assert all(value is None for value in by_category.values())
+    elif divergence_scenario == "cmd2_detail":
+        pose_first = cast(
+            dict[str, object],
+            by_category["pose_heading_or_velocity_above_roundoff_floor"],
+        )
+        assert pose_first["command_id"] == "cmd2"
+        assert pose_first["interval_start_progress"] == 349 / 400
+        assert pose_first["interval_end_progress"] == 350 / 400
+        contact_first = cast(dict[str, object], by_category["contact_or_chord_set"])
+        callback_first = cast(dict[str, object], by_category["callback_values"])
+        assert contact_first["interval_end_progress"] == 360 / 400
+        assert callback_first["interval_end_progress"] == 360 / 400
+        assert contact_first["interval_start_progress"] == 359 / 400
+        assert callback_first["interval_start_progress"] == 359 / 400
+        later_coarse = next(
+            event
+            for event in events
+            if event.get("kind") == "matched_checkpoint_comparison"
+            and event.get("command_id") == "cmd2"
+            and event.get("command_progress") == 0.90
+        )
+        assert "pose_heading_or_velocity_above_roundoff_floor" in cast(
+            list[str], later_coarse["categories"]
+        )
+        comparison_metadata = {
+            "kind",
+            "schema",
+            "command_id",
+            "command_progress",
+            "n400_endpoint_substep",
+            "n800_endpoint_substep",
+            "n800_interval_substeps",
+            "equal_physical_endpoint",
+        }
+        false_earliest = {
+            "command_id": "cmd2",
+            "command_progress": 0.90,
+            "comparison": {
+                key: value
+                for key, value in later_coarse.items()
+                if key not in comparison_metadata
+            },
+        }
+        assert pose_first != false_earliest
+        original_stream = journal.path.read_bytes()
+        by_category["pose_heading_or_velocity_above_roundoff_floor"] = false_earliest
+        journal.path.write_text(
+            "".join(instrument.canonical_json(row).decode() + "\n" for row in rows)
+        )
+        with pytest.raises(
+            instrument.ReceiptError, match="not chronologically earliest"
+        ):
+            instrument.validate_a2_diagnostic_output(output)
+        journal.path.write_bytes(original_stream)
+        by_category["pose_heading_or_velocity_above_roundoff_floor"] = pose_first
+        false_tie = {
+            "command_id": "cmd2",
+            "command_progress": 0.90,
+            "comparison": {
+                key: value
+                for key, value in later_coarse.items()
+                if key not in comparison_metadata
+            },
+        }
+        by_category["contact_or_chord_set"] = false_tie
+        journal.path.write_text(
+            "".join(instrument.canonical_json(row).decode() + "\n" for row in rows)
+        )
+        with pytest.raises(
+            instrument.ReceiptError, match="not chronologically earliest"
+        ):
+            instrument.validate_a2_diagnostic_output(output)
+        journal.path.write_bytes(original_stream)
+        by_category["contact_or_chord_set"] = contact_first
+    else:
+        pose_first = cast(
+            dict[str, object],
+            by_category["pose_heading_or_velocity_above_roundoff_floor"],
+        )
+        assert pose_first["command_id"] == "cmd1"
+        assert pose_first["command_progress"] == 0.75
 
     shifted = next(event for event in details if event["substep"] == 340)
     shifted["command_end_progress"] = (

@@ -34,7 +34,8 @@ from experiments.pymunk230_a2_instrumentation import (
 SCHEMA = "pymunk230-a2-first-event-v2"
 MATCH_RULE = (
     "states match at equal interval endpoints; one N400 interval is compared "
-    "with both corresponding N800 half-intervals"
+    "with both corresponding N800 half-intervals; first attribution orders cmd1 "
+    "before cmd2, then endpoint progress, with detail before coarse at ties"
 )
 
 
@@ -497,17 +498,24 @@ def _emit_comparisons(
         "motor_state_above_roundoff_floor": None,
         "pose_heading_or_velocity_above_roundoff_floor": None,
     }
+    candidates: list[
+        tuple[tuple[int, float, int, float], dict[str, object], list[str]]
+    ] = []
     for command_id, progress in CHECKPOINTS:
         left = checkpoints_by_resolution[400][(command_id, progress)]
         right = checkpoints_by_resolution[800][(command_id, progress)]
         comparison = _compare_states(left, right)
-        for category in cast(list[str], comparison["categories"]):
-            if first[category] is None:
-                first[category] = {
+        candidates.append(
+            (
+                (0 if command_id == "cmd1" else 1, progress, 1, progress),
+                {
                     "command_id": command_id,
                     "command_progress": progress,
                     "comparison": comparison,
-                }
+                },
+                cast(list[str], comparison["categories"]),
+            )
+        )
         _emit(
             emit,
             {
@@ -559,14 +567,20 @@ def _emit_comparisons(
             ],
         }
         comparison = _compare_states(low_row, high_row)
-        for category in cast(list[str], comparison["categories"]):
-            if first[category] is None:
-                first[category] = {
+        interval_start = cast(float, low["command_progress"])
+        interval_end = cast(float, low["command_end_progress"])
+        candidates.append(
+            (
+                (1, interval_end, 0, interval_start),
+                {
                     "command_id": "cmd2",
-                    "interval_start_progress": low["command_progress"],
-                    "interval_end_progress": low["command_end_progress"],
+                    "interval_start_progress": interval_start,
+                    "interval_end_progress": interval_end,
                     "comparison": comparison,
-                }
+                },
+                cast(list[str], comparison["categories"]),
+            )
+        )
         _emit(
             emit,
             {
@@ -580,6 +594,10 @@ def _emit_comparisons(
                 **comparison,
             },
         )
+    for _, candidate, categories in sorted(candidates, key=lambda item: item[0]):
+        for category in categories:
+            if first[category] is None:
+                first[category] = candidate
     _emit(emit, {"kind": "first_divergences", "schema": SCHEMA, "by_category": first})
 
 
