@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.metadata
 import json
 import os
+import platform
 import queue
 import signal
 import subprocess
@@ -41,7 +43,17 @@ STOP_RECEIPT_RESERVE_BYTES = 4_096
 MAX_EVENTS = 10_000
 MAX_RSS_BYTES = 256 * 1024 * 1024
 MAX_STDOUT_LINE_BYTES = 64 * 1024
-STDOUT_QUEUE_RECORDS = 8
+# Largest prescribed child burst is 113 JSON records; queue stays below a
+# bounded ~8 MiB at MAX_STDOUT_LINE_BYTES per row.
+STDOUT_QUEUE_RECORDS = 128
+METRICS_INTERVAL_SECONDS = 0.25
+EXPECTED_PYTHON = "3.14.7"
+EXPECTED_PYMUNK = "7.2.0"
+EXPECTED_PLATFORM = ("darwin", "arm64")
+EXPECTED_PYMUNK_WHEEL_SHA256 = (
+    "497c4a919fc7f03882cb9796b132ab3b5fcc4c4af9ead08e9631b6a9fb2da29c"
+)
+NUMERIC_ROUNDOFF_ULPS = 4
 DETAIL_WINDOW = (0.85, 0.98)
 EMPTY_FREE_START = (1.0, 1.0, 0.0)
 EMPTY_FREE_ACTION = (0.6457718232379019, 0.6457718232379019)
@@ -267,6 +279,46 @@ def verify_candidate_source_identity(root: Path = Path.cwd()) -> dict[str, objec
             }
         )
     return {"candidate_head": head, "authored_sources": contents}
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def verify_runtime_identity() -> dict[str, str]:
+    """Verify pinned runtime metadata without importing the Pymunk module."""
+    python_version = sys.version.split()[0]
+    if python_version != EXPECTED_PYTHON:
+        raise ReceiptError(f"expected Python {EXPECTED_PYTHON}, got {python_version}")
+    try:
+        pymunk_version = importlib.metadata.version("pymunk")
+    except importlib.metadata.PackageNotFoundError as exc:
+        raise ReceiptError("Pymunk distribution metadata is unavailable") from exc
+    if pymunk_version != EXPECTED_PYMUNK:
+        raise ReceiptError(f"expected Pymunk {EXPECTED_PYMUNK}, got {pymunk_version}")
+    platform_identity = (platform.system().lower(), platform.machine().lower())
+    if platform_identity != EXPECTED_PLATFORM:
+        raise ReceiptError(f"unsupported runtime platform: {platform_identity}")
+    wheel_value = os.environ.get("PYMUNK_WHEEL_PATH")
+    if not wheel_value:
+        raise ReceiptError("PYMUNK_WHEEL_PATH must identify the frozen Pymunk wheel")
+    wheel_path = Path(wheel_value)
+    if not wheel_path.is_file():
+        raise ReceiptError("PYMUNK_WHEEL_PATH is not a file")
+    wheel_sha256 = _sha256_file(wheel_path)
+    if wheel_sha256 != EXPECTED_PYMUNK_WHEEL_SHA256:
+        raise ReceiptError("Pymunk wheel SHA-256 differs from frozen pin")
+    return {
+        "python": python_version,
+        "pymunk": pymunk_version,
+        "platform": platform_identity[0],
+        "machine": platform_identity[1],
+        "pymunk_wheel_sha256": wheel_sha256,
+    }
 
 
 def verify_a2_executable_identity(root: Path = Path.cwd()) -> dict[str, object]:
@@ -628,10 +680,11 @@ def _write_fsynced_atomic(final: Path, data: bytes) -> None:
 
 
 def _a2_worker_command() -> list[str]:
-    """Fixed child entry point; callable only after the external GO guard."""
+    """Launch the fixed child as a repo-root module after the external GO guard."""
     return [
         sys.executable,
-        str(Path(__file__).with_name("pymunk230_a2_diagnostic.py").resolve()),
+        "-m",
+        "experiments.pymunk230_a2_diagnostic",
         "--diagnostic-child",
     ]
 
@@ -652,15 +705,39 @@ def _worker_command(
     ]
 
 
-def _terminate_and_reap(child: subprocess.Popen[bytes], grace_s: float = 0.2) -> bool:
-    """Stop the isolated process group even if its direct child already exited."""
+def _terminate_and_reap(
+    child: subprocess.Popen[bytes], grace_s: float = 0.2
+) -> tuple[bool, str]:
+    """Boundedly stop/reap, distinguishing stale groups from uncertain cleanup."""
+    status = "term_sent"
+    cleanup_uncertain = False
     try:
         if os.name == "posix":
             os.killpg(child.pid, signal.SIGTERM)
         elif child.poll() is None:
             child.terminate()
     except ProcessLookupError:
-        pass
+        status = "process_group_absent"
+    except PermissionError:
+        # Darwin may report EPERM for an exited, unreaped group leader. Reap
+        # first, then distinguish an absent stale group from a live inaccessible one.
+        status = "term_permission_error_reaped"
+        code = child.poll()
+        if code is not None and not _process_group_alive(child.pid):
+            status = "stale_group_after_reap"
+        else:
+            try:
+                os.killpg(child.pid, signal.SIGTERM)
+                status = "term_sent_after_permission_retry"
+            except ProcessLookupError:
+                status = "group_absent_after_permission_retry"
+            except PermissionError:
+                cleanup_uncertain = True
+                status = "term_permission_denied_group_may_remain"
+    except OSError as exc:
+        cleanup_uncertain = True
+        status = f"term_os_error:{exc.errno}"
+
     deadline = time.monotonic() + grace_s
     while time.monotonic() < deadline:
         if child.poll() is None:
@@ -678,11 +755,33 @@ def _terminate_and_reap(child: subprocess.Popen[bytes], grace_s: float = 0.2) ->
             child.kill()
     except ProcessLookupError:
         pass
+    except PermissionError:
+        child.poll()
+        if os.name == "posix" and _process_group_alive(child.pid):
+            cleanup_uncertain = True
+            status = "kill_permission_denied_group_may_remain"
+    except OSError as exc:
+        cleanup_uncertain = True
+        status = f"kill_os_error:{exc.errno}"
     try:
         child.wait(timeout=0.5)
     except subprocess.TimeoutExpired:
-        return False
-    return True
+        return False, "direct_child_reap_timeout"
+    if os.name == "posix" and _process_group_alive(child.pid):
+        cleanup_uncertain = True
+        if status in {"term_sent", "term_sent_after_permission_retry"}:
+            status = "process_group_still_observed_after_kill"
+    return not cleanup_uncertain, status
+
+
+def _safe_terminate_and_reap(
+    child: subprocess.Popen[bytes],
+) -> tuple[bool, str]:
+    """Never let a cleanup exception bypass receipt creation."""
+    try:
+        return _terminate_and_reap(child)
+    except Exception as exc:
+        return False, f"cleanup_exception:{type(exc).__name__}"
 
 
 def _process_group_alive(pgid: int) -> bool:
@@ -763,6 +862,8 @@ def supervise(
             "sampled parent high-water plus live process group; platform-dependent; "
             "not hard aggregate enforcement"
         ),
+        "cleanup_status": "not_started",
+        "cleanup_succeeded": True,
         "cpu_measurement": (
             "parent plus sampled live process group and reaped direct-child usage; "
             "sampling may miss short-lived descendants"
@@ -797,6 +898,7 @@ def supervise(
         )
         reader.start()
         deadline = started + wall_cap_s
+        next_metrics_at = started
         while True:
             now = time.monotonic()
             remaining = deadline - now
@@ -810,8 +912,29 @@ def supervise(
                 line = lines.get(timeout=min(0.05, remaining))
             except queue.Empty:
                 line = None
-            if line is not None:
-                journal.append(json.loads(line.decode("utf-8")))
+            pending_lines = [] if line is None else [line]
+            while len(pending_lines) < STDOUT_QUEUE_RECORDS:
+                if time.monotonic() >= deadline:
+                    break
+                try:
+                    pending_lines.append(lines.get_nowait())
+                except queue.Empty:
+                    break
+            for pending_line in pending_lines:
+                if time.monotonic() >= deadline:
+                    failure = "wall_cap"
+                    break
+                try:
+                    journal.append(json.loads(pending_line.decode("utf-8")))
+                except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                    usage["stdout_protocol_error"] = type(exc).__name__
+                    usage["stdout_invalid_line_sha256"] = hashlib.sha256(
+                        pending_line
+                    ).hexdigest()
+                    failure = "stdout_invalid_json"
+                    break
+            if failure in {"wall_cap", "stdout_invalid_json"}:
+                break
 
             code = child.poll()
             if reader_status.error is not None:
@@ -821,6 +944,10 @@ def supervise(
                 failure = "worker_exit" if code else "worker_completed"
                 break
 
+            now = time.monotonic()
+            if now < next_metrics_at:
+                continue
+            next_metrics_at = now + METRICS_INTERVAL_SECONDS
             metrics = _process_metrics(child.pid)
             parent_cpu = max(0.0, time.process_time() - parent_cpu_started)
             reaped_cpu = max(0.0, _reaped_children_cpu_seconds() - children_cpu_started)
@@ -849,8 +976,12 @@ def supervise(
                 failure = "rss_cap"
                 break
 
-        if not _terminate_and_reap(child):
-            failure = "child_reap_timeout"
+        cleanup_ok, cleanup_status = _safe_terminate_and_reap(child)
+        usage.update(
+            {"cleanup_status": cleanup_status, "cleanup_succeeded": cleanup_ok}
+        )
+        if not cleanup_ok and failure == "worker_completed":
+            failure = "cleanup_uncertain"
         if reader is not None:
             reader.join(timeout=max(0.2, min(1.0, wall_cap_s)))
             if reader.is_alive():
@@ -878,8 +1009,11 @@ def supervise(
             failure = "cpu_cap"
     except BaseException as exc:
         failure = f"supervisor_error:{type(exc).__name__}"
-        if child is not None and not _terminate_and_reap(child):
-            failure = "child_reap_timeout"
+        if child is not None:
+            cleanup_ok, cleanup_status = _safe_terminate_and_reap(child)
+            usage.update(
+                {"cleanup_status": cleanup_status, "cleanup_succeeded": cleanup_ok}
+            )
         if reader is not None:
             reader.join(timeout=1.0)
         journal.close()
@@ -1011,8 +1145,9 @@ def _plan_event(
 def validate_a2_diagnostic_output(
     directory: Path,
     expected_candidate_identity: dict[str, object] | None = None,
+    expected_runtime_identity: dict[str, str] | None = None,
 ) -> None:
-    """Fail closed on incomplete identities, controls, schema, or event stream."""
+    """Validate identities, raw coverage, interval matches, and step accounting."""
     path = directory / "events.jsonl"
     data = path.read_bytes()
     if len(data) + STOP_RECEIPT_RESERVE_BYTES > MAX_OUTPUT_BYTES:
@@ -1032,8 +1167,21 @@ def validate_a2_diagnostic_output(
     events = [cast(dict[str, object], row["event"]) for row in rows]
     if [row.get("sequence") for row in rows] != list(range(1, len(rows) + 1)):
         raise ReceiptError("diagnostic sequence is incomplete")
-    if any(event.get("schema") != "pymunk230-a2-first-event-v1" for event in events):
+    if any(event.get("schema") != "pymunk230-a2-first-event-v2" for event in events):
         raise ReceiptError("diagnostic schema identity mismatch")
+    allowed_kinds = {
+        "diagnostic_manifest",
+        "checkpoint",
+        "detail",
+        "command_summary",
+        "matched_checkpoint_comparison",
+        "matched_detail_comparison",
+        "first_divergences",
+        "control_summary",
+        "diagnostic_complete",
+    }
+    if any(event.get("kind") not in allowed_kinds for event in events):
+        raise ReceiptError("diagnostic contains an unknown or error record")
     if events[0].get("kind") != "diagnostic_manifest":
         raise ReceiptError("diagnostic manifest is missing")
     manifest = events[0]
@@ -1063,8 +1211,8 @@ def validate_a2_diagnostic_output(
         raise ReceiptError("diagnostic candidate identity mismatch")
     source_identity = manifest.get("source_content_identity")
     expected_sources = [
-        {"path": path, "bytes": size, "blob_oid": oid, "sha256": sha256}
-        for path, size, oid, sha256 in FROZEN_EXECUTABLE_SOURCES
+        {"path": source_path, "bytes": size, "blob_oid": oid, "sha256": sha256}
+        for source_path, size, oid, sha256 in FROZEN_EXECUTABLE_SOURCES
     ]
     if (
         not isinstance(source_identity, dict)
@@ -1073,42 +1221,86 @@ def validate_a2_diagnostic_output(
         or source_identity.get("sources") != expected_sources
         or not isinstance(source_identity.get("detached_inputs"), dict)
     ):
-        raise ReceiptError("diagnostic manifest identity mismatch")
+        raise ReceiptError("diagnostic frozen-source identity mismatch")
+    runtime_identity = manifest.get("runtime_identity")
+    expected_runtime = {
+        "python": EXPECTED_PYTHON,
+        "pymunk": EXPECTED_PYMUNK,
+        "platform": EXPECTED_PLATFORM[0],
+        "machine": EXPECTED_PLATFORM[1],
+        "pymunk_wheel_sha256": EXPECTED_PYMUNK_WHEEL_SHA256,
+    }
+    if (
+        not isinstance(runtime_identity, dict)
+        or runtime_identity != expected_runtime
+        or (
+            expected_runtime_identity is not None
+            and runtime_identity != expected_runtime_identity
+        )
+    ):
+        raise ReceiptError("diagnostic runtime identity mismatch")
     if any(event.get("kind") == "diagnostic_child_error" for event in events):
         raise ReceiptError("diagnostic child reported an error")
+
     complete = [event for event in events if event.get("kind") == "diagnostic_complete"]
     if len(complete) != 1 or events[-1] is not complete[0]:
         raise ReceiptError("diagnostic completion record is missing or duplicated")
-    if complete[0].get("total_substeps") != MAX_SUBSTEPS:
-        raise ReceiptError("diagnostic completion accounting mismatch")
+    completion = complete[0]
     summaries = [event for event in events if event.get("kind") == "command_summary"]
-    if len(summaries) != 4:
-        raise ReceiptError("A2 command summaries are incomplete")
-    expected = {"a2_n400_cmd1", "a2_n400_cmd2", "a2_n800_cmd1", "a2_n800_cmd2"}
-    if {event.get("case_id") for event in summaries} != expected:
-        raise ReceiptError("A2 command identity mismatch")
-    matched = [
-        event
-        for event in events
-        if event.get("kind") == "matched_checkpoint_comparison"
-    ]
-    if len(matched) != len(CHECKPOINTS) * 2:
-        raise ReceiptError("equal-time coarse checkpoint comparisons are incomplete")
-    detailed_matches = [
-        event for event in events if event.get("kind") == "matched_detail_comparison"
-    ]
-    expected_detail_matches = sum(
-        1 for index in range(400) if DETAIL_WINDOW[0] <= index / 400 < DETAIL_WINDOW[1]
-    )
-    if len(detailed_matches) != expected_detail_matches:
-        raise ReceiptError("equal-time detailed cmd2 comparisons are incomplete")
-    if not any(event.get("kind") == "first_divergences" for event in events):
-        raise ReceiptError("first divergence attribution is missing")
-    controls = [event for event in events if event.get("kind") == "control_summary"]
-    if len(controls) != 4 or any(
-        event.get("contact_events") != [] for event in controls
+    expected_cases = {
+        "a2_n400_cmd1": 400,
+        "a2_n400_cmd2": 400,
+        "a2_n800_cmd1": 800,
+        "a2_n800_cmd2": 800,
+    }
+    if len(summaries) != 4 or {event.get("case_id") for event in summaries} != set(
+        expected_cases
     ):
-        raise ReceiptError("empty-free controls are incomplete or contacted")
+        raise ReceiptError("A2 command summaries are incomplete")
+    if any(
+        event.get("substeps") != expected_cases.get(str(event.get("case_id")))
+        for event in summaries
+    ):
+        raise ReceiptError("A2 command substep accounting mismatch")
+    target_substeps = sum(cast(int, event["substeps"]) for event in summaries)
+
+    controls = [event for event in events if event.get("kind") == "control_summary"]
+    expected_controls = {
+        (resolution, role)
+        for resolution in (400, 800)
+        for role in ("primary", "fresh_replay")
+    }
+    if (
+        len(controls) != 4
+        or {(event.get("resolution"), event.get("role")) for event in controls}
+        != expected_controls
+    ):
+        raise ReceiptError("empty-free controls are incomplete")
+    if any(
+        event.get("fixture_id") != "empty-free"
+        or event.get("start") != list(EMPTY_FREE_START)
+        or event.get("action") != list(EMPTY_FREE_ACTION)
+        or event.get("step_count") != event.get("resolution")
+        or event.get("contact_events") != []
+        for event in controls
+    ):
+        raise ReceiptError("empty-free controls are malformed or contacted")
+    control_substeps = sum(cast(int, event["step_count"]) for event in controls)
+    control_streams = [
+        canonical_json(
+            {
+                key: value
+                for key, value in event.items()
+                if key not in {"case_id", "role"}
+            }
+        )
+        for event in controls
+    ]
+    if (
+        completion.get("control_stream_sha256")
+        != hashlib.sha256(b"\n".join(control_streams)).hexdigest()
+    ):
+        raise ReceiptError("empty-free control stream digest mismatch")
     for resolution in (400, 800):
         pair = [
             {
@@ -1121,6 +1313,269 @@ def validate_a2_diagnostic_output(
         ]
         if len(pair) != 2 or pair[0] != pair[1]:
             raise ReceiptError("empty-free primary/fresh replay mismatch")
+    if (
+        target_substeps != 2_400
+        or control_substeps != 2_400
+        or completion.get("target_substeps") != target_substeps
+        or completion.get("control_substeps") != control_substeps
+        or completion.get("total_substeps") != target_substeps + control_substeps
+        or completion.get("total_substeps") != MAX_SUBSTEPS
+    ):
+        raise ReceiptError("diagnostic recomputed substep accounting mismatch")
+
+    checkpoints = [event for event in events if event.get("kind") == "checkpoint"]
+    expected_checkpoint_keys = {
+        (resolution, command, progress)
+        for resolution in (400, 800)
+        for command, progress in CHECKPOINTS
+    }
+    actual_checkpoint_keys = {
+        (
+            event.get("resolution"),
+            event.get("command_id"),
+            event.get("command_progress"),
+        )
+        for event in checkpoints
+    }
+    if (
+        len(checkpoints) != len(expected_checkpoint_keys)
+        or actual_checkpoint_keys != expected_checkpoint_keys
+    ):
+        raise ReceiptError("raw checkpoint coverage is incomplete or duplicated")
+    for event in checkpoints:
+        resolution = cast(int, event["resolution"])
+        progress = cast(float, event["command_progress"])
+        expected_index = int(round(progress * resolution))
+        expected_interval_count = 0 if expected_index == 0 else resolution // 400
+        state = event.get("state")
+        interval = event.get("interval_samples")
+        expected_interval_indices = (
+            []
+            if expected_index == 0
+            else list(
+                range(
+                    expected_index - expected_interval_count,
+                    expected_index,
+                )
+            )
+        )
+        if (
+            event.get("fixture_id") != A2_CASE_ID
+            or event.get("substep") != expected_index
+            or not isinstance(state, dict)
+            or not isinstance(interval, list)
+            or len(interval) != expected_interval_count
+            or any(not isinstance(sample, dict) for sample in interval)
+            or [
+                sample.get("substep")
+                for sample in cast(list[dict[str, object]], interval)
+            ]
+            != expected_interval_indices
+            or not isinstance(state.get("position_m"), list)
+            or len(cast(list[object], state.get("position_m"))) != 2
+            or not isinstance(state.get("velocity_mps"), list)
+            or len(cast(list[object], state.get("velocity_mps"))) != 2
+            or not isinstance(state.get("heading_rad"), (int, float))
+            or not isinstance(state.get("angular_velocity_rps"), (int, float))
+        ):
+            raise ReceiptError(
+                "raw checkpoint content or interval alignment is invalid"
+            )
+        for sample in cast(list[object], interval):
+            if not isinstance(sample, dict):
+                raise ReceiptError("raw checkpoint interval sample is malformed")
+            if (
+                not isinstance(sample.get("before"), dict)
+                or not isinstance(sample.get("after"), dict)
+                or not isinstance(sample.get("contact_set"), list)
+                or not isinstance(sample.get("callbacks"), list)
+                or not isinstance(sample.get("motor_refresh_applied"), bool)
+                or not isinstance(sample.get("motor_velocity_before_step_mps"), list)
+                or not isinstance(
+                    sample.get("motor_angular_velocity_before_step_rps"), (int, float)
+                )
+            ):
+                raise ReceiptError("raw checkpoint interval sample is malformed")
+
+    details = [event for event in events if event.get("kind") == "detail"]
+    expected_detail_keys = {
+        (resolution, index)
+        for resolution in (400, 800)
+        for index in range(resolution)
+        if DETAIL_WINDOW[0] <= index / resolution < DETAIL_WINDOW[1]
+    }
+    actual_detail_keys = {
+        (event.get("resolution"), event.get("substep")) for event in details
+    }
+    if (
+        len(details) != len(expected_detail_keys)
+        or actual_detail_keys != expected_detail_keys
+    ):
+        raise ReceiptError("raw detail coverage is incomplete or duplicated")
+    for event in details:
+        resolution = cast(int, event["resolution"])
+        index = cast(int, event["substep"])
+        start = index / resolution
+        end = (index + 1) / resolution
+        if (
+            event.get("case_id") != f"a2_n{resolution}_cmd2"
+            or event.get("command_id") != "cmd2"
+            or event.get("command_progress") != start
+            or event.get("command_end_progress") != end
+            or end > DETAIL_WINDOW[1]
+            or not isinstance(event.get("before"), dict)
+            or not isinstance(event.get("after"), dict)
+            or not isinstance(event.get("callbacks"), list)
+            or not isinstance(event.get("contact_set"), list)
+            or not isinstance(event.get("motor_refresh_applied"), bool)
+            or not isinstance(event.get("motor_velocity_before_step_mps"), list)
+            or not isinstance(
+                event.get("motor_angular_velocity_before_step_rps"), (int, float)
+            )
+        ):
+            raise ReceiptError("raw detail record content is invalid")
+
+    matched = [
+        event
+        for event in events
+        if event.get("kind") == "matched_checkpoint_comparison"
+    ]
+    expected_matches = set(CHECKPOINTS)
+    if (
+        len(matched) != len(expected_matches)
+        or {
+            (event.get("command_id"), event.get("command_progress"))
+            for event in matched
+        }
+        != expected_matches
+    ):
+        raise ReceiptError("equal-time coarse checkpoint comparisons are incomplete")
+    checkpoint_lookup = {
+        (
+            cast(str, event["command_id"]),
+            cast(float, event["command_progress"]),
+            cast(int, event["resolution"]),
+        ): event
+        for event in checkpoints
+    }
+    for command, progress in CHECKPOINTS:
+        low = checkpoint_lookup[(command, progress, 400)]
+        high = checkpoint_lookup[(command, progress, 800)]
+        comparison = next(
+            event
+            for event in matched
+            if event.get("command_id") == command
+            and event.get("command_progress") == progress
+        )
+        low_index = cast(int, low["substep"])
+        high_index = cast(int, high["substep"])
+        high_interval = cast(list[dict[str, object]], high["interval_samples"])
+        expected_high_interval = (
+            [] if low_index == 0 else [2 * low_index - 2, 2 * low_index - 1]
+        )
+        if (
+            comparison.get("n400") != low
+            or comparison.get("n800") != high
+            or high_index != 2 * low_index
+            or comparison.get("equal_physical_endpoint") is not True
+            or comparison.get("n400_endpoint_substep") != low_index
+            or comparison.get("n800_endpoint_substep") != high_index
+            or [sample.get("substep") for sample in high_interval]
+            != expected_high_interval
+            or comparison.get("n800_interval_substeps") != expected_high_interval
+        ):
+            raise ReceiptError("coarse comparison endpoints/intervals are misaligned")
+
+    details_matched = [
+        event for event in events if event.get("kind") == "matched_detail_comparison"
+    ]
+    expected_matched_count = sum(
+        1 for index in range(400) if DETAIL_WINDOW[0] <= index / 400 < DETAIL_WINDOW[1]
+    )
+    if len(details_matched) != expected_matched_count:
+        raise ReceiptError("equal-time detailed cmd2 comparisons are incomplete")
+    detail_by_progress = {
+        event.get("interval_start_progress"): event for event in details_matched
+    }
+    if len(detail_by_progress) != expected_matched_count:
+        raise ReceiptError("matched detail intervals are duplicated")
+    for index in range(400):
+        start = index / 400
+        if not DETAIL_WINDOW[0] <= start < DETAIL_WINDOW[1]:
+            continue
+        detail_match = detail_by_progress.get(start)
+        low_raw = next(
+            row
+            for row in details
+            if row.get("resolution") == 400 and row.get("substep") == index
+        )
+        high_first = next(
+            row
+            for row in details
+            if row.get("resolution") == 800 and row.get("substep") == index * 2
+        )
+        high_second = next(
+            row
+            for row in details
+            if row.get("resolution") == 800 and row.get("substep") == index * 2 + 1
+        )
+        low_comparison = detail_match.get("n400") if detail_match is not None else None
+        high_comparison = detail_match.get("n800") if detail_match is not None else None
+        if (
+            detail_match is None
+            or detail_match.get("interval_end_progress") != (index + 1) / 400
+            or detail_match.get("n800_interval_substeps") != [index * 2, index * 2 + 1]
+            or detail_match.get("equal_physical_endpoint") is not True
+            or not isinstance(low_comparison, dict)
+            or low_comparison.get("state") != low_raw.get("after")
+            or low_comparison.get("interval_samples") != [low_raw]
+            or not isinstance(high_comparison, dict)
+            or high_comparison.get("state") != high_second.get("after")
+            or high_comparison.get("interval_samples") != [high_first, high_second]
+        ):
+            raise ReceiptError(
+                "matched detail comparison uses unequal intervals or omits raw halves"
+            )
+    divergence = [event for event in events if event.get("kind") == "first_divergences"]
+    required_divergence_categories = {
+        "contact_or_chord_set",
+        "callback_values",
+        "motor_refresh_decision",
+        "motor_state_above_roundoff_floor",
+        "pose_heading_or_velocity_above_roundoff_floor",
+    }
+    if (
+        len(divergence) != 1
+        or not isinstance(divergence[0].get("by_category"), dict)
+        or set(cast(dict[str, object], divergence[0]["by_category"]))
+        != required_divergence_categories
+    ):
+        raise ReceiptError("first divergence attribution is missing or malformed")
+    by_category = cast(dict[str, object], divergence[0]["by_category"])
+    for category, first_row in by_category.items():
+        if first_row is None:
+            continue
+        if (
+            not isinstance(first_row, dict)
+            or first_row.get("command_id") not in {"cmd1", "cmd2"}
+            or not isinstance(first_row.get("comparison"), dict)
+            or category
+            not in cast(
+                list[str],
+                cast(dict[str, object], first_row["comparison"]).get("categories", []),
+            )
+        ):
+            raise ReceiptError("first divergence attribution content is invalid")
+
+
+def _validate_a2_output_location(output: Path, source_root: Path = Path.cwd()) -> None:
+    """Require output outside the clean tree so candidate identity stays stable."""
+    root = source_root.resolve()
+    resolved_output = output.resolve()
+    if resolved_output == root or root in resolved_output.parents:
+        raise ReceiptError(
+            "A2 output directory must be outside the clean candidate tree"
+        )
 
 
 def supervise_a2_diagnostic(output: Path, *, approved_head: str) -> dict[str, object]:
@@ -1141,11 +1596,13 @@ def supervise_a2_diagnostic(output: Path, *, approved_head: str) -> dict[str, ob
         or len(head) != 40
     ):
         raise ReceiptError("fresh exact-HEAD A2 execution GO is absent")
+    _validate_a2_output_location(output)
     try:
         candidate_identity = verify_candidate_source_identity()
         if candidate_identity.get("candidate_head") != head:
             raise ReceiptError("candidate identity HEAD differs from approved HEAD")
         verify_a2_executable_identity()
+        runtime_identity = verify_runtime_identity()
     except ReceiptError as exc:
         started = time.monotonic()
         journal = BoundedJournal(output)
@@ -1161,7 +1618,7 @@ def supervise_a2_diagnostic(output: Path, *, approved_head: str) -> dict[str, ob
     return supervise(
         output,
         validator=lambda directory: validate_a2_diagnostic_output(
-            directory, candidate_identity
+            directory, candidate_identity, runtime_identity
         ),
         provenance_mode=DETACHED_PROVENANCE,
         _diagnostic_worker=True,

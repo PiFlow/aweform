@@ -25,12 +25,17 @@ from experiments.pymunk230_a2_instrumentation import (
     FROZEN_CASES_SHA256,
     FROZEN_PHYSICS_SHA256,
     MAX_SUBSTEPS,
+    NUMERIC_ROUNDOFF_ULPS,
     canonical_json,
     verify_a2_executable_identity,
+    verify_runtime_identity,
 )
 
-SCHEMA = "pymunk230-a2-first-event-v1"
-MATCH_RULE = "N800 even substeps match N400 at equal physical time"
+SCHEMA = "pymunk230-a2-first-event-v2"
+MATCH_RULE = (
+    "states match at equal interval endpoints; one N400 interval is compared "
+    "with both corresponding N800 half-intervals"
+)
 
 
 def _emit(emit: Callable[[dict[str, object]], None], row: dict[str, object]) -> None:
@@ -177,6 +182,11 @@ def _run_target_resolution(
                 sample = samples[progress_index - 1]
                 state = sample["after"]
                 substep = progress_index
+            interval_width = microsteps // 400
+            interval_start = max(0, progress_index - interval_width)
+            interval_samples = (
+                [] if progress_index == 0 else samples[interval_start:progress_index]
+            )
             checkpoint_row: dict[str, object] = {
                 "kind": "checkpoint",
                 "schema": SCHEMA,
@@ -188,6 +198,11 @@ def _run_target_resolution(
                 "substep": substep,
                 "global_substep": (command_index * microsteps) + substep,
                 "state": state,
+                "interval_start_progress": identity[1] - 1 / 400
+                if progress_index
+                else identity[1],
+                "interval_end_progress": identity[1],
+                "interval_samples": interval_samples,
                 "shaft_rad": list(result.shaft),
                 "contact_seen": bool(result.contact_seen),
                 "motor_refresh_suppressed": not bool(sample["motor_refresh_applied"]),
@@ -230,6 +245,7 @@ def _run_target_resolution(
                 "case_id": f"a2_n{microsteps}_{command_id}",
                 "fixture_id": A2_CASE_ID,
                 "resolution": microsteps,
+                "substeps": len(samples),
                 "command_id": command_id,
                 "requested_action_rad": list(result.request),
                 "shaft_rad": list(result.shaft),
@@ -302,56 +318,155 @@ def _run_empty_control(
     )
 
 
+def _comparison_fields(row: dict[str, object]) -> dict[str, object]:
+    """Aggregate one N400 interval against its one/two equal-time N800 intervals."""
+    samples = cast(list[dict[str, object]], row.get("interval_samples", []))
+    if samples:
+        contact_set = sorted(
+            {
+                contact
+                for sample in samples
+                for contact in cast(list[str], sample["contact_set"])
+            }
+        )
+        callbacks = [
+            callback
+            for sample in samples
+            for callback in cast(list[dict[str, object]], sample["callbacks"])
+        ]
+        refresh_decisions = [
+            bool(sample["motor_refresh_applied"]) for sample in samples
+        ]
+        first = samples[0]
+        motor_velocity = cast(list[float], first["motor_velocity_before_step_mps"])
+        motor_angular = float(
+            cast(float, first["motor_angular_velocity_before_step_rps"])
+        )
+    else:
+        contact_set = cast(list[str], row.get("contact_set", []))
+        callbacks = cast(list[dict[str, object]], row.get("callbacks", []))
+        decision = row.get("motor_refresh_applied")
+        refresh_decisions = [] if decision is None else [bool(decision)]
+        motor_velocity = cast(list[float], row["motor_velocity_before_step_mps"])
+        motor_angular = float(
+            cast(float, row["motor_angular_velocity_before_step_rps"])
+        )
+    return {
+        "contact_set": contact_set,
+        "callbacks": callbacks,
+        "refresh_decisions": refresh_decisions,
+        "motor_velocity": motor_velocity,
+        "motor_angular": motor_angular,
+    }
+
+
+def _roundoff_floor(*values: float) -> float:
+    return NUMERIC_ROUNDOFF_ULPS * max(math.ulp(value) for value in values)
+
+
 def _compare_states(
     left: dict[str, object], right: dict[str, object]
 ) -> dict[str, object]:
     left_state = cast(dict[str, object], left["state"])
     right_state = cast(dict[str, object], right["state"])
+    left_fields = _comparison_fields(left)
+    right_fields = _comparison_fields(right)
     left_pose = cast(list[float], left_state["position_m"])
     right_pose = cast(list[float], right_state["position_m"])
     left_velocity = cast(list[float], left_state["velocity_mps"])
     right_velocity = cast(list[float], right_state["velocity_mps"])
+    left_heading = float(cast(float, left_state["heading_rad"]))
+    right_heading = float(cast(float, right_state["heading_rad"]))
     yaw_delta = math.atan2(
-        math.sin(
-            float(cast(float, left_state["heading_rad"]))
-            - float(cast(float, right_state["heading_rad"]))
-        ),
-        math.cos(
-            float(cast(float, left_state["heading_rad"]))
-            - float(cast(float, right_state["heading_rad"]))
-        ),
+        math.sin(left_heading - right_heading),
+        math.cos(left_heading - right_heading),
     )
     position_delta = _squared_delta(left_pose, right_pose)
     velocity_delta = _squared_delta(left_velocity, right_velocity)
-    contact_left = set(cast(list[str], left["contact_set"]))
-    contact_right = set(cast(list[str], right["contact_set"]))
-    callbacks_differ = left["callbacks"] != right["callbacks"]
-    refresh_differs = left["motor_refresh_applied"] != right["motor_refresh_applied"]
-    left_motor_velocity = cast(list[float], left["motor_velocity_before_step_mps"])
-    right_motor_velocity = cast(list[float], right["motor_velocity_before_step_mps"])
+    left_contact = set(cast(list[str], left_fields["contact_set"]))
+    right_contact = set(cast(list[str], right_fields["contact_set"]))
+    callbacks_differ = left_fields["callbacks"] != right_fields["callbacks"]
+    left_refresh = cast(list[bool], left_fields["refresh_decisions"])
+    right_refresh = cast(list[bool], right_fields["refresh_decisions"])
+    refresh_differs = bool(left_refresh and right_refresh) and any(
+        decision != left_refresh[0] for decision in right_refresh
+    )
+    left_motor_velocity = cast(list[float], left_fields["motor_velocity"])
+    right_motor_velocity = cast(list[float], right_fields["motor_velocity"])
     motor_velocity_delta = _squared_delta(left_motor_velocity, right_motor_velocity)
-    motor_angular_delta = float(
-        cast(float, left["motor_angular_velocity_before_step_rps"])
-    ) - float(cast(float, right["motor_angular_velocity_before_step_rps"]))
+    left_motor_angular = cast(float, left_fields["motor_angular"])
+    right_motor_angular = cast(float, right_fields["motor_angular"])
+    motor_angular_delta = left_motor_angular - right_motor_angular
+    motor_floor = _roundoff_floor(
+        *left_motor_velocity,
+        *right_motor_velocity,
+        left_motor_angular,
+        right_motor_angular,
+    )
+    pose_floor = _roundoff_floor(
+        *left_pose,
+        *right_pose,
+        left_heading,
+        right_heading,
+        *left_velocity,
+        *right_velocity,
+        cast(float, left_state["angular_velocity_rps"]),
+        cast(float, right_state["angular_velocity_rps"]),
+    )
+    motor_material = (
+        motor_velocity_delta > motor_floor or abs(motor_angular_delta) > motor_floor
+    )
+    pose_material = (
+        position_delta > pose_floor
+        or abs(yaw_delta) > pose_floor
+        or velocity_delta > pose_floor
+        or abs(
+            cast(float, left_state["angular_velocity_rps"])
+            - cast(float, right_state["angular_velocity_rps"])
+        )
+        > pose_floor
+    )
+    numeric_differences = {
+        "position_m": position_delta,
+        "heading_rad_wrapped": yaw_delta,
+        "velocity_mps": velocity_delta,
+        "angular_velocity_rps": cast(float, left_state["angular_velocity_rps"])
+        - cast(float, right_state["angular_velocity_rps"]),
+        "motor_velocity_mps": motor_velocity_delta,
+        "motor_angular_velocity_rps": motor_angular_delta,
+    }
     categories: list[str] = []
-    if contact_left != contact_right:
+    if left_contact != right_contact:
         categories.append("contact_or_chord_set")
     if callbacks_differ:
         categories.append("callback_values")
     if refresh_differs:
         categories.append("motor_refresh_decision")
-    if motor_velocity_delta != 0.0 or motor_angular_delta != 0.0:
-        categories.append("motor_state")
-    if position_delta != 0.0 or yaw_delta != 0.0 or velocity_delta != 0.0:
-        categories.append("pose_heading_or_velocity")
+    if motor_material:
+        categories.append("motor_state_above_roundoff_floor")
+    if pose_material:
+        categories.append("pose_heading_or_velocity_above_roundoff_floor")
     return {
         "categories": categories,
+        "numeric_differences": numeric_differences,
+        "numeric_roundoff_floor": {
+            "ulps": NUMERIC_ROUNDOFF_ULPS,
+            "motor_max_abs": motor_floor,
+            "pose_max_abs": pose_floor,
+            "interpretation": (
+                "descriptive floating-point classification only; not a gate"
+            ),
+        },
+        "roundoff_only_numeric_difference": not (motor_material or pose_material)
+        and any(value != 0.0 for value in numeric_differences.values()),
         "n400": left,
         "n800": right,
-        "contact_set_added_at_n800": sorted(contact_right - contact_left),
-        "contact_set_missing_at_n800": sorted(contact_left - contact_right),
+        "contact_set_added_at_n800": sorted(right_contact - left_contact),
+        "contact_set_missing_at_n800": sorted(left_contact - right_contact),
         "callback_values_differ": callbacks_differ,
         "motor_refresh_decision_differs": refresh_differs,
+        "motor_refresh_decisions_n400": left_refresh,
+        "motor_refresh_decisions_n800": right_refresh,
         "motor_velocity_before_step_n400_mps": left_motor_velocity,
         "motor_velocity_before_step_n800_mps": right_motor_velocity,
         "motor_velocity_delta_mps": motor_velocity_delta,
@@ -359,12 +474,9 @@ def _compare_states(
         "position_delta_m": position_delta,
         "heading_delta_rad_wrapped": yaw_delta,
         "velocity_delta_mps": velocity_delta,
-        "angular_velocity_delta_rps": float(
-            cast(float, left_state["angular_velocity_rps"])
-        )
-        - float(cast(float, right_state["angular_velocity_rps"])),
+        "angular_velocity_delta_rps": numeric_differences["angular_velocity_rps"],
         "threshold_interpretation": (
-            "descriptive exact numeric differences; no acceptance threshold"
+            "descriptive exact numeric differences; no scientific acceptance threshold"
         ),
     }
 
@@ -379,8 +491,8 @@ def _emit_comparisons(
         "contact_or_chord_set": None,
         "callback_values": None,
         "motor_refresh_decision": None,
-        "motor_state": None,
-        "pose_heading_or_velocity": None,
+        "motor_state_above_roundoff_floor": None,
+        "pose_heading_or_velocity_above_roundoff_floor": None,
     }
     for command_id, progress in CHECKPOINTS:
         left = checkpoints_by_resolution[400][(command_id, progress)]
@@ -400,39 +512,68 @@ def _emit_comparisons(
                 "schema": SCHEMA,
                 "command_id": command_id,
                 "command_progress": progress,
-                "n800_even_substep_match": True,
+                "n400_endpoint_substep": left["substep"],
+                "n800_endpoint_substep": right["substep"],
+                "n800_interval_substeps": [
+                    sample["substep"]
+                    for sample in cast(
+                        list[dict[str, object]], right["interval_samples"]
+                    )
+                ],
+                "equal_physical_endpoint": True,
                 **comparison,
             },
         )
     high_detail = {cast(int, row["substep"]): row for row in detail_by_resolution[800]}
     for low in detail_by_resolution[400]:
         low_index = cast(int, low["substep"])
-        high = high_detail.get(low_index * 2)
-        if high is None:
-            raise RuntimeError("equal_time_detailed_match_missing")
-
-        def state_row(row: dict[str, object]) -> dict[str, object]:
-            state = cast(dict[str, object], row["after"])
-            return {
-                "state": state,
-                "contact_set": row["contact_set"],
-                "callbacks": row["callbacks"],
-                "motor_refresh_applied": row["motor_refresh_applied"],
-                "motor_velocity_before_step_mps": row["motor_velocity_before_step_mps"],
-                "motor_angular_velocity_before_step_rps": row[
-                    "motor_angular_velocity_before_step_rps"
-                ],
-            }
-
-        comparison = _compare_states(state_row(low), state_row(high))
+        high_first = high_detail.get(low_index * 2)
+        high_second = high_detail.get(low_index * 2 + 1)
+        if high_first is None or high_second is None:
+            raise RuntimeError("equal_time_detailed_interval_pair_missing")
+        low_row = {
+            "state": low["after"],
+            "interval_samples": [low],
+            "contact_set": low["contact_set"],
+            "callbacks": low["callbacks"],
+            "motor_refresh_applied": low["motor_refresh_applied"],
+            "motor_velocity_before_step_mps": low["motor_velocity_before_step_mps"],
+            "motor_angular_velocity_before_step_rps": low[
+                "motor_angular_velocity_before_step_rps"
+            ],
+        }
+        high_row = {
+            "state": high_second["after"],
+            "interval_samples": [high_first, high_second],
+            "contact_set": high_second["contact_set"],
+            "callbacks": high_second["callbacks"],
+            "motor_refresh_applied": high_second["motor_refresh_applied"],
+            "motor_velocity_before_step_mps": high_first[
+                "motor_velocity_before_step_mps"
+            ],
+            "motor_angular_velocity_before_step_rps": high_first[
+                "motor_angular_velocity_before_step_rps"
+            ],
+        }
+        comparison = _compare_states(low_row, high_row)
+        for category in cast(list[str], comparison["categories"]):
+            if first[category] is None:
+                first[category] = {
+                    "command_id": "cmd2",
+                    "interval_start_progress": low["command_progress"],
+                    "interval_end_progress": low["command_end_progress"],
+                    "comparison": comparison,
+                }
         _emit(
             emit,
             {
                 "kind": "matched_detail_comparison",
                 "schema": SCHEMA,
                 "command_id": "cmd2",
-                "command_progress": low["command_progress"],
-                "n800_even_substep_match": True,
+                "interval_start_progress": low["command_progress"],
+                "interval_end_progress": low["command_end_progress"],
+                "n800_interval_substeps": [low_index * 2, low_index * 2 + 1],
+                "equal_physical_endpoint": True,
                 **comparison,
             },
         )
@@ -447,6 +588,7 @@ def run_a2_diagnostic(emit: Callable[[dict[str, object]], None]) -> None:
 
     candidate_identity = verify_candidate_source_identity()
     executable_identity = verify_a2_executable_identity()
+    runtime_identity = verify_runtime_identity()
     _emit(
         emit,
         {
@@ -466,6 +608,7 @@ def run_a2_diagnostic(emit: Callable[[dict[str, object]], None]) -> None:
             "physics_source_sha256": FROZEN_PHYSICS_SHA256,
             "source_content_identity": executable_identity,
             "candidate_source_identity": candidate_identity,
+            "runtime_identity": runtime_identity,
             "retry_policy": "none",
         },
     )
@@ -525,6 +668,7 @@ def child_main() -> int:
                     "schema": SCHEMA,
                     "error_type": "ExecutionGateClosed",
                     "error": "fresh exact-HEAD execution GO is absent",
+                    "pymunk_module_loaded": "pymunk" in sys.modules,
                 }
             )
             return 2

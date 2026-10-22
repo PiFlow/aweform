@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import io
 import json
+import os
+import platform
 import queue
 import shutil
+import signal
 import subprocess
 import sys
 import threading
@@ -393,6 +397,65 @@ def test_supervisor_receipts_stdout_queue_overflow(
     assert usage["rss_high_water_bytes"] <= instrument.MAX_RSS_BYTES
 
 
+def test_legacy_eight_record_queue_reproduces_legitimate_burst_overflow() -> None:
+    target: queue.Queue[bytes] = queue.Queue(maxsize=8)
+    status = instrument._ReaderStatus(done=threading.Event())
+    burst = b"".join(instrument.canonical_json({"i": i}) + b"\n" for i in range(113))
+    instrument._read_lines(io.BytesIO(burst), target, status)
+    assert status.error == "stdout_queue_overflow"
+    assert target.qsize() == 8
+
+
+def test_supervisor_drains_prescribed_bursts_at_default_bounded_capacity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    assert instrument.STDOUT_QUEUE_RECORDS == 128
+    assert instrument.MAX_EVENTS == 10_000
+    assert instrument.MAX_OUTPUT_BYTES == 2 * 1024 * 1024
+    monkeypatch.setattr(
+        instrument, "_process_metrics", lambda _pid: {"cpu_s": 0.0, "rss_bytes": 1}
+    )
+    for count in (61, 113, 66):
+        output = tmp_path / f"burst-{count}"
+        script = (
+            "import json,sys; "
+            "sys.stdout.write(''.join(json.dumps({'i':i},separators=(',',':'))+'\\n' "
+            f"for i in range({count}))); sys.stdout.flush()"
+        )
+        monkeypatch.setattr(
+            instrument,
+            "_worker_command",
+            lambda script=script: [sys.executable, "-c", script],
+        )
+        receipt = instrument.supervise(output, wall_cap_s=5.0)
+        assert receipt["reason"] == "worker_completed"
+        assert cast(dict[str, object], receipt["last_durable"])["sequence"] == count
+        assert len((output / "events.jsonl").read_bytes().splitlines()) == count
+
+
+def test_supervisor_event_cap_preserves_partial_flood_receipt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(instrument, "MAX_EVENTS", 10)
+    script = (
+        "import json,sys; "
+        "sys.stdout.write(''.join(json.dumps({'i':i})+'\\n' for i in range(100))); "
+        "sys.stdout.flush()"
+    )
+    monkeypatch.setattr(
+        instrument, "_worker_command", lambda: [sys.executable, "-c", script]
+    )
+    receipt = instrument.supervise(tmp_path / "event-cap", wall_cap_s=5.0)
+    assert receipt["reason"] == "supervisor_error:ReceiptError"
+    assert cast(dict[str, object], receipt["last_durable"])["sequence"] == 10
+    digest = hashlib.sha256(
+        (tmp_path / "event-cap" / "STOP.json").read_bytes()
+    ).hexdigest()
+    assert (tmp_path / "event-cap" / "STOP.sha256").read_text(
+        "ascii"
+    ) == f"{digest}  STOP.json\n"
+
+
 def test_aggregate_cpu_cap_includes_parent_and_child(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -656,7 +719,90 @@ def test_a2_frozen_six_file_content_identity_is_recomputed_model_free() -> None:
 
 def test_diagnostic_module_import_is_model_free() -> None:
     assert "pymunk" not in sys.modules
-    assert diagnostic.SCHEMA == "pymunk230-a2-first-event-v1"
+    assert diagnostic.SCHEMA == "pymunk230-a2-first-event-v2"
+
+
+def test_worker_launch_import_topology_fails_old_script_and_passes_closed_module() -> (
+    None
+):
+    root = Path(__file__).resolve().parents[1]
+    environment = dict(os.environ)
+    environment.pop("AWEFORM_A2_EXECUTION_GO_SHA", None)
+    old_script = subprocess.run(
+        [
+            sys.executable,
+            str(Path(diagnostic.__file__).resolve()),
+            "--diagnostic-child",
+        ],
+        cwd=root,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert old_script.returncode != 0
+    assert "No module named 'experiments'" in old_script.stderr
+
+    command = instrument._a2_worker_command()
+    assert command[1:3] == ["-m", "experiments.pymunk230_a2_diagnostic"]
+    repaired = subprocess.run(
+        command,
+        cwd=root,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    row = json.loads(repaired.stdout)
+    assert repaired.returncode == 2
+    assert row["error_type"] == "ExecutionGateClosed"
+    assert row["pymunk_module_loaded"] is False
+
+
+def test_runtime_identity_is_verified_from_metadata_without_pymunk_import(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wheel = tmp_path / "pymunk.whl"
+    wheel.write_bytes(b"synthetic wheel identity")
+    sha256 = hashlib.sha256(wheel.read_bytes()).hexdigest()
+    monkeypatch.setattr(sys, "version", f"{instrument.EXPECTED_PYTHON} test")
+    monkeypatch.setattr(importlib.metadata, "version", lambda name: "7.2.0")
+    monkeypatch.setattr(platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(platform, "machine", lambda: "arm64")
+    monkeypatch.setattr(instrument, "EXPECTED_PYMUNK_WHEEL_SHA256", sha256)
+    monkeypatch.setenv("PYMUNK_WHEEL_PATH", str(wheel))
+    identity = instrument.verify_runtime_identity()
+    assert identity == {
+        "python": "3.14.7",
+        "pymunk": "7.2.0",
+        "platform": "darwin",
+        "machine": "arm64",
+        "pymunk_wheel_sha256": sha256,
+    }
+    assert "pymunk" not in sys.modules
+
+    monkeypatch.setattr(importlib.metadata, "version", lambda _name: "9.9")
+    with pytest.raises(instrument.ReceiptError, match="expected Pymunk"):
+        instrument.verify_runtime_identity()
+    monkeypatch.setattr(importlib.metadata, "version", lambda _name: "7.2.0")
+    monkeypatch.setattr(platform, "machine", lambda: "x86_64")
+    with pytest.raises(instrument.ReceiptError, match="unsupported runtime platform"):
+        instrument.verify_runtime_identity()
+    monkeypatch.setattr(platform, "machine", lambda: "arm64")
+    monkeypatch.setattr(instrument, "EXPECTED_PYMUNK_WHEEL_SHA256", "0" * 64)
+    with pytest.raises(instrument.ReceiptError, match="wheel SHA-256"):
+        instrument.verify_runtime_identity()
+    monkeypatch.delenv("PYMUNK_WHEEL_PATH")
+    with pytest.raises(instrument.ReceiptError, match="PYMUNK_WHEEL_PATH"):
+        instrument.verify_runtime_identity()
+
+
+def test_a2_output_must_not_dirty_the_candidate_tree(tmp_path: Path) -> None:
+    with pytest.raises(
+        instrument.ReceiptError, match="outside the clean candidate tree"
+    ):
+        instrument._validate_a2_output_location(tmp_path / "out", tmp_path)
+    instrument._validate_a2_output_location(tmp_path.parent / "outside", tmp_path)
 
 
 def test_step_observer_captures_numeric_state_and_restores_wrapper() -> None:
@@ -717,6 +863,13 @@ def _write_synthetic_diagnostic_stream(
                 "candidate_head": "a" * 40,
                 "authored_sources": [],
             },
+            "runtime_identity": {
+                "python": instrument.EXPECTED_PYTHON,
+                "pymunk": instrument.EXPECTED_PYMUNK,
+                "platform": instrument.EXPECTED_PLATFORM[0],
+                "machine": instrument.EXPECTED_PLATFORM[1],
+                "pymunk_wheel_sha256": instrument.EXPECTED_PYMUNK_WHEEL_SHA256,
+            },
             "retry_policy": "none",
         }
     ]
@@ -727,22 +880,155 @@ def _write_synthetic_diagnostic_stream(
                     "kind": "command_summary",
                     "schema": diagnostic.SCHEMA,
                     "case_id": f"a2_n{resolution}_{command}",
+                    "substeps": resolution,
                 }
             )
-    events.extend(
-        {"kind": "matched_checkpoint_comparison", "schema": diagnostic.SCHEMA}
-        for _ in range(len(instrument.CHECKPOINTS) * 2)
+
+    def state(progress: float) -> dict[str, object]:
+        return {
+            "position_m": [progress, 0.0],
+            "heading_rad": 0.0,
+            "velocity_mps": [1.0, 0.0],
+            "angular_velocity_rps": 0.0,
+        }
+
+    def sample(index: int, resolution: int) -> dict[str, object]:
+        return {
+            "substep": index,
+            "before": state(index / resolution),
+            "after": state((index + 1) / resolution),
+            "contact_set": [],
+            "callbacks": [],
+            "motor_refresh_applied": True,
+            "motor_velocity_before_step_mps": [1.0, 0.0],
+            "motor_angular_velocity_before_step_rps": 0.0,
+        }
+
+    for resolution in (400, 800):
+        for command in ("cmd1", "cmd2"):
+            for checkpoint_command, progress in instrument.CHECKPOINTS:
+                if checkpoint_command != command:
+                    continue
+                endpoint = int(round(progress * resolution))
+                width = resolution // 400
+                interval = (
+                    []
+                    if endpoint == 0
+                    else [
+                        sample(index, resolution)
+                        for index in range(endpoint - width, endpoint)
+                    ]
+                )
+                last = interval[-1] if interval else sample(0, resolution)
+                events.append(
+                    {
+                        "kind": "checkpoint",
+                        "schema": diagnostic.SCHEMA,
+                        "case_id": f"a2_n{resolution}_{command}",
+                        "fixture_id": instrument.A2_CASE_ID,
+                        "resolution": resolution,
+                        "command_id": command,
+                        "command_progress": progress,
+                        "substep": endpoint,
+                        "state": state(progress),
+                        "interval_samples": interval,
+                        "contact_set": last["contact_set"],
+                        "callbacks": last["callbacks"],
+                        "motor_refresh_applied": last["motor_refresh_applied"],
+                        "motor_velocity_before_step_mps": last[
+                            "motor_velocity_before_step_mps"
+                        ],
+                        "motor_angular_velocity_before_step_rps": last[
+                            "motor_angular_velocity_before_step_rps"
+                        ],
+                    }
+                )
+        for index in range(resolution):
+            progress = index / resolution
+            end = (index + 1) / resolution
+            if instrument.DETAIL_WINDOW[0] <= progress < instrument.DETAIL_WINDOW[1]:
+                events.append(
+                    {
+                        "kind": "detail",
+                        "schema": diagnostic.SCHEMA,
+                        "case_id": f"a2_n{resolution}_cmd2",
+                        "fixture_id": instrument.A2_CASE_ID,
+                        "resolution": resolution,
+                        "command_id": "cmd2",
+                        "command_progress": progress,
+                        "command_end_progress": end,
+                        **sample(index, resolution),
+                    }
+                )
+
+    for command, progress in instrument.CHECKPOINTS:
+        low_index = int(round(progress * 400))
+        high_index = 2 * low_index
+        checkpoint_rows = {
+            (row["resolution"], row["command_id"], row["command_progress"]): row
+            for row in events
+            if row.get("kind") == "checkpoint"
+        }
+        low = checkpoint_rows[(400, command, progress)]
+        high = checkpoint_rows[(800, command, progress)]
+        events.append(
+            {
+                "kind": "matched_checkpoint_comparison",
+                "schema": diagnostic.SCHEMA,
+                "command_id": command,
+                "command_progress": progress,
+                "n400_endpoint_substep": low_index,
+                "n800_endpoint_substep": high_index,
+                "n800_interval_substeps": []
+                if low_index == 0
+                else [2 * low_index - 2, 2 * low_index - 1],
+                "equal_physical_endpoint": True,
+                "n400": low,
+                "n800": high,
+            }
+        )
+    for index in range(400):
+        start = index / 400
+        if instrument.DETAIL_WINDOW[0] <= start < instrument.DETAIL_WINDOW[1]:
+            raw_details = {
+                (row["resolution"], row["substep"]): row
+                for row in events
+                if row.get("kind") == "detail"
+            }
+            low = raw_details[(400, index)]
+            high_first = raw_details[(800, index * 2)]
+            high_second = raw_details[(800, index * 2 + 1)]
+            events.append(
+                {
+                    "kind": "matched_detail_comparison",
+                    "schema": diagnostic.SCHEMA,
+                    "interval_start_progress": start,
+                    "interval_end_progress": (index + 1) / 400,
+                    "n800_interval_substeps": [index * 2, index * 2 + 1],
+                    "equal_physical_endpoint": True,
+                    "n400": {"state": low["after"], "interval_samples": [low]},
+                    "n800": {
+                        "state": high_second["after"],
+                        "interval_samples": [high_first, high_second],
+                    },
+                }
+            )
+    events.append(
+        {
+            "kind": "first_divergences",
+            "schema": diagnostic.SCHEMA,
+            "by_category": {
+                name: None
+                for name in (
+                    "contact_or_chord_set",
+                    "callback_values",
+                    "motor_refresh_decision",
+                    "motor_state_above_roundoff_floor",
+                    "pose_heading_or_velocity_above_roundoff_floor",
+                )
+            },
+        }
     )
-    detail_count = sum(
-        1
-        for index in range(400)
-        if instrument.DETAIL_WINDOW[0] <= index / 400 < instrument.DETAIL_WINDOW[1]
-    )
-    events.extend(
-        {"kind": "matched_detail_comparison", "schema": diagnostic.SCHEMA}
-        for _ in range(detail_count)
-    )
-    events.append({"kind": "first_divergences", "schema": diagnostic.SCHEMA})
     for resolution in (400, 800):
         for role in ("primary", "fresh_replay"):
             events.append(
@@ -769,7 +1055,22 @@ def _write_synthetic_diagnostic_stream(
         {
             "kind": "diagnostic_complete",
             "schema": diagnostic.SCHEMA,
+            "target_substeps": 2_400,
+            "control_substeps": 2_400,
             "total_substeps": instrument.MAX_SUBSTEPS,
+            "control_stream_sha256": hashlib.sha256(
+                b"\n".join(
+                    instrument.canonical_json(
+                        {
+                            key: value
+                            for key, value in event.items()
+                            if key not in {"case_id", "role"}
+                        }
+                    )
+                    for event in events
+                    if event.get("kind") == "control_summary"
+                )
+            ).hexdigest(),
         }
     )
     path.mkdir()
@@ -814,18 +1115,237 @@ def test_checkpoint_schedule_and_equal_time_numeric_attribution() -> None:
         "contact_or_chord_set",
         "callback_values",
         "motor_refresh_decision",
-        "motor_state",
-        "pose_heading_or_velocity",
+        "motor_state_above_roundoff_floor",
+        "pose_heading_or_velocity_above_roundoff_floor",
     ]
     assert comparison["position_delta_m"] == pytest.approx(0.5)
     assert comparison["velocity_delta_mps"] == pytest.approx(0.5)
     assert cast(str, comparison["threshold_interpretation"]).startswith("descriptive")
 
 
+def test_interval_alignment_uses_both_high_halves_and_keeps_real_differences() -> None:
+    def state(progress: float) -> dict[str, object]:
+        return {
+            "position_m": [progress, 0.0],
+            "heading_rad": 0.0,
+            "velocity_mps": [1.0, 0.0],
+            "angular_velocity_rps": 0.0,
+        }
+
+    def sample(
+        index: int, resolution: int, *, divergent: bool = False
+    ) -> dict[str, object]:
+        return {
+            "substep": index,
+            "before": state(index / resolution),
+            "after": state((index + 1) / resolution),
+            "contact_set": ["hull|A2_03"] if divergent else [],
+            "callbacks": [{"impulse": 1.0}] if divergent else [],
+            "motor_refresh_applied": not divergent,
+            "motor_velocity_before_step_mps": [0.5, 0.5] if divergent else [1.0, 0.0],
+            "motor_angular_velocity_before_step_rps": 0.0,
+        }
+
+    checkpoints: dict[int, dict[tuple[str, float], dict[str, object]]] = {}
+    for resolution in (400, 800):
+        rows: dict[tuple[str, float], dict[str, object]] = {}
+        for command, progress in instrument.CHECKPOINTS:
+            endpoint = int(round(progress * resolution))
+            width = resolution // 400
+            interval = (
+                []
+                if endpoint == 0
+                else [
+                    sample(index, resolution)
+                    for index in range(endpoint - width, endpoint)
+                ]
+            )
+            rows[(command, progress)] = {
+                "state": state(progress),
+                "substep": endpoint,
+                "interval_samples": interval,
+                "contact_set": [],
+                "callbacks": [],
+                "motor_refresh_applied": True,
+                "motor_velocity_before_step_mps": [1.0, 0.0],
+                "motor_angular_velocity_before_step_rps": 0.0,
+            }
+        checkpoints[resolution] = rows
+
+    low_details = [
+        {
+            "substep": index,
+            "command_progress": index / 400,
+            "command_end_progress": (index + 1) / 400,
+            "after": state((index + 1) / 400),
+            **sample(index, 400),
+        }
+        for index in range(340, 392)
+    ]
+    high_details = [
+        {
+            "substep": index,
+            "command_progress": index / 800,
+            "command_end_progress": (index + 1) / 800,
+            "after": state((index + 1) / 800),
+            **sample(index, 800, divergent=index == 701),
+        }
+        for index in range(680, 784)
+    ]
+    output: list[dict[str, object]] = []
+    diagnostic._emit_comparisons(
+        checkpoints,
+        {400: low_details, 800: high_details},
+        emit=output.append,
+    )
+    comparisons = [
+        event for event in output if event["kind"] == "matched_detail_comparison"
+    ]
+    assert len(comparisons) == 52
+    assert all(
+        event["n800_interval_substeps"]
+        == [
+            2 * int(cast(float, event["interval_start_progress"]) * 400),
+            2 * int(cast(float, event["interval_start_progress"]) * 400) + 1,
+        ]
+        for event in comparisons
+    )
+    assert all(event["position_delta_m"] == 0.0 for event in comparisons)
+    assert all(
+        "pose_heading_or_velocity_above_roundoff_floor"
+        not in cast(list[str], event["categories"])
+        for event in comparisons
+    )
+    target = next(
+        event for event in comparisons if event["interval_start_progress"] == 350 / 400
+    )
+    target_categories = cast(list[str], target["categories"])
+    assert "contact_or_chord_set" in target_categories
+    assert "callback_values" in target_categories
+    assert "motor_refresh_decision" in target_categories
+    assert (
+        len(
+            cast(
+                list[object],
+                cast(dict[str, object], target["n800"])["interval_samples"],
+            )
+        )
+        == 2
+    )
+    legacy_wrong_endpoint = high_details[20]["after"]
+    aligned_endpoint = high_details[21]["after"]
+    low_endpoint = low_details[10]["after"]
+    assert (
+        diagnostic._squared_delta(
+            cast(
+                list[float],
+                cast(dict[str, object], legacy_wrong_endpoint)["position_m"],
+            ),
+            cast(list[float], cast(dict[str, object], low_endpoint)["position_m"]),
+        )
+        > 0.001
+    )
+    assert (
+        diagnostic._squared_delta(
+            cast(list[float], cast(dict[str, object], aligned_endpoint)["position_m"]),
+            cast(list[float], cast(dict[str, object], low_endpoint)["position_m"]),
+        )
+        == 0.0
+    )
+
+
 def test_a2_output_validator_accepts_complete_synthetic_stream(tmp_path: Path) -> None:
     output = tmp_path / "valid"
     _write_synthetic_diagnostic_stream(output)
     instrument.validate_a2_diagnostic_output(output)
+
+
+def test_a2_output_validator_rejects_missing_raw_detail_and_false_completion(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "missing-raw-detail"
+    _write_synthetic_diagnostic_stream(output)
+    event_path = output / "events.jsonl"
+    rows = [json.loads(line) for line in event_path.read_text().splitlines()]
+    rows.pop(
+        next(i for i, row in enumerate(rows) if row["event"].get("kind") == "detail")
+    )
+    event_path.write_text(
+        "".join(
+            instrument.canonical_json({"sequence": i, "event": row["event"]}).decode()
+            + "\n"
+            for i, row in enumerate(rows, 1)
+        )
+    )
+    with pytest.raises(instrument.ReceiptError, match="raw detail coverage"):
+        instrument.validate_a2_diagnostic_output(output)
+
+    output = tmp_path / "false-completion"
+    _write_synthetic_diagnostic_stream(output)
+    event_path = output / "events.jsonl"
+    rows = [json.loads(line) for line in event_path.read_text().splitlines()]
+    completion = next(
+        row["event"]
+        for row in rows
+        if row["event"].get("kind") == "diagnostic_complete"
+    )
+    completion["total_substeps"] = 4_799
+    event_path.write_text(
+        "".join(
+            instrument.canonical_json({"sequence": i, "event": row["event"]}).decode()
+            + "\n"
+            for i, row in enumerate(rows, 1)
+        )
+    )
+    with pytest.raises(instrument.ReceiptError, match="recomputed substep accounting"):
+        instrument.validate_a2_diagnostic_output(output)
+
+
+def test_a2_output_validator_rejects_non_object_raw_interval_sample(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "malformed-raw-sample"
+    _write_synthetic_diagnostic_stream(output)
+    event_path = output / "events.jsonl"
+    rows = [json.loads(line) for line in event_path.read_text().splitlines()]
+    checkpoint = next(
+        row["event"]
+        for row in rows
+        if row["event"].get("kind") == "checkpoint"
+        and row["event"].get("interval_samples")
+    )
+    checkpoint["interval_samples"][0] = "not-an-object"
+    event_path.write_text(
+        "".join(
+            instrument.canonical_json({"sequence": i, "event": row["event"]}).decode()
+            + "\n"
+            for i, row in enumerate(rows, 1)
+        )
+    )
+    with pytest.raises(instrument.ReceiptError, match="raw checkpoint content"):
+        instrument.validate_a2_diagnostic_output(output)
+
+
+def test_a2_output_validator_rejects_control_step_count_mismatch(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "wrong-control-count"
+    _write_synthetic_diagnostic_stream(output)
+    event_path = output / "events.jsonl"
+    rows = [json.loads(line) for line in event_path.read_text().splitlines()]
+    control = next(
+        row["event"] for row in rows if row["event"].get("kind") == "control_summary"
+    )
+    control["step_count"] -= 1
+    event_path.write_text(
+        "".join(
+            instrument.canonical_json({"sequence": i, "event": row["event"]}).decode()
+            + "\n"
+            for i, row in enumerate(rows, 1)
+        )
+    )
+    with pytest.raises(instrument.ReceiptError, match="controls are malformed"):
+        instrument.validate_a2_diagnostic_output(output)
 
 
 def test_candidate_source_identity_requires_clean_exact_head(
@@ -941,6 +1461,50 @@ def test_reader_descendant_holding_pipe_is_killed_after_direct_child_exit(
         checksum
         == f"{hashlib.sha256(receipt_path.read_bytes()).hexdigest()}  STOP.json\n"
     )
+
+
+def test_darwin_eprem_after_exit_is_reaped_and_receipt_remains_hashed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if os.name != "posix":
+        pytest.skip("isolated process groups are POSIX-only")
+    original_killpg = os.killpg
+    permission_once = True
+
+    def darwin_eprem_once(pgid: int, sig: int) -> None:
+        nonlocal permission_once
+        if sig == signal.SIGTERM and permission_once:
+            permission_once = False
+            raise PermissionError(1, "simulated Darwin exited-unreaped EPERM")
+        original_killpg(pgid, sig)
+
+    original_reader = instrument._read_lines
+
+    def delayed_reader(
+        stream: object, target: queue.Queue[bytes], status: object
+    ) -> None:
+        time.sleep(0.1)
+        original_reader(stream, target, status)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "killpg", darwin_eprem_once)
+    monkeypatch.setattr(instrument, "_read_lines", delayed_reader)
+    monkeypatch.setattr(
+        instrument,
+        "_worker_command",
+        lambda: [sys.executable, "-c", "import sys;sys.stdout.write('not-json\\n')"],
+    )
+    monkeypatch.setattr(
+        instrument, "_process_metrics", lambda _pid: {"cpu_s": 0.0, "rss_bytes": 1}
+    )
+    output = tmp_path / "darwin-eprem"
+    receipt = instrument.supervise(output, wall_cap_s=2.0)
+    assert permission_once is False
+    assert receipt["reason"] == "stdout_invalid_json"
+    usage = cast(dict[str, object], receipt["resource_usage"])
+    assert usage["cleanup_status"] == "stale_group_after_reap"
+    assert usage["cleanup_succeeded"] is True
+    digest = hashlib.sha256((output / "STOP.json").read_bytes()).hexdigest()
+    assert (output / "STOP.sha256").read_text("ascii") == f"{digest}  STOP.json\n"
 
 
 def test_macos_process_metrics_sum_live_descendant_tree_with_timeout(
