@@ -222,7 +222,8 @@ def _run_target_resolution(
         if command_id == "cmd2":
             lower, upper = DETAIL_WINDOW
             for sample in samples:
-                progress = cast(int, sample["substep"]) / microsteps
+                substep_index = cast(int, sample["substep"])
+                progress = substep_index / microsteps
                 if lower <= progress < upper:
                     detail_row: dict[str, object] = {
                         "kind": "detail",
@@ -232,7 +233,9 @@ def _run_target_resolution(
                         "resolution": microsteps,
                         "command_id": command_id,
                         "command_progress": progress,
-                        "command_end_progress": min(progress + 1 / microsteps, upper),
+                        "command_end_progress": min(
+                            (substep_index + 1) / microsteps, upper
+                        ),
                         **sample,
                     }
                     detailed_cmd2.append(detail_row)

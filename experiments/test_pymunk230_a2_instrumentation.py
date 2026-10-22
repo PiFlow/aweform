@@ -15,8 +15,10 @@ import subprocess
 import sys
 import threading
 import time
+from collections.abc import Iterator
 from dataclasses import replace
 from pathlib import Path
+from types import ModuleType, SimpleNamespace
 from typing import cast
 
 import pytest
@@ -1252,6 +1254,182 @@ def test_interval_alignment_uses_both_high_halves_and_keeps_real_differences() -
         )
         == 0.0
     )
+
+
+def test_actual_diagnostic_producer_stream_passes_validator_model_free(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class Vector:
+        def __init__(self, x: float, y: float) -> None:
+            self.x = x
+            self.y = y
+
+        def __iter__(self) -> Iterator[float]:
+            yield self.x
+            yield self.y
+
+    class Body:
+        def __init__(self) -> None:
+            self._position = Vector(0.0, 0.0)
+            self.angle = 0.0
+            self.velocity = Vector(1.0, 0.0)
+            self.angular_velocity = 0.0
+            self.command_steps = 0
+
+        @property
+        def position(self) -> Vector:
+            return self._position
+
+        @position.setter
+        def position(self, value: Vector | tuple[float, float]) -> None:
+            self._position = value if isinstance(value, Vector) else Vector(*value)
+
+    class FakeWorld:
+        def __init__(self, microsteps: int) -> None:
+            self.microsteps = microsteps
+            self.body = Body()
+            self.space = FakeSpace(self)
+            self.suppress_velocity_refresh_after_contact = False
+            self._contact_seen_this_command = False
+            self._contact_events: list[object] = []
+            self.command_origin = 0.0
+
+        def advance(self, action: tuple[float, float]) -> SimpleNamespace:
+            self.command_origin = self.body.position.x
+            self.body.command_steps = 0
+            self._contact_events = []
+            self._contact_seen_this_command = False
+            start = tuple(self.body.position)
+            start_angle = self.body.angle
+            for _ in range(self.microsteps):
+                self.space.step(1 / self.microsteps)
+            end = tuple(self.body.position)
+            return SimpleNamespace(
+                request=action,
+                shaft=action,
+                start=start,
+                start_angle=start_angle,
+                end=end,
+                end_angle=self.body.angle,
+                velocity=tuple(self.body.velocity),
+                angular_velocity=self.body.angular_velocity,
+                contact_seen=False,
+                contact_events=[],
+            )
+
+    class FakeSpace:
+        def __init__(self, world: FakeWorld) -> None:
+            self.world = world
+
+        def step(self, _dt: float) -> None:
+            self.world.body.command_steps += 1
+            self.world.body.position = (
+                self.world.command_origin
+                + self.world.body.command_steps / self.world.microsteps,
+                self.world.body.position.y,
+            )
+
+    cases_module = ModuleType("experiments.pymunk230_obstacles.cases")
+    setattr(
+        cases_module,
+        "frozen_cases",
+        lambda: [
+            SimpleNamespace(
+                case_id=instrument.A2_CASE_ID,
+                start=instrument.A2_START,
+                commands=(instrument.A2_ACTION, instrument.A2_ACTION),
+            )
+        ],
+    )
+    world_module = ModuleType("experiments.pymunk230_obstacles.world")
+    setattr(world_module, "ObstacleContactWorld", FakeWorld)
+    fixture_module = ModuleType("experiments.pymunk_contact_prototype.fixture")
+    setattr(fixture_module, "ContactWorld", FakeWorld)
+    for package_name in (
+        "experiments.pymunk230_obstacles",
+        "experiments.pymunk_contact_prototype",
+    ):
+        package = ModuleType(package_name)
+        setattr(package, "__path__", [])
+        monkeypatch.setitem(sys.modules, package_name, package)
+    monkeypatch.setitem(
+        sys.modules, "experiments.pymunk230_obstacles.cases", cases_module
+    )
+    monkeypatch.setitem(
+        sys.modules, "experiments.pymunk230_obstacles.world", world_module
+    )
+    monkeypatch.setitem(
+        sys.modules, "experiments.pymunk_contact_prototype.fixture", fixture_module
+    )
+    monkeypatch.setattr(
+        instrument,
+        "verify_candidate_source_identity",
+        lambda: {"candidate_head": "a" * 40, "authored_sources": []},
+    )
+    monkeypatch.setattr(
+        diagnostic,
+        "verify_runtime_identity",
+        lambda: {
+            "python": instrument.EXPECTED_PYTHON,
+            "pymunk": instrument.EXPECTED_PYMUNK,
+            "platform": instrument.EXPECTED_PLATFORM[0],
+            "machine": instrument.EXPECTED_PLATFORM[1],
+            "pymunk_wheel_sha256": instrument.EXPECTED_PYMUNK_WHEEL_SHA256,
+        },
+    )
+    output = tmp_path / "producer-output"
+    journal = instrument.BoundedJournal(output)
+    diagnostic.run_a2_diagnostic(journal.append)
+    journal.close()
+
+    instrument.validate_a2_diagnostic_output(output)
+    rows = [json.loads(line) for line in journal.path.read_text().splitlines()]
+    events = [cast(dict[str, object], row["event"]) for row in rows]
+    assert len(events) == 258
+    assert len(events) <= instrument.MAX_EVENTS
+    assert journal.last_durable["sequence"] == 258
+    assert (
+        journal._bytes + instrument.STOP_RECEIPT_RESERVE_BYTES
+        <= instrument.MAX_OUTPUT_BYTES
+    )
+    assert journal.path.stat().st_size == journal._bytes
+    assert sum(event.get("kind") == "checkpoint" for event in events) == 26
+    details = [event for event in events if event.get("kind") == "detail"]
+    assert len(details) == 156
+    assert sum(event["resolution"] == 400 for event in details) == 52
+    assert sum(event["resolution"] == 800 for event in details) == 104
+    assert sum(event.get("kind") == "control_summary" for event in events) == 4
+    summaries = [event for event in events if event.get("kind") == "command_summary"]
+    assert sum(cast(int, event["substeps"]) for event in summaries) == 2_400
+    controls = [event for event in events if event.get("kind") == "control_summary"]
+    assert sum(cast(int, event["step_count"]) for event in controls) == 2_400
+    completion = next(
+        event for event in events if event.get("kind") == "diagnostic_complete"
+    )
+    assert completion["total_substeps"] == 4_800
+    assert "pymunk" not in sys.modules
+    comparisons = [
+        event for event in events if event.get("kind") == "matched_detail_comparison"
+    ]
+    assert len(comparisons) == 52
+    assert all(event["position_delta_m"] == 0.0 for event in comparisons)
+    divergence = next(
+        event for event in events if event.get("kind") == "first_divergences"
+    )
+    assert all(
+        value is None
+        for value in cast(dict[str, object], divergence["by_category"]).values()
+    )
+
+    shifted = next(event for event in details if event["substep"] == 340)
+    shifted["command_end_progress"] = (
+        cast(float, shifted["command_end_progress"]) + 1e-6
+    )
+    journal.path.write_text(
+        "".join(instrument.canonical_json(row).decode() + "\n" for row in rows)
+    )
+    with pytest.raises(instrument.ReceiptError, match="raw detail record content"):
+        instrument.validate_a2_diagnostic_output(output)
 
 
 def test_a2_output_validator_accepts_complete_synthetic_stream(tmp_path: Path) -> None:
