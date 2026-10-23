@@ -1,0 +1,59 @@
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+from aweform.d045 import D045_MAX_WHEEL_DELTA_RAD
+from aweform.d046 import D046ConsequencePredictor
+from aweform.d061 import D061_SEEDS, run_d061_lifetime, validate_d061_seeds
+
+
+def test_d061_seeds_use_formal_reservation_guard() -> None:
+    assert validate_d061_seeds() == D061_SEEDS
+    with pytest.raises(ValueError):
+        validate_d061_seeds((50001, 22054, 22055))
+
+
+def test_d046_predictor_starts_zero_and_updates_from_actual_transition() -> None:
+    learner = D046ConsequencePredictor()
+    before = learner.weight_digest()
+    assert all(value == 0.0 for value in learner.weights)
+    observation = np.zeros(8, dtype=np.float32)
+    prediction = learner.predict(observation, (0.0, 0.0))
+    next_observation = np.ones(8, dtype=np.float32) * 0.1
+    learner.update_from_transition(
+        observation, (0.0, 0.0), next_observation, prediction
+    )
+    assert learner.weight_digest() != before
+
+
+def test_d061_short_run_has_zero_reward_empty_info_and_legal_actions() -> None:
+    result = run_d061_lifetime(22053, "L", horizon=32)
+    assert result["transitions"] == 32
+    assert result["reward_zero"] is True
+    assert result["info_empty"] is True
+    assert result["float32_eight_channels"] is True
+    assert result["legal_wheels"] is True
+    assert result["learner_updates"] == 32
+    assert result["learner_nonzero_weight_updates"] > 0
+    assert result["horizon_censored"] is True
+
+
+def test_d061_arms_match_through_warmup_and_reset_the_learner_per_lifetime() -> None:
+    baseline = run_d061_lifetime(22053, "U", horizon=564)
+    live = run_d061_lifetime(22053, "L", horizon=564)
+    assert baseline["trace"] == live["trace"]
+    assert (
+        baseline["learner_final_weight_digest"] == live["learner_final_weight_digest"]
+    )
+    assert baseline["selected_action_differs_from_U_proposal"] == 0
+    fresh = D046ConsequencePredictor()
+    assert all(value == 0.0 for value in fresh.weights)
+
+
+def test_d061_u_arm_replays_the_seeded_d053_explorer() -> None:
+    result = run_d061_lifetime(22053, "U", horizon=8)
+    trace = result["trace"]
+    assert isinstance(trace, list)
+    assert trace[0]["symbolic_proposal"] in {"MOVE_FORWARD", "TURN_LEFT", "TURN_RIGHT"}
+    assert D045_MAX_WHEEL_DELTA_RAD > 0
