@@ -50,6 +50,16 @@ L changed the selected U proposal on 18,141–18,262 of its 20,435–20,441 real
 - Independent unchanged-baseline identity audit: [`D-061-v05-experience-viability-u-identity-audit.json`](D-061-v05-experience-viability-u-identity-audit.json), 620 bytes, SHA-256 `625d09d65a4dbab5480eba43104f7ce6f54bb89b79dbb97df7cc2886c6124463`. A separate `run_d053_lifetime` replay matched all saved U-arm action proposals, executed wheel pairs, modes, energy, contacts, positions and headings at 1,202/1,205/1,206 retained frames for seeds 22053/22054/22055; mode counts and preemptions also matched exactly.
 - Exact executed SHA `0b96d83c0bf5cbd1fbf07066bdd993eee08c05b3` is in branch history. An earlier completed seed-22053 run at `1b5ae406ca45291c807e8b45b863c8530d728e35` is preserved as [`D-061-v05-experience-viability-invalidated-read-budget.json`](D-061-v05-experience-viability-invalidated-read-budget.json), SHA-256 `039d4af8229dc259791444f1d6ac4f90b776364d812c973e83ac617208740559`. It is excluded: audit found a redundant extra P scoring read and a per-arm eligible-decision schedule that did not equalize realized candidate-query budgets. The corrected fixed-slot protocol above was then executed at the official SHA; no superseded output is pooled into this result. An earlier all-seed trial at `696a72ebbf06c9a675ab6c9ee66dbadae543195b` was interrupted before completion and before producing an artifact; no result from it was used.
 
+To regenerate the replay from the committed execution artifact (without executing a lifetime):
+
+```sh
+uv run aweform-export-d061-html \
+  --input development/D-061-v05-experience-viability.json \
+  --output development/D-061-v05-experience-viability-replay.html
+```
+
+The action display uses each saved executed wheel pair, including L/P selections and Level-1 preemptions; the original roaming proposal remains a separate field in the execution artifact.
+
 **`surprised_by`:** Experience-informed actions materially changed the trajectory and enabled repeated Level-1 charging on all three seeds, but with much greater movement/charging expenditure and lower final energy than U on two seeds. The permuted control also retained innate baseline charging on seed 22055.
 
 ## Validation
