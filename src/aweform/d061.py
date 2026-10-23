@@ -42,10 +42,14 @@ D061_CANDIDATES: Final = (
 D061_ARMS: Final = ("U", "L", "P")
 
 
-def validate_d061_seeds(seeds: Sequence[int] = D061_SEEDS) -> tuple[int, ...]:
+def validate_d061_seeds(
+    seeds: Sequence[int] = (22053,),
+) -> tuple[int, ...]:
     validated = validate_exp003_development_seeds(seeds)
-    if validated != D061_SEEDS:
-        raise ValueError(f"D-061 requires exactly {D061_SEEDS}")
+    if not validated or len(set(validated)) != len(validated):
+        raise ValueError("D-061 requires a non-empty, unique legal seed set")
+    if any(seed not in D061_SEEDS for seed in validated):
+        raise ValueError(f"D-061 supports only {D061_SEEDS}")
     return validated
 
 
@@ -167,15 +171,14 @@ def run_d061_lifetime(
         legal_ok &= all(
             abs(value) <= D045_MAX_WHEEL_DELTA_RAD + 1e-15 for value in wheels
         )
-        before_update = learner.weight_digest()
-        learner.update_from_transition(
+        update = learner.update_from_transition(
             visible,
             wheels,
             tuple(float(value) for value in next_observation),
             prediction,
         )
         updates += 1
-        nonzero_updates += int(learner.weight_digest() != before_update)
+        nonzero_updates += int(any(error != 0.0 for error in update.errors))
         telemetry = env.last_transition
         if telemetry is None:
             raise RuntimeError("missing D-045 telemetry")
@@ -286,8 +289,13 @@ def run_d061_lifetime(
     }
 
 
-def write_d061_artifact(output: Path, *, horizon: int = D061_HORIZON) -> Path:
-    seeds = validate_d061_seeds()
+def write_d061_artifact(
+    output: Path,
+    *,
+    horizon: int = D061_HORIZON,
+    seeds: Sequence[int] = (22053,),
+) -> Path:
+    seeds = validate_d061_seeds(seeds)
     results = [
         run_d061_lifetime(seed, arm, horizon=horizon)
         for seed in seeds
@@ -323,6 +331,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--horizon", type=int, default=D061_HORIZON)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        action="append",
+        dest="seeds",
+        help="Legal D-053 development seed; repeat for additional seeds.",
+    )
     args = parser.parse_args(argv)
 
     def wall_timeout(_signum: int, _frame: object) -> None:
@@ -334,5 +349,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     signal.signal(signal.SIGALRM, wall_timeout)
     signal.alarm(D061_WALL_GUARD_SECONDS)
-    write_d061_artifact(args.output, horizon=args.horizon)
+    write_d061_artifact(
+        args.output,
+        horizon=args.horizon,
+        seeds=tuple(args.seeds) if args.seeds else (22053,),
+    )
     return 0

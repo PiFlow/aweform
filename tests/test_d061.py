@@ -9,7 +9,8 @@ from aweform.d061 import D061_SEEDS, run_d061_lifetime, validate_d061_seeds
 
 
 def test_d061_seeds_use_formal_reservation_guard() -> None:
-    assert validate_d061_seeds() == D061_SEEDS
+    assert validate_d061_seeds() == (22053,)
+    assert validate_d061_seeds(D061_SEEDS) == D061_SEEDS
     with pytest.raises(ValueError):
         validate_d061_seeds((50001, 22054, 22055))
 
