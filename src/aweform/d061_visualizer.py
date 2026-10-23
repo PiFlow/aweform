@@ -60,7 +60,7 @@ def adapt_d061_trace(
                 x=cast(float, row["x"]),
                 y=cast(float, row["y"]),
                 heading=cast(float, row["heading"]),
-                action=f"{arm}: {row['symbolic_proposal']}",
+                action=f"{arm}: {row['action']}",
                 decision_mode=cast(str, row["active_mode"]),
                 energy=cast(float, row["energy_after"]),
                 thermal=cast(float, row["thermal"]),

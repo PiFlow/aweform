@@ -64,7 +64,11 @@ def test_d061_live_and_permuted_arms_get_equal_candidate_read_budgets() -> None:
     assert live["learner_updates"] == permuted["learner_updates"] == 572
 
 
-def test_saved_d061_frames_use_the_canonical_shared_renderer() -> None:
+@pytest.mark.parametrize("arm", ("U", "L", "P"))
+@pytest.mark.parametrize("mode", ("NORMAL", "RETURN", "CHARGE"))
+def test_saved_d061_frames_use_the_canonical_shared_renderer(
+    arm: str, mode: str
+) -> None:
     initial = {
         "position": (0.5, 0.5),
         "heading": 0.0,
@@ -79,7 +83,8 @@ def test_saved_d061_frames_use_the_canonical_shared_renderer() -> None:
             "y": 0.5,
             "heading": 0.0,
             "symbolic_proposal": "MOVE_FORWARD",
-            "active_mode": "NORMAL",
+            "action": [0.5, -0.5],
+            "active_mode": mode,
             "energy_after": 0.79,
             "thermal": 0.2875,
             "charging_contact_after": True,
@@ -92,7 +97,8 @@ def test_saved_d061_frames_use_the_canonical_shared_renderer() -> None:
             "cycle_index": 0,
         }
     ]
-    data = adapt_d061_trace(trace, seed=22053, arm="U", initial_state=initial)
+    data = adapt_d061_trace(trace, seed=22053, arm=arm, initial_state=initial)
+    assert data.frames[1].action == f"{arm}: [0.5, -0.5]"
     assert [frame.transition_index for frame in data.frames] == [0, 100]
     html = build_development_html_replay(
         (data,), schema="aweform.d061.test.v1", title="D-061 test"
