@@ -379,7 +379,6 @@ class DevelopmentVisualizationData:
     figure_title: str | None = None
     figure_annotation: str | None = None
     energy_thresholds: tuple[tuple[float, str], ...] | None = None
-    replay_label: str | None = None
 
     def __post_init__(self) -> None:
         if not self.source_label:
@@ -396,8 +395,6 @@ class DevelopmentVisualizationData:
             raise ValueError("figure_title must be non-empty when provided")
         if self.figure_annotation is not None and not self.figure_annotation:
             raise ValueError("figure_annotation must be non-empty when provided")
-        if self.replay_label is not None and not self.replay_label:
-            raise ValueError("replay_label must be non-empty when provided")
         _validate_coordinate("world_min", self.world_min)
         _validate_coordinate("world_max", self.world_max)
         if not all(
@@ -4686,8 +4683,7 @@ window.__AWEFORM_D043_REPLAYS__ = __AWEFORM_D043_PAYLOAD__;
   }
   replays.forEach(function (replay, index) {
     const option = document.createElement("option");
-    option.value = String(index);
-    option.textContent = replay.label || String(replay.seed);
+    option.value = String(index); option.textContent = String(replay.seed);
     seedSelect.appendChild(option);
   });
   seedSelect.addEventListener("change", function () {
@@ -4762,7 +4758,6 @@ def _development_html_replay_payload(
         raise ValueError("HTML export requires a seed")
     return {
         "seed": data.seed,
-        **({"label": data.replay_label} if data.replay_label is not None else {}),
         "title": data.figure_title or data.source_label,
         "world": {"min": list(data.world_min), "max": list(data.world_max)},
         "station": list(data.station_center) if data.station_center else None,
@@ -5077,139 +5072,6 @@ def adapt_d053_trace(
     )
 
 
-def adapt_d061_trace(
-    trace: Sequence[Mapping[str, object]],
-    *,
-    seed: int,
-    arm: str,
-    initial_state: Mapping[str, object],
-) -> DevelopmentVisualizationData:
-    """Adapt saved D-061 frames; never rerun the organism for visualization."""
-    from .d045 import (
-        D045_CONTACT_OFFSET_METRES,
-        D045_CONTACT_TOLERANCE_METRES,
-        D045_WORLD_MAX,
-        D045_WORLD_MIN,
-    )
-    from .d049 import D049_STATION_CENTER
-
-    position = cast(Sequence[float], initial_state["position"])
-    frames = [
-        DevelopmentVisualizationFrame(
-            transition_index=0,
-            x=float(position[0]),
-            y=float(position[1]),
-            heading=cast(float, initial_state["heading"]),
-            action="INITIAL",
-            decision_mode="NORMAL",
-            energy=cast(float, initial_state["energy_fraction"]),
-            thermal=cast(float, initial_state["temperature_channel"]),
-            charging_contact=cast(bool, initial_state["charging_contact"]),
-            terminated=False,
-            truncated=False,
-            simulated_seconds=0.0,
-        )
-    ]
-    for row in trace:
-        events = cast(list[str], row["events"])
-        frames.append(
-            DevelopmentVisualizationFrame(
-                transition_index=cast(int, row["transition"]),
-                x=cast(float, row["x"]),
-                y=cast(float, row["y"]),
-                heading=cast(float, row["heading"]),
-                action=f"{arm}: {row['symbolic_proposal']}",
-                decision_mode=cast(str, row["active_mode"]),
-                energy=cast(float, row["energy_after"]),
-                thermal=cast(float, row["thermal"]),
-                charging_contact=cast(bool, row["charging_contact_after"]),
-                terminated=cast(bool, row["terminated"]),
-                truncated=cast(bool, row["truncated"]),
-                simulated_seconds=cast(float, row["simulated_seconds"]),
-                charging_contact_before=cast(bool, row["charging_contact_before"]),
-                event_label=", ".join(events) if events else None,
-                command_source=cast(str, row["command_source"]),
-                cycle_index=cast(int, row["cycle_index"]),
-            )
-        )
-    station = D049_STATION_CENTER
-    return DevelopmentVisualizationData(
-        source_label="D-061 saved evaluator-side trace",
-        seed=seed,
-        world_min=D045_WORLD_MIN,
-        world_max=D045_WORLD_MAX,
-        station_center=station,
-        charging_radius=None,
-        energy_range=DevelopmentVisualizationRange(0.0, 1.0),
-        thermal_range=DevelopmentVisualizationRange(0.0, 1.0),
-        frames=tuple(frames),
-        visibility=DevelopmentVisualizationVisibility(
-            position_heading="EVALUATOR ONLY",
-            station_location="EVALUATOR ONLY",
-            energy="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
-            thermal="ORGANISM-VISIBLE NORMALIZED + EVALUATOR",
-            charging_contact="ORGANISM-VISIBLE BINARY + EVALUATOR",
-            action_decision_mode="SAVED D-061 ARM AND D-052 MODE",
-        ),
-        energy_thresholds=((0.20, "RETURN 20%"), (0.80, "RECOVERY 80%")),
-        energy_label="ENERGY",
-        causal_geometry=DevelopmentCausalGeometry(
-            body_length=_D053_BODY_LENGTH_M,
-            body_width=_D053_BODY_WIDTH_M,
-            rear_contact_plus=(0.0, D045_CONTACT_OFFSET_METRES),
-            rear_contact_minus=(0.0, -D045_CONTACT_OFFSET_METRES),
-            front_midpoint=(0.0, 0.0),
-            dock_orientation=0.0,
-            dock_contact_plus=(station[0], station[1] + D045_CONTACT_OFFSET_METRES),
-            dock_contact_minus=(station[0], station[1] - D045_CONTACT_OFFSET_METRES),
-            contact_tolerance=D045_CONTACT_TOLERANCE_METRES,
-            contact_label="under-body contacts",
-        ),
-        figure_title=f"D-061 seed {seed} — {arm}",
-        replay_label=f"seed {seed} / {arm}",
-    )
-
-
-def d061_html_main(argv: Sequence[str] | None = None) -> int:
-    """Render saved D-061 seed-22053 U/L/P frames without rerunning them."""
-    parser = argparse.ArgumentParser(description="Render saved D-061 replay frames")
-    parser.add_argument("--input", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    args = parser.parse_args(argv)
-    payload = json.loads(args.input.read_text(encoding="utf-8"))
-    if payload.get("schema") != "aweform.d061.execution.v1":
-        raise ValueError("input is not a D-061 execution artifact")
-    results = cast(list[Mapping[str, object]], payload["results"])
-    selected = [
-        result
-        for result in results
-        if result.get("seed") == 22053 and result.get("arm") in {"U", "L", "P"}
-    ]
-    if {result.get("arm") for result in selected} != {"U", "L", "P"}:
-        raise ValueError("saved artifact must contain seed-22053 U/L/P frames")
-    data = tuple(
-        adapt_d061_trace(
-            cast(Sequence[Mapping[str, object]], result["trace"]),
-            seed=22053,
-            arm=cast(str, result["arm"]),
-            initial_state=cast(Mapping[str, object], result["initial_state"]),
-        )
-        for result in sorted(selected, key=lambda item: cast(str, item["arm"]))
-    )
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
-        build_development_html_replay(
-            data,
-            schema="aweform.d061.offline-replay.v1",
-            title="Aweform D-061 — seed 22053 U/L/P saved-frame comparison",
-            event_navigation=True,
-        ),
-        encoding="utf-8",
-        newline="\n",
-    )
-    return 0
-
-
 def build_development_html_replay(
     data: Sequence[DevelopmentVisualizationData],
     *,
@@ -5225,9 +5087,8 @@ def build_development_html_replay(
     if not data:
         raise ValueError("HTML export requires at least one replay")
     seeds = [item.seed for item in data]
-    replay_keys = [item.replay_label or str(item.seed) for item in data]
-    if any(seed is None for seed in seeds) or len(set(replay_keys)) != len(replay_keys):
-        raise ValueError("HTML replays require integer seeds and unique labels")
+    if any(seed is None for seed in seeds) or len(set(seeds)) != len(seeds):
+        raise ValueError("HTML replays require unique integer seeds")
     replays = [_development_html_replay_payload(item) for item in data]
     if event_navigation:
         for replay in replays:

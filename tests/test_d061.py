@@ -6,6 +6,8 @@ import pytest
 from aweform.d045 import D045_MAX_WHEEL_DELTA_RAD
 from aweform.d046 import D046ConsequencePredictor
 from aweform.d061 import D061_SEEDS, run_d061_lifetime, validate_d061_seeds
+from aweform.d061_visualizer import adapt_d061_trace
+from aweform.development_visualizer import build_development_html_replay
 
 
 def test_d061_seeds_use_formal_reservation_guard() -> None:
@@ -60,6 +62,43 @@ def test_d061_live_and_permuted_arms_get_equal_candidate_read_budgets() -> None:
     assert live["candidate_prediction_reads"] == 6
     assert permuted["candidate_prediction_reads"] == 6
     assert live["learner_updates"] == permuted["learner_updates"] == 572
+
+
+def test_saved_d061_frames_use_the_canonical_shared_renderer() -> None:
+    initial = {
+        "position": (0.5, 0.5),
+        "heading": 0.0,
+        "energy_fraction": 0.8,
+        "temperature_channel": 0.2875,
+        "charging_contact": True,
+    }
+    trace = [
+        {
+            "transition": 100,
+            "x": 0.5,
+            "y": 0.5,
+            "heading": 0.0,
+            "symbolic_proposal": "MOVE_FORWARD",
+            "active_mode": "NORMAL",
+            "energy_after": 0.79,
+            "thermal": 0.2875,
+            "charging_contact_after": True,
+            "terminated": False,
+            "truncated": False,
+            "simulated_seconds": 10.0,
+            "charging_contact_before": True,
+            "events": [],
+            "command_source": "PASS_THROUGH",
+            "cycle_index": 0,
+        }
+    ]
+    data = adapt_d061_trace(trace, seed=22053, arm="U", initial_state=initial)
+    assert [frame.transition_index for frame in data.frames] == [0, 100]
+    html = build_development_html_replay(
+        (data,), schema="aweform.d061.test.v1", title="D-061 test"
+    )
+    assert "D-061 seed 22053" in html
+    assert '"transition":100' in html
 
 
 def test_d061_u_arm_replays_the_seeded_d053_explorer() -> None:
