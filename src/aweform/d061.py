@@ -93,8 +93,8 @@ def run_d061_lifetime(
     modes: Counter[str] = Counter()
     updates = 0
     nonzero_updates = 0
-    intervention_eligible = eligible_since_warmup = 0
-    attempted = selected_differs = selected_supported = 0
+    intervention_eligible = attempted = selected_differs = selected_supported = 0
+    candidate_query_slots = candidate_prediction_reads = 0
     action_changes = 0
     previous_action: tuple[float, float] | None = None
     min_energy = float(observation[0])
@@ -123,32 +123,29 @@ def run_d061_lifetime(
         )
         if can_intervene and step > D061_WARMUP:
             intervention_eligible += 1
-            eligible_since_warmup += 1
-        intervention = (
-            can_intervene
+        scheduled_query = (
+            arm != "U"
             and step > D061_WARMUP
-            and eligible_since_warmup % D061_INTERVAL == 0
+            and (step - D061_WARMUP) % D061_INTERVAL == 0
         )
-        if intervention:
-            attempted += 1
-            scored: list[tuple[float, tuple[float, float]]] = []
-            perm = (1, 2, 0) if arm == "P" else (0, 1, 2)
-            for candidate_index, (_, candidate) in enumerate(D061_CANDIDATES):
-                pred = learner.predict(visible, candidate)
-                associate = perm[candidate_index]
-                score = pred.delta[3]
-                if arm == "P":
-                    # Fixed cyclic permutation of prediction/action associations.
-                    score = learner.predict(
-                        visible, D061_CANDIDATES[associate][1]
-                    ).delta[3]
-                scored.append((score, candidate))
-            values = [score for score, _ in scored]
-            if max(values) - min(values) > 1e-12:
-                chosen = scored[max(range(3), key=lambda index: values[index])][1]
-                selected_differs += int(chosen != proposed)
-                selected_supported += int(candidate_experience[chosen] > 0)
-                proposed = chosen
+        if scheduled_query:
+            candidate_query_slots += 1
+            predicted_deltas = tuple(
+                learner.predict(visible, candidate).delta[3]
+                for _, candidate in D061_CANDIDATES
+            )
+            candidate_prediction_reads += len(predicted_deltas)
+            permutation = (1, 2, 0) if arm == "P" else (0, 1, 2)
+            scores = tuple(predicted_deltas[index] for index in permutation)
+            if can_intervene:
+                attempted += 1
+                if max(scores) - min(scores) > 1e-12:
+                    chosen = D061_CANDIDATES[
+                        max(range(3), key=lambda index: scores[index])
+                    ][1]
+                    selected_differs += int(chosen != proposal.wheel_command)
+                    selected_supported += int(candidate_experience[chosen] > 0)
+                    proposed = chosen
         decision = controller.command(observation, proposed)
         modes[decision.active_mode.value] += 1
         wheels = (decision.wheel_delta_left, decision.wheel_delta_right)
@@ -274,6 +271,8 @@ def run_d061_lifetime(
         "termination": bool(terminated),
         "horizon_censored": bool(truncated),
         "intervention_eligible": intervention_eligible,
+        "candidate_query_slots": candidate_query_slots,
+        "candidate_prediction_reads": candidate_prediction_reads,
         "intervention_attempts": attempted,
         "selected_action_differs_from_U_proposal": selected_differs,
         "selected_action_in_candidate_support": selected_supported,
@@ -310,8 +309,11 @@ def write_d061_artifact(
             "cpu_seconds": D061_CPU_GUARD_SECONDS,
         },
         "intervention_schedule": {
-            "warmup": D061_WARMUP,
-            "eligible_interval": D061_INTERVAL,
+            "warmup_actual_transitions": D061_WARMUP,
+            "query_every_actual_transitions": D061_INTERVAL,
+            "apply_only_when_level1_normal": True,
+            "score_channel": "delta_beacon_forward",
+            "tie_tolerance": 1e-12,
         },
         "results": results,
     }

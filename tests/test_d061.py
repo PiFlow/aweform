@@ -52,6 +52,16 @@ def test_d061_arms_match_through_warmup_and_reset_the_learner_per_lifetime() -> 
     assert all(value == 0.0 for value in fresh.weights)
 
 
+def test_d061_live_and_permuted_arms_get_equal_candidate_read_budgets() -> None:
+    live = run_d061_lifetime(22053, "L", horizon=572)
+    permuted = run_d061_lifetime(22053, "P", horizon=572)
+    assert live["candidate_query_slots"] == 2
+    assert permuted["candidate_query_slots"] == 2
+    assert live["candidate_prediction_reads"] == 6
+    assert permuted["candidate_prediction_reads"] == 6
+    assert live["learner_updates"] == permuted["learner_updates"] == 572
+
+
 def test_d061_u_arm_replays_the_seeded_d053_explorer() -> None:
     result = run_d061_lifetime(22053, "U", horizon=8)
     trace = result["trace"]
