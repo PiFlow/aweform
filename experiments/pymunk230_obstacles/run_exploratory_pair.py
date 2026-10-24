@@ -785,11 +785,46 @@ def run(output: Path) -> None:
         signal.setitimer(signal.ITIMER_REAL, 0)
 
 
+def _supervise_run(root: Path) -> int:
+    """Bound native Space.step calls from outside the physics process."""
+    command = [
+        sys.executable,
+        "-m",
+        "experiments.pymunk230_obstacles.run_exploratory_pair",
+        "--run-child",
+    ]
+    child = subprocess.Popen(command, cwd=root, start_new_session=True)
+    deadline = time.monotonic() + MAX_WALL_SECONDS
+    try:
+        while child.poll() is None:
+            if time.monotonic() >= deadline:
+                os.killpg(child.pid, signal.SIGKILL)
+                child.wait()
+                raise GuardStop("external wall watchdog killed run process group")
+            try:
+                rss_kib = int(subprocess.check_output(
+                    ["ps", "-o", "rss=", "-p", str(child.pid)], text=True
+                ).strip())
+            except (subprocess.CalledProcessError, ValueError):
+                rss_kib = 0
+            if rss_kib * 1024 > MAX_RSS_BYTES:
+                os.killpg(child.pid, signal.SIGKILL)
+                child.wait()
+                raise GuardStop("external RSS watchdog killed run process group")
+            time.sleep(0.25)
+        return child.returncode
+    finally:
+        if child.poll() is None:
+            os.killpg(child.pid, signal.SIGKILL)
+            child.wait()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--preflight", action="store_true")
     mode.add_argument("--run", action="store_true")
+    mode.add_argument("--run-child", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.preflight:
         root = Path(__file__).resolve().parents[2]
@@ -833,7 +868,13 @@ def main() -> None:
             )
         )
         return
-    run(DEFAULT_OUTPUT)
+    if args.run_child:
+        run(DEFAULT_OUTPUT)
+        return
+    root = Path(__file__).resolve().parents[2]
+    exit_code = _supervise_run(root)
+    if exit_code:
+        raise SystemExit(exit_code)
 
 
 if __name__ == "__main__":
