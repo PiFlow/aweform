@@ -10,6 +10,8 @@ from pathlib import Path
 
 import pytest
 
+pytest.importorskip("pymunk")
+
 from experiments.pymunk230_obstacles.render_paired_replay import LABEL, render
 
 

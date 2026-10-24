@@ -52,6 +52,31 @@ def _load_trace(result_dir: Path, arm: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+def _visual_frame(row: dict[str, Any]) -> dict[str, Any]:
+    identities = sorted(
+        {
+            identity
+            for state in row.get("contact_state_runs", [])
+            for identity in state.get("identities", [])
+        }
+        | {
+            "|".join(event["shape_pair"])
+            for event in row.get("contact_event_runs", [])
+        }
+    )
+    return {
+        "index": row["index"],
+        "position_m": row["position_m"],
+        "heading_rad": row["heading_rad"],
+        "energy_j": row["energy_j"],
+        "temperature_c": row["temperature_c"],
+        "commanded_wheels_rad": row["commanded_wheels_rad"],
+        "minimum_clearance_m": row["minimum_clearance_m"],
+        "max_penetration_m": row["max_penetration_m"],
+        "contact_identities": identities,
+    }
+
+
 def _arc_path(center: tuple[float, float], start: float, end: float) -> str:
     x1 = center[0] + 0.4 * math.cos(math.radians(start))
     y1 = 3 - center[1] - 0.4 * math.sin(math.radians(start))
@@ -106,7 +131,10 @@ def render(result_dir: Path) -> Path:
         raise ValueError("paired arms do not have common actual transition support")
     if result["safety_pass"] is not True:
         raise ValueError("visualization withheld because safety probes did not pass")
-    frames = {"400": n400, "800": n800}
+    frames = {
+        "400": [_visual_frame(row) for row in n400],
+        "800": [_visual_frame(row) for row in n800],
+    }
     payload = json.dumps(frames, separators=(",", ":"), allow_nan=False)
     provenance = {
         "head": result["head"],
@@ -147,7 +175,7 @@ document.querySelector('#e400').setAttribute('points',energyPath('400'));documen
 function show(i){{i=Math.max(1,Math.min(N,Number(i)));const a=data['400'][i-1],b=data['800'][i-1];for(const [k,f] of [['400',a],['800',b]]){{const p=f.position_m,x=p[0],y=3-p[1],r=document.querySelector('#r'+k),h=document.querySelector('#h'+k);r.setAttribute('x',x-.09);r.setAttribute('y',y-.1075);r.setAttribute('transform',`rotate(${{-f.heading_rad*180/Math.PI}} ${{x}} ${{y}})`);h.setAttribute('x1',x);h.setAttribute('y1',y);h.setAttribute('x2',x+.13);h.setAttribute('y2',y);h.setAttribute('transform',`rotate(${{-f.heading_rad*180/Math.PI}} ${{x}} ${{y}})`);document.querySelector('#m'+k).textContent=`Transition ${{f.index}} · energy ${{Number(f.energy_j).toFixed(1)}} J · heading ${{Number(f.heading_rad).toFixed(4)}} rad · commanded wheels ${{f.commanded_wheels_rad.map(x=>Number(x).toFixed(3)).join(', ')}} rad · penetration upper bound ${{(1000*f.max_penetration_m).toFixed(3)}} mm · clearance ${{(1000*f.minimum_clearance_m).toFixed(2)}} mm`}}
 const dx=(b.position_m[0]-a.position_m[0])*1000,dy=(b.position_m[1]-a.position_m[1])*1000,dh=Math.atan2(Math.sin(b.heading_rad-a.heading_rad),Math.cos(b.heading_rad-a.heading_rad))*1000;
 document.querySelector('#diff').textContent=`N800 − N400 position difference: ${{Math.hypot(dx,dy).toFixed(2)}} mm (Δx ${{dx.toFixed(2)}}, Δy ${{dy.toFixed(2)}}); wrapped heading difference: ${{dh.toFixed(2)}} mrad.`;
-function ids(f){{return [...new Set((f.contact_event_runs||[]).flatMap(x=>x.shape_pair||[]).filter(x=>x!=='hull'))].sort()}}
+function ids(f){{return f.contact_identities}}
 document.querySelector('#contact').textContent=`Contact identities — N400: ${{ids(a).join(', ')||'none'}}; N800: ${{ids(b).join(', ')||'none'}}. `+`Clearance/penetration and action values are per-arm actual measurements; organism actions are not synchronized after observations diverge.`;
 slider.value=i;document.querySelector('#index').textContent=`${{i}} / ${{N}}`;const ex=document.querySelector('#e400').getAttribute('points').split(' ')[i-1].split(','),ey=document.querySelector('#e800').getAttribute('points').split(' ')[i-1].split(',');for(const [id,v] of [['c400',ex],['c800',ey]]){{document.querySelector('#'+id).setAttribute('cx',v[0]);document.querySelector('#'+id).setAttribute('cy',v[1])}}}}
 slider.addEventListener('input',()=>show(slider.value));let timer=null;document.querySelector('#play').onclick=()=>{{if(timer)return;timer=setInterval(()=>{{if(Number(slider.value)>=N){{clearInterval(timer);timer=null;return}}show(Number(slider.value)+1)}},180)}};document.querySelector('#pause').onclick=()=>{{clearInterval(timer);timer=null}};show(1);

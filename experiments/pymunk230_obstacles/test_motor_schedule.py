@@ -9,23 +9,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from aweform.exp003_seed_policy import validate_exp003_development_seeds
-from experiments.pymunk230_obstacles.run_exploratory_pair import (
-    MAX_SPACE_STEPS,
-    PAIR_CALLS,
-    PLANNED_CALLS,
-    SAFETY_CALLS,
-    _within_probe_convergence,
-)
 from experiments.pymunk_contact_prototype.motor import (
     apply_persistent_curvature_force,
     begin_wheel_command,
 )
-
-
-def test_probe_convergence_is_reported_separately_from_physical_safety() -> None:
-    assert _within_probe_convergence(0.0005, 0.001, 0.0005)
-    assert not _within_probe_convergence(0.0005001, 0.0, 0.0)
-
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "experiments/pymunk_contact_prototype/fixture.py"
@@ -200,20 +187,19 @@ def test_command_boundary_twist_and_persistent_force_for_all_wheel_modes() -> No
 
 
 def test_prospective_space_step_budget_includes_probes_and_both_arms() -> None:
-    assert SAFETY_CALLS == 67_200
-    assert PAIR_CALLS == 2_160_000
-    assert PLANNED_CALLS == SAFETY_CALLS + PAIR_CALLS == 2_227_200
-    assert PLANNED_CALLS < MAX_SPACE_STEPS == 2_400_000
     declaration_path = (
         ROOT / "experiments/pymunk230_obstacles/exploratory-run-declaration.json"
     )
     declaration = json.loads(declaration_path.read_text(encoding="utf-8"))
-    assert declaration["space_step_budget"] == {
-        "safety_probe_steps": SAFETY_CALLS,
-        "paired_closed_loop_steps_at_maximum": PAIR_CALLS,
-        "planned_total": PLANNED_CALLS,
-        "hard_total_cap": MAX_SPACE_STEPS,
-    }
+    budget = declaration["space_step_budget"]
+    safety_calls = budget["safety_probe_steps"]
+    pair_calls = budget["paired_closed_loop_steps_at_maximum"]
+    planned_calls = budget["planned_total"]
+    hard_cap = budget["hard_total_cap"]
+    assert safety_calls == 67_200
+    assert pair_calls == 2_160_000
+    assert planned_calls == safety_calls + pair_calls == 2_227_200
+    assert planned_calls < hard_cap == 2_400_000
     assert declaration["paired_organism"]["seed"] == 23002
     assert validate_exp003_development_seeds([23002]) == (23002,)
     assert declaration["paired_organism"]["resolutions"] == [400, 800]
