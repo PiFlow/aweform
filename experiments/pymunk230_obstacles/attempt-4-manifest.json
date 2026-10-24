@@ -1,0 +1,29 @@
+{
+  "schema": "pymunk230-attempt4-result-free-manifest-v1",
+  "candidate": "result-free command-boundary motor update",
+  "private_local_parent": "1ab7cf43220ee9348e8d966745c93abfa346e190",
+  "frozen_six_file_input_parent_digest": "7f2492e326a57d7ca12b65bbdb1202cb7538d5a0c4ae25dea8c7a6f809f93fd4",
+  "changed_files_relative_to": "private parent 1ab7cf43220ee9348e8d966745c93abfa346e190",
+  "hash_slots": {
+    "input_source_sha256": "7f2492e326a57d7ca12b65bbdb1202cb7538d5a0c4ae25dea8c7a6f809f93fd4",
+    "candidate_source_sha256": "70c9b9388fea5f5921ece990a3161ec7b06c1e8cc5540e7da68cc9f19c3e65d8",
+    "input_protocol_sha256": "e8c0aec8d82c6e79143ee70ea50519f3cf2c369e07df73795db6038a387e63c7",
+    "candidate_protocol_sha256": "247a07e5e29948a719cb3407ccd068441b51a80d082f56de6990f4d9e113be26",
+    "input_protocol_full_file_sha256": "9f749b39d37da4541b8dae84c732a9e24ae271e3767906ed862c5f88a1e0fe18",
+    "candidate_protocol_full_file_sha256": "0e5252b144377df43e578df17163e91546705e1c9da6fdc9648b03a87a0c26a1"
+  },
+  "changed_files": [
+    "experiments/pymunk_contact_prototype/fixture.py",
+    "experiments/pymunk230_obstacles/world.py",
+    "experiments/pymunk230_obstacles/test_motor_schedule.py",
+    "experiments/pymunk230_obstacles/protocol.md",
+    "experiments/pymunk230_obstacles/attempt-4-manifest.json"
+  ],
+  "semantics": {
+    "before": "refresh wheel-derived velocity every physics substep, conditionally skipped after contact callback",
+    "after": "apply unchanged wheel-derived twist once at each logical 0.1 s command boundary; solver evolves through substeps without callback-driven refresh"
+  },
+  "validation": "model-free tests only; no Pymunk import, Space construction, physics stepping, or organism transitions",
+  "execution_authorization": "separate fresh explicit Flow GO required after review",
+  "parked_unmerged_drafts": ["https://github.com/PiFlow/aweform/pull/233", "https://github.com/PiFlow/aweform/pull/234"]
+}
