@@ -5,6 +5,8 @@ from __future__ import annotations
 import ast
 import json
 import math
+import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -13,6 +15,28 @@ from experiments.pymunk_contact_prototype.motor import (
     apply_persistent_curvature_force,
     begin_wheel_command,
 )
+
+
+def test_probe_convergence_predicate_boundaries_under_forbidden_pymunk_stub() -> None:
+    script = r'''
+import sys
+from types import ModuleType
+
+class ForbiddenPymunk(ModuleType):
+    def __getattr__(self, name):
+        raise AssertionError(f"physics API access forbidden: {name}")
+
+sys.modules["pymunk"] = ForbiddenPymunk("pymunk")
+from experiments.pymunk230_obstacles.run_exploratory_pair import (
+    _within_probe_convergence,
+)
+assert _within_probe_convergence(0.0005, 0.001, 0.0005)
+assert not _within_probe_convergence(0.0005000001, 0.0, 0.0)
+assert not _within_probe_convergence(0.0, 0.0010000001, 0.0)
+assert not _within_probe_convergence(0.0, 0.0, 0.0005000001)
+'''
+    subprocess.run([sys.executable, "-c", script], check=True)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "experiments/pymunk_contact_prototype/fixture.py"

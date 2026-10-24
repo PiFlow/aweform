@@ -33,7 +33,12 @@ class ObstacleContactWorld(ContactWorldV4):
     Reset intentionally reconstructs the base world, then reinstalls the arena
     and replaces the callback registration with this instance's bound method.
     This repairs the inherited temporary-instance callback target identified
-    in the #231 package review; it does not alter the frozen #226 source.
+    in the #231 package review. `fixture.py` is not byte-identical to #226's
+    main version: the executed/current source adds successor hook dispatch,
+    an optional pre-step execution guard, and formatting-only changes. Its
+    legacy branch retains the original contact-flag predicate and velocity
+    formula by source inspection only; no separate legacy physics replay was
+    performed. Exact hashes and hunk provenance are in `fixture_v4.py`.
     """
 
     def __init__(self, *, microsteps: int = 400) -> None:

@@ -70,13 +70,16 @@ def test_renderer_uses_exact_contiguous_actual_traces_and_emits_offline_html(
         },
     }
     _dump(tmp_path / "result.json", result)
-    (tmp_path / "SHA256SUMS").write_text("synthetic test receipt\n")
-    page = render(tmp_path)
+    sums = tmp_path / "SHA256SUMS"
+    sums.write_text("synthetic test receipt\n")
+    output_dir = tmp_path / "revision-2"
+    page = render(tmp_path, output_dir)
     text = page.read_text(encoding="utf-8")
     assert LABEL in text
     assert "N400" in text and "N800" in text
     assert "Play" in text and "Pause" in text and "slider" in text
     assert "position difference" in text
+    assert "zero translating curved commands" in text
     assert "A1_03" in text
     assert "https://" not in text
     if node := shutil.which("node"):
@@ -86,7 +89,8 @@ def test_renderer_uses_exact_contiguous_actual_traces_and_emits_offline_html(
         subprocess.run(
             [node, "--check", str(script_path)], check=True, capture_output=True
         )
-    receipt = json.loads((tmp_path / "visualization.json").read_text())
+    receipt = json.loads((output_dir / "visualization.json").read_text())
+    assert sums.read_text() == "synthetic test receipt\n"
     assert receipt["offline"] is True and receipt["interpolation"] is False
     assert receipt["transitions"] == 2
 

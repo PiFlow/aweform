@@ -119,7 +119,7 @@ def _arena_markup() -> str:
     )
 
 
-def render(result_dir: Path) -> Path:
+def render(result_dir: Path, output_dir: Path | None = None) -> Path:
     result_path = result_dir / "result.json"
     result_bytes = result_path.read_bytes()
     result = json.loads(result_bytes)
@@ -161,7 +161,7 @@ def render(result_dir: Path) -> Path:
 <style>
 body{{font:15px system-ui,sans-serif;color:#182230;margin:1.2rem;background:#f7f8fa}}main{{max-width:1400px;margin:auto}}.warning{{color:#9b1c1c;font-weight:800;font-size:1.2rem}}.arms{{display:grid;grid-template-columns:1fr 1fr;gap:1rem}}svg{{width:100%;background:white;border:1px solid #abb}}.robot{{fill:#dc5b42;stroke:#621;stroke-width:.006}}.heading{{stroke:#111;stroke-width:.009}}.energy{{height:180px}}button,input{{font:inherit}}pre{{white-space:pre-wrap;overflow-wrap:anywhere}}@media(max-width:850px){{.arms{{grid-template-columns:1fr}}}}
 </style><main><h1>Aweform #230 — paired physics resolution replay</h1>
-<p class="warning">{LABEL}</p><p>Actual recorded trajectories only; no interpolation or forced action matching. N400 and N800 each use 400/800 physics substeps per same 0.1 s organism command.</p>
+<p class="warning">{LABEL}</p><p>Actual recorded trajectories only; no interpolation or forced action matching. N400 and N800 each use 400/800 physics substeps per same 0.1 s organism command.</p><p><strong>Curvature limitation:</strong> this 1,800-command organism replay contained zero translating curved commands. Mixed-wheel curvature appears only in the recorded single-command free-space safety probes at approximately ±4.5° yaw; this replay is not evidence of curved organism driving.</p>
 <div><button id="play">Play</button> <button id="pause">Pause</button> <label>Shared transition <input id="slider" type="range" min="1" max="{len(n400)}" value="1"></label> <span id="index"></span></div>
 <div class="arms"><section><h2>N400</h2><svg viewBox="0 0 3 3" aria-label="N400 actual trajectory">{arena}<rect id="r400" class="robot" x="0" y="0" width=".18" height=".215" rx=".008"/><line id="h400" class="heading" x1="0" y1="0" x2="0" y2="-.13"/></svg><p id="m400"></p></section>
 <section><h2>N800</h2><svg viewBox="0 0 3 3" aria-label="N800 actual trajectory">{arena}<rect id="r800" class="robot" x="0" y="0" width=".18" height=".215" rx=".008"/><line id="h800" class="heading" x1="0" y1="0" x2="0" y2="-.13"/></svg><p id="m800"></p></section></div>
@@ -181,8 +181,10 @@ slider.value=i;document.querySelector('#index').textContent=`${{i}} / ${{N}}`;co
 slider.addEventListener('input',()=>show(slider.value));let timer=null;document.querySelector('#play').onclick=()=>{{if(timer)return;timer=setInterval(()=>{{if(Number(slider.value)>=N){{clearInterval(timer);timer=null;return}}show(Number(slider.value)+1)}},180)}};document.querySelector('#pause').onclick=()=>{{clearInterval(timer);timer=null}};show(1);
 </script></html>'''
     rendered = page.encode("utf-8")
-    destination = result_dir / "paired-n400-n800.html"
-    receipt = result_dir / "visualization.json"
+    destination_dir = result_dir if output_dir is None else output_dir
+    destination_dir.mkdir(parents=True, exist_ok=True)
+    destination = destination_dir / "paired-n400-n800.html"
+    receipt = destination_dir / "visualization.json"
     if destination.exists() or receipt.exists():
         raise ValueError("refusing to overwrite paired visualization")
     receipt_data = {
@@ -198,29 +200,35 @@ slider.addEventListener('input',()=>show(slider.value));let timer=null;document.
     }
     receipt_bytes = json.dumps(receipt_data, sort_keys=True, indent=2).encode() + b"\n"
     existing_bytes = sum(
-        path.stat().st_size for path in result_dir.iterdir() if path.is_file()
+        path.stat().st_size for path in destination_dir.iterdir() if path.is_file()
     )
-    sums_path = result_dir / "SHA256SUMS"
-    if not sums_path.exists():
-        raise ValueError("run checksum ledger is missing")
-    sum_lines = (
-        f"{_sha(rendered)}  {destination.name}\n{_sha(receipt_bytes)}  {receipt.name}\n"
-    ).encode("utf-8")
+    if output_dir is None:
+        sums_path = result_dir / "SHA256SUMS"
+        if not sums_path.exists():
+            raise ValueError("run checksum ledger is missing")
+        sum_lines = (
+            f"{_sha(rendered)}  {destination.name}\n{_sha(receipt_bytes)}  {receipt.name}\n"
+        ).encode("utf-8")
+    else:
+        sums_path = None
+        sum_lines = b""
     additional_bytes = len(rendered) + len(receipt_bytes) + len(sum_lines)
     if existing_bytes + additional_bytes > 32 * 1024 * 1024:
-        raise ValueError("paired visualization would exceed the 32 MiB run cap")
+        raise ValueError("paired visualization would exceed the 32 MiB artifact cap")
     destination.write_bytes(rendered)
     receipt.write_bytes(receipt_bytes)
-    with sums_path.open("a", encoding="utf-8") as sums:
-        sums.write(sum_lines.decode("utf-8"))
+    if sums_path is not None:
+        with sums_path.open("a", encoding="utf-8") as sums:
+            sums.write(sum_lines.decode("utf-8"))
     return destination
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("result_dir", type=Path)
+    parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
-    print(render(args.result_dir))
+    print(render(args.result_dir, args.output_dir))
 
 
 if __name__ == "__main__":
