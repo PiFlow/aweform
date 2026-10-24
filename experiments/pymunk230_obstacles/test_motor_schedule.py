@@ -35,7 +35,7 @@ assert not _within_probe_convergence(0.0005000001, 0.0, 0.0)
 assert not _within_probe_convergence(0.0, 0.0010000001, 0.0)
 assert not _within_probe_convergence(0.0, 0.0, 0.0005000001)
 '''
-    subprocess.run([sys.executable, "-c", script], check=True)
+    subprocess.run([sys.executable, "-c", script], check=True, cwd=ROOT)
 
 
 ROOT = Path(__file__).resolve().parents[2]
