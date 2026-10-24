@@ -1,0 +1,105 @@
+{
+  "schema": "a230-bounded-exploratory-pair-declaration-v1",
+  "authorization": {
+    "issue_230_comment": "6384597134",
+    "issue_197_comment": "6384601861",
+    "execution_class": "one exploratory paired Level-1 seven-obstacle playback after safety gates",
+    "formal_attempt4_corpus": false,
+    "correction_slot_consumption": false,
+    "additional_lifetimes": false,
+    "merge_or_adoption": false
+  },
+  "source_identity": {
+    "exact_commit_and_tree": "bound from the clean committed review vehicle by preflight before any Space construction; recorded in the one-use run receipt",
+    "executable_source_paths_sha256": "computed over the exact committed source set and recorded in the run receipt before stepping",
+    "protocol_sha256": "computed over the exact committed protocol and recorded in the run receipt before stepping"
+  },
+  "runtime": {
+    "python": "3.14.7",
+    "pymunk": "7.2.0",
+    "wheel_filename": "pymunk-7.2.0-cp314-cp314-macosx_11_0_arm64.whl",
+    "wheel_sha256": "497c4a919fc7f03882cb9796b132ab3b5fcc4c4af9ead08e9631b6a9fb2da29c",
+    "wheel_path": "/tmp/a230-pymunk-wheel/pymunk-7.2.0-cp314-cp314-macosx_11_0_arm64.whl"
+  },
+  "actuator": {
+    "law": "At each 0.1 s logical boundary set wheel-derived body linear velocity and yaw rate once. During each physics substep apply central force F=m*omega*J(v), using solver-evolved velocity, then let Pymunk integrate and solve contacts. No substep body-velocity reassignment; no contact-callback or contact-flag motor gating.",
+    "force_parameters": "F=m*omega*(-vy,vx); uses existing body mass and held wheel-derived omega; no fitted gain or new numerical geometry/solver parameter",
+    "limitations": "Idealized force-level actuator approximation; not a wheel hardware fidelity claim. Contacts can change speed and trajectory. Historical ContactWorld remains legacy #226 behavior; ContactWorldV4 and ObstacleContactWorld are the versioned successor."
+  },
+  "paired_organism": {
+    "seed": 23002,
+    "seed_role": "legal development seed; validated against all existing formal reservations before run",
+    "controller": "unchanged aweform.d052.D052Controller",
+    "proposal_and_rng": "unchanged aweform.d053.D053RoamingFixture initialized independently from seed 23002 in each arm; initial organism/environment RNG, controller state, observation, pose, station, battery, thermal and latch signatures must match before stepping",
+    "initial_state": {
+      "body_position_m": [0.75, 0.75],
+      "heading_rad": 0.0,
+      "station_center_m": [1.5, 1.5],
+      "battery_j": 2664.0,
+      "body_temperature_c": 23.0,
+      "charger_termination_latched": false
+    },
+    "logical_command_dt_s": 0.1,
+    "control_rate_hz": 10,
+    "resolutions": [400, 800],
+    "maximum_transitions_per_arm": 1800,
+    "maximum_total_organism_commands": 3600,
+    "termination": "Stop both arms at the first actual organism termination or shared 1800-command administrative horizon; preserve genuine sensory/action divergence. No action forcing or extra transition."
+  },
+  "safety_probes": {
+    "resolutions": [400, 800],
+    "commands_per_resolution": 56,
+    "cases": [
+      "straight-forward",
+      "straight-reverse",
+      "pure-spin",
+      "mixed-wheel-curve",
+      "mixed-wheel-reverse-curve",
+      "west-wall-release",
+      "A1-oblique-slide",
+      "A2-convex-slide",
+      "P1-push-release"
+    ],
+    "total_space_steps": 67200,
+    "checks": [
+      "finite state, no swept crossing, penetration upper bound <= 0.001 m",
+      "straight/reverse/spin/mixed-wheel free-space pose against exact differential-drive arc within 1e-5 m/rad",
+      "contact identities at west wall, A1, A2 and P1; contact sliding and reverse release",
+      "wall/P1 reverse release clearance gain >= 0.01 m",
+      "N400/N800 per-command position <= 0.0005 m, heading <= 0.001 rad, clearance <= 0.0005 m"
+    ]
+  },
+  "space_step_budget": {
+    "safety_probe_steps": 67200,
+    "paired_closed_loop_steps_at_maximum": 2160000,
+    "planned_total": 2227200,
+    "hard_total_cap": 2400000
+  },
+  "hard_resource_guards": {
+    "wall_seconds": 3600,
+    "process_cpu_seconds": 3600,
+    "rss_bytes": 536870912,
+    "rss_enforcement": "ru_maxrss checked at most every 100 Space.step calls; on Darwin this is detection-based because finite RLIMIT_RSS is not supported by the approved environment",
+    "process_cpu_enforcement": "RLIMIT_CPU plus process_time checks at most every 100 Space.step calls",
+    "wall_enforcement": "SIGALRM monotonic wall timeout",
+    "private_output_bytes": 33554432,
+    "minimum_free_disk_bytes": 134217728,
+    "one_use_private_output": "/Users/flow/Dev/firstmate-homes/aweform/data/a230-attempt4-motor-implementation/exploratory-run-1",
+    "one_use_execution_ledger": "/Users/flow/Dev/firstmate-homes/aweform/data/a230-attempt4-motor-implementation/exploratory-run-1.started.json",
+    "retry_policy": "Any started run consumes this bounded exploratory authority. Failures/cap stops are preserved; no automatic retry."
+  },
+  "rendering": {
+    "artifact": "paired-n400-n800.html",
+    "source": "only saved actual safety/organism outputs; self-contained offline HTML, no network resources",
+    "synchronization": "shared transition scrub/play/pause, actual actions remain per-arm after sensory divergence",
+    "required_views": [
+      "N400 and N800 trajectories, body heading, dock and seven obstacles",
+      "actual energy trend",
+      "position difference in mm",
+      "wrapped heading difference in mrad",
+      "contact identities, clearance and penetration",
+      "EXPLORATORY / UNVALIDATED PHYSICS label"
+    ],
+    "interpolation": false
+  }
+}

@@ -9,11 +9,11 @@ from dataclasses import dataclass
 from experiments.pymunk_contact_prototype.fixture import (
     DT,
     HULL_CIRCUMRADIUS,
-    ContactWorld,
     StepRecord,
     clipped_action,
     sinc,
 )
+from experiments.pymunk_contact_prototype.fixture_v4 import ContactWorldV4
 
 from .audit import clearances_by_object, swept_crossing
 from .geometry import add_arena
@@ -27,7 +27,7 @@ class StepAudit:
     maximum_substep_path_bound_m: float
 
 
-class ObstacleContactWorld(ContactWorld):
+class ObstacleContactWorld(ContactWorldV4):
     """V3 body/contact mechanics with the seven static objects added.
 
     Reset intentionally reconstructs the base world, then reinstalls the arena
@@ -63,17 +63,18 @@ class ObstacleContactWorld(ContactWorld):
         self._contacts = []
         self._contact_events = []
         simultaneous: list[tuple[str, ...]] = []
-        self.body.velocity = (
-            speed * math.cos(start_angle),
-            speed * math.sin(start_angle),
-        )
-        self.body.angular_velocity = omega
+        self._begin_motor_command(speed, omega, start_angle)
         for substep in range(self.microsteps):
+            # The held command drives an ordinary centripetal body force; only
+            # the command boundary assigns velocity, never a contact callback.
+            self._apply_motor_substep(speed, omega, sub_dt)
             before = (float(self.body.position.x), float(self.body.position.y))
             before_angle = float(self.body.angle)
             before_clearances = clearances_by_object(before, before_angle)
             event_offset = len(self._contact_events)
             self._active_substep_index = substep
+            if self.execution_guard is not None:
+                self.execution_guard()
             self.space.step(sub_dt)
             self.engine_steps += 1
             after = (float(self.body.position.x), float(self.body.position.y))
