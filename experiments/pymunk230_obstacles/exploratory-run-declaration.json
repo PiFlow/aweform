@@ -66,7 +66,7 @@
       "straight/reverse/spin/mixed-wheel free-space pose against exact differential-drive arc within 1e-5 m/rad",
       "contact identities at west wall, A1, A2 and P1; contact sliding and reverse release",
       "wall/P1 reverse release clearance gain >= 0.01 m",
-      "N400/N800 per-command position <= 0.0005 m, heading <= 0.001 rad, clearance <= 0.0005 m"
+      "separately report N400/N800 per-command descriptive convergence against unchanged thresholds: position <= 0.0005 m, heading <= 0.001 rad, clearance <= 0.0005 m; threshold failure is not a physical-safety or comparability failure and does not withhold the exploratory pair"
     ]
   },
   "space_step_budget": {

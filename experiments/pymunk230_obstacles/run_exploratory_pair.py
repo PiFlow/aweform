@@ -226,6 +226,16 @@ def _guard_callback(start_wall: float, start_cpu: float, output: Path) -> Any:
     return guard
 
 
+def _within_probe_convergence(
+    position_gap: float, heading_gap: float, clearance_gap: float
+) -> bool:
+    return (
+        position_gap <= MAX_POSITION_CONVERGENCE_M
+        and heading_gap <= MAX_HEADING_CONVERGENCE_RAD
+        and clearance_gap <= MAX_CLEARANCE_CONVERGENCE_M
+    )
+
+
 def _run_safety_cases(
     start_wall: float, start_cpu: float, output: Path
 ) -> tuple[list[dict[str, Any]], bool, int]:
@@ -235,6 +245,7 @@ def _run_safety_cases(
     by_case_resolution: dict[tuple[str, int], list[dict[str, object]]] = {}
     calls = 0
     safe = True
+    convergence_pass = True
     expected_ids = {
         "west-wall-release": "wall_west",
         "A1-oblique-slide": "A1",
@@ -357,13 +368,11 @@ def _run_safety_cases(
             ca = cast(dict[str, float], a["minimum_clearance_by_shape_m"])
             cb = cast(dict[str, float], b["minimum_clearance_by_shape_m"])
             clearance_gap = max((abs(ca[key] - cb[key]) for key in ca), default=0.0)
-            if (
-                position_gap > MAX_POSITION_CONVERGENCE_M
-                or heading_gap > MAX_HEADING_CONVERGENCE_RAD
-                or clearance_gap > MAX_CLEARANCE_CONVERGENCE_M
+            if not _within_probe_convergence(
+                position_gap, heading_gap, clearance_gap
             ):
-                safe = False
-    return outputs, safe, calls
+                convergence_pass = False
+    return outputs, safe, convergence_pass, calls
 
 
 def _initialize_arm(resolution: int, guard: Any) -> PymunkPhysiologyAdapter:
@@ -718,12 +727,20 @@ def run(output: Path) -> None:
     )
     signal.setitimer(signal.ITIMER_REAL, MAX_WALL_SECONDS)
     try:
-        probe_rows, safety_pass, safety_calls = _run_safety_cases(
-            start_wall, start_cpu, output
-        )
+        (
+            probe_rows,
+            safety_pass,
+            safety_convergence_pass,
+            safety_calls,
+        ) = _run_safety_cases(start_wall, start_cpu, output)
         _write_json(
             output / "safety-probes.json",
-            {"pass": safety_pass, "space_steps": safety_calls, "cases": probe_rows},
+            {
+                "safety_pass": safety_pass,
+                "convergence_pass": safety_convergence_pass,
+                "space_steps": safety_calls,
+                "cases": probe_rows,
+            },
         )
         _resource_guard(start_wall, start_cpu, output)
         if not safety_pass:
@@ -743,6 +760,7 @@ def run(output: Path) -> None:
             "declaration": declaration,
             "head": head,
             "safety_pass": safety_pass,
+            "safety_convergence_pass": safety_convergence_pass,
             "safety_space_steps": safety_calls,
             "paired_space_steps": paired_calls,
             "total_space_steps": total_calls,

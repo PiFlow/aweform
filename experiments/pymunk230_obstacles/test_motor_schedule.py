@@ -14,11 +14,18 @@ from experiments.pymunk230_obstacles.run_exploratory_pair import (
     PAIR_CALLS,
     PLANNED_CALLS,
     SAFETY_CALLS,
+    _within_probe_convergence,
 )
 from experiments.pymunk_contact_prototype.motor import (
     apply_persistent_curvature_force,
     begin_wheel_command,
 )
+
+
+def test_probe_convergence_is_reported_separately_from_physical_safety() -> None:
+    assert _within_probe_convergence(0.0005, 0.001, 0.0005)
+    assert not _within_probe_convergence(0.0005001, 0.0, 0.0)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "experiments/pymunk_contact_prototype/fixture.py"
