@@ -325,20 +325,12 @@ class ContactWorld:
         self._contacts = []
         self._contact_events = []
         simultaneous: list[tuple[str, ...]] = []
+        self.body.velocity = (
+            speed * math.cos(start_angle),
+            speed * math.sin(start_angle),
+        )
+        self.body.angular_velocity = omega
         for substep in range(self.microsteps):
-            if not (
-                self.suppress_velocity_refresh_after_contact
-                and self._contact_seen_this_command
-            ):
-                theta = float(self.body.angle)
-                half_yaw = omega * h / 2.0
-                speed_mid = speed * sinc(half_yaw)
-                theta_mid = theta + half_yaw
-                self.body.velocity = (
-                    speed_mid * math.cos(theta_mid),
-                    speed_mid * math.sin(theta_mid),
-                )
-                self.body.angular_velocity = omega
             before = (float(self.body.position.x), float(self.body.position.y))
             before_angle = float(self.body.angle)
             before_clearance = clearances_by_shape(before, before_angle, self.posts)
