@@ -1,0 +1,34 @@
+{
+  "schema": "pymunk230-attempt4-exploratory-candidate-manifest-v2",
+  "candidate": "versioned command-boundary twist with persistent centripetal-force actuator",
+  "status": "result-free corrected-source candidate; source identities are bound to the exact committed HEAD/tree in the private one-use run receipt before any physics stepping",
+  "historical_previous_candidate": {
+    "description": "superseded boundary-only velocity candidate; its digests do not identify the current force-law source",
+    "six_file_source_sha256": "70c9b9388fea5f5921ece990a3161ec7b06c1e8cc5540e7da68cc9f19c3e65d8",
+    "protocol_prefix_sha256": "247a07e5e29948a719cb3407ccd068441b51a80d082f56de6990f4d9e113be26",
+    "protocol_full_sha256": "0e5252b144377df43e578df17163e91546705e1c9da6fdc9648b03a87a0c26a1"
+  },
+  "historical_input_source_sha256": "7f2492e326a57d7ca12b65bbdb1202cb7538d5a0c4ae25dea8c7a6f809f93fd4",
+  "current_candidate_source_sha256": "bound by the exact committed source-file digests in the run declaration/receipt; not the historical digest above",
+  "current_candidate_protocol_sha256": "bound by the exact committed protocol SHA-256 in the run declaration/receipt",
+  "historical_private_parent": "1ab7cf43220ee9348e8d966745c93abfa346e190; remains unpublished and immutable",
+  "source_semantics": {
+    "historical_ContactWorld": "retains the legacy #226 contact-flag-controlled substep refresh behavior",
+    "ContactWorldV4_and_ObstacleContactWorld": "set wheel-derived velocity/yaw once at the logical 0.1 s boundary; apply ordinary held centripetal force F=m*omega*J(v) per physics substep; no substep velocity reassignment or contact-callback motor gating",
+    "instrumentation_and_numerical_settings": "callbacks, identities, clearance/swept audit, and existing geometry/body/solver numerical settings retained"
+  },
+  "authorized_execution": {
+    "scope": "one bounded exploratory safety-probe set followed by at most one paired N400/N800 Level-1 playback if safety gates pass",
+    "frozen_declaration": "experiments/pymunk230_obstacles/exploratory-run-declaration.json",
+    "execution_receipt_location": "private task data only",
+    "formal_attempt4_corpus": false,
+    "formal_correction_slot": false,
+    "retry": false,
+    "merge": false
+  },
+  "custody": {
+    "private_attempt_history_published": false,
+    "raw_run_outputs_public": false,
+    "minimal_actual_data_html_may_be_published": true
+  }
+}

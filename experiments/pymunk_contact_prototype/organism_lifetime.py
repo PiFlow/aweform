@@ -45,17 +45,18 @@ class PymunkPhysiologyAdapter:
     reused directly. It runs once after each completed 0.1 s Pymunk advance.
     """
 
-    def __init__(self, *, microsteps: int = 10) -> None:
+    def __init__(self, *, microsteps: int = 10, seed: int = SEED) -> None:
+        self.seed = seed
         self.physiology = D058Env(D058PhysicalConfig(room_side_m=3.0))
         self.world = ContactWorld(microsteps=microsteps)
         self.controller = D052Controller()
-        self.proposals = D053RoamingFixture(SEED)
+        self.proposals = D053RoamingFixture(seed)
         self.observation: np.ndarray | None = None
         self._steps = 0
         self._done = False
 
     def reset(self) -> np.ndarray:
-        obs, info = self.physiology.reset(seed=SEED, options=START_OPTIONS)
+        obs, info = self.physiology.reset(seed=self.seed, options=START_OPTIONS)
         if info != {}:
             raise RuntimeError("D-058 reset info contract changed")
         assert self.physiology.body is not None

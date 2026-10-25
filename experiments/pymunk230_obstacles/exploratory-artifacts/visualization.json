@@ -1,0 +1,14 @@
+{
+  "html_bytes": 1266910,
+  "html_sha256": "b1b85a7cce4888848e740bf4a5cc02247555c18e9d460f52da0f8b031405c6a0",
+  "interpolation": false,
+  "label": "EXPLORATORY / UNVALIDATED PHYSICS",
+  "offline": true,
+  "renderer_source_sha256": "52fe9d37c6c8981f0b54d3fc9b67d05895d486cb8a3b2d91afea208803bf5b73",
+  "result_sha256": "a86608a82ba37870e45f23cf850da3c398327920297af5fd217bbbd9daf05d77",
+  "source_trace_sha256": {
+    "400": "cdb36d6838a8ec00c77c02ea10078e1df2b5668f75b1325f402c07032a8ffdeb",
+    "800": "47586dcfa1ed7e7972364b7d19c6519f7752ab2932ef6f4bf82b0f55444f4bf4"
+  },
+  "transitions": 1800
+}

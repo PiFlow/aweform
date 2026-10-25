@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Sequence, cast
 
@@ -265,6 +266,7 @@ class ContactWorld:
         self.elapsed = 0.0
         self.logical_steps = 0
         self.engine_steps = 0
+        self.execution_guard: Callable[[], None] | None = None
         self._contacts: list[tuple[int, float]] = []
         self._contact_events: list[ContactEvent] = []
         self._active_substep_index = -1
@@ -277,8 +279,7 @@ class ContactWorld:
         contact_set = arbiter.contact_point_set
         shape_pair = tuple(
             sorted(
-                self._shape_names.get(id(shape), "unknown")
-                for shape in arbiter.shapes
+                self._shape_names.get(id(shape), "unknown") for shape in arbiter.shapes
             )
         )
         self._contact_seen_this_command = True
@@ -295,6 +296,27 @@ class ContactWorld:
                 ),
             )
         )
+
+    def _begin_motor_command(
+        self, speed: float, omega: float, start_angle: float
+    ) -> None:
+        """Versioned actuator hook; legacy fixture performs no boundary update."""
+
+    def _apply_motor_substep(self, speed: float, omega: float, h: float) -> None:
+        """Historical #226 per-substep schedule, retained for the legacy class."""
+        if not (
+            self.suppress_velocity_refresh_after_contact
+            and self._contact_seen_this_command
+        ):
+            theta = float(self.body.angle)
+            half_yaw = omega * h / 2.0
+            speed_mid = speed * sinc(half_yaw)
+            theta_mid = theta + half_yaw
+            self.body.velocity = (
+                speed_mid * math.cos(theta_mid),
+                speed_mid * math.sin(theta_mid),
+            )
+            self.body.angular_velocity = omega
 
     def reset(self, position: tuple[float, float], angle: float) -> None:
         if not all(math.isfinite(v) for v in (*position, angle)):
@@ -325,25 +347,16 @@ class ContactWorld:
         self._contacts = []
         self._contact_events = []
         simultaneous: list[tuple[str, ...]] = []
+        self._begin_motor_command(speed, omega, start_angle)
         for substep in range(self.microsteps):
-            if not (
-                self.suppress_velocity_refresh_after_contact
-                and self._contact_seen_this_command
-            ):
-                theta = float(self.body.angle)
-                half_yaw = omega * h / 2.0
-                speed_mid = speed * sinc(half_yaw)
-                theta_mid = theta + half_yaw
-                self.body.velocity = (
-                    speed_mid * math.cos(theta_mid),
-                    speed_mid * math.sin(theta_mid),
-                )
-                self.body.angular_velocity = omega
+            self._apply_motor_substep(speed, omega, h)
             before = (float(self.body.position.x), float(self.body.position.y))
             before_angle = float(self.body.angle)
             before_clearance = clearances_by_shape(before, before_angle, self.posts)
             self._active_substep_index = substep
             event_offset = len(self._contact_events)
+            if self.execution_guard is not None:
+                self.execution_guard()
             self.space.step(h)
             self.engine_steps += 1
             after = (float(self.body.position.x), float(self.body.position.y))
@@ -379,9 +392,7 @@ class ContactWorld:
             ) / CLEARANCE_SAMPLES_PER_MICROSTEP
             sampling_bound = max(sampling_bound, path_bound)
             events = self._contact_events[event_offset:]
-            pair_ids = tuple(
-                sorted({"|".join(event.shape_pair) for event in events})
-            )
+            pair_ids = tuple(sorted({"|".join(event.shape_pair) for event in events}))
             simultaneous.append(pair_ids)
             max_pen = max(
                 max_pen,
