@@ -75,7 +75,7 @@ Read:
 
 ## Scientific humility
 
-Behavioural evidence alone does not establish that Aweform is alive, conscious, emotional, or experiencing anything subjectively. Terms such as "awe", "care", and "curiosity" are used as functional research hypotheses unless stronger evidence ever becomes available.
+This project is just a humble play with robotic and cognitive science, with no claim of any scientific value.
 
 ## Status-source hierarchy
 
