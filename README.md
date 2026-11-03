@@ -18,7 +18,7 @@ Aweform currently combines accepted V0.3/V0.4 boundaries with accepted V0.5 boun
 
 These layers supplement rather than erase earlier work. Historical experiments, ADRs, records, source semantics, and artifacts remain part of the record.
 
-The committed development lane extends through **D-059**. D-045 through D-057 remain bound to the D-045 substrate; D-058 is the committed endpoint-only room-wall contact conformance record. D-059 is the S1 Level-1 re-baseline, with its invalidated first execution and corrected results preserved separately. The attempted D-060 custom interior-obstacle substrate was discontinued **incomplete and unaccepted**; #222 and #224 are closed unmerged, and no D-060 row enters the canonical [`development/INDEX.md`](development/INDEX.md). See the [archival retrospective](docs/research-notes/d060-incomplete-substrate-retrospective.md).
+See [`development/INDEX.md`](development/INDEX.md) for the current committed development ledger. D-045 through D-057 remain bound to the D-045 substrate; D-058 is the committed endpoint-only room-wall contact conformance record. D-059 is the S1 Level-1 re-baseline, with its invalidated first execution and corrected results preserved separately. The attempted D-060 custom interior-obstacle substrate was discontinued **incomplete and unaccepted**; #222 and #224 are closed unmerged, and no D-060 row enters the canonical [`development/INDEX.md`](development/INDEX.md). See the [archival retrospective](docs/research-notes/d060-incomplete-substrate-retrospective.md).
 
 Important recent milestones include:
 
@@ -60,7 +60,7 @@ Aweform uses biology and evolution as inspiration for **problems and principles*
 
 The long-term direction includes homeostasis, coordinated subsystems, sensorimotor survival, learning, play and curiosity, social interaction, machine-native communication, richer cognition, and eventually physical embodiment.
 
-The V0.5 lineage contains a bounded shadow consequence learner through D-048 whose predictions still have **no causal behavioural role**, programmed Level-1 return/docking through D-056, D-058 wall-contact conformance and D-059 S1 re-baselining. D-055 was not promoted; D-045–D-057 remain bound to D-045. D-060 remains archived as incomplete exploratory diagnostics, not accepted substrate evidence. The project does **not** thereby contain PPO, deep RL, JEPA-scale cognition, an LLM controller, camera vision, a mature learned world model, social behaviour, play, awe, networking, physical robot control, or an adopted Pymunk contact backend. Those remain separately governed future questions.
+The V0.5 lineage includes bounded consequence learning and programmed Level-1 viability; current mechanisms and their causal roles are recorded in [`development/INDEX.md`](development/INDEX.md) and its linked D-records. D-055 was not promoted; D-045–D-057 remain bound to D-045. D-060 remains archived as incomplete exploratory diagnostics, not accepted substrate evidence. The project does **not** thereby contain PPO, deep RL, JEPA-scale cognition, an LLM controller, camera vision, a mature learned world model, social behaviour, play, awe, networking, physical robot control, or an adopted Pymunk contact backend. Those remain separately governed future questions.
 
 Read:
 

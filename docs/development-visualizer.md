@@ -134,19 +134,9 @@ uv run aweform-visualize \
 
 ## Specialized entry points
 
-Not every compatible visualization is exposed through the generic source registry. `pyproject.toml` currently also defines specialized shared-renderer entry points:
+Not every compatible visualization is exposed through the generic source registry. The `[project.scripts]` table in [`pyproject.toml`](../pyproject.toml) is authoritative for specialized shared-renderer entry points.
 
-```text
-aweform-visualize-d020
-aweform-visualize-d021
-aweform-visualize-d024
-aweform-visualize-d030
-aweform-visualize-d043
-aweform-export-d043-html
-aweform-export-d053-html
-aweform-export-vis-d059-html
-aweform-visualize-d050
-```
+For the D-061 saved-frame comparison and its generation/open commands, see the [D-061 record](../development/D-061-v05-experience-viability.md#artifacts-and-provenance). Its adapter uses the shared renderer without rerunning the organism.
 
 D-030 is the important current example. `development_visualizer.py` contains matched D-030 shared-renderer adapters for `REFERENCE_NO_INFLUENCE`, `LEARNED_FORWARD`, and `PERMUTED_FORWARD`, exposed through:
 
